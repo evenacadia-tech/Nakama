@@ -11,8 +11,11 @@ Liest eq-copilot/identity/host-capabilities-fl-v1.json und prueft:
      Belegtexten des Reports wird gegen die Rohdatei aufgeloest - der Report
      darf nichts behaupten, was die Messung nicht traegt (T2-Befund 6: die
      erste Fassung mass nur Skriptkonstanten, nicht den Report).
-  3. Ein `supported` braucht einen Termin; `unsupported` braucht den festen
-     Fallback aus §53.6.
+  3. Ein `supported` braucht einen Termin (A, B, A + B) oder - nur ein Bit
+     ohne Hostanteil, Termin "keiner (kein Hostbit)" - einen nicht leeren
+     `kanonbeweis`; `unsupported` braucht den festen Fallback aus §53.6.
+     Zwei Selbstproben im Speicher muessen an dieser Regel fallen (NAK-313
+     R-313-9, M-126); ihre Fehler sammeln sie in einer eigenen Liste.
   4. `host_channel_context` bleibt als Nicht-Wire-Beleg klar vom strikten
      Zehnerobjekt getrennt; bis Termin C ist er ehrlich `unsupported` und
      "nicht gemessen" mit dem U20-Fallback.
@@ -44,6 +47,9 @@ BEWEISE = WURZEL / "docs" / "beweise"
 fehler: list[str] = []
 ok = 0
 
+# Der Termin eines Bits ohne Hostanteil (binary_telemetry, remote_control).
+KEIN_HOSTBIT = "keiner (kein Hostbit)"
+
 
 def pruefe(bedingung: bool, text: str) -> None:
     global ok
@@ -53,6 +59,58 @@ def pruefe(bedingung: bool, text: str) -> None:
     else:
         fehler.append(text)
         print("  FEHLER  " + text)
+
+
+def beleg_fehler(bit: str, wert: str, beleg: dict) -> list[str]:
+    """Schritt 3 fuer EIN Bit: die verletzten Regeln als Texte, leer = haelt.
+
+    `supported` verlangt einen Termin A, B oder A + B oder - nur ohne
+    Hostanteil - den Termin "keiner (kein Hostbit)" mit nicht leerem
+    `kanonbeweis` (NAK-313 R-313-9); jede genannte Rohdatei muss existieren.
+    Die Funktion zaehlt nichts: der Bericht laeuft ueber `pruefe`, die
+    Selbstproben sammeln in ihrer eigenen Liste.
+    """
+    verletzt: list[str] = []
+    if wert == "supported":
+        termin = beleg.get("termin")
+        mit_termin = termin in ("A", "B", "A + B")
+        mit_kanonbeweis = termin == KEIN_HOSTBIT and str(beleg.get("kanonbeweis", "")).strip() != ""
+        if not (mit_termin or mit_kanonbeweis):
+            verletzt.append(f"{bit}=supported traegt weder einen Termin noch, ohne Hostanteil, "
+                            f"einen Kanonbeweis (Termin {termin})")
+        if "Golden" in beleg.get("zusatz", "") and "nicht erbracht" in beleg.get("zusatz", ""):
+            verletzt.append(f"{bit}=supported behauptet ein 'Golden nicht erbracht'")
+    elif "fallback_nach_53_6" not in beleg:
+        verletzt.append(f"{bit}=unsupported traegt keinen festen Fallback aus §53.6")
+    for datei in str(beleg.get("datei", "")).replace(";", ",").split(","):
+        datei = datei.strip()
+        if not datei:
+            continue
+        if datei.startswith("-"):
+            # Kurzform "-002722.json" = gleicher Ordner wie der erste Eintrag
+            continue
+        if not (WURZEL / datei).exists():
+            verletzt.append(f"{bit}: Rohdatei fehlt ({datei})")
+    return verletzt
+
+
+def selbstproben() -> list[tuple[str, list[str]]]:
+    """Zwei Belege im Speicher, an denen die Regel aus Schritt 3 fallen MUSS
+    (NAK-313 M-126): (1) supported mit Termin "keiner (kein Hostbit)" ohne
+    `kanonbeweis`, (2) supported mit Termin A und einer Rohdatei, die es nicht
+    gibt - ohne `datei` pruefte Schritt 3 keine Datei, und die Probe fiele
+    nicht. Jede Probe traegt ihre Fehler in einer EIGENEN Liste; `pruefe`
+    zaehlt global in `fehler` und machte A13 sonst rot."""
+    proben = [
+        ("ohne_kanonbeweis", "binary_telemetry",
+         {"beweis_nach_53_6": "v3-CRC/Fuzz/Lasttest", "termin": KEIN_HOSTBIT,
+          "rohfeld": "Build-Tatsache, kein Hostmesswert"}),
+        ("termin_a_ohne_rohdatei", "aux_compare_pre",
+         {"beweis_nach_53_6": "getrenntes, recallstabiles FL-Auxlayout", "termin": "A",
+          "rohfeld": "nicht gemessen",
+          "datei": "docs/beweise/termin-a/nak313-selbstprobe-gibt-es-nicht.json"}),
+    ]
+    return [(name, beleg_fehler(bit, "supported", beleg)) for name, bit, beleg in proben]
 
 
 def main() -> int:
@@ -231,38 +289,30 @@ def main() -> int:
                         pruefe(False, f"{bit}: Rohfeld {pfad} in {name} = {ist!r}, Report sagt {soll}")
     pruefe(angaben >= 30, f"{angaben} 'feld = wert'-Angaben der Belegtexte gegen die Rohdateien aufgeloest, alle stimmen")
 
-    # 3. Bits gegen die Belege.
+    # 3. Bits gegen die Belege (Regel in beleg_fehler).
     for bit, wert in caps.items():
-        beleg = report["belege"][bit]
-        if wert == "supported":
-            pruefe(beleg.get("termin") in ("A", "B", "A + B"),
-                   f"{bit}=supported traegt einen Termin ({beleg.get('termin')})")
-            pruefe("Golden" not in beleg.get("zusatz", "") or "nicht erbracht" not in beleg.get("zusatz", ""),
-                   f"{bit}=supported behauptet kein 'Golden nicht erbracht'")
-        else:
-            pruefe("fallback_nach_53_6" in beleg,
-                   f"{bit}=unsupported traegt den festen Fallback aus §53.6")
-        for datei in str(beleg.get("datei", "")).replace(";", ",").split(","):
-            datei = datei.strip()
-            if not datei:
-                continue
-            if datei.startswith("-"):
-                # Kurzform "-002722.json" = gleicher Ordner wie der erste Eintrag
-                continue
-            pruefe((WURZEL / datei).exists(), f"{bit}: Rohdatei existiert ({datei})")
+        verletzt = beleg_fehler(bit, wert, report["belege"][bit])
+        pruefe(not verletzt, f"{bit}={wert}: Termin oder Kanonbeweis, Fallback und Rohdateien "
+                             f"halten die Regel" + (f" ({'; '.join(verletzt)})" if verletzt else ""))
+    # Die Regel faellt, wo sie fallen muss (NAK-313 M-126).
+    for name, verletzt in selbstproben():
+        pruefe(bool(verletzt), f"Selbstprobe {name}: die Regel lehnt den Beleg ab"
+                               + (f" ({'; '.join(verletzt)})" if verletzt else " - NICHT abgelehnt"))
 
-    # Die Bits, die die Rohdaten TRAGEN (§53.6 Golden erbracht) - alles andere
-    # ist unsupported. presentation_latency und aux_priority_sidechain wurden
-    # in T2-Runde 1 herabgestuft: Meldung ohne Impulsgolden bzw. Sidechain ohne
-    # PDC-Last sind kein Golden.
+    # Die Bits, die die Rohdaten TRAGEN (§53.6 Golden erbracht), und die
+    # Build-Tatsache binary_telemetry mit ihrem Kanonbeweis (NAK-313 R-313-9) -
+    # alles andere ist unsupported. presentation_latency und
+    # aux_priority_sidechain wurden in T2-Runde 1 herabgestuft: Meldung ohne
+    # Impulsgolden bzw. Sidechain ohne PDC-Last sind kein Golden.
     erwartete_bits = {
         "host_context_presence": "supported", "project_time_samples": "supported",
         "sample_accurate_automation": "unsupported", "presentation_latency": "unsupported",
         "aux_compare_pre": "unsupported", "aux_priority_sidechain": "unsupported",
         "contribution_aux": "unsupported", "float64_processing": "unsupported",
-        "binary_telemetry": "unsupported", "remote_control": "unsupported",
+        "binary_telemetry": "supported", "remote_control": "unsupported",
     }
-    pruefe(caps == erwartete_bits, "die zehn Bits stehen so, wie die Rohdaten es tragen (2 supported, 8 unsupported)")
+    pruefe(caps == erwartete_bits, "die zehn Bits stehen so, wie die Rohdaten und die benannten "
+                                   "Kanonbeweise es tragen (3 supported, 7 unsupported)")
     pruefe(report["belege"]["presentation_latency"].get("fallback_nach_53_6") == "keine subtraktive Cross-Probe-Ausrichtung"
            and report["belege"]["aux_priority_sidechain"].get("fallback_nach_53_6") == "keine dynamische Aktuation"
            and report["belege"]["aux_compare_pre"].get("fallback_nach_53_6") == "nur Zustands-A/B, kein lokales Audio-Delta",

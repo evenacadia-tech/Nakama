@@ -28,6 +28,8 @@
 #include "controlclient/Schleuse.h"
 #include "../core/analysis/FeatureEngine.h"
 #include "../vertrag/NakamaVertrag.h"
+// NAK-313 Etappe 7 (M-123, M-124): Schreiber und Bericht streng gelesen.
+#include "../state/NakamaKanon.h"
 
 #include <juce_core/juce_core.h>
 
@@ -4225,6 +4227,146 @@ void alle()
     telemetrieWieControl();
 }
 } // namespace nak313e6
+
+//==============================================================================
+// NAK-313 Etappe 7 (R-313-9): binary_telemetry ist eine Build-Tatsache. Der
+// Schreiber des Heartbeats meldet supported, und der Capabilitybericht
+// eq-copilot/identity/host-capabilities-fl-v1.json traegt Schluessel fuer
+// Schluessel dasselbe Objekt. Die Zeilen M-123 und M-124 des Manifests.
+namespace nak313e7
+{
+using Paare = std::vector<std::pair<std::string, std::string>>;
+
+/// Die zehn Bits in der Reihenfolge des Schreibers mit dem Wert, den dieser
+/// Build meldet: zwei Hostmessungen, eine Build-Tatsache, sieben Fallbacks.
+const std::pair<const char*, const char*> kErwartet[] = {
+    { "host_context_presence", "supported" },        { "project_time_samples", "supported" },
+    { "sample_accurate_automation", "unsupported" }, { "presentation_latency", "unsupported" },
+    { "aux_compare_pre", "unsupported" },            { "aux_priority_sidechain", "unsupported" },
+    { "contribution_aux", "unsupported" },           { "float64_processing", "unsupported" },
+    { "binary_telemetry", "supported" },             { "remote_control", "unsupported" },
+};
+
+/// Ein Objekt aus Textwerten, streng gelesen (kanon::lies), in Schreibreihenfolge.
+bool paare (const nakama::kanon::Wert& w, Paare& aus, std::string& grund)
+{
+    if (w.art != nakama::kanon::Wert::Art::objekt)
+    {
+        grund = "kein Objekt";
+        return false;
+    }
+    for (std::size_t i = 0; i < w.objektSchluessel.size(); ++i)
+    {
+        if (w.objektWerte[i].art != nakama::kanon::Wert::Art::text)
+        {
+            grund = "Wert von " + w.objektSchluessel[i].toStdString() + " ist kein Text";
+            return false;
+        }
+        aus.emplace_back (w.objektSchluessel[i].toStdString(), w.objektWerte[i].text.toStdString());
+    }
+    return true;
+}
+
+bool schreiberPaare (Paare& aus, std::string& grund)
+{
+    nakama::kanon::Wert w;
+    juce::String f;
+    const auto text = controlclient_intern::capabilitiesJson();
+    if (! nakama::kanon::lies (juce::String::fromUTF8 (text.data(), (int) text.size()), w, f))
+    {
+        grund = "Schreiberausgabe nicht streng lesbar: " + f.toStdString();
+        return false;
+    }
+    return paare (w, aus, grund);
+}
+
+bool berichtPaare (Paare& aus, std::string& grund)
+{
+    const auto datei = wurzel().getChildFile ("eq-copilot/identity/host-capabilities-fl-v1.json");
+    nakama::kanon::Wert w;
+    juce::String f;
+    if (! datei.existsAsFile() || ! nakama::kanon::lies (datei.loadFileAsString(), w, f))
+    {
+        grund = "Bericht nicht lesbar: " + datei.getFullPathName().toStdString() + " " + f.toStdString();
+        return false;
+    }
+    for (std::size_t i = 0; i < w.objektSchluessel.size(); ++i)
+        if (w.objektSchluessel[i] == "capabilities")
+            return paare (w.objektWerte[i], aus, grund);
+    grund = "Bericht ohne capabilities";
+    return false;
+}
+
+std::string text (const Paare& p)
+{
+    std::string s;
+    for (const auto& [k, v] : p)
+        s += (s.empty() ? "" : ", ") + k + "=" + v;
+    return s;
+}
+
+/// M-123: der Schreiber meldet binary_telemetry supported, die uebrigen neun
+/// Bits wie bisher, zehn Schluessel in der Reihenfolge von heute.
+void schreiberMeldetBuildTatsache()
+{
+    Paare ist;
+    std::string grund;
+    const bool gelesen = schreiberPaare (ist, grund);
+    pruefe (gelesen && ist.size() == std::size (kErwartet),
+            "313/M-123 binary_telemetry_supported: capabilitiesJson() ist streng lesbar und traegt "
+            "zehn Schluessel",
+            gelesen ? std::to_string (ist.size()) + " Schluessel" : grund);
+    for (std::size_t i = 0; i < std::size (kErwartet); ++i)
+    {
+        const bool gleich = i < ist.size() && ist[i].first == kErwartet[i].first
+                         && ist[i].second == kErwartet[i].second;
+        pruefe (gleich,
+                std::string ("313/M-123 binary_telemetry_supported Paar ") + std::to_string (i + 1)
+                    + ": " + kErwartet[i].first + "=" + kErwartet[i].second,
+                i < ist.size() ? ist[i].first + "=" + ist[i].second : "fehlt");
+    }
+}
+
+/// M-124: der Bericht traegt Schluessel fuer Schluessel dasselbe Objekt wie
+/// der Schreiber (melden<->senden).
+void berichtGleichSchreiber()
+{
+    Paare bericht, schreiber;
+    std::string gb, gs;
+    const bool b = berichtPaare (bericht, gb);
+    const bool s = schreiberPaare (schreiber, gs);
+    pruefe (b && s && bericht.size() == 10 && schreiber.size() == 10,
+            "313/M-124 bericht_gleich_schreiber: beide Objekte gelesen, je zehn Schluessel",
+            (b ? std::to_string (bericht.size()) : gb) + " / " + (s ? std::to_string (schreiber.size()) : gs));
+    for (const auto& [name, wert] : schreiber)
+    {
+        std::string imBericht = "fehlt";
+        for (const auto& [k, v] : bericht)
+            if (k == name)
+                imBericht = v;
+        pruefe (imBericht == wert,
+                "313/M-124 bericht_gleich_schreiber " + name + ": Bericht und Schreiber gleich",
+                "Schreiber " + wert + ", Bericht " + imBericht);
+    }
+    std::size_t nurImBericht = 0;
+    for (const auto& [k, v] : bericht)
+    {
+        bool da = false;
+        for (const auto& [name, wert] : schreiber)
+            da = da || name == k;
+        if (! da)
+            ++nurImBericht;
+    }
+    pruefe (nurImBericht == 0, "313/M-124 bericht_gleich_schreiber: kein Schluessel nur im Bericht",
+            "Bericht: " + text (bericht));
+}
+
+void alle()
+{
+    schreiberMeldetBuildTatsache();
+    berichtGleichSchreiber();
+}
+} // namespace nak313e7
 } // namespace
 
 //==============================================================================
@@ -4267,6 +4409,15 @@ int main (int argc, char** argv)
     {
         nak313e5::tabelle();
         nak313e6::alle();
+        std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
+                  << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
+    // NAK-313 Etappe 7: Schreiber und Bericht von binary_telemetry (M-123,
+    // M-124) - fuer Gegenprobe und Rotlaeufe.
+    if (argc == 2 && std::string (argv[1]) == "--nak313-e7")
+    {
+        nak313e7::alle();
         std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
                   << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
         return fehler == 0 ? 0 : 1;
@@ -9025,6 +9176,8 @@ int main (int argc, char** argv)
     nak313e5::alle();
     // NAK-313 Etappe 6: der Handschlag nach dem Vertrag (M-106 bis M-113).
     nak313e6::alle();
+    // NAK-313 Etappe 7: binary_telemetry, Schreiber und Bericht (M-123, M-124).
+    nak313e7::alle();
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
               << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;

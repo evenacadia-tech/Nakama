@@ -373,8 +373,9 @@ inline const char* boolJson (bool wert) noexcept { return wert ? "true" : "false
 inline std::string capabilitiesJson()
 {
     // Maschinenlesbare Wahrheit aus host-capabilities-fl-v1.json: zwei in FL
-    // gemessene Faehigkeiten, acht feste Fallbacks. Diese Funktion wird nur
-    // auf dem Clientthread gerufen.
+    // gemessene Hostfaehigkeiten, eine Build-Tatsache (binary_telemetry,
+    // SONDE-010 A21/A22, NAK-313 R-313-9), sieben feste Fallbacks. Diese
+    // Funktion wird nur auf dem Clientthread gerufen.
     return "{\"host_context_presence\":\"supported\","
            "\"project_time_samples\":\"supported\","
            "\"sample_accurate_automation\":\"unsupported\","
@@ -383,7 +384,7 @@ inline std::string capabilitiesJson()
            "\"aux_priority_sidechain\":\"unsupported\","
            "\"contribution_aux\":\"unsupported\","
            "\"float64_processing\":\"unsupported\","
-           "\"binary_telemetry\":\"unsupported\","
+           "\"binary_telemetry\":\"supported\","
            "\"remote_control\":\"unsupported\"}";
 }
 

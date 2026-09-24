@@ -13,7 +13,7 @@
     "quelle": "host-probe-20260822-132644.json `host`/`wrapper`/`bloecke.samplerate`; aux-spike-*.json `host`/`wrapper`/`samplerate`"
   },
   "was_das_ist": "Entwurf §53.6: 'Capabilities sind maschinenlesbare Tatsachen aus Build UND laufendem Host. Ein Capabilitybit wird nur nach seinem Golden gesetzt.' Diese Datei traegt die zehn Bits des Vertrags fuer FL Studio, jedes mit dem Rohfeld, aus dem es gelesen wurde. §54 Exit-Gate: 'Kein unknown, spaeter pruefen darf P1 passieren' - deshalb gibt es nur supported|unsupported; was kein Geraet gemessen hat, ist unsupported mit seinem festen Fallback.",
-  "regel": "Ein Bit aendert sich nur mit einer neuen Messung (Datei in docs/beweise/termin-*/), nie mit einer Versionsnummer (§53.6 letzter Satz). Die `capabilities` hier sind genau das Objekt aus schemas/v3/eq-ipc-v3.schema.json $defs/capabilities - pruefe_host_capabilities.py validiert es dagegen.",
+  "regel": "Ein Hostbit aendert sich nur mit einer neuen Messung (Datei in docs/beweise/termin-*/), nie mit einer Versionsnummer (§53.6 letzter Satz); ein Bit ohne Hostanteil (Termin „keiner (kein Hostbit)“) aendert sich nur mit seinem benannten Kanonbeweis. Die `capabilities` hier sind genau das Objekt aus schemas/v3/eq-ipc-v3.schema.json $defs/capabilities - pruefe_host_capabilities.py validiert es dagegen.",
   "host_channel_context": {
     "wert": "unsupported",
     "beweis_nach_53_6": "nicht gemessen",
@@ -30,7 +30,7 @@
     "aux_priority_sidechain": "unsupported",
     "contribution_aux": "unsupported",
     "float64_processing": "unsupported",
-    "binary_telemetry": "unsupported",
+    "binary_telemetry": "supported",
     "remote_control": "unsupported"
   },
   "belege": {
@@ -97,8 +97,9 @@
     "binary_telemetry": {
       "beweis_nach_53_6": "v3-CRC/Fuzz/Lasttest",
       "termin": "keiner (kein Hostbit)",
-      "rohfeld": "Beweis entsteht mit SONDE-010 (Transport-Fuzz, Backpressure); bis dahin unsupported",
-      "fallback_nach_53_6": "reduzierte JSON-Kadenz, kein P0-Verlust"
+      "kanonbeweis": "SONDE-010: A21 transport_fuzz, A22 pruefe_ipc_last; T2 PASS 2026-08-30 (docs/beweise/SONDE-010.md)",
+      "rohfeld": "Build-Tatsache, kein Hostmesswert; Beleg im Kanon (kanonbeweis)",
+      "fallback_nach_53_6": "kein JSON-Rückfall für P2 (Erratum (r)); Zustand und Evidenz über P0/P1-JSON, kein P0-Verlust"
     },
     "remote_control": {
       "beweis_nach_53_6": "Pairing, HMAC, Revision, Lease und Revert bestanden",
@@ -127,5 +128,5 @@
     "contribution_aux bleibt ungemessen, bis ein Geraet die Main-Aux-Busse misst (Termin A hat 'diskret' und 'nicht doppelt' teilweise gezeigt - Spitze 2,70 Mixroute vs. 0,90 Sidechain-only -, 'post-fader' nicht).",
     "Legacy-.flp-Fixture (SONDE-002, Klickliste B Teil 3) ist nicht angelegt."
   ],
-  "zusammenfassung": "2 supported (host_context_presence, project_time_samples). 8 unsupported: 2 gemessen-unsupported (sample_accurate_automation, float64_processing), 3 herabgestuft, weil das §53.6-/§32.2-Golden nicht erbracht ist (presentation_latency ohne Impulsgolden; aux_priority_sidechain und aux_compare_pre ohne PDC-Last und ohne unterscheidbare Kanalreihenfolge - Termin A2, NAK-44), 1 ungemessen (contribution_aux), 2 ohne Hostbit bis zu ihren Tickets (binary_telemetry, remote_control)."
+  "zusammenfassung": "3 supported: 2 gemessen (host_context_presence, project_time_samples), 1 Build-Tatsache ohne Hostanteil (binary_telemetry, Kanonbeweis SONDE-010, NAK-313 R-313-9). 7 unsupported: 2 gemessen-unsupported (sample_accurate_automation, float64_processing), 3 herabgestuft, weil das §53.6-/§32.2-Golden nicht erbracht ist (presentation_latency ohne Impulsgolden; aux_priority_sidechain und aux_compare_pre ohne PDC-Last und ohne unterscheidbare Kanalreihenfolge - Termin A2, NAK-44), 1 ungemessen (contribution_aux), 1 ohne Hostanteil bis zu seinem Ticket (remote_control)."
 }

@@ -255,12 +255,23 @@ struct JsonFeld
 
 /// Sehr kleiner, STRENGER Leser fuer ein FLACHES JSON-Objekt.
 ///
-/// Er kann absichtlich fast nichts: keine Verschachtelung, keine Arrays, keine
-/// Escapes. Genau das ist die Eigenschaft, die hier gebraucht wird — der
-/// Client liest nur `welcome` und `reject`, beide flach und beide aus unserem
-/// eigenen Vertrag. Alles andere wird ABGELEHNT statt geraten; ein Leser, der
-/// raet, waere die groessere Angriffsflaeche als einer, der nein sagt.
-bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder);
+/// Er kann absichtlich fast nichts: keine Verschachtelung, keine Arrays. Genau
+/// das ist die Eigenschaft, die hier gebraucht wird — der Client liest nur
+/// `welcome`, `reject` und das ACK, alle flach und alle aus unserem eigenen
+/// Vertrag. Alles andere wird ABGELEHNT statt geraten; ein Leser, der raet,
+/// waere die groessere Angriffsflaeche als einer, der nein sagt.
+///
+/// Seit NAK-313 R-313-7 liest er nach dem Vertrag (RFC 8259): vor dem ersten
+/// Zeichen prueft er die UTF-8-Gueltigkeit des ganzen Texts, Zeichenketten
+/// dekodieren ihre Escapes (ein Surrogatpaar ist EIN Codepunkt; NUL-Escape,
+/// einsame Surrogate, jedes andere Escape und rohe Steuerzeichen sind
+/// ungueltig), und ein doppelter Name wird nach dem Dekodieren erkannt.
+/// Scheitert er, schreibt er in grund genau einen dieser Wortlaute: "kein
+/// gueltiges UTF-8", "NUL-Escape", "einsames Surrogat", "unbekanntes Escape",
+/// "\u-Escape ohne vier Hexziffern", "rohes Steuerzeichen", "doppelter Name",
+/// "Syntax". Gelingt er, bleibt grund unberuehrt.
+bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder,
+                        std::string* grund = nullptr);
 
 /// Feld als JSON-STRING. `false`, wenn es fehlt ODER kein String ist.
 bool jsonText (const std::vector<JsonFeld>& felder, const std::string& name,

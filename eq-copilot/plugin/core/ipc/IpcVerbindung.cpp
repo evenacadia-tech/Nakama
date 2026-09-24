@@ -6,6 +6,9 @@
 
 #include "IpcVerbindung.h"
 #include "WireEnvelope.h"
+#include "../../vertrag/NakamaUtf8.h"
+
+#include <cstdint>
 
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
@@ -436,9 +439,123 @@ void ueberspringeLeerraum (const std::string& t, std::size_t& i)
         ++i;
 }
 
-/// Liest einen JSON-String OHNE Escapes. Ein Backslash fuehrt zur Ablehnung —
-/// nicht zur Interpretation.
-bool leseString (const std::string& t, std::size_t& i, std::string& ziel)
+/// Die Wortlaute des Grund-Ausgangs (NAK-313 E-313-12). Keiner enthaelt ein
+/// Teilwort, an dem Gen eine Inkompatibilitaet erkennt (SourcesModel.cpp,
+/// inkompatiblerFehler): ein Lesefehler bleibt dort ein Handgriff.
+constexpr const char* kSyntax = "Syntax";
+constexpr const char* kKeinUtf8 = "kein gueltiges UTF-8";
+constexpr const char* kNulEscape = "NUL-Escape";
+constexpr const char* kEinsamesSurrogat = "einsames Surrogat";
+constexpr const char* kUnbekanntesEscape = "unbekanntes Escape";
+constexpr const char* kKurzesEscape = "\\u-Escape ohne vier Hexziffern";
+constexpr const char* kSteuerzeichen = "rohes Steuerzeichen";
+constexpr const char* kDoppelterName = "doppelter Name";
+
+/// Merkt den Wortlaut einer Ablehnung und lehnt ab.
+bool ablehnen (const char*& grund, const char* wortlaut) noexcept
+{
+    grund = wortlaut;
+    return false;
+}
+
+/// Genau vier ASCII-Hexziffern ab t[i] als Wert; i steht danach dahinter.
+bool vierHexziffern (const std::string& t, std::size_t& i, std::uint32_t& wert)
+{
+    if (i + 4 > t.size())
+        return false;
+    wert = 0;
+    for (std::size_t k = 0; k < 4; ++k)
+    {
+        const char c = t[i + k];
+        std::uint32_t ziffer = 0;
+        if (c >= '0' && c <= '9')      ziffer = static_cast<std::uint32_t> (c - '0');
+        else if (c >= 'a' && c <= 'f') ziffer = static_cast<std::uint32_t> (c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F') ziffer = static_cast<std::uint32_t> (c - 'A' + 10);
+        else return false;
+        wert = (wert << 4) | ziffer;
+    }
+    i += 4;
+    return true;
+}
+
+/// Ein Codepunkt als UTF-8 (hoechstens U+10FFFF; Surrogate kommen nie hierher).
+void alsUtf8 (std::uint32_t cp, std::string& ziel)
+{
+    if (cp < 0x80)
+    {
+        ziel.push_back (static_cast<char> (cp));
+    }
+    else if (cp < 0x800)
+    {
+        ziel.push_back (static_cast<char> (0xC0 | (cp >> 6)));
+        ziel.push_back (static_cast<char> (0x80 | (cp & 0x3F)));
+    }
+    else if (cp < 0x10000)
+    {
+        ziel.push_back (static_cast<char> (0xE0 | (cp >> 12)));
+        ziel.push_back (static_cast<char> (0x80 | ((cp >> 6) & 0x3F)));
+        ziel.push_back (static_cast<char> (0x80 | (cp & 0x3F)));
+    }
+    else
+    {
+        ziel.push_back (static_cast<char> (0xF0 | (cp >> 18)));
+        ziel.push_back (static_cast<char> (0x80 | ((cp >> 12) & 0x3F)));
+        ziel.push_back (static_cast<char> (0x80 | ((cp >> 6) & 0x3F)));
+        ziel.push_back (static_cast<char> (0x80 | (cp & 0x3F)));
+    }
+}
+
+/// Das Zeichen eines einfachen Escapes (RFC 8259 §7) oder 0 fuer keines.
+char einfachesEscape (char e) noexcept
+{
+    switch (e)
+    {
+        case '"':  return '"';
+        case '\\': return '\\';
+        case '/':  return '/';
+        case 'b':  return '\b';
+        case 'f':  return '\f';
+        case 'n':  return '\n';
+        case 'r':  return '\r';
+        case 't':  return '\t';
+        default:   return '\0';
+    }
+}
+
+/// Ein u-Escape ab t[i] (hinter Backslash und u): genau vier Hexziffern; ein
+/// hohes Surrogat braucht direkt ein u-Escape mit tiefem Surrogat und wird mit
+/// ihm zu EINEM Codepunkt. NUL und einsame Surrogate sind ungueltig
+/// (README Regeln 4 bis 6).
+bool leseUEscape (const std::string& t, std::size_t& i, std::string& ziel, const char*& grund)
+{
+    std::uint32_t cp = 0;
+    if (! vierHexziffern (t, i, cp))
+        return ablehnen (grund, kKurzesEscape);
+    if (cp == 0)
+        return ablehnen (grund, kNulEscape);
+    if (cp >= 0xDC00 && cp <= 0xDFFF)
+        return ablehnen (grund, kEinsamesSurrogat);
+    if (cp >= 0xD800 && cp <= 0xDBFF)
+    {
+        if (i + 1 >= t.size() || t[i] != '\\' || t[i + 1] != 'u')
+            return ablehnen (grund, kEinsamesSurrogat);
+        i += 2;
+        std::uint32_t tief = 0;
+        if (! vierHexziffern (t, i, tief))
+            return ablehnen (grund, kKurzesEscape);
+        if (tief < 0xDC00 || tief > 0xDFFF)
+            return ablehnen (grund, kEinsamesSurrogat);
+        cp = 0x10000 + ((cp - 0xD800) << 10) + (tief - 0xDC00);
+    }
+    alsUtf8 (cp, ziel);
+    return true;
+}
+
+/// Liest einen JSON-String nach RFC 8259 §7 und dekodiert seine Escapes -
+/// seit NAK-313 R-313-7; bis dahin lehnte jeder Backslash ab, eine engere
+/// Regel als der Vertrag. Rohe Steuerzeichen unter 0x20 bleiben verboten. Die
+/// UTF-8-Gueltigkeit der Rohbytes hat flachesJsonObjekt vorher geprueft.
+bool leseString (const std::string& t, std::size_t& i, std::string& ziel, const char*& grund)
 {
     if (i >= t.size() || t[i] != '"')
         return false;
@@ -447,21 +564,39 @@ bool leseString (const std::string& t, std::size_t& i, std::string& ziel)
     while (i < t.size() && t[i] != '"')
     {
         const unsigned char c = static_cast<unsigned char> (t[i]);
-        if (c == '\\' || c < 0x20)
-            return false;
-        ziel.push_back (t[i]);
-        ++i;
+        if (c < 0x20)
+            return ablehnen (grund, kSteuerzeichen);
+        if (c != '\\')
+        {
+            ziel.push_back (t[i]);
+            ++i;
+            continue;
+        }
+        if (i + 1 >= t.size())
+            return false;                               // offener Text: Syntax
+        const char e = t[i + 1];
+        i += 2;
+        if (e == 'u')
+        {
+            if (! leseUEscape (t, i, ziel, grund))
+                return false;
+            continue;
+        }
+        const char zeichen = einfachesEscape (e);
+        if (zeichen == '\0')
+            return ablehnen (grund, kUnbekanntesEscape);
+        ziel.push_back (zeichen);
     }
     if (i >= t.size())
         return false;
     ++i;  // schliessendes "
     return true;
 }
-} // namespace
 
-bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder)
+/// Der Leser selbst; grund bleibt nullptr fuer jede Ablehnung ohne eigenen
+/// Wortlaut (dann gilt "Syntax").
+bool flachesObjektLesen (const std::string& text, std::vector<JsonFeld>& felder, const char*& grund)
 {
-    felder.clear();
     std::size_t i = 0;
     ueberspringeLeerraum (text, i);
     if (i >= text.size() || text[i] != '{')
@@ -479,7 +614,7 @@ bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder)
     {
         ueberspringeLeerraum (text, i);
         std::string schluessel;
-        if (! leseString (text, i, schluessel))
+        if (! leseString (text, i, schluessel, grund))
             return false;
         ueberspringeLeerraum (text, i);
         if (i >= text.size() || text[i] != ':')
@@ -493,7 +628,7 @@ bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder)
         bool istString = false;
         if (text[i] == '"')
         {
-            if (! leseString (text, i, wert))
+            if (! leseString (text, i, wert, grund))
                 return false;
             istString = true;
         }
@@ -512,10 +647,11 @@ bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder)
             wert = text.substr (beginn, i - beginn);
         }
 
-        // Doppelter Schluessel ist eine Ablehnung, keine "letzter gewinnt"-Regel.
+        // Doppelter Schluessel ist eine Ablehnung, keine "letzter gewinnt"-Regel
+        // - verglichen werden die DEKODIERTEN Namen, auch ein Escape-Alias.
         for (const auto& f : felder)
             if (f.name == schluessel)
-                return false;
+                return ablehnen (grund, kDoppelterName);
         felder.push_back (JsonFeld { schluessel, wert, istString });
 
         ueberspringeLeerraum (text, i);
@@ -534,6 +670,24 @@ bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder)
         }
         return false;
     }
+}
+} // namespace
+
+bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder,
+                        std::string* grund)
+{
+    felder.clear();
+    const char* ablehnung = nullptr;
+    // Vor dem ersten Zeichen: der ganze Text ist gueltiges UTF-8 (NAK-313
+    // R-313-7). Das deckt Control-Welcome, Telemetrie-Welcome und das ACK.
+    bool gelesen = nakama::utf8::istGueltig (text.data(), text.size());
+    if (! gelesen)
+        ablehnung = kKeinUtf8;
+    else
+        gelesen = flachesObjektLesen (text, felder, ablehnung);
+    if (! gelesen && grund != nullptr)
+        *grund = ablehnung != nullptr ? ablehnung : kSyntax;
+    return gelesen;
 }
 
 namespace

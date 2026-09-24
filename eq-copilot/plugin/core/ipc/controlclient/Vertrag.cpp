@@ -216,8 +216,11 @@ bool welcomeHaeltVertrag (const std::vector<JsonFeld>& felder,
     if (! jsonLiteral (felder, "protocol", protokoll)
         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
         return false;
+    // NAK-313 R-313-7 (M-106, M-110): maxLength zaehlt Codepunkte, nicht
+    // Bytes - 64 mal e-Akut sind 128 Bytes und gueltig. minLength 1 bleibt die
+    // eigene Leerpruefung daneben.
     if (! jsonText (felder, "broker_version", brokerVersion)
-        || brokerVersion.empty() || brokerVersion.size() > 64)
+        || brokerVersion.empty() || ! utf8CodepointsBis (brokerVersion, 64))
         return false;
     return jsonText (felder, "link_id", linkId) && istHex32 (linkId)
         && jsonText (felder, "challenge", challenge) && istHex32 (challenge)
@@ -225,14 +228,15 @@ bool welcomeHaeltVertrag (const std::vector<JsonFeld>& felder,
 }
 
 /// Dasselbe fuer `reject`: `required [type, code, reason]`,
-/// `additionalProperties:false`, `reason` hoechstens 500 Zeichen.
+/// `additionalProperties:false`, `reason` hoechstens 500 Zeichen - seit
+/// NAK-313 R-313-7 (M-107) als Codepunkte gezaehlt, nicht als Bytes.
 bool rejectHaeltVertrag (const std::vector<JsonFeld>& felder, std::string& grund)
 {
     if (! feldmengeGenau (felder, { "type", "code", "reason" }))
         return false;
     std::string code;
     return jsonText (felder, "code", code) && ! code.empty()
-        && jsonText (felder, "reason", grund) && grund.size() <= 500;
+        && jsonText (felder, "reason", grund) && utf8CodepointsBis (grund, 500);
 }
 
 bool audioGueltig (double samplerate, int blockSize, int channels) noexcept

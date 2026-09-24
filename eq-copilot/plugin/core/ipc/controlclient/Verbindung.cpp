@@ -645,11 +645,20 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             }
             const std::string text (reinterpret_cast<const char*> (e.payload), e.payloadLaenge);
             std::vector<JsonFeld> felder;
-            std::string typ;
-            if (! flachesJsonObjekt (text, felder) || ! jsonText (felder, "type", typ))
+            std::string typ, lesegrund;
+            // NAK-313 R-313-7 (M-109, M-111, M-112): der Lesegrund des flachen
+            // Lesers geht in die Meldung, damit Gen ihn als Lesefehler zeigt und
+            // nie als Ablehnung des Brokers.
+            if (! flachesJsonObjekt (text, felder, &lesegrund))
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";
+                zustand.letzterFehler = "welcome: " + lesegrund;
+                break;
+            }
+            if (! jsonText (felder, "type", typ))
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "welcome: kein type";
                 break;
             }
             if (typ == "reject")

@@ -3379,11 +3379,30 @@ bool wertAusText (const std::string& t, std::int64_t& aus)
 }
 
 /// Die Stufe des flachen Lesers (Manifest §7.2): liest `flachesJsonObjekt`
-/// die Bytes, faellt der Eintrag an der Feldregel, sonst am Parser.
+/// die Bytes, faellt der Eintrag an der Feldregel, sonst am Parser - seit
+/// Etappe 6 am Duplikat, wenn der Grund-Ausgang "doppelter Name" nennt.
 std::string stufeDesFlachenLesers (const std::string& bytes)
 {
     std::vector<JsonFeld> felder;
-    return flachesJsonObjekt (bytes, felder) ? "feldregel" : "parser";
+    std::string grund;
+    if (flachesJsonObjekt (bytes, felder, &grund))
+        return "feldregel";
+    return grund == "doppelter Name" ? "duplikat" : "parser";
+}
+
+/// Die Namen der Etappe-6-Zeilen (Manifest §6.5, Spalte Test je Sprache).
+const char* e6Name (const std::string& matrix)
+{
+    static const std::pair<const char*, const char*> namen[] = {
+        { "M-106", "broker_version_in_codepunkten" }, { "M-107", "reject_reason_in_codepunkten" },
+        { "M-108", "escapes_dekodiert" },             { "M-109", "verbotene_escapes" },
+        { "M-110", "leere_texte" },                   { "M-111", "utf8_am_anfang_des_flachen_lesens" },
+        { "M-112", "duplikat_dekodiert" },            { "M-113", "telemetrie_welcome_wie_control" },
+    };
+    for (const auto& [zeile, name] : namen)
+        if (matrix == zeile)
+            return name;
+    return nullptr;
 }
 
 std::string pruefname (const juce::var& fall)
@@ -3391,7 +3410,9 @@ std::string pruefname (const juce::var& fall)
     const auto eingang = feldText (fall, "eingang");
     const auto matrix = feldText (fall, "matrix");
     std::string name;
-    if (matrix == "M-96")
+    if (const char* e6 = e6Name (matrix))
+        name = e6;
+    else if (matrix == "M-96")
         name = "nicht_endlich_flach";
     else if (eingang == "cpp_control_ack")
         name = matrix == "M-56" ? "ack_revision_als_1punkt0" : "ack_wertstufe";
@@ -3404,14 +3425,18 @@ std::string pruefname (const juce::var& fall)
     return "313/" + matrix + " " + name + " " + feldText (fall, "id");
 }
 
-/// Ein Eintrag von `cpp_control_ack`: der Testserver antwortet auf einen
-/// eingereihten P0 mit den Bytes (Schalter fuer rohe ACK-Bytes). Gemessen
-/// werden Urteil und Stufe, die Wirkung am In-Flight-Register und - bei
-/// eigenem Urteil `gueltig` - der Wert, den `commandAckArtLesen` liest.
-void ackEintrag (const juce::var& fall, const std::string& commandId)
+/// Was ein rohes ACK am Client ergibt: ob es gesendet und empfangen wurde, und
+/// der Schnappschuss des In-Flight-Registers danach.
+struct AckErgebnis
 {
-    const auto name = pruefname (fall);
-    const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+    bool gelesen = false;
+    ControlClient::Snapshot s;
+};
+
+/// Der Testserver antwortet auf einen eingereihten P0 mit `bytes` (Schalter
+/// fuer rohe ACK-Bytes); der Client reiht einen P0 mit `commandId` ein.
+AckErgebnis ackLauf (const std::string& bytes, const std::string& commandId)
+{
     TestServer server (testPipeName ("nak313-ack"));
     server.commandAckArt.store (0);            // allein das rohe ACK antwortet
     server.ackRohAnhaengen (bytes);
@@ -3427,30 +3452,52 @@ void ackEintrag (const juce::var& fall, const std::string& commandId)
     });
     const bool eingereiht = verbunden
         && control.sendePersistenzP0 (userVerdictBefehl (commandId)) == PersistenzP0Ergebnis::eingereiht;
-    const bool gelesen = eingereiht && warteAuf (5000, [&] {
+    AckErgebnis e;
+    e.gelesen = eingereiht && warteAuf (5000, [&] {
         return server.commandAckEntschieden.load() >= 1 && control.snapshot().empfangen >= 1;
     });
     // Eine Freigabe laeuft im selben Lesezug wie der Zaehler; ohne sie bleibt
     // der Auftrag stehen. Die Frist trennt beides.
     warteAuf (500, [&] { return control.snapshot().inFlight == 0; });
-    const auto s = control.snapshot();
+    e.s = control.snapshot();
     control.stop();
     server.stoppen();
+    return e;
+}
 
-    const bool frei = s.inFlight == 0 && s.inFlightErfolg == 1;
+std::string registerText (const ControlClient::Snapshot& s)
+{
+    return "inFlight " + std::to_string (s.inFlight) + ", Erfolg " + std::to_string (s.inFlightErfolg)
+         + ", endgueltig " + std::to_string (s.inFlightEndgueltigOhneErfolg);
+}
+
+/// Ein Eintrag von `cpp_control_ack`: der Testserver antwortet auf einen
+/// eingereihten P0 mit den Bytes (Schalter fuer rohe ACK-Bytes). Gemessen
+/// werden Urteil und Stufe, die Wirkung am In-Flight-Register und - bei
+/// eigenem Urteil `gueltig` - der Wert, den `commandAckArtLesen` liest. Seit
+/// Etappe 6 gilt auch ein gelesenes ACK ohne Erfolg (abgelehnt, konflikt ohne
+/// Wiederholungshaken, abgelaufen) als gueltig: es beendet den Auftrag.
+void ackEintrag (const juce::var& fall, const std::string& commandId)
+{
+    using controlclient_intern::CommandAckArt;
+    const auto name = pruefname (fall);
+    const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+    const auto lauf = ackLauf (bytes, commandId);
+    const auto& s = lauf.s;
+    const bool erfolg = s.inFlight == 0 && s.inFlightErfolg == 1 && s.inFlightEndgueltigOhneErfolg == 0;
+    const bool endgueltig = s.inFlight == 0 && s.inFlightErfolg == 0 && s.inFlightEndgueltigOhneErfolg == 1;
     const bool offen = s.inFlight == 1 && s.inFlightErfolg == 0 && s.inFlightEndgueltigOhneErfolg == 0;
-    const std::string urteil = frei ? "gueltig" : "ungueltig";
-    const std::string stufe = frei ? std::string() : stufeDesFlachenLesers (bytes);
+    const bool angenommen = erfolg || endgueltig;
+    const std::string urteil = angenommen ? "gueltig" : "ungueltig";
+    const std::string stufe = angenommen ? std::string() : stufeDesFlachenLesers (bytes);
     const auto soll = fall.getProperty ("produkt", {});
     const auto sollUrteil = feldText (soll, "urteil");
     const auto sollStufe = soll.getProperty ("stufe", {}).isString() ? feldText (soll, "stufe") : std::string();
-    const std::string zustand = "inFlight " + std::to_string (s.inFlight)
-        + ", Erfolg " + std::to_string (s.inFlightErfolg)
-        + ", endgueltig " + std::to_string (s.inFlightEndgueltigOhneErfolg);
-    pruefe (gelesen && (frei || offen) && urteil == sollUrteil && stufe == sollStufe,
+    const std::string zustand = registerText (s);
+    pruefe (lauf.gelesen && (angenommen || offen) && urteil == sollUrteil && stufe == sollStufe,
             name + " (Urteil, Stufe)",
             "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe + " - " + zustand
-                + (gelesen ? "" : " - ACK nicht gelesen"));
+                + (lauf.gelesen ? "" : " - ACK nicht gelesen"));
 
     // Der Direktaufruf - dieselben Bytes durch die Kernfunktion hinter
     // `Ipc.cpp` (`commandAckHaeltVertrag`) und den Leser selbst.
@@ -3459,6 +3506,9 @@ void ackEintrag (const juce::var& fall, const std::string& commandId)
     const auto art = controlclient_intern::commandAckArtLesen (bytes, id, &revision);
     GelesenesCommandAck gelesenesAck;
     const bool haelt = commandAckHaeltVertrag (bytes, gelesenesAck);
+    const bool artPasst = erfolg ? (art == CommandAckArt::angewandt || art == CommandAckArt::idempotentWiederholt)
+                                 : (art == CommandAckArt::abgelehnt || art == CommandAckArt::konflikt
+                                    || art == CommandAckArt::abgelaufen);
     bool gehalten = true;
     std::string worte;
     for (const auto& w : *fall.getProperty ("wirkung", {}).getArray())
@@ -3466,9 +3516,9 @@ void ackEintrag (const juce::var& fall, const std::string& commandId)
         const auto wort = w.toString().toStdString();
         worte += (worte.empty() ? "" : ", ") + wort;
         if (wort == "annahme")
-            gehalten = gehalten && frei && art == controlclient_intern::CommandAckArt::angewandt && haelt;
+            gehalten = gehalten && angenommen && artPasst && haelt;
         else if (wort == "kein_ack")
-            gehalten = gehalten && art == controlclient_intern::CommandAckArt::keinAck && ! haelt;
+            gehalten = gehalten && art == CommandAckArt::keinAck && ! haelt;
         else if (wort == "kein_freigegebener_auftrag")
             gehalten = gehalten && offen;
         else
@@ -3487,17 +3537,22 @@ void ackEintrag (const juce::var& fall, const std::string& commandId)
     }
 }
 
-/// Ein Eintrag von `cpp_control_handshake` oder `cpp_telemetrie_handshake`:
-/// der Testserver sendet die Bytes als Antwort auf das Hello der Art.
-void welcomeEintrag (const juce::var& fall, bool telemetrie)
+/// Was ein Handschlag am Client ergibt: verbunden (Control) beziehungsweise
+/// gekoppelt (Telemetrie), und die Meldung in `letzterFehler`.
+struct HandshakeErgebnis
 {
-    const auto name = pruefname (fall);
-    const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+    bool verbunden = false;
+    std::string meldung;
+};
+
+/// Der Testserver sendet `bytes` als Antwort auf das Hello der Art (Schalter
+/// fuer rohe Antwortbytes je Verbindungsart); ein `reject` sendet er nur so.
+HandshakeErgebnis handshakeLauf (const std::string& bytes, bool telemetrie)
+{
     TestServer server (testPipeName (telemetrie ? "nak313-wt" : "nak313-wc"));
     server.setzeWelcomeRoh (telemetrie, bytes);
     server.starten();
-    bool verbunden = false;
-    std::string meldung;
+    HandshakeErgebnis e;
     if (telemetrie)
     {
         TelemetryClient t ([&] {
@@ -3512,8 +3567,8 @@ void welcomeEintrag (const juce::var& fall, bool telemetrie)
             const auto s = t.snapshot();
             return s.status == TelemetryClient::Status::verbunden || ! s.letzterFehler.empty();
         });
-        verbunden = t.snapshot().status == TelemetryClient::Status::verbunden;
-        meldung = t.snapshot().letzterFehler;
+        e.verbunden = t.snapshot().status == TelemetryClient::Status::verbunden;
+        e.meldung = t.snapshot().letzterFehler;
         t.stop();
     }
     else
@@ -3528,39 +3583,56 @@ void welcomeEintrag (const juce::var& fall, bool telemetrie)
             const auto s = c.snapshot();
             return s.status == ControlClient::Status::verbunden || ! s.letzterFehler.empty();
         });
-        verbunden = c.snapshot().status == ControlClient::Status::verbunden;
-        meldung = c.snapshot().letzterFehler;
+        e.verbunden = c.snapshot().status == ControlClient::Status::verbunden;
+        e.meldung = c.snapshot().letzterFehler;
         c.stop();
     }
     server.stoppen();
+    return e;
+}
 
-    // Die Stufe steht in `letzterFehler` (Manifest §7.2): die Meldungen nach
-    // dem Lesen sind die Feldregel, „welcome: kein flaches JSON-Objekt" der
-    // Parser.
-    const std::string urteil = verbunden ? "gueltig" : "ungueltig";
+/// Ein Eintrag von `cpp_control_handshake` oder `cpp_telemetrie_handshake`:
+/// der Testserver sendet die Bytes als Antwort auf das Hello der Art.
+void welcomeEintrag (const juce::var& fall, bool telemetrie)
+{
+    const auto name = pruefname (fall);
+    const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+    const auto e = handshakeLauf (bytes, telemetrie);
+
+    // Gelesen heisst (Manifest §7.2, seit Etappe 6 auch fuer reject): ein
+    // welcome verbindet, ein reject erscheint als "Broker lehnt ab: " + Grund.
+    // Die Stufe steht in `letzterFehler`: die Meldungen nach dem Lesen sind die
+    // Feldregel (auch "welcome: kein type"), "welcome: " + Lesegrund der
+    // Parser, "welcome: doppelter Name" das Duplikat.
+    const bool reject = feldText (fall, "nachricht") == "reject";
+    const bool gelesen = reject ? ! e.verbunden && e.meldung.rfind ("Broker lehnt ab: ", 0) == 0
+                                : e.verbunden;
+    const std::string urteil = gelesen ? "gueltig" : "ungueltig";
     std::string stufe;
-    if (! verbunden)
-        stufe = meldung.rfind ("welcome: ", 0) == 0 ? "parser"
-              : (meldung == "unerwartete Antwort auf hello"
-                 || meldung == "unerwartete Antwort auf das Telemetry-Hello"
-                 || meldung == "reject haelt den Vertrag nicht") ? "feldregel"
-              : "unbekannt: " + meldung;
+    if (! gelesen)
+        stufe = e.meldung == "welcome: doppelter Name" ? "duplikat"
+              : e.meldung == "welcome: kein type" ? "feldregel"
+              : e.meldung.rfind ("welcome: ", 0) == 0 ? "parser"
+              : (e.meldung == "unerwartete Antwort auf hello"
+                 || e.meldung == "unerwartete Antwort auf das Telemetry-Hello"
+                 || e.meldung == "reject haelt den Vertrag nicht") ? "feldregel"
+              : "unbekannt: " + e.meldung;
     const auto soll = fall.getProperty ("produkt", {});
     const auto sollUrteil = feldText (soll, "urteil");
     const auto sollStufe = soll.getProperty ("stufe", {}).isString() ? feldText (soll, "stufe") : std::string();
     pruefe (urteil == sollUrteil && stufe == sollStufe, name + " (Urteil, Stufe)",
             "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe
-                + (meldung.empty() ? "" : " - " + meldung));
+                + (e.meldung.empty() ? "" : " - " + e.meldung.substr (0, 120)));
 
     bool gehalten = true;
     for (const auto& w : *fall.getProperty ("wirkung", {}).getArray())
     {
         const auto wort = w.toString();
-        if (wort == "annahme")        gehalten = gehalten && verbunden;
-        else if (wort == "ablehnung") gehalten = gehalten && ! verbunden;
+        if (wort == "annahme")        gehalten = gehalten && gelesen;
+        else if (wort == "ablehnung") gehalten = gehalten && ! gelesen;
         else                          gehalten = false;
     }
-    pruefe (gehalten, name + " (Wirkung)", verbunden ? "verbunden" : "nicht verbunden");
+    pruefe (gehalten, name + " (Wirkung)", e.verbunden ? "verbunden" : "nicht verbunden");
 
     // Der Wert: `welcomeHaeltVertrag` liest `protocol` im Bereich 3 bis 3 - ein
     // verbundener Client hat also genau den Wert 3 gelesen, und derselbe
@@ -3581,7 +3653,7 @@ void welcomeEintrag (const juce::var& fall, bool telemetrie)
 /// Tabelle, mit Zaehlpruefung je Eingang.
 void tabelle()
 {
-    abschnitt ("NAK-313 Etappe 5 · der flache Leser an PRODUKTEINGAENGE-FAELLE.json");
+    abschnitt ("NAK-313 Etappen 5 und 6 · der flache Leser an PRODUKTEINGAENGE-FAELLE.json");
     bool ok = false;
     const auto kopf = produkteingaenge (ok);
     pruefe (ok, "313/M-73 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus");
@@ -3844,6 +3916,315 @@ void alle()
     senderOhneKappung();
 }
 } // namespace nak313e5
+
+//==============================================================================
+// NAK-313 Etappe 6 (R-313-7, E-313-12): der Handschlag nach dem Vertrag. Der
+// flache Leser prueft UTF-8 am Anfang, dekodiert die RFC-8259-Escapes,
+// vergleicht dekodierte Namen und fuellt beim Scheitern einen Grund-Ausgang;
+// welcome und reject zaehlen Codepunkte. Die Zeilen M-106 bis M-113 des
+// Manifests, je Fall mit der vollstaendigen Meldung in letzterFehler.
+namespace nak313e6
+{
+using nak313e5::handshakeLauf;
+
+const std::string eAkut = "\xC3\xA9";   // U+00E9, zwei Bytes
+
+std::string wiederhole (const std::string& teil, int anzahl)
+{
+    std::string aus;
+    for (int i = 0; i < anzahl; ++i)
+        aus += teil;
+    return aus;
+}
+
+/// welcome in der Form des Testservers; `brokerVersion` als JSON-Text.
+std::string welcomeMit (const std::string& brokerVersion)
+{
+    return "{\"type\":\"welcome\",\"protocol\":3,\"broker_version\":" + brokerVersion
+         + ",\"broker_epoch\":\"" + hex32 ('c') + "\",\"link_id\":\"" + hex32 ('a')
+         + "\",\"challenge\":\"" + hex32 ('b') + "\"}";
+}
+
+/// reject mit `reason` und `code` als JSON-Text.
+std::string rejectMit (const std::string& reason, const std::string& code = "\"protocol_mismatch\"")
+{
+    return "{\"type\":\"reject\",\"code\":" + code + ",\"reason\":" + reason + "}";
+}
+
+/// Die dekodierten Bytes des Escape-Grundes aus M-108: 0A 5C 22 2F C3 A9 F0 9F 98 80.
+std::string escapesDekodiert()
+{
+    const unsigned char b[] = { 0x0A, 0x5C, 0x22, 0x2F, 0xC3, 0xA9, 0xF0, 0x9F, 0x98, 0x80 };
+    return std::string (reinterpret_cast<const char*> (b), sizeof (b));
+}
+
+/// Ein u-Escape als JSON-Text: Backslash, u, die Hexziffern. Zusammengesetzt
+/// statt ausgeschrieben, damit kein Werkzeug die Folge im Quelltext in ihr
+/// Zeichen umschreibt.
+std::string uEscape (const char* hex)
+{
+    return std::string (1, '\\') + "u" + hex;
+}
+
+/// Der reason aus M-108 als JSON-Text: n, Backslash, Anfuehrungszeichen und
+/// Schraegstrich als einfache Escapes, e-Akut und das Surrogatpaar als u-Escapes.
+std::string escapesText()
+{
+    return "\"\\n\\\\\\\"\\/" + uEscape ("00e9") + uEscape ("d83d") + uEscape ("de00") + "\"";
+}
+
+std::string paarText() { return uEscape ("d83d") + uEscape ("de00"); }
+
+const std::string kPaarDekodiert = "\xF0\x9F\x98\x80";   // U+1F600
+
+/// Ein Handschlag mit genau dieser Meldung: verbunden heisst hier immer auch
+/// "keine Meldung", nicht verbunden heisst genau `soll`.
+void handschlag (const std::string& name, const std::string& bytes, bool telemetrie,
+                 bool verbindet, const std::string& soll)
+{
+    const auto e = handshakeLauf (bytes, telemetrie);
+    const bool ok = verbindet ? (e.verbunden && e.meldung.empty())
+                              : (! e.verbunden && e.meldung == soll);
+    pruefe (ok, name, (e.verbunden ? "verbunden" : "nicht verbunden") + std::string (" - ")
+                          + e.meldung.substr (0, 160));
+}
+
+/// M-106: broker_version in Codepunkten (64) statt Bytes.
+void brokerVersionInCodepunkten()
+{
+    abschnitt ("NAK-313 M-106 · broker_version_in_codepunkten");
+    handschlag ("313/M-106 broker_version_in_codepunkten (a) 64 x e-Akut (128 Bytes) verbindet",
+                welcomeMit ("\"" + wiederhole (eAkut, 64) + "\""), false, true, "");
+    handschlag ("313/M-106 broker_version_in_codepunkten (b) 65 x e-Akut verbindet nicht",
+                welcomeMit ("\"" + wiederhole (eAkut, 65) + "\""), false, false,
+                "unerwartete Antwort auf hello");
+    handschlag ("313/M-106 broker_version_in_codepunkten (c) 64 ASCII verbindet",
+                welcomeMit ("\"" + std::string (64, 'v') + "\""), false, true, "");
+}
+
+/// M-107: reject.reason in Codepunkten (500) statt Bytes.
+void rejectReasonInCodepunkten()
+{
+    abschnitt ("NAK-313 M-107 · reject_reason_in_codepunkten");
+    handschlag ("313/M-107 reject_reason_in_codepunkten (a) 500 x e-Akut: der volle Grund",
+                rejectMit ("\"" + wiederhole (eAkut, 500) + "\""), false, false,
+                "Broker lehnt ab: " + wiederhole (eAkut, 500));
+    handschlag ("313/M-107 reject_reason_in_codepunkten (b) 501 x e-Akut haelt den Vertrag nicht",
+                rejectMit ("\"" + wiederhole (eAkut, 501) + "\""), false, false,
+                "reject haelt den Vertrag nicht");
+}
+
+/// M-108: Escapes dekodiert - Reject, Randfaelle mit Surrogatpaar, ACK.
+void escapesDekodiertFaelle()
+{
+    using controlclient_intern::CommandAckArt;
+    abschnitt ("NAK-313 M-108 · escapes_dekodiert");
+    handschlag ("313/M-108 escapes_dekodiert reject: genau die Bytes 0A 5C 22 2F C3 A9 F0 9F 98 80",
+                rejectMit (escapesText()), false, false, "Broker lehnt ab: " + escapesDekodiert());
+    handschlag ("313/M-108 escapes_dekodiert Randfall 499 x a plus Paar (500 Codepunkte) gilt",
+                rejectMit ("\"" + std::string (499, 'a') + paarText() + "\""), false, false,
+                "Broker lehnt ab: " + std::string (499, 'a') + kPaarDekodiert);
+    handschlag ("313/M-108 escapes_dekodiert Randfall 500 x a plus Paar (501 Codepunkte) nicht",
+                rejectMit ("\"" + std::string (500, 'a') + paarText() + "\""), false, false,
+                "reject haelt den Vertrag nicht");
+
+    // Das ACK: konflikt mit revision_conflict, der Unterstrich als u005f-Escape.
+    const auto id = hex32 ('5');
+    const std::string ack = "{\"type\":\"command_ack\",\"command_id\":\"" + id
+        + "\",\"ergebnis\":\"konflikt\",\"state_revision\":7,\"code\":\"revision"
+        + uEscape ("005f") + "conflict\"}";
+    std::string gelesenId;
+    const auto art = controlclient_intern::commandAckArtLesen (ack, gelesenId);
+    const auto lauf = nak313e5::ackLauf (ack, id);
+    pruefe (art == CommandAckArt::konflikt && gelesenId == id && lauf.gelesen
+                && lauf.s.inFlight == 0 && lauf.s.inFlightErfolg == 0
+                && lauf.s.inFlightEndgueltigOhneErfolg == 1,
+            "313/M-108 escapes_dekodiert ack: konflikt mit dem Code revision_conflict beendet den Auftrag",
+            nak313e5::registerText (lauf.s));
+}
+
+/// M-109: verbotene Escapes am flachen Leser, bevor ein Typ gelesen ist - nie
+/// "Broker lehnt ab", sondern "welcome: " + Lesegrund.
+void verboteneEscapes()
+{
+    abschnitt ("NAK-313 M-109 · verbotene_escapes");
+    const struct { const char* fall; std::string reason; const char* grund; } faelle[] = {
+        { "(a) NUL-Escape",       "\"" + uEscape ("0000") + "\"", "NUL-Escape" },
+        { "(b) einsames ud800",   "\"" + uEscape ("d800") + "\"", "einsames Surrogat" },
+        { "(c) unbekanntes q",    "\"\\q\"",                      "unbekanntes Escape" },
+        { "(d) kurzes u00",       "\"" + uEscape ("00") + "\"",   "\\u-Escape ohne vier Hexziffern" },
+    };
+    for (const auto& f : faelle)
+    {
+        const auto e = handshakeLauf (rejectMit (f.reason), false);
+        pruefe (! e.verbunden && e.meldung.rfind ("Broker lehnt ab", 0) != 0
+                    && e.meldung.rfind ("welcome: ", 0) == 0,
+                std::string ("313/M-109 verbotene_escapes ") + f.fall + " (Urteil)", e.meldung);
+        pruefe (e.meldung == std::string ("welcome: ") + f.grund,
+                std::string ("313/M-109 verbotene_escapes ") + f.fall + " (Meldung)", e.meldung);
+    }
+}
+
+/// E-313-12: die acht Wortlaute des Grund-Ausgangs, direkt am flachen Leser.
+/// Keiner enthaelt ein Teilwort, das Gen als Inkompatibilitaet einordnet; ein
+/// gelesenes Objekt laesst den Ausgang unberuehrt.
+void grundAusgang()
+{
+    abschnitt ("NAK-313 M-109 · grund_ausgang des flachen Lesers");
+    const auto objekt = [] (const std::string& wert) { return "{\"a\":\"" + wert + "\"}"; };
+    const struct { std::string text; const char* grund; } faelle[] = {
+        { objekt ("\xC3("),           "kein gueltiges UTF-8" },
+        { objekt (uEscape ("0000")),  "NUL-Escape" },
+        { objekt (uEscape ("dc00")),  "einsames Surrogat" },
+        { objekt ("\\q"),             "unbekanntes Escape" },
+        { objekt (uEscape ("12")),    "\\u-Escape ohne vier Hexziffern" },
+        { objekt ("x\x01"),           "rohes Steuerzeichen" },
+        { R"({"a":1,"a":2})",         "doppelter Name" },
+        { R"({"a":1} nachspann)",     "Syntax" },
+    };
+    for (const auto& f : faelle)
+    {
+        std::vector<JsonFeld> felder;
+        std::string grund;
+        const bool gelesen = flachesJsonObjekt (f.text, felder, &grund);
+        bool sauber = true;
+        for (const char* teil : { "Vertrag", "protocol", "unerwartet", "Broker lehnt ab" })
+            sauber = sauber && grund.find (teil) == std::string::npos;
+        pruefe (! gelesen && grund == f.grund && sauber,
+                std::string ("313/M-109 grund_ausgang ") + f.grund, grund);
+    }
+    std::vector<JsonFeld> felder;
+    std::string grund = "unberuehrt";
+    pruefe (flachesJsonObjekt (objekt ("b" + uEscape ("00e9")), felder, &grund) && grund == "unberuehrt",
+            "313/M-109 grund_ausgang: ein gelesenes Objekt laesst den Ausgang unberuehrt", grund);
+}
+
+/// Die welcome-Aufrufer trennen seit Etappe 6 den Lesegrund vom fehlenden
+/// type: ein gelesenes Objekt ohne Text in type meldet "welcome: kein type"
+/// (vorher "welcome: kein flaches JSON-Objekt", obwohl das Objekt gelesen war).
+void ohneType()
+{
+    abschnitt ("NAK-313 M-109 · welcome_ohne_type");
+    handschlag ("313/M-109 welcome_ohne_type control: type fehlt",
+                "{\"typ\":\"welcome\"}", false, false, "welcome: kein type");
+    handschlag ("313/M-109 welcome_ohne_type telemetrie: type ist kein Text",
+                "{\"type\":3}", true, false, "welcome: kein type");
+}
+
+/// M-110: leere Texte - leerer reason gilt, leere broker_version nicht.
+void leereTexte()
+{
+    abschnitt ("NAK-313 M-110 · leere_texte");
+    handschlag ("313/M-110 leere_texte reject mit leerem reason: Broker lehnt ab",
+                rejectMit ("\"\""), false, false, "Broker lehnt ab: ");
+    handschlag ("313/M-110 leere_texte welcome mit leerer broker_version verbindet nicht",
+                welcomeMit ("\"\""), false, false, "unerwartete Antwort auf hello");
+}
+
+/// Ein Text mit einem Platzhalter, der durch rohe Bytes ersetzt wird.
+std::string mitBytes (std::string text, const std::string& platzhalter, const std::string& roh)
+{
+    const auto stelle = text.find (platzhalter);
+    if (stelle != std::string::npos)
+        text.replace (stelle, platzhalter.size(), roh);
+    return text;
+}
+
+/// M-111: UTF-8 am Anfang des flachen Lesens - Welcome, Reject und ACK.
+void utf8AmAnfang()
+{
+    using controlclient_intern::CommandAckArt;
+    abschnitt ("NAK-313 M-111 · utf8_am_anfang_des_flachen_lesens");
+    handschlag ("313/M-111 utf8_am_anfang_des_flachen_lesens (a) welcome mit C3 28",
+                mitBytes (welcomeMit ("\"@\""), "@", "\xC3("), false, false,
+                "welcome: kein gueltiges UTF-8");
+    handschlag ("313/M-111 utf8_am_anfang_des_flachen_lesens (b) reject mit FF im reason",
+                mitBytes (rejectMit ("\"ab@cd\""), "@", "\xFF"), false, false,
+                "welcome: kein gueltiges UTF-8");
+    handschlag ("313/M-111 utf8_am_anfang_des_flachen_lesens (c) reject mit FF im code",
+                mitBytes (rejectMit ("\"inkompatibel\"", "\"protocol@mismatch\""), "@", "\xFF"),
+                false, false, "welcome: kein gueltiges UTF-8");
+
+    const auto id = hex32 ('5');
+    const auto ack = mitBytes ("{\"type\":\"command_ack\",\"command_id\":\"" + id
+                                   + "\",\"ergebnis\":\"abgelehnt\",\"state_revision\":7,"
+                                     "\"code\":\"schema_violation@\"}", "@", "\xFF");
+    std::string gelesenId;
+    const auto art = controlclient_intern::commandAckArtLesen (ack, gelesenId);
+    const auto lauf = nak313e5::ackLauf (ack, id);
+    pruefe (art == CommandAckArt::keinAck && lauf.gelesen && lauf.s.inFlight == 1
+                && lauf.s.inFlightEndgueltigOhneErfolg == 0 && lauf.s.inFlightErfolg == 0,
+            "313/M-111 utf8_am_anfang_des_flachen_lesens (d) ack mit FF im code ist keinAck",
+            nak313e5::registerText (lauf.s));
+}
+
+/// M-112: das Duplikat auf dekodierten Namen - Welcome und ACK.
+void duplikatDekodiert()
+{
+    using controlclient_intern::CommandAckArt;
+    abschnitt ("NAK-313 M-112 · duplikat_dekodiert");
+    const auto welcome = welcomeMit ("\"test\"");
+    handschlag ("313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type",
+                "{\"typ" + uEscape ("0065") + "\":\"reject\"," + welcome.substr (1), false, false,
+                "welcome: doppelter Name");
+    handschlag ("313/M-112 duplikat_dekodiert (b) link_id zweimal roh",
+                welcome.substr (0, welcome.size() - 1) + ",\"link_id\":\"" + hex32 ('a') + "\"}",
+                false, false, "welcome: doppelter Name");
+
+    const auto id = hex32 ('5');
+    const auto ack = "{\"type\":\"command_ack\",\"command_id\":\"" + id + "\",\"ergeb"
+        + uEscape ("006e") + "is\":\"abgelehnt\",\"ergebnis\":\"angewandt\",\"state_revision\":7,"
+          "\"state_hash\":\"" + std::string (64, 'd') + "\"}";
+    std::string gelesenId;
+    const auto art = controlclient_intern::commandAckArtLesen (ack, gelesenId);
+    const auto lauf = nak313e5::ackLauf (ack, id);
+    pruefe (art == CommandAckArt::keinAck && lauf.gelesen && lauf.s.inFlight == 1
+                && lauf.s.inFlightErfolg == 0 && lauf.s.inFlightEndgueltigOhneErfolg == 0,
+            "313/M-112 duplikat_dekodiert (c) ack mit ergebnis als Alias und roh ist keinAck",
+            nak313e5::registerText (lauf.s));
+}
+
+/// M-113: derselbe Leser auf der Telemetrieverbindung, mit ihren Meldungen.
+void telemetrieWieControl()
+{
+    abschnitt ("NAK-313 M-113 · telemetrie_welcome_wie_control");
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-106 (a) koppelt",
+                welcomeMit ("\"" + wiederhole (eAkut, 64) + "\""), true, true, "");
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-106 (b)",
+                welcomeMit ("\"" + wiederhole (eAkut, 65) + "\""), true, false,
+                "unerwartete Antwort auf das Telemetry-Hello");
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-107 (a)",
+                rejectMit ("\"" + wiederhole (eAkut, 500) + "\""), true, false,
+                "Broker lehnt ab: " + wiederhole (eAkut, 500));
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-108 (Reject)",
+                rejectMit (escapesText()), true, false, "Broker lehnt ab: " + escapesDekodiert());
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-109 (a)",
+                rejectMit ("\"" + uEscape ("0000") + "\""), true, false, "welcome: NUL-Escape");
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-111 (a)",
+                mitBytes (welcomeMit ("\"@\""), "@", "\xC3("), true, false,
+                "welcome: kein gueltiges UTF-8");
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-111 (b)",
+                mitBytes (rejectMit ("\"ab@cd\""), "@", "\xFF"), true, false,
+                "welcome: kein gueltiges UTF-8");
+    handschlag ("313/M-113 telemetrie_welcome_wie_control M-111 (c)",
+                mitBytes (rejectMit ("\"inkompatibel\"", "\"protocol@mismatch\""), "@", "\xFF"),
+                true, false, "welcome: kein gueltiges UTF-8");
+}
+
+void alle()
+{
+    grundAusgang();
+    brokerVersionInCodepunkten();
+    rejectReasonInCodepunkten();
+    escapesDekodiertFaelle();
+    verboteneEscapes();
+    ohneType();
+    leereTexte();
+    utf8AmAnfang();
+    duplikatDekodiert();
+    telemetrieWieControl();
+}
+} // namespace nak313e6
 } // namespace
 
 //==============================================================================
@@ -3876,6 +4257,16 @@ int main (int argc, char** argv)
     if (argc == 2 && std::string (argv[1]) == "--nak313-e5")
     {
         nak313e5::alle();
+        std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
+                  << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
+    // NAK-313 Etappe 6: die Tabelle der flachen Leser und der Handschlag nach
+    // dem Vertrag (M-106 bis M-113) - fuer Gegenprobe und Rotlaeufe.
+    if (argc == 2 && std::string (argv[1]) == "--nak313-e6")
+    {
+        nak313e5::tabelle();
+        nak313e6::alle();
         std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
                   << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
         return fehler == 0 ? 0 : 1;
@@ -6291,8 +6682,12 @@ int main (int argc, char** argv)
         pruefe (! flachesJsonObjekt ("{\"a\":{\"b\":1}}", felder),
                 "Verschachtelung wird ABGELEHNT, nicht geraten");
         pruefe (! flachesJsonObjekt ("{\"a\":[1]}", felder), "Arrays ebenso");
-        pruefe (! flachesJsonObjekt ("{\"a\":\"b\\u0041\"}", felder),
-                "ein Escape wird abgelehnt statt interpretiert");
+        // NAK-313 R-313-7 (M-108): der Fall stand fuer die engere Regel des
+        // Lesers (jeder Backslash eine Ablehnung) und ist auf den Vertrag
+        // umgestellt - RFC 8259 dekodiert bA zu bA.
+        pruefe (flachesJsonObjekt ("{\"a\":\"b\\u0041\"}", felder)
+                    && jsonText (felder, "a", w) && w == "bA",
+                "313/M-108 ein Escape wird nach dem Vertrag dekodiert (b\\u0041 ist bA)", w);
         pruefe (! flachesJsonObjekt ("{\"a\":1,\"a\":2}", felder),
                 "doppelter Schluessel ist eine Ablehnung, keine 'letzter gewinnt'-Regel");
         pruefe (! flachesJsonObjekt ("{\"a\":1} nachspann", felder),
@@ -8628,6 +9023,8 @@ int main (int argc, char** argv)
     // NAK-313 Etappe 5a: der flache Leser mit seinem Ganzzahlleser (M-55 bis
     // M-60, M-73, M-96).
     nak313e5::alle();
+    // NAK-313 Etappe 6: der Handschlag nach dem Vertrag (M-106 bis M-113).
+    nak313e6::alle();
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
               << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;

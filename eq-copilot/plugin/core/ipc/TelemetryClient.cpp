@@ -667,11 +667,18 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             }
             const std::string text (reinterpret_cast<const char*> (e.payload), e.payloadLaenge);
             std::vector<JsonFeld> felder;
-            std::string typ, linkId, challenge, brokerEpoch, brokerVersion;
-            if (! flachesJsonObjekt (text, felder) || ! jsonText (felder, "type", typ))
+            std::string typ, linkId, challenge, brokerEpoch, brokerVersion, lesegrund;
+            // NAK-313 R-313-7 (M-113): derselbe Lesegrund wie im ControlClient.
+            if (! flachesJsonObjekt (text, felder, &lesegrund))
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";
+                zustand.letzterFehler = "welcome: " + lesegrund;
+                break;
+            }
+            if (! jsonText (felder, "type", typ))
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "welcome: kein type";
                 break;
             }
             if (typ == "reject")

@@ -32,7 +32,9 @@
 // Etappe 2 (R-313-3) faehrt dasselbe Bein am Messpunkt-Panel die Faelle
 // 313/M-01 bis 313/M-16: das Panel schreibt nur zurueck, was der User
 // geaendert hat, auch mit geladenem Label ueber 120 und Paarnamen ueber 60
-// Zeichen.
+// Zeichen; dazu 313/M-12b (E-313-18): weist die Bindungs-API eine Rollenwahl
+// ab, zeigt die Auswahl ohne zweiten Aufruf wieder die gespeicherte Rolle, und
+// die Statuszeile nennt es.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -450,6 +452,12 @@ struct PanelLauf
     std::uint64_t aufrufeNachHandlung = 0;
     int  dirtyNachHandlung = 0;
     juce::String labelNachHandlung, paarNachHandlung, labelFeldText, paarFeldText;
+    // 313/M-12b: der Aufrufzaehler unmittelbar vor und nach der (letzten)
+    // Rollenwahl, dazu Auswahl, Paarfeld, Rolle und Statuszeile nach der Folge
+    std::uint64_t aufrufeUmRollenwahl = 0;
+    int  auswahlNachHandlung = 0;
+    bool paarFeldAktivNachHandlung = false;
+    juce::String rolleNachHandlung, statusNachHandlung;
     int  kinder = -1, kinderLabel = 0, kinderAuswahl = 0, kinderFeld = 0;
     // beim Ende, vor dem Abbau des Prozessors
     juce::String status, rolleBeimEnde, paarBeimEnde, bindungBeimEnde;
@@ -521,6 +529,7 @@ PanelLauf panelLauf (const PanelAuftrag& auftrag)
         for (const auto& h : auftrag.handlungen)
             for (int i = 0; i < h.wiederholungen; ++i)
             {
+                const auto aufrufeVorher = bindungsaufrufe();   // 313/M-12b
                 switch (h.art)
                 {
                     case PanelHandlung::labelSetzen:               labelFeld->setText (h.text, juce::dontSendNotification); break;
@@ -534,15 +543,24 @@ PanelLauf panelLauf (const PanelAuftrag& auftrag)
                     case PanelHandlung::labelZeichenLoeschen:      labelFeld->deleteBackwards (false); break;
                     case PanelHandlung::paarZeichenLoeschen:       paarFeld->deleteBackwards (false); break;
                 }
+                if (h.art == PanelHandlung::rolleWaehlen)
+                    l.aufrufeUmRollenwahl = bindungsaufrufe() - aufrufeVorher;
             }
     l.aufrufeNachHandlung = bindungsaufrufe() - aufrufeNullpunkt;
     l.dirtyNachHandlung = dirty.nichtParameter - dirtyNullpunkt;
     l.labelNachHandlung = proz->holeLabel();
     l.paarNachHandlung = proz->holePaarId();
+    l.rolleNachHandlung = proz->holeRolle();
     if (l.geoeffnet)
     {
         l.labelFeldText = labelFeld->getText();
         l.paarFeldText = paarFeld->getText();
+        // 313/M-12b: was das offene Panel und die Statuszeile nach der Folge
+        // zeigen - vor dem Schliessen, dessen Uebernahme die Zeile neu setzt.
+        l.auswahlNachHandlung = wahl->getSelectedId();
+        l.paarFeldAktivNachHandlung = paarFeld->isEnabled();
+        if (auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get()))
+            l.statusNachHandlung = ed->statusMeldungFuerTest();
     }
     if (panel != nullptr)
     {
@@ -676,6 +694,18 @@ std::string nachHandlungText (const PanelLauf& l)
          + std::to_string (l.dirtyNachHandlung) + ", Label " + laenge (l.labelNachHandlung) + ", Paarname "
          + laenge (l.paarNachHandlung) + ", Labelfeld " + laenge (l.labelFeldText) + ", Paarfeld "
          + laenge (l.paarFeldText);
+}
+
+/** 313/M-12b: das offene Panel nach der Rollenwahl, dazu die Statuszeile
+    danach und nach dem Schliessen. */
+std::string rueckfallText (const PanelLauf& l)
+{
+    return "nach der Rollenwahl: Aufrufe um die Rollenwahl " + zaehlerText (l.aufrufeUmRollenwahl)
+         + ", Auswahl id " + std::to_string (l.auswahlNachHandlung) + ", Paarfeld "
+         + (l.paarFeldAktivNachHandlung ? "aktiv" : "deaktiviert") + ", Labelfeld " + laenge (l.labelFeldText)
+         + ", Host-Dirty " + std::to_string (l.dirtyNachHandlung) + ", Rolle '" + l.rolleNachHandlung.toStdString()
+         + "', Label " + laenge (l.labelNachHandlung) + ", Status '" + l.statusNachHandlung.toStdString()
+         + "'; nach dem Schliessen: Status '" + l.status.toStdString() + "'";
 }
 
 std::string panelText (const PanelLauf& l)
@@ -956,6 +986,38 @@ bool nak312Messpunktpanel (const juce::File& ordner)
                      "die Statuszeile nennt beide Grenzen",
                      panel313Text (n) + ", Status '" + n.status.toStdString() + "'");
     }
+    {   // 313/M-12b (E-313-18): eine abgewiesene Rollenwahl - der ehrliche Zustand des Panels.
+        const auto stand = standUeberWriter (Position::insert, label125, {});
+        const juce::String erwartet ("Name is longer than 120 characters and was not saved. "
+                                     "The role change was not saved either.");
+        PanelAuftrag a;
+        a.stand = &stand;
+        a.handlungen = { { PanelHandlung::labelZeichenLoeschen }, { PanelHandlung::rolleWaehlen, {}, 1, 4 } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.dirtyNachHandlung == 0
+                         && m.rolleNachHandlung == "sensor" && m.labelNachHandlung == label125 && m.dirty == 0
+                         && m.rolleBeimEnde == "sensor" && m.labelBeimEnde == label125 && m.bytesBeimEnde == stand,
+                     "313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 "
+                     "Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API "
+                     "lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen "
+                     "bleiben, Save bytegleich zum geladenen Stand",
+                     panel313Text (m) + ", Save bytegleich " + (m.bytesBeimEnde == stand ? "ja" : "NEIN") + "; "
+                         + rueckfallText (m));
+        panelPruefe (m.geoeffnet && m.auswahlNachHandlung == 1 && ! m.paarFeldAktivNachHandlung
+                         && m.labelFeldText.length() == 124,
+                     "313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder "
+                     "die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 "
+                     "Zeichen des Users",
+                     rueckfallText (m));
+        zaehlerPruefe (m.geoeffnet && m.aufrufeUmRollenwahl == 1,
+                       "313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus "
+                       "- der Rueckfall ohne Rueckruf ruft nicht erneut",
+                       rueckfallText (m));
+        panelPruefe (m.geoeffnet && m.statusNachHandlung == erwartet,
+                     "313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt '"
+                         + erwartet.toStdString() + "'",
+                     rueckfallText (m));
+    }
     {   // 313/M-13 (a): 120 x U+10FFFF ins leere Labelfeld eines frischen Gen.
         PanelAuftrag a;
         a.handlungen = { { PanelHandlung::labelEinfuegen, hoechstes120 } };
@@ -1002,7 +1064,7 @@ bool nak312Messpunktpanel (const juce::File& ordner)
     }
 
     std::printf ("MESSPUNKT-PANEL (NAK-312, NAK-313) %d geprueft, %d Fehler\n", panelGeprueft, panelFehler);
-    return panelFehler == 0 && panelGeprueft == 37;
+    return panelFehler == 0 && panelGeprueft == 41;
 }
 
 //==============================================================================

@@ -701,15 +701,20 @@ std::function<bool()>& messpunktMarkeFuerTest()
 // NAK-313 Etappe 2 (R-313-3, M-12): die ehrliche Statuszeile, wenn die
 // Bindungs-API einen geänderten Text über seiner Grenze abweist. Leer, wenn
 // keiner der gegebenen Texte darüber liegt - dann hatte `false` eine andere
-// Ursache. Englisch wie die Nachbarmeldungen des Panels.
+// Ursache. Trug der abgewiesene Aufruf eine Rolle, ist auch sie nicht
+// gespeichert, und der Zusatz sagt es (E-313-18, M-12b). Englisch wie die
+// Nachbarmeldungen des Panels.
 static juce::String grenzMeldung (const std::optional<juce::String>& label,
-                                  const std::optional<juce::String>& paarName)
+                                  const std::optional<juce::String>& paarName,
+                                  bool rolleGetragen)
 {
     juce::StringArray meldung;
     if (label.has_value() && label->length() > 120)
         meldung.add ("Name is longer than 120 characters and was not saved.");
     if (paarName.has_value() && paarName->length() > 60)
         meldung.add ("Pair name is longer than 60 characters and was not saved.");
+    if (rolleGetragen && ! meldung.isEmpty())
+        meldung.add ("The role change was not saved either.");
     return meldung.joinIntoString (" ");
 }
 
@@ -818,6 +823,7 @@ void EqCopilotEditor::zeigeMesspunkt()
             paarFeld.setEnabled (paar);
             paarFeld.setAlpha (paar ? 1.0f : 0.5f);
         }
+        void rolleZurueck() { rolleWahl.setSelectedId (gemerkteRollenId, juce::dontSendNotification); paarSichtbarkeit(); }
         // Übernimmt NUR, was der User geändert hat (NAK-313 R-313-3): Vergleich
         // gegen die Merkwerte (beim Öffnen, nach jeder Übernahme nachgezogen);
         // ohne Abweichung kein Aufruf - kein Dirty, kein Reconnect-Geflacker,
@@ -863,9 +869,11 @@ void EqCopilotEditor::zeigeMesspunkt()
                     geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
                 return;
             }
-            // false hat vier Ursachen (read-only, unbekannte Rolle, Grenze, keine
-            // Änderung); die Merkwerte bleiben, gemeldet wird nur die Grenze.
-            const auto meldung = grenzMeldung (label, paarName);
+            // false hat vier Ursachen (read-only, unbekannte Rolle, Grenze, keine Änderung):
+            // Merkwerte bleiben, eine mitgeschickte Rolle fällt ohne Rückruf auf die gemerkte zurück (E-313-18).
+            if (rolle.has_value())
+                rolleZurueck();
+            const auto meldung = grenzMeldung (label, paarName, rolle.has_value());
             auto* lebend = editor.getComponent();
             if (meldung.isEmpty() || lebend == nullptr)
                 return;

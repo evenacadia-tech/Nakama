@@ -43,6 +43,7 @@
 #include "SourcesModel.h"
 #include "DiagnoseAntwort.h"
 #include "diagnose/Briefkasten.h"
+#include "prozessor/SnapshotExport.h"
 
 #include <map>
 #include <vector>
@@ -1144,9 +1145,8 @@ public:
     // prüfen. Kein Aufrufer im Produktpfad; Transport- und isNonRealtime-Gates
     // bleiben auch damit wirksam.
     void  testForciereEchtzeit (bool an)                     { testEchtzeit.store (an); }
-    // Schreibt den aktuellen Messstand als JSON (ohne Roh-Audio) nach
-    // %LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\. true = geschrieben.
-    bool schreibeSnapshotDatei (juce::String& pfadOderFehler);
+    // Der Messstand m als neue JSON-Datei ohne Roh-Audio (prozessor/SnapshotExport.h).
+    SnapshotExport schreibeSnapshotDatei (const MessSnapshot& m);
 
 private:
     /** NAK-246 D2 (Paragraph 5.2, Feinheit 5): was die beiden v3-Clients bei

@@ -5,8 +5,9 @@
 //   workerLauf           Der Analyse-Thread. Er nimmt die Bloecke, die der
 //                        Audio-Thread in die Queue gelegt hat, fuettert die
 //                        FeatureEngine und veroeffentlicht Snapshots.
-//   schreibeSnapshotDatei
-//                        Der Evidenz-Snapshot als Datei.
+//   schreibeSnapshotDatei, snapshotOrdnerVorgabe, snapshotUhrVorgabe
+//                        Der Evidenz-Snapshot als neue Datei (NAK-313
+//                        R-313-10: exklusiv veroeffentlicht, nie ersetzt).
 //   bindePassagenfenster, bindePassagenfensterMitEpoche,
 //   passagenfensterWunschFuerTest, passagenfensterFuehrt,
 //   passagenfensterInEngine, loesePassagenfenster,
@@ -37,10 +38,12 @@
 #include "../Diagnose.h"
 #include "../WorkerCadence.h"
 #include "Intern.h"
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <iomanip>
 #include <locale>
+#include <process.h>
 #include <sstream>
 
 namespace eqcop
@@ -1414,29 +1417,246 @@ nakama::diagnose::Antwort EqCopilotProcessor::diagnoseAntwort (const nakama::dia
     return antwort;
 }
 
-bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
+//==============================================================================
+// NAK-313 Etappe 7 (R-313-10): der Export des Festhalten-Handgriffs.
+//
+// Je Export genau eine Uhrablesung (Name und created_utc aus demselben
+// Zeitpunkt, M-139); der Zielordner aus der Ordnerfassade, seine drei Ebenen
+// je mit attribute geprueft und nur angelegt, wenn sie fehlen; die Bytes wie
+// bisher. Veroeffentlicht wird nach dem Muster des Briefkastens (NAK-286 F-8):
+// Temp-Datei exklusiv anlegen, schreiben und spuelen, Groesse gegen die
+// geschriebenen Bytes, ohne Ersetzen umbenennen. Nach einem Fehlschlag
+// entscheidet attribute zwischen Kollision und Fehler; eine Temp-Datei, aus
+// der nichts veroeffentlicht wurde, entfernt der Export (A-3), sonst nennt das
+// Ergebnis sie in rest.
+
+namespace
 {
-    const auto m = engine.snapshot();
+namespace dg = nakama::diagnose;
+
+/// Die drei Ebenen unter der Wurzel %LOCALAPPDATA%, in der Reihenfolge ihrer Anlage.
+const wchar_t* const kSnapshotEbenen[] = { L"evenacadia", L"EQ-Copilot", L"snapshots" };
+
+struct SnapshotFassaden
+{
+    std::shared_ptr<dg::UhrFassade>         uhr;
+    std::shared_ptr<dg::WurzelFassade>      ordner;
+    std::shared_ptr<dg::DateisystemFassade> dateisystem;
+};
+
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+/** Die Vorgabe-Ordnerfassade des Testbaus ist die Schranke selbst: sie liefert
+    keinen Ordner, und der Export endet vor jedem Dateizugriff - auch ein Lauf,
+    der die Injektion uebergeht, erreicht die Nutzerablage nie (M-133). */
+class SnapshotOrdnerSchranke final : public dg::WurzelFassade
+{
+protected:
+    bool wurzelImpl (std::wstring&) override { return false; }
+};
+#endif
+
+SnapshotFassaden snapshotFassaden()
+{
+    SnapshotFassaden f;
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    f.uhr         = testzugang::snapshotUhrFuerTest();
+    f.ordner      = testzugang::snapshotOrdnerFuerTest();
+    f.dateisystem = testzugang::snapshotDateisystemFuerTest();
+    if (f.ordner == nullptr)
+        f.ordner = std::make_shared<SnapshotOrdnerSchranke>();
+#else
+    f.ordner = std::make_shared<dg::EchteWurzelFassade>();
+#endif
+    if (f.uhr == nullptr)
+        f.uhr = snapshotUhrVorgabe();
+    if (f.dateisystem == nullptr)
+        f.dateisystem = std::make_shared<dg::EchteDateisystemFassade>();
+    return f;
+}
+
+std::wstring snapshotZielordner (const std::wstring& wurzel)
+{
+    auto ordner = wurzel;
+    for (const auto* ebene : kSnapshotEbenen)
+    {
+        ordner += L"\\";
+        ordner += ebene;
+    }
+    return ordner;
+}
+
+/** Legt die Ebenen unter der Wurzel an, jede nur, wenn sie fehlt. legeOrdnerAn
+    legt genau eine Ebene an und scheitert an einer vorhandenen; deshalb ist
+    ein Ordner, den attribute danach findet, Erfolg (eine zweite Instanz kann
+    ihn eben angelegt haben). */
+bool snapshotOrdnerAnlegen (dg::DateisystemFassade& fs, const std::wstring& wurzel,
+                            std::wstring& ordner, juce::String& grund)
+{
+    ordner = wurzel;
+    for (const auto* ebene : kSnapshotEbenen)
+    {
+        ordner += L"\\";
+        ordner += ebene;
+        const auto a = fs.attribute (ordner);
+        if (a.existiert && a.verzeichnis)
+            continue;
+        if (! a.existiert && fs.legeOrdnerAn (ordner))
+            continue;
+        const auto b = fs.attribute (ordner);
+        if (b.existiert && b.verzeichnis)
+            continue;
+        grund = "Ordner nicht anlegbar: " + juce::String (ordner.c_str());
+        return false;
+    }
+    return true;
+}
+
+/** Die Bytes wie bisher: replaceWithText (..., false, false, "\n") schrieb den
+    Text als UTF-8 ohne BOM und liess jedes CR weg (M-132). */
+std::string snapshotBytes (const juce::var& wurzel)
+{
+    auto text = juce::JSON::toString (wurzel, false).toStdString();
+    text.erase (std::remove (text.begin(), text.end(), '\r'), text.end());
+    return text;
+}
+
+SnapshotExport snapshotFehler (const juce::String& grund)
+{
+    SnapshotExport e;
+    e.art = SnapshotExport::Art::fehler;
+    e.grund = grund;
+    return e;
+}
+
+/** Was eine Veroeffentlichung braucht: Fassade, Zielordner, Name, Bytes. */
+struct SnapshotVeroeffentlichung
+{
+    dg::DateisystemFassade& fs;
+    std::wstring ordner;
+    std::wstring name;
+    std::string  bytes;
+};
+
+/** Die EINE Stelle, an der der Export auf eine Kollision reagiert (Karte U65,
+    §8.7). Bis zur Antwort fail-closed: der zweite Export entsteht nicht, die
+    vorhandene Datei bleibt. Weg 1 (eindeutiger Namenszusatz) und Weg 3
+    (Wortlaut der Karte) aendern nur diese Funktion; Weg 2 (ehrlich ersetzen)
+    braucht dazu eine Fassadenoperation "umbenennen mit Ersetzen". Die
+    Veroeffentlichung steht fuer die Wege bereit und wird heute nicht gelesen. */
+SnapshotExport beiKollision (const SnapshotVeroeffentlichung&, const std::wstring& vorhanden)
+{
+    SnapshotExport e;
+    e.art = SnapshotExport::Art::abgelehnt;
+    e.vorhanden = juce::String (vorhanden.c_str());
+    e.grund = "in dieser Sekunde gibt es schon " + e.vorhanden + "; nichts gespeichert.";
+    return e;
+}
+
+SnapshotExport veroeffentliche (const SnapshotVeroeffentlichung& v)
+{
+    auto& fs = v.fs;
+    const auto ziel = v.ordner + L"\\" + v.name;
+    const auto temp = ziel + L".tmp-" + std::to_wstring (_getpid());
+    const juce::String tempText (temp.c_str());
+
+    // (1) Exklusiv anlegen. Ein vorhandener Ziel- oder Temp-Name ist eine
+    //     Kollision; eine fremde Temp-Datei fasst der Export nie an.
+    const auto datei = fs.legeExklusivAn (temp);
+    if (datei == nullptr)
+    {
+        if (fs.attribute (ziel).existiert)
+            return beiKollision (v, ziel);
+        if (fs.attribute (temp).existiert)
+            return beiKollision (v, temp);
+        return snapshotFehler ("Temp-Datei nicht anlegbar: " + tempText);
+    }
+    // (2) Schreiben und spuelen, (3) Groesse gegen die geschriebenen Bytes,
+    // (4) ohne Ersetzen umbenennen - jeder Schritt mit gepruefter Rueckgabe.
+    const bool geschrieben = fs.schreibeUndSpuele (datei, v.bytes.data(), v.bytes.size());
+    fs.schliesse (datei);
+    const auto soll = (std::int64_t) v.bytes.size();
+    std::int64_t groesse = 0;
+    SnapshotExport e;
+    if (! geschrieben)
+        e = snapshotFehler ("Schreiben fehlgeschlagen: " + tempText);
+    else if (! fs.groesse (temp, groesse) || groesse <= 0 || groesse != soll)
+        e = snapshotFehler ("Schreiben fehlgeschlagen: " + tempText + " (" + juce::String (groesse)
+                            + " von " + juce::String (soll) + " Bytes)");
+    else if (fs.benenneUmOhneErsetzen (temp, ziel))
+    {
+        e.art = SnapshotExport::Art::neu;
+        e.datei = juce::String (ziel.c_str());
+    }
+    else if (fs.attribute (ziel).existiert)
+        e = beiKollision (v, ziel);
+    else
+        e = snapshotFehler ("Umbenennen fehlgeschlagen: " + juce::String (ziel.c_str()));
+    // (5) Die eigene Temp-Datei bleibt nie zurueck: veroeffentlicht oder
+    //     entfernt (A-3); scheitert das Entfernen, steht sie in rest.
+    const bool nichtsVeroeffentlicht = e.art == SnapshotExport::Art::abgelehnt
+                                    || e.art == SnapshotExport::Art::fehler;
+    if (nichtsVeroeffentlicht && ! fs.loesche (temp))
+        e.rest = tempText;
+    return e;
+}
+} // namespace
+
+juce::File snapshotOrdnerVorgabe()
+{
+    std::wstring wurzel;
+    dg::EchteWurzelFassade echt;
+    (void) echt.wurzel (wurzel);   // der Pfad steht auch dann, wenn er fehlt
+    return juce::File (juce::String (snapshotZielordner (wurzel).c_str()));
+}
+
+std::shared_ptr<dg::UhrFassade> snapshotUhrVorgabe()
+{
+    return std::make_shared<dg::EchteUhrFassade>();
+}
+
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+namespace testzugang
+{
+std::shared_ptr<dg::WurzelFassade>& snapshotOrdnerFuerTest()
+{
+    static std::shared_ptr<dg::WurzelFassade> ordner;
+    return ordner;
+}
+std::shared_ptr<dg::UhrFassade>& snapshotUhrFuerTest()
+{
+    static std::shared_ptr<dg::UhrFassade> uhr;
+    return uhr;
+}
+std::shared_ptr<dg::DateisystemFassade>& snapshotDateisystemFuerTest()
+{
+    static std::shared_ptr<dg::DateisystemFassade> dateisystem;
+    return dateisystem;
+}
+} // namespace testzugang
+#endif
+
+SnapshotExport EqCopilotProcessor::schreibeSnapshotDatei (const MessSnapshot& m)
+{
+    // NAK-313 R-313-10 (M-142): der Snapshot des Aufrufers - derselbe, aus dem
+    // der Editor die Vergleichslinie setzt; der Export fragt die Engine nicht.
     if (m.zustand == MessZustand::keineDaten)
-    {
-        pfadOderFehler = "noch keine Messdaten";
-        return false;
-    }
+        return snapshotFehler ("noch keine Messdaten");
 
-    // NAK-286 (F-5, M-39): das Objekt aus der herausgeloesten Rechnung. Ordner,
-    // Name und Schreibweise bleiben; der Inhalt ist nach Maskierung von
-    // `created_utc` bytegleich zur Referenz des Basis-SHA der Etappe 2
-    // (eq-copilot/fixtures/diagnose/festhalten-referenz.json).
-    const auto wurzel = snapshotObjektBauen (m, juce::Time::getCurrentTime().toISO8601 (true));
+    const auto f = snapshotFassaden();
+    const juce::Time zeit (f.uhr->jetztUtcMs());   // genau eine Ablesung (M-139)
+    std::wstring wurzel;
+    if (! f.ordner->wurzel (wurzel))
+        return snapshotFehler ("kein Zielordner" + (wurzel.empty() ? juce::String()
+                                                                   : ": " + juce::String (wurzel.c_str())));
+    SnapshotVeroeffentlichung v { *f.dateisystem, {}, {}, {} };
+    juce::String grund;
+    if (! snapshotOrdnerAnlegen (*f.dateisystem, wurzel, v.ordner, grund))
+        return snapshotFehler (grund);
 
-    auto ordner = juce::File::getSpecialLocation (juce::File::windowsLocalAppData)
-                      .getChildFile ("evenacadia").getChildFile ("EQ-Copilot")
-                      .getChildFile ("snapshots");
-    if (! ordner.createDirectory())
-    {
-        pfadOderFehler = "Ordner nicht anlegbar: " + ordner.getFullPathName();
-        return false;
-    }
+    // NAK-286 (F-5, M-39): Name und Bereinigung des Labels bleiben, der erste
+    // Versuch traegt exakt den bisherigen Namen; das Objekt kommt aus der
+    // herausgeloesten Rechnung, der Inhalt ist nach Maskierung von created_utc
+    // bytegleich zur Referenz eq-copilot/fixtures/diagnose/festhalten-referenz.json.
     juce::String labelTeil;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
@@ -1444,17 +1664,10 @@ bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
             if (juce::CharacterFunctions::isLetterOrDigit (z) || z == '-')
                 labelTeil += z;
     }
-    const auto zeit = juce::Time::getCurrentTime().formatted ("%Y%m%d-%H%M%S");
-    const auto datei = ordner.getChildFile ("snapshot-" + zeit
-                                            + (labelTeil.isEmpty() ? "" : "-" + labelTeil.substring (0, 40))
-                                            + ".json");
-    if (! datei.replaceWithText (juce::JSON::toString (juce::var (wurzel), false), false, false, "\n"))
-    {
-        pfadOderFehler = "Schreiben fehlgeschlagen: " + datei.getFullPathName();
-        return false;
-    }
-    pfadOderFehler = datei.getFullPathName();
-    return true;
+    v.name = ("snapshot-" + zeit.formatted ("%Y%m%d-%H%M%S")
+              + (labelTeil.isEmpty() ? "" : "-" + labelTeil.substring (0, 40)) + ".json").toWideCharPointer();
+    v.bytes = snapshotBytes (snapshotObjektBauen (m, zeit.toISO8601 (true)));
+    return veroeffentliche (v);
 }
 
 } // namespace eqcop

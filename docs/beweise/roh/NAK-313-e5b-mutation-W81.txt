@@ -1,0 +1,49 @@
+NAK-313 Etappe 5b Nacharbeit 1 - Mutationslauf W81: M-81 Haelfte Schritt auf 2^53-1: Schranke der Eintragsrevision in setzeIntent um eins zu eng
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers der Nacharbeit 1): Datei sichern
+(Kopie ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur B27 bauen (cmake --build eq-copilot/build --config Release --target
+EqCopSonde014IntentTest) und direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen (Aenderungszeit jetzt, NAK-230), SHA-256 vergleichen, neu bauen, B27 erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das
+Protokoll und die Pruefzeilen. Stand: HEAD 2e0a0d2c (Produktcode gleich ce83e67c; der Test
+Sonde014IntentTest.cpp mit dem Positivfall, Blob 292e83b3).
+
+=== Protokoll ===
+Rotlauf W81 - M-81 Haelfte Schritt auf 2^53-1: Schranke der Eintragsrevision in setzeIntent um eins zu eng - 24.09.2026 20:12:04 - HEAD 2e0a0d2c75d45b84d25293b1fe7eb11b30400177
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\e9b8ac83\tmp\rot\sicherung\W81-NakamaState.cpp (SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630)
+Mutation 1 ab Zeile 2470 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (treffer->revision >= kRevisionMax)
+  nachher:
+    |    if (treffer->revision >= kRevisionMax - 1)
+Mutiert 24.09.2026 20:12:04: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 96160df4e4741980b1284bc058abba49c41724cd7b7dc4f9adb2888ad985564d (git diff --numstat: 1	1	eq-copilot/plugin/state/NakamaState.cpp)
+Kette (R-313-11): Mit der Eintragsschranke bei 2^53-2 weist setzeIntent den Eintrag 2^53-2 an der Schranke ab, vor bestandsrevisionHeben; setzeQuellenrolle gibt false zurueck, bevor meldeHostDirty kommt: Rueckgabe false, Eintrag 2^53-2 mit alter Rolle, Bestand 1, 0 Dirty, Reload mit 2^53-2 -> 313/M-81 (2^53-2) rot. Der Eintrag 2^53-1 wird weiter abgewiesen (2^53-1 >= 2^53-2): die Randpruefungen bleiben gruen.
+Lauf unter der Mutation:
+  Bau EqCopSonde014IntentTest: Exit 0
+  B27: Binaer 20:12:09.318, Quelle 20:12:04.756, Binaer juenger: ja
+  B27: Exit 1, Fehlzeilen 1, Rohausgabe W81-mutiert-B27.txt
+    Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 1 Fehler, 276 ok
+Ruecknahme 24.09.2026 20:12:10: eq-copilot/plugin/state/NakamaState.cpp SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde014IntentTest: Exit 0
+  B27: Binaer 20:12:14.088, Quelle 20:12:10.210, Binaer juenger: ja
+  B27: Exit 0, Fehlzeilen 0, Rohausgabe W81-zurueck-B27.txt
+    Summe: SONDE-014-INTENT-TEST OK - 277 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2' gefallen: JA
+  B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false' gruen geblieben: JA
+  B27: '313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B27: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/state: (leer)
+git diff --stat: (leer)
+
+=== B27 unter der Mutation: gefallene Pruefungen (1) ===
+  FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1 mit der neuen Rolle, Bestand 1 auf 2, 1 Host-Dirty, Reload schreibbar  [abgewiesen, Eintrag 9007199254740990, Bestand 1, 0 Dirty, Reload schreibbar]
+=== B27 unter der Mutation: gruen gebliebene Pruefungen der Zeile (2) ===
+  ok      313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false vor jeder Zuweisung - Rolle, Eintragsrevision 2^53-1 und Bestandsrevision unveraendert, 0 Host-Dirty  [abgewiesen, Eintrag 9007199254740991, Bestand 1, 0 Dirty]
+  ok      313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent liefert false mit Grund, der Zustand bleibt bytegleich  [intent revision would overflow]
+=== B27 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -48,3 +48,142 @@ Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
       FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false vor jeder Zuweisung - Rolle, Eintragsrevision 2^53-1 und Bestandsrevision unveraendert, 0 Host-Dirty  [angenommen, Eintrag 9007199254740992, Bestand 2, 1 Dirty]
       FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent liefert false mit Grund, der Zustand bleibt bytegleich
     === B27 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Schritt auf 2^53-1 - Etikett: Regressionswache ---
+Nachtrag zu M-81 (Manifest §32, Dirigent, 24.09.2026; R-313-4 Satz 3, R-313-12), gebaut in der Nacharbeit 1 der Teiletappe 5b (Manifest §32.2).
+Zustand: ein Eintrag mit revision 2^53-2 und Bestandsrevision 1, geladen aus Bytes, schreibbar
+Ereignis: setzeQuellenrolle mit geaenderter Rolle (kQuelleA, global, fuehrt -> traegt, user, 1.0)
+Zusage: Rueckgabe true, Eintragsrevision 9007199254740991 mit der neuen Rolle, Bestandsrevision 2, genau 1 Host-Dirty, Reload schreibbar mit Eintragsrevision 9007199254740991
+Pruefung: 313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 ... (Positivfall vor dem Randblock, im selben Fall)
+Am Stand vor der Nacharbeit (Produktcode ce83e67c = HEAD ccdc157d, im Arbeitsbaum der neue Fall, Blob 292e83b3, danach unveraendert committet in 2e0a0d2c; kein Basisstand-Lauf gegen 062a98fc, R-313-12):
+  === B27 24.09.2026 20:09:48; Bau 20:09:35 bis 20:09:42, Exit 0; Binaer 20:09:42.089, Quelle 20:09:16.367, Binaer juenger: ja ===
+  ok      313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1 mit der neuen Rolle, Bestand 1 auf 2, 1 Host-Dirty, Reload schreibbar  [angenommen, Eintrag 9007199254740991, Bestand 2, 1 Dirty, Reload schreibbar]
+  Summe: SONDE-014-INTENT-TEST OK - 277 Pruefungen ok, 0 Fehler (Exit 0)
+  -> am Stand vor der Nacharbeit: gruen
+  Mutation W81: eq-copilot/plugin/state/NakamaState.cpp - M-81 Haelfte Schritt auf 2^53-1: Schranke der Eintragsrevision in setzeIntent um eins zu eng (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-W81.txt):
+    Rotlauf W81 - M-81 Haelfte Schritt auf 2^53-1: Schranke der Eintragsrevision in setzeIntent um eins zu eng - 24.09.2026 20:12:04 - HEAD 2e0a0d2c75d45b84d25293b1fe7eb11b30400177
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\e9b8ac83\tmp\rot\sicherung\W81-NakamaState.cpp (SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630)
+    Mutation 1 ab Zeile 2470 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (treffer->revision >= kRevisionMax)
+      nachher:
+        |    if (treffer->revision >= kRevisionMax - 1)
+    Mutiert 24.09.2026 20:12:04: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 96160df4e4741980b1284bc058abba49c41724cd7b7dc4f9adb2888ad985564d (git diff --numstat: 1	1	eq-copilot/plugin/state/NakamaState.cpp)
+    Kette (R-313-11): Mit der Eintragsschranke bei 2^53-2 weist setzeIntent den Eintrag 2^53-2 an der Schranke ab, vor bestandsrevisionHeben; setzeQuellenrolle gibt false zurueck, bevor meldeHostDirty kommt: Rueckgabe false, Eintrag 2^53-2 mit alter Rolle, Bestand 1, 0 Dirty, Reload mit 2^53-2 -> 313/M-81 (2^53-2) rot. Der Eintrag 2^53-1 wird weiter abgewiesen (2^53-1 >= 2^53-2): die Randpruefungen bleiben gruen.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 20:12:09.318, Quelle 20:12:04.756, Binaer juenger: ja
+      B27: Exit 1, Fehlzeilen 1, Rohausgabe W81-mutiert-B27.txt
+        Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 1 Fehler, 276 ok
+    Ruecknahme 24.09.2026 20:12:10: eq-copilot/plugin/state/NakamaState.cpp SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 20:12:14.088, Quelle 20:12:10.210, Binaer juenger: ja
+      B27: Exit 0, Fehlzeilen 0, Rohausgabe W81-zurueck-B27.txt
+        Summe: SONDE-014-INTENT-TEST OK - 277 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2' gefallen: JA
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false' gruen geblieben: JA
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B27: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/state: (leer)
+    git diff --stat: (leer)
+
+    === B27 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1 mit der neuen Rolle, Bestand 1 auf 2, 1 Host-Dirty, Reload schreibbar  [abgewiesen, Eintrag 9007199254740990, Bestand 1, 0 Dirty, Reload schreibbar]
+    === B27 unter der Mutation: gruen gebliebene Pruefungen der Zeile (2) ===
+      ok      313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false vor jeder Zuweisung - Rolle, Eintragsrevision 2^53-1 und Bestandsrevision unveraendert, 0 Host-Dirty  [abgewiesen, Eintrag 9007199254740991, Bestand 1, 0 Dirty]
+      ok      313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent liefert false mit Grund, der Zustand bleibt bytegleich  [intent revision would overflow]
+    === B27 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+  Trennprobe (Nachtrag §32, letzter Satz: Bestand 1 trennt die Eintragsschranke von der Bestandsschranke, unter W80 und MC bleibt der Positivfall gruen). Zusaetzlich gemessen mit denselben Mutationen wie W80 und MC der Teiletappe (NAK-313-e5b-mutation-W80.txt, NAK-313-e5b-mutation-MC.txt), hier an HEAD 2e0a0d2c:
+  Trennprobe W80:
+    Rotlauf W80 - Trennprobe W80 (Nachtrag §32): Schranke in bestandsrevisionHeben um eins zu eng - 24.09.2026 20:13:39 - HEAD 2e0a0d2c75d45b84d25293b1fe7eb11b30400177
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\e9b8ac83\tmp\rot\sicherung\W80-NakamaState.cpp (SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630)
+    Mutation 1 ab Zeile 2417 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (z.intentBestandRevision >= kRevisionMax)
+      nachher:
+        |    if (z.intentBestandRevision >= kRevisionMax - 1)
+    Mutiert 24.09.2026 20:13:39: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 15a7ab5c2677b5919add8c25c3600f44e9e6955e2bb427cf5447d813a5452254 (git diff --numstat: 1	1	eq-copilot/plugin/state/NakamaState.cpp)
+    Kette (R-313-11): Die Bestandsschranke bei 2^53-2 trifft den Positivfall von M-81 nicht, weil sein Bestand bei 1 steht (1 < 2^53-2): der Schritt geht, 313/M-81 (2^53-2) bleibt gruen; 313/M-80 (2^53-2) faellt wie im Lauf W80 der Teiletappe.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 20:13:43.965, Quelle 20:13:39.982, Binaer juenger: ja
+      B27: Exit 1, Fehlzeilen 11, Rohausgabe W80-mutiert-B27.txt
+        Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 11 Fehler, 266 ok
+    Ruecknahme 24.09.2026 20:13:44: eq-copilot/plugin/state/NakamaState.cpp SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 20:13:48.804, Quelle 20:13:44.812, Binaer juenger: ja
+      B27: Exit 0, Fehlzeilen 0, Rohausgabe W80-zurueck-B27.txt
+        Summe: SONDE-014-INTENT-TEST OK - 277 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B27: '313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-2' gefallen: JA
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2' gruen geblieben: JA
+    Der Positivfall von 313/M-81 bleibt unter der Mutation gruen: JA
+    Die Pruefungen an der Zeile der Mutation fallen wie in der Teiletappe: JA
+    Nach der Ruecknahme:
+      B27: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/state: (leer)
+    git diff --stat: (leer)
+
+    === B27 unter der Mutation: gefallene Pruefungen (11) ===
+      FEHLER  M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9007199254740990]
+      FEHLER  M-12: die Schutzangabe wird entfernt, Revision +1
+      FEHLER  M-12: die Beziehung wird entfernt, Revision +1
+      FEHLER  M-12 Host (Intent): bei 2^53-2 wird der Eintrag entfernt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [0 Dirty, Revision 9007199254740990]
+      FEHLER  M-12 Host (Intent): der folgenlose Zweitaufruf schweigt - keine Revision, kein weiteres Dirty; der Riegel hat den No-op-Pfad nicht verschoben  [0 weiteres Dirty, Revision 9007199254740990]
+      FEHLER  M-12 Host (Schutz): die Angabe wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [0 Dirty, Revision 9007199254740990]
+      FEHLER  M-12 Host (Schutz): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9007199254740990]
+      FEHLER  M-12 Host (Beziehung): die Kante wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [0 Dirty, Revision 9007199254740990]
+      FEHLER  M-12 Host (Beziehung): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9007199254740990]
+      FEHLER  313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1, 1 Host-Dirty, Reload schreibbar  [9007199254740990, 0 Dirty, Reload schreibbar]
+      FEHLER  313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-1 Rueckgabe false, Bestand und Revision unveraendert, 0 Host-Dirty - kein Umklappen, keine Saettigung, keine 0  [abgewiesen, Revision 9007199254740990, 0 Dirty, 0 Intent(s)]
+    === B27 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+      ok      313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1 mit der neuen Rolle, Bestand 1 auf 2, 1 Host-Dirty, Reload schreibbar  [angenommen, Eintrag 9007199254740991, Bestand 2, 1 Dirty, Reload schreibbar]
+    === B27 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+  Trennprobe MC:
+    Rotlauf MC - Trennprobe MC (Nachtrag §32): Schranke der Eintragsrevision in setzeIntent auf int64max - 24.09.2026 20:13:50 - HEAD 2e0a0d2c75d45b84d25293b1fe7eb11b30400177
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\e9b8ac83\tmp\rot\sicherung\MC-NakamaState.cpp (SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630)
+    Mutation 1 ab Zeile 2470 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (treffer->revision >= kRevisionMax)
+      nachher:
+        |    if (treffer->revision >= std::numeric_limits<juce::int64>::max())
+    Mutiert 24.09.2026 20:13:50: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert bacfe5b3905ff853ea9eb8c80ab3330539736011caaf2e871d5c73e0c1aa206e (git diff --numstat: 1	1	eq-copilot/plugin/state/NakamaState.cpp)
+    Kette (R-313-11): Die Eintragsschranke bei int64max laesst den Schritt 2^53-2 -> 2^53-1 weiter durch: 313/M-81 (2^53-2) bleibt gruen; die Randpruefungen von 313/M-81 fallen wie im Lauf MC der Teiletappe.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 20:13:54.961, Quelle 20:13:50.538, Binaer juenger: ja
+      B27: Exit 1, Fehlzeilen 2, Rohausgabe MC-mutiert-B27.txt
+        Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 2 Fehler, 275 ok
+    Ruecknahme 24.09.2026 20:13:55: eq-copilot/plugin/state/NakamaState.cpp SHA-256 a3c90680579c5639f1d3dba8b8ad88cfa806cc73fac1c0a769256114f2046630 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 20:13:59.902, Quelle 20:13:55.782, Binaer juenger: ja
+      B27: Exit 0, Fehlzeilen 0, Rohausgabe MC-zurueck-B27.txt
+        Summe: SONDE-014-INTENT-TEST OK - 277 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false' gefallen: JA
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek)' gefallen: JA
+      B27: '313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2' gruen geblieben: JA
+    Der Positivfall von 313/M-81 bleibt unter der Mutation gruen: JA
+    Die Pruefungen an der Zeile der Mutation fallen wie in der Teiletappe: JA
+    Nach der Ruecknahme:
+      B27: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/state: (leer)
+    git diff --stat: (leer)
+
+    === B27 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false vor jeder Zuweisung - Rolle, Eintragsrevision 2^53-1 und Bestandsrevision unveraendert, 0 Host-Dirty  [angenommen, Eintrag 9007199254740992, Bestand 2, 1 Dirty]
+      FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent liefert false mit Grund, der Zustand bleibt bytegleich
+    === B27 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+      ok      313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1 mit der neuen Rolle, Bestand 1 auf 2, 1 Host-Dirty, Reload schreibbar  [angenommen, Eintrag 9007199254740991, Bestand 2, 1 Dirty, Reload schreibbar]
+    === B27 nach der Ruecknahme: gefallene Pruefungen 0 ===

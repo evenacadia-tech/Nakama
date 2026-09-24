@@ -1,0 +1,63 @@
+NAK-313 Etappe 2 - Rotbeweis M-14 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-14 - T3-02-04 - R-312-2 bleibt erste Zeile - Karte U57 unberuehrt
+Zustand: Stand x aus M-01, Label im Panel geaendert; Editor und Prozessor zerstoert, bevor die Nachrichtenschleife das Panel abbaut (Aufbau 312/M-35).
+Ereignis: der Panel-Destruktor ruft uebernehmen().
+Zusage: kein Zugriff, keine Mutation, keine Dirty-Meldung: Marke 0, Bindung bis zum Prozessorende unveraendert (121/61), 0 Host-Dirty.
+Bein: B15, ShotTestMain.cpp, 313/M-14 (Aufbau von 312/M-35 mit dem geladenen Stand).
+
+--- Haelfte 1: Marke 0, 121/61 bis zum Prozessorende, 0 Host-Dirty - Etikett: Regressionswache ---
+Pruefung: 313/M-14 panel_abbau_nach_prozessorende_mit_langem_label ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  ok      313/M-14 panel_abbau_nach_prozessorende_mit_langem_label [NAK-312] M-35 (R-312-2, U57 unberuehrt): der Stand aus 313/M-01, das Label im Panel geaendert - Editor und Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: Marke 0, die Bindung bis zum Prozessorende unveraendert (121/61), 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 0, Marke 0, Rolle '', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation P9 (PluginEditor.cpp - die Lebendpruefung entfernt (UB-frei ueber die gezaehlte Marke, R-312-12)), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P9-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 835 (Stand vor der Mutation):
+      vorher:
+        |             auto* ed = editor.getComponent();
+        |             if (ed == nullptr)
+        |                 return;
+        |             const auto id = rolleWahl.getSelectedId();
+        | 
+      nachher:
+        |             auto* ed = editor.getComponent();
+        |             // MUTATION P9: Lebendpruefung entfernt
+        |             const auto id = rolleWahl.getSelectedId();
+        | 
+    Mutiert 24.09.2026 04:08:20, SHA-256 mutiert ae5c34eb2460749f0716508e9b5cfce0aa4e122b50bccee287f28f6b8b710be3
+    Kette (R-313-11): ohne Lebendpruefung laeuft uebernehmen() nach dem Ende des Editors weiter; zwischen ihr und der Marke fasst der Code nur Panelfelder an (kein Zugriff auf ed), das geaenderte Label fuehrt zur Marke, die zaehlt und ohne Zugriff zurueckkehrt (UB-frei, R-312-12) - beobachtet Marke 1
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:08:25.741, Quelle 04:08:20.177, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-P9-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 2 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-14 panel_abbau_nach_prozessorende_mit_langem_label
+      gefallen: FEHLER  313/M-14 panel_abbau_nach_prozessorende_mit_langem_label [NAK-312] M-35 (R-312-2, U57 unberuehrt): der Stand aus 313/M-01, das Label im Panel geaendert - Editor und Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: Marke 0, die Bindung bis zum Prozessorende unveraendert (121/61), 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 1, Rolle '', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - B15: 312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozes - Grund: derselbe Aufbau mit frischem Gen und geaendertem Label: dieselbe Lebendpruefung traegt ihn (R-312-2, bestehende Wache), Marke 1
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 2 Fehler; Einzelzeilen in NAK-313-e2-mutation-P9.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:08:32: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:08:37.755, Quelle 04:08:32.342, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P9-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

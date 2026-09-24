@@ -1,0 +1,50 @@
+NAK-313 Etappe 2 - Mutationslauf ID: plugin/CMakeLists.txt - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine gruen,
+git status und git diff --stat. Die Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das
+Protokoll und die Pruefzeilen der gemessenen Abschnitte.
+
+=== Protokoll ===
+Rotlauf ID - 24.09.2026 04:13:13 - HEAD c7d7dd93f6860149f7141e37610bbcebe056d33e
+Datei eq-copilot/plugin/CMakeLists.txt (LF)
+SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+Mutation ab Zeile 123 (Stand vor der Mutation):
+  vorher:
+    |     PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+    | 
+  nachher:
+    |     PLUGIN_CODE Eqcq
+    | 
+Mutiert 24.09.2026 04:13:13, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+Lauf unter der Mutation:
+  kein Bau: das Bein liest die mutierte Datei zur Laufzeit
+  B1 (EqCopIdentityTest): Binaer 04:03:42.590 unveraendert (liest eq-copilot/plugin/CMakeLists.txt zur Laufzeit)
+  B1: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-ID-mutiert-B1.txt
+    Summe: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+  gefallen in B1:
+    - FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+    - FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 3:19:45am vs 24 Sep 2026 4:13:13am]
+    - FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 3:20:21am vs 24 Sep 2026 4:13:13am]
+  erwartet gefallen: 'CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest': JA
+Ruecknahme 24.09.2026 04:13:13: Aenderungszeit auf den Stand vor der Mutation (04:17:56.551) zurueckgesetzt
+Ruecknahme 24.09.2026 04:13:13: SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation
+Lauf nach der Ruecknahme:
+  B1 (EqCopIdentityTest): Binaer 04:03:42.590 unveraendert (liest eq-copilot/plugin/CMakeLists.txt zur Laufzeit)
+  B1: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-ID-zurueck-B1.txt
+    Summe: IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+  B1 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B1 unter der Mutation: gefallene Pruefungen und Summenzeile ===
+  FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 3:19:45am vs 24 Sep 2026 4:13:13am]
+  FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 3:20:21am vs 24 Sep 2026 4:13:13am]
+IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+=== B1 nach der Ruecknahme: Summenzeilen ===
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+gefallene Pruefungen nach der Ruecknahme: 0

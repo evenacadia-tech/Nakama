@@ -1,0 +1,253 @@
+NAK-313 Etappe 2 - Rotbeweis M-05 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-05 - T3-02-04 - R-313-3 - Rollenwechsel zu einer Rolle ohne Paarfeld
+Zustand: wie M-01.
+Ereignis: Rollenwahl 'Sammelpunkt (Master)' (id 2, hub) ueber setSelectedId (2, juce::sendNotificationSync), Panel schliessen.
+Zusage: genau 1 Aufruf, genau 1 Host-Dirty; Klasse main, project_binding_id gesetzt (hex32); Paarname bleibt die 61 Zeichen, Label die 121.
+Bein: B15, ShotTestMain.cpp (Teilfall von 313/M-04).
+
+--- Haelfte 1: 1 Host-Dirty, Klasse main, Bindung hex32 - Etikett: Regressionswache ---
+Pruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Teilfall ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Teilfall von 313/M-04, R-313-3 Satz 2): Rollenwahl Sammelpunkt (id 2), schliessen - genau 1 Host-Dirty, Klasse main, project_binding_id hex32  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 1, Marke 0, Rolle 'hub', Label 120 Codepunkte/120 Bytes (endet 'aa'), Paarname 0 Codepunkte/0 Bytes (endet ''), main ja, Bindung '6745e1bbfa5a4628891d07890b3ec0d0']
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation S1 (prozessor/State.cpp - die Grenzpruefung wieder auf alle drei (ergaenzten) Werte angewandt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\S1-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 363 (Stand vor der Mutation):
+      vorher:
+        |         if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+        |             return false;
+        |         if (paarId.has_value() && *paarId != zustand.common.pairId && paarId->length() > 60)
+        |             return false;
+        | 
+      nachher:
+        |         if (label.value_or (zustand.common.label).length() > 120)   // MUTATION S1
+        |             return false;
+        |         if (paarId.value_or (zustand.common.pairId).length() > 60)
+        |             return false;
+        | 
+    Mutiert 24.09.2026 04:09:00, SHA-256 mutiert fc6ebec8391749616f47be4098ce8f7f99c9e4bd838a8fde0e225f0de08a707d
+    Kette (R-313-11): die Rolle hub reist allein, die Variante ergaenzt Label 121 und Paar 61 aus dem Zustand; unter der Pruefung auf alle Werte -> false - beobachtet legacy, keine Bindung, Host-Dirty 0
+    Lauf unter der Mutation:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B15 (EqCopShot): Binaer 04:09:05.684, Quelle 04:09:00.588, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 5, Rohausgabe rot-S1-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 5 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B2 (EqCopStateMigrationTest): Binaer 04:09:11.215, Quelle 04:09:00.588, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-S1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 326 Pruefungen ok, 2 Fehler
+    Zusagepruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Teilfall
+      gefallen: FEHLER  313/M-05 rollenwechsel_ohne_paarfeld (Teilfall von 313/M-04, R-313-3 Satz 2): Rollenwahl Sammelpunkt (id 2), schliessen - genau 1 Host-Dirty, Klasse main, project_binding_id hex32  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ'), main NEIN, Bindung '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (R-313-3 Satz 3): geladen wie 313/M-01, Rollenwahl NACH dem EQ (id 4), schliessen - Rolle post, genau 1 Host-Dirty;
+      - B2: 313/M-04 api_rolle_mit_unveraendert_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (post, 121, 61) - Rueckgabe true, genau 1 Host-Dirty, Rolle p
+    mitgefallen (mit Grund):
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf - Grund: die abgewiesene Rollenwahl zieht die Merkwerte nicht nach; das Schliessen ruft deshalb ein zweites Mal (wieder abgewiesen), Aufrufe 2
+      - B15: 313/M-15 speichern_laden_mit_langem_label (Laden): der zweite Gen laedt geladen, nicht read-only, Rolle post; sein Save ist bytegleich zum Save des ersten nach  - Grund: der erste Gen blieb pre (313/M-04 abgewiesen), der zweite laedt deshalb pre statt post
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf - Grund: wie 313/M-04 (Zaehler): zweiter, wieder abgewiesener Aufruf beim Schliessen, Aufrufe 2
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: Abschnittszeile G11 von B2: faellt mit jeder Einzelpruefung des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 5 Fehler; B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 326 Pruefungen ok, 2 Fehler; Einzelzeilen in NAK-313-e2-mutation-S1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:09:19: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B15 (EqCopShot): Binaer 04:09:24.389, Quelle 04:09:19.337, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S1-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      B2 (EqCopStateMigrationTest): Binaer 04:09:29.356, Quelle 04:09:19.337, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S1-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: Paarname 61, Label 121 - Etikett: heute rot ---
+Pruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Texte) ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  FEHLER  313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 1, Marke 0, Rolle 'hub', Label 120 Codepunkte/120 Bytes (endet 'aa'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  -> die Zusage haelt am Basisstand nicht: heute rot bestaetigt
+
+  Mutation P5 (PluginEditor.cpp - fuer Rollen ohne Paar wieder einen leeren Paarnamen uebergeben), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P5-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 845 (Stand vor der Mutation):
+      vorher:
+        |             if (paar && paarFeld.getText() != gemerkterPaarname)
+        |                 paarName = paarFeld.getText();
+        | 
+      nachher:
+        |             if (paar && paarFeld.getText() != gemerkterPaarname)
+        |                 paarName = paarFeld.getText();
+        |             if (! paar)
+        |                 paarName = juce::String();   // MUTATION P5
+        | 
+    Mutiert 24.09.2026 04:06:34, SHA-256 mutiert 570dff71c7905d4789d823fa54da311e4afa01b7fae2ad8c49e6bfa874ca441f
+    Kette (R-313-11): fuer die Rolle ohne Paar reist wieder ein leerer Paarname mit, er weicht vom Zustand ab und wird uebernommen - beobachtet Paarname 0 Zeichen
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:06:40.755, Quelle 04:06:34.967, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 6, Rohausgabe rot-P5-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 6 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Texte)
+      gefallen: FEHLER  313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-06 paarname_bleibt_ohne_handgriff (Paarname): 'P' bleibt
+    mitgefallen (mit Grund):
+      - B15: 313/M-09 (a) ohne_aenderung_kein_aufruf [NAK-312] M-37 (R-313-3 Satz 4): frischer Gen, das Panel ohne Aenderung geschlossen - kein Aufruf der Bindungs-API - Grund: fuer Rollen ohne Paar ist der Paarname jetzt immer (leer) gegeben: die Unveraendert-Pruefung greift fuer sie nie mehr, jedes Schliessen ruft - zusaetzliche Aufrufe, die am Fruehausstieg enden (Host-Dirty bleibt richtig)
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf - Grund: fuer Rollen ohne Paar ist der Paarname jetzt immer (leer) gegeben: die Unveraendert-Pruefung greift fuer sie nie mehr, jedes Schliessen ruft - zusaetzliche Aufrufe, die am Fruehausstieg enden (Host-Dirty bleibt richtig)
+      - B15: 313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust (Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf - Grund: fuer Rollen ohne Paar ist der Paarname jetzt immer (leer) gegeben: die Unveraendert-Pruefung greift fuer sie nie mehr, jedes Schliessen ruft - zusaetzliche Aufrufe, die am Fruehausstieg enden (Host-Dirty bleibt richtig)
+      - B15: 313/M-13 (b) zahlenraender_text: geladen legacy/insert mit Label 120 x U+10FFFF (480 Bytes), nichts aendern, schliessen - 0 Aufrufe, 0 Host-Dirty - Grund: fuer Rollen ohne Paar ist der Paarname jetzt immer (leer) gegeben: die Unveraendert-Pruefung greift fuer sie nie mehr, jedes Schliessen ruft - zusaetzliche Aufrufe, die am Fruehausstieg enden (Host-Dirty bleibt richtig)
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 6 Fehler; Einzelzeilen in NAK-313-e2-mutation-P5.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:06:47: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:06:52.790, Quelle 04:06:47.350, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P5-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+  Mutation P2 (PluginEditor.cpp - die heutige Wertbildung (substring 120/60) vor dem Vergleich wieder eingesetzt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P2-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 843 (Stand vor der Mutation):
+      vorher:
+        |             if (labelFeld.getText() != gemerktesLabel)
+        |                 label = labelFeld.getText();
+        |             if (paar && paarFeld.getText() != gemerkterPaarname)
+        |                 paarName = paarFeld.getText();
+        | 
+      nachher:
+        |             if (labelFeld.getText().substring (0, 120) != gemerktesLabel)   // MUTATION P2
+        |                 label = labelFeld.getText().substring (0, 120);
+        |             if (paar && paarFeld.getText().substring (0, 60) != gemerkterPaarname)
+        |                 paarName = paarFeld.getText().substring (0, 60);
+        | 
+    Mutiert 24.09.2026 04:05:21, SHA-256 mutiert 4416ee0199f70faf73396ca5956ffb14872470b9ca0e5fffe071c2c5e4165770
+    Kette (R-313-11): das Label wird vor dem Vergleich auf 120 gekuerzt, gilt als geaendert und wird mit der Rolle angenommen - beobachtet Label 120
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:26.933, Quelle 04:05:21.374, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 14, Rohausgabe rot-P2-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 14 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Texte)
+      gefallen: FEHLER  313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 120 Codepunkte/120 Bytes (endet 'aa'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich
+      - B15: 313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen 
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation
+    mitgefallen (mit Grund):
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe - Grund: der gekuerzte Wert gilt als Aenderung, der Rueckruf ruft einmal (Aufrufe 1) - den Einzelbruch dieser Zaehlerhaelfte traegt P1
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf - Grund: der gekuerzte Wert gilt als Aenderung, das Schliessen ruft einmal (Aufrufe 1) - Einzelbruch P1
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schlie - Grund: auch das bearbeitete Label (124) wird vor dem Vergleich auf 120 gekuerzt und damit angenommen: Host-Dirty 1, Label 120, keine Meldung - genau die stille Kuerzung aus T3-02-04; den Einzelbruch der Grenzmeldung traegt S2
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loesche - Grund: das unveraenderte Label (125) wird auf 120 gekuerzt und als Aenderung angenommen, der Paarname auf 60 - Host-Dirty 1, keine Meldung; Einzelbruch S2
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Ho - Grund: dieselbe Kuerzung beider Texte, angenommen, keine Meldung; Einzelbruch S2
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 14 Fehler; Einzelzeilen in NAK-313-e2-mutation-P2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:05:33: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:39.184, Quelle 04:05:33.541, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P2-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 3: genau 1 Aufruf - Etikett: heute nicht messbar ---
+Pruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler) ...
+Am Basisstand: nicht messbar (der Zaehler entsteht erst im Bau).
+
+  Mutation P3 (PluginEditor.cpp - die Merkwerte nach einer erfolgreichen Uebernahme nicht nachgezogen), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P3-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 857 (Stand vor der Mutation):
+      vorher:
+        |                 gemerkteRollenId = id;
+        |                 if (label.has_value())
+        |                     gemerktesLabel = *label;
+        |                 if (paarName.has_value())
+        |                     gemerkterPaarname = *paarName;
+        | 
+      nachher:
+        |                 // MUTATION P3 (NAK-313 E2): Merkwerte nach der Uebernahme nicht nachgezogen
+        | 
+    Mutiert 24.09.2026 04:05:46, SHA-256 mutiert adbeb6e28b98c67b137a26b14bff2d45185f447466626ac6110debc969288bd2
+    Kette (R-313-11): Merkwerte nicht nachgezogen, beim Schliessen ist Rolle 2 != Merkwert 3, zweiter Aufruf am Fruehausstieg - beobachtet Aufrufe 2
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:51.656, Quelle 04:05:46.072, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-P3-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 3 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler)
+      gefallen: FEHLER  313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf
+      - B15: 313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust (Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf
+    mitgefallen: keine
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 3 Fehler; Einzelzeilen in NAK-313-e2-mutation-P3.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:05:58: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:06:03.625, Quelle 04:05:58.277, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P3-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

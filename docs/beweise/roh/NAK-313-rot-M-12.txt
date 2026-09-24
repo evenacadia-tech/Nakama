@@ -1,0 +1,142 @@
+NAK-313 Etappe 2 - Rotbeweis M-12 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-12 - T3-02-04 - R-313-3 - geaendert, aber weiter ueber der Grenze
+Zustand: geladen legacy/pre, Label 125 Zeichen ('n' x 120 + 'vwxyz', Fremdstand), kein Paarname; Popover offen.
+Ereignis: ein Zeichen des Labels loeschen (deleteBackwards (false) am Labelfeld; der Caret steht nach setText am Ende) -> 124, Panel schliessen.
+Zusage: die Bindungs-API lehnt den geaenderten Wert ab (124 > 120): 0 Host-Dirty, holeLabel() bleibt die 125 Zeichen; statusMeldungFuerTest() = 'Name is longer than 120 characters and was not saved.' (die vorhandene statusMeldung), kein neues Element.
+Bein: B15, ShotTestMain.cpp. Dazu, ausserhalb der Matrixzeile und nach dem Wortlaut von §8.2 fuer den Paarnamen, zwei Pruefungen desselben Wegs: (Paarname) Label 125 und Paarname 65 geladen, ein Zeichen des Paarnamens loeschen (64); (beide) je ein Zeichen von beiden.
+
+--- Haelfte 1: Ablehnung mit Statuszeile (Label) - Etikett: heute rot ---
+Pruefung: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  FEHLER  313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schliessen - die Bindungs-API lehnt den geaenderten Wert ab: 0 Host-Dirty, das Label bleibt die 125 Zeichen, die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/120 Bytes (endet 'nn'), Paarname 0 Codepunkte/0 Bytes (endet ''), Labelfeld 124 Codepunkte/124 Bytes, Status '']
+  -> die Zusage haelt am Basisstand nicht: heute rot bestaetigt
+
+  Mutation S2 (prozessor/State.cpp - die Grenzpruefung fuer geaenderte Werte entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\S2-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 363 (Stand vor der Mutation):
+      vorher:
+        |         if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+        |             return false;
+        |         if (paarId.has_value() && *paarId != zustand.common.pairId && paarId->length() > 60)
+        |             return false;
+        | 
+      nachher:
+        |         // MUTATION S2: Grenzpruefung fuer geaenderte Werte entfernt
+        | 
+    Mutiert 24.09.2026 04:09:37, SHA-256 mutiert 419489b01c62a762de1cd720d01cb7dbb787076497e913af3c4bb09ea7bad2a5
+    Kette (R-313-11): ohne Grenzpruefung fuer geaenderte Werte nimmt die API 124 an, true -> keine Meldung - beobachtet Host-Dirty 1, Label 124, Status ''
+    Lauf unter der Mutation:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B15 (EqCopShot): Binaer 04:09:42.858, Quelle 04:09:37.753, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-S2-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 3 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B2 (EqCopStateMigrationTest): Binaer 04:09:47.821, Quelle 04:09:37.753, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-S2-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 325 Pruefungen ok, 3 Fehler
+    Zusagepruefung: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3
+      gefallen: FEHLER  313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schliessen - die Bindungs-API lehnt den geaenderten Wert ab: 0 Host-Dirty, das Label bleibt die 125 Zeichen, die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 124 Codepunkte/124 Bytes (endet 'xy'), Paarname 0 Codepunkte/0 Bytes (endet ''), Labelfeld 124 Codepunkte/124 Bytes, Status '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loesche
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Ho
+    mitgefallen (mit Grund):
+      - B2: Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation - Grund: die bestehende Wache der API fuer GEAENDERTE Werte (Label 121, Paarname 61, StateMigrationTestMain.cpp G11): ohne Grenzpruefung werden beide angenommen
+      - B2: read-only verweigert setzeBindung und neueSensorId ohne Meldung - Grund: Folgefehler im selben Abschnitt: der gemeinsame Zaehler dirty.nonParam von G11 steht nach den zwei angenommenen Ueberlaengen um 2 hoeher; die read-only-Verweigerung selbst haelt
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: Folgefehler im selben Abschnitt: der gemeinsame Zaehler dirty.nonParam von G11 steht nach den zwei angenommenen Ueberlaengen um 2 hoeher; die read-only-Verweigerung selbst haelt
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 3 Fehler; B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 325 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e2-mutation-S2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:09:55: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B15 (EqCopShot): Binaer 04:10:00.914, Quelle 04:09:55.969, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S2-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      B2 (EqCopStateMigrationTest): Binaer 04:10:05.871, Quelle 04:09:55.969, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S2-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: Ablehnung mit Statuszeile (Paarname, beide; Zusatz nach §8.2) - Etikett: heute rot (Lauf 2 der Gegenprobe) ---
+Pruefung: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname) ...
+Pruefung: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide) ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  FEHLER  313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loeschen (64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile sagt 'Pair name is longer than 60 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/120 Bytes (endet 'nn'), Paarname 60 Codepunkte/60 Bytes (endet 'qq'), Paarfeld 64 Codepunkte/64 Bytes, Status '']
+  FEHLER  313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile nennt beide Grenzen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/120 Bytes (endet 'nn'), Paarname 60 Codepunkte/60 Bytes (endet 'qq'), Status '']
+  -> die Zusage haelt am Basisstand nicht: heute rot bestaetigt
+
+  Mutation S2 (prozessor/State.cpp - die Grenzpruefung fuer geaenderte Werte entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\S2-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 363 (Stand vor der Mutation):
+      vorher:
+        |         if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+        |             return false;
+        |         if (paarId.has_value() && *paarId != zustand.common.pairId && paarId->length() > 60)
+        |             return false;
+        | 
+      nachher:
+        |         // MUTATION S2: Grenzpruefung fuer geaenderte Werte entfernt
+        | 
+    Mutiert 24.09.2026 04:09:37, SHA-256 mutiert 419489b01c62a762de1cd720d01cb7dbb787076497e913af3c4bb09ea7bad2a5
+    Kette (R-313-11): dieselbe Mutation: 64 bzw. 124/64 angenommen, keine Meldung - beobachtet Host-Dirty 1, Status ''
+    Lauf unter der Mutation:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B15 (EqCopShot): Binaer 04:09:42.858, Quelle 04:09:37.753, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-S2-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 3 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B2 (EqCopStateMigrationTest): Binaer 04:09:47.821, Quelle 04:09:37.753, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-S2-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 325 Pruefungen ok, 3 Fehler
+    Zusagepruefung: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname)
+      gefallen: FEHLER  313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loeschen (64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile sagt 'Pair name is longer than 60 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 64 Codepunkte/64 Bytes (endet 'tu'), Paarfeld 64 Codepunkte/64 Bytes, Status '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    Zusagepruefung: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide)
+      gefallen: FEHLER  313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile nennt beide Grenzen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 124 Codepunkte/124 Bytes (endet 'xy'), Paarname 64 Codepunkte/64 Bytes (endet 'tu'), Status '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schlie
+    mitgefallen (mit Grund):
+      - B2: Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation - Grund: die bestehende Wache der API fuer GEAENDERTE Werte (Label 121, Paarname 61, StateMigrationTestMain.cpp G11): ohne Grenzpruefung werden beide angenommen
+      - B2: read-only verweigert setzeBindung und neueSensorId ohne Meldung - Grund: Folgefehler im selben Abschnitt: der gemeinsame Zaehler dirty.nonParam von G11 steht nach den zwei angenommenen Ueberlaengen um 2 hoeher; die read-only-Verweigerung selbst haelt
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: Folgefehler im selben Abschnitt: der gemeinsame Zaehler dirty.nonParam von G11 steht nach den zwei angenommenen Ueberlaengen um 2 hoeher; die read-only-Verweigerung selbst haelt
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 3 Fehler; B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 325 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e2-mutation-S2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:09:55: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B15 (EqCopShot): Binaer 04:10:00.914, Quelle 04:09:55.969, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S2-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      B2 (EqCopStateMigrationTest): Binaer 04:10:05.871, Quelle 04:09:55.969, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S2-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

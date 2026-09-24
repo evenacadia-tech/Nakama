@@ -1,0 +1,142 @@
+NAK-313 Etappe 2 - Rotbeweis M-15 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-15 - T3-02-04 - R-313-3 - speichern<->laden
+Zustand: nach M-04 (Rolle post, Label 121, Paar 61).
+Ereignis: getStateInformation des ersten Gen, die Bytes in einen zweiten Gen (auf dem Heap, im selben Lauf) laden, dort erneut speichern.
+Zusage: zweiter Gen laedt geladen (nicht read-only), Rolle post, Label und Paarname die 121/61 Zeichen aus x; sein Save ist bytegleich zum Save des ersten Gen nach M-04.
+Bein: B15, ShotTestMain.cpp (Teilfall von 313/M-04).
+
+--- Haelfte 1: Texte 121/61 im zweiten Gen - Etikett: heute rot ---
+Pruefung: 313/M-15 speichern_laden_mit_langem_label (Teilfall ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  FEHLER  313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen aus dem geladenen Stand  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 120 Codepunkte/120 Bytes, Paarname 60 Codepunkte/60 Bytes, Save 355 Bytes, bytegleich zum ersten ja]
+  -> die Zusage haelt am Basisstand nicht: heute rot bestaetigt
+
+  Mutation P2 (PluginEditor.cpp - die heutige Wertbildung (substring 120/60) vor dem Vergleich wieder eingesetzt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P2-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 843 (Stand vor der Mutation):
+      vorher:
+        |             if (labelFeld.getText() != gemerktesLabel)
+        |                 label = labelFeld.getText();
+        |             if (paar && paarFeld.getText() != gemerkterPaarname)
+        |                 paarName = paarFeld.getText();
+        | 
+      nachher:
+        |             if (labelFeld.getText().substring (0, 120) != gemerktesLabel)   // MUTATION P2
+        |                 label = labelFeld.getText().substring (0, 120);
+        |             if (paar && paarFeld.getText().substring (0, 60) != gemerkterPaarname)
+        |                 paarName = paarFeld.getText().substring (0, 60);
+        | 
+    Mutiert 24.09.2026 04:05:21, SHA-256 mutiert 4416ee0199f70faf73396ca5956ffb14872470b9ca0e5fffe071c2c5e4165770
+    Kette (R-313-11): die Rollenwahl in M-04 kuerzt und uebernimmt 120/60; der Save traegt sie, der zweite Gen laedt 120/60
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:26.933, Quelle 04:05:21.374, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 14, Rohausgabe rot-P2-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 14 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-15 speichern_laden_mit_langem_label (Teilfall
+      gefallen: FEHLER  313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen aus dem geladenen Stand  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 120 Codepunkte/120 Bytes, Paarname 60 Codepunkte/60 Bytes, Save 355 Bytes, bytegleich zum ersten ja]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation
+    mitgefallen (mit Grund):
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe - Grund: der gekuerzte Wert gilt als Aenderung, der Rueckruf ruft einmal (Aufrufe 1) - den Einzelbruch dieser Zaehlerhaelfte traegt P1
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf - Grund: der gekuerzte Wert gilt als Aenderung, das Schliessen ruft einmal (Aufrufe 1) - Einzelbruch P1
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schlie - Grund: auch das bearbeitete Label (124) wird vor dem Vergleich auf 120 gekuerzt und damit angenommen: Host-Dirty 1, Label 120, keine Meldung - genau die stille Kuerzung aus T3-02-04; den Einzelbruch der Grenzmeldung traegt S2
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loesche - Grund: das unveraenderte Label (125) wird auf 120 gekuerzt und als Aenderung angenommen, der Paarname auf 60 - Host-Dirty 1, keine Meldung; Einzelbruch S2
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Ho - Grund: dieselbe Kuerzung beider Texte, angenommen, keine Meldung; Einzelbruch S2
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 14 Fehler; Einzelzeilen in NAK-313-e2-mutation-P2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:05:33: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:39.184, Quelle 04:05:33.541, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P2-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: geladen, Rolle post, zweiter Save = erster - Etikett: Regressionswache ---
+Pruefung: 313/M-15 speichern_laden_mit_langem_label (Laden) ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  ok      313/M-15 speichern_laden_mit_langem_label (Laden): der zweite Gen laedt geladen, nicht read-only, Rolle post; sein Save ist bytegleich zum Save des ersten nach 313/M-04  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 120 Codepunkte/120 Bytes, Paarname 60 Codepunkte/60 Bytes, Save 355 Bytes, bytegleich zum ersten ja]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation R1 (state/NakamaState.cpp - im Leser ein Label ueber 120 Zeichen abgewiesen (:1613 erweitert)), Stand c7d7dd93:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\R1-NakamaState.cpp (SHA-256 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5)
+    Mutation ab Zeile 1613 (Stand vor der Mutation):
+      vorher:
+        |     if (common.hasProperty (kLabel) && ! label.isString()) { grund = "Common.label is not a string"; return false; }
+        | 
+      nachher:
+        |     if (common.hasProperty (kLabel) && (! label.isString() || label.toString().length() > 120)) { grund = "Common.label is not a string"; return false; }   // MUTATION R1
+        | 
+    Mutiert 24.09.2026 04:12:11, SHA-256 mutiert ec2ce2ba9a67136dd816134c25e2b1d541153f8ff180ee9b7535ad64cce1408b
+    Kette (R-313-11): der Leser weist ein Label ueber 120 Zeichen ab (NakamaState.cpp:1613 erweitert) - die Bytes mit dem 121-Zeichen-Label laden nurLesen, Rolle sensor
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:12:15.801, Quelle 04:12:11.709, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 17, Rohausgabe rot-R1-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 17 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-15 speichern_laden_mit_langem_label (Laden)
+      gefallen: FEHLER  313/M-15 speichern_laden_mit_langem_label (Laden): der zweite Gen laedt geladen, nicht read-only, Rolle post; sein Save ist bytegleich zum Save des ersten nach 313/M-04  [zweiter Gen: geladen NEIN, Grund 'Common.label is not a string', Rolle 'sensor', Label 0 Codepunkte/0 Bytes, Paarname 0 Codepunkte/0 Bytes, Save 356 Bytes, bytegleich zum ersten ja]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0 - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (R-313-3 Satz 3): geladen wie 313/M-01, Rollenwahl NACH dem EQ (id 4), schliessen - Rolle post, genau 1 Host-Dirty; - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen  - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Teilfall von 313/M-04, R-313-3 Satz 2): Rollenwahl Sammelpunkt (id 2), schliessen - genau 1 Host-Dirty, Klasse main, proje - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schlie - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-16 panel_ohne_neues_element (Gate GRENZE, Designteil geparkt): das Panel hat genau 7 Kinder - 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor; Eingabe - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loesche - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Ho - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+      - B15: 313/M-14 panel_abbau_nach_prozessorende_mit_langem_label [NAK-312] M-35 (R-312-2, U57 unberuehrt): der Stand aus 313/M-01, das Label im Panel geaendert - Editor - Grund: derselbe Leser weist jeden Stand mit einem Label ueber 120 Zeichen ab: der Stand x (121) und die 125-Zeichen-Staende laden read-only, zeigeMesspunkt meldet read-only und oeffnet kein Popover, jede Pruefung darauf faellt; 313/M-15 (Teilfall): der zweite Gen ist read-only und haelt kein Label
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 17 Fehler; Einzelzeilen in NAK-313-e2-mutation-R1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:12:22: SHA-256 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:12:26.189, Quelle 04:12:22.378, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-R1-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

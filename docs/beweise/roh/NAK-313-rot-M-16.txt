@@ -1,0 +1,308 @@
+NAK-313 Etappe 2 - Rotbeweis M-16 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-16 - Etappe 2 - Grenze und Audio
+Zustand: Endstand der Etappe 2 gegen ihren Basisstand.
+Ereignis: voller Kanon und git diff --stat.
+Zusage: Audio unberuehrt (nur Editor-Panel und Bindungs-API auf dem Message-Thread aendern sich; keine Sperre, Allokation, Datei-, Pipe- oder Netzzugriff und kein Logging im Callback; A1 und A16 bitidentisch); keine neue Oberflaeche (das Panel hat genau 7 Kinder: 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor); keine neue State-Version; Identitaet und Legacy-Bezeichner unveraendert.
+Beine: B15 313/M-16 panel_ohne_neues_element (Kinderzahl am offenen Panel des Laufs 313/M-12); A1, A16, B2, B1 einzeln; git diff --stat 9bf629bf..a1ab8c1c: PluginEditor.cpp, PluginProcessor.h, prozessor/State.cpp, tests/ShotTestMain.cpp, tests/StateMigrationTestMain.cpp, tools/beweise.ps1 - keine Datei des Audiopfads (Gen hat keine Echtzeitwache).
+
+--- Haelfte 1: Oberflaeche: 7 Kinder - Etikett: Regressionswache ---
+Pruefung: 313/M-16 panel_ohne_neues_element ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  ok      313/M-16 panel_ohne_neues_element (Gate GRENZE, Designteil geparkt): das Panel hat genau 7 Kinder - 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor; Eingabegrenze und Statustext sitzen an vorhandenen Elementen  [Kinder 7 (Label 4, ComboBox 1, TextEditor 2)]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation P10 (PluginEditor.cpp - ein juce::Label fuer die Grenzmeldung im Panel angelegt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P10-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 744 (Stand vor der Mutation):
+      vorher:
+        |         int gemerkteRollenId = 0;
+        | 
+      nachher:
+        |         int gemerkteRollenId = 0;
+        |         juce::Label grenzEtikett;   // MUTATION P10: ein Label fuer die Grenzmeldung
+        | 
+    Mutation ab Zeile 805 (Stand vor der Mutation):
+      vorher:
+        |             paarFeld.setInputRestrictions (60);
+        | 
+      nachher:
+        |             paarFeld.setInputRestrictions (60);
+        |             addAndMakeVisible (grenzEtikett);   // MUTATION P10
+        | 
+    Mutiert 24.09.2026 04:11:38, SHA-256 mutiert 08978408a28a521907568587257163c04c1d8723b949a9a9c599871f84c4a870
+    Kette (R-313-11): ein Member juce::Label grenzEtikett, im Konstruktor addAndMakeVisible - beobachtet 8 Kinder (Label 5)
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:11:44.405, Quelle 04:11:38.846, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 1, Rohausgabe rot-P10-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 1 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-16 panel_ohne_neues_element
+      gefallen: FEHLER  313/M-16 panel_ohne_neues_element (Gate GRENZE, Designteil geparkt): das Panel hat genau 7 Kinder - 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor; Eingabegrenze und Statustext sitzen an vorhandenen Elementen  [Kinder 8 (Label 5, ComboBox 1, TextEditor 2)]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen: keine
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 1 Fehler; Einzelzeilen in NAK-313-e2-mutation-P10.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:11:51: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:11:56.570, Quelle 04:11:51.224, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P10-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: Audio Gen: A1 bitidentisch - Etikett: Regressionswache ---
+Am Basisstand: das Bein lief gruen (Kanon vorher geerbt, GRUEN 70/70 an ac6b2069).
+
+  Mutation A1 (src/PluginProcessor.cpp - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+    SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+    Mutation ab Zeile 641 (Stand vor der Mutation):
+      vorher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        | 
+      nachher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        |     buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-16 A1: 1 LSB
+        | 
+    Mutiert 24.09.2026 04:12:33, SHA-256 mutiert a82e5c82fb1963397b0d536d7cf24330e9572bcea62e1055ea14e7000289c67e
+    Kette (R-313-11): im Gen-Callback das erste Sample um 1 LSB (std::nextafter) - A1 Exit 1: '1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)' und 'NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)' fallen
+    Lauf unter der Mutation:
+      Bau EqCopNullTest: Exit 0
+      A1 (EqCopNullTest): Binaer 04:12:39.398, Quelle 04:12:33.083, Binaer juenger: ja
+      A1: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-A1-mutiert-A1.txt
+      Summe: NULLTEST FEHLGESCHLAGEN
+    Zusagepruefung: 1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+      gefallen: FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - A1: NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert) - Grund: derselbe Bruch: auch der NaN/Inf-Block laeuft durch denselben Callback und traegt das veraenderte erste Sample
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: A1: NULLTEST FEHLGESCHLAGEN; Einzelzeilen in NAK-313-e2-mutation-A1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:12:39: SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopNullTest: Exit 0
+      A1 (EqCopNullTest): Binaer 04:12:45.101, Quelle 04:12:39.537, Binaer juenger: ja
+      A1: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-A1-zurueck-A1.txt
+      Summe: NULLTEST OK
+      A1 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 3: Audio Probeeq: A16 bitidentisch - Etikett: Regressionswache ---
+Am Basisstand: das Bein lief gruen (Kanon vorher geerbt, GRUEN 70/70 an ac6b2069).
+
+  Mutation A16 (sonde/SondeProcessor.cpp - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter)), Stand c7d7dd93:
+    Datei eq-copilot/plugin/sonde/SondeProcessor.cpp (CRLF)
+    SHA-256 vorher 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\A16-SondeProcessor.cpp (SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b)
+    Mutation ab Zeile 511 (Stand vor der Mutation):
+      vorher:
+        |     verarbeiteBlock (puffer, false);
+        | 
+      nachher:
+        |     verarbeiteBlock (puffer, false);
+        |     if (puffer.getNumSamples() > 0 && puffer.getNumChannels() > 0)   // MUTATION M-16 A16: 1 LSB
+        |         puffer.getWritePointer (0)[0] = std::nextafter (puffer.getSample (0, 0), 2.0f);
+        | 
+    Mutiert 24.09.2026 04:12:45, SHA-256 mutiert 2fd9a89c905dea31a23cab50e7f1c43e99617f64f961decb927ef3b5fb0d7dd1
+    Kette (R-313-11): im Probeeq-Callback das erste Sample um 1 LSB - A16 Exit 1, 37 Bitgleichheitspruefungen fallen (108 ok)
+    Lauf unter der Mutation:
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16 (EqCopProbeeqNullTest): Binaer 04:12:51.220, Quelle 04:12:45.514, Binaer juenger: ja
+      A16: Exit 1, gefallene Pruefungen 37, Rohausgabe rot-A16-mutiert-A16.txt
+      Summe: SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler
+    Zusagepruefung: default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz
+      gefallen: FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - A16: default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band  - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rausche - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rausche - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rausche - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rausche - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-139 frueher_rueckweg_bei_jeder_blockgroesse (Teilfall von 311/M-132) bei 32 kHz: Bloecke 1, 255, 256, 257, 2048 und 4096 (ueber maxBlock 2048) kommen mit  - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fing - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 48000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fing - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 96000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fing - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 192000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fin - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio; CLAUDE.md Grundgesetz, [SONDE-015] M-05): mit eq_enabled aus, im Hard-Bypass und nach releaseResour - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+      - A16: 312/M-107 hostbypass_ueber_release (Audio; starten<->stoppen, NAK-283 R-283-3): ohne Vorbereitung laeuft jeder Block in beiden Eintritten unberuehrt durch - 10  - Grund: derselbe Bruch trifft jede Bitgleichheits- und Fingerabdruckpruefung des Probeeq-Nulltests: jeder Block traegt das veraenderte erste Sample
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: A16: SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler; Einzelzeilen in NAK-313-e2-mutation-A16.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:12:51: SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16 (EqCopProbeeqNullTest): Binaer 04:12:57.447, Quelle 04:12:51.924, Binaer juenger: ja
+      A16: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-A16-zurueck-A16.txt
+      Summe: SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+      A16 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 4: keine neue State-Version - Etikett: Regressionswache ---
+Am Basisstand: das Bein lief gruen (Kanon vorher geerbt, GRUEN 70/70 an ac6b2069).
+
+  Mutation SV (state/NakamaState.cpp - kRootSchema auf 3), Stand c7d7dd93:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\SV-NakamaState.cpp (SHA-256 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5)
+    Mutation ab Zeile 72 (Stand vor der Mutation):
+      vorher:
+        | constexpr int kRootSchema   = 2;
+        | 
+      nachher:
+        | constexpr int kRootSchema   = 3;   // MUTATION M-16 State-Version
+        | 
+    Mutiert 24.09.2026 04:12:58, SHA-256 mutiert 4ea1006309a9dfcf0c6bf5f3f63f7854cff42aaff5cdf2f8e4f4936ccfe21590
+    Kette (R-313-11): kRootSchema = 3 - B2 Exit 1, '4 Rollen bytegleich zum Schema-2-Golden' faellt (mit 54 weiteren Golden- und Matrixpruefungen)
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:13:06.963, Quelle 04:12:58.434, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 55, Rohausgabe rot-SV-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 278 Pruefungen ok, 55 Fehler
+    Zusagepruefung: 4 Rollen bytegleich zum Schema-2-Golden
+      gefallen: FEHLER  4 Rollen bytegleich zum Schema-2-Golden  [0]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - B2: Golden 'sensor' weicht ab - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Golden 'hub' weicht ab - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Golden 'pre' weicht ab - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Golden 'post' weicht ab - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Intent-Golden main-intent-v1.bin bytegleich zum Writer - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111) - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Layout-v1-Golden layout-v1.bin bytegleich - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == Migration: 4 Rollen bytegleich zum Golden, idempotent - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported) - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: legacy_instance_id_save_load_bytegleich - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == NAK-40 Aliasvektoren, Zielvergleich und Save+Load - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: read-only-Fall: Root schema 3 - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 63 verschachtelte Arrays plus Blatt passieren und laden - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: additive Binaer- und Array-Properties bleiben bytegleich lesbar - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: main-intent-v1.bin + Bestandskind (in main neben MainProject) - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: dsp-v2-voll.bin + Bestandskind (in active_probe) - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit plugin_kind passive_probe - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit doppeltem Bestandskind - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit Bestandskind schema 2 - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit ungerader confirmed_members_v1 - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit doppelter instance_id im Bestandskind - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit 65 Paaren im Bestandskind - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit Intentinhalt ohne intent_revision_v1 - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 read-only: Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject) - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-115 kind_matrix_des_bestandskinds: 10 Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: read-only gesetzt - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == Unbekanntes Major: 20 Faelle read-only, Originalbytes bytegleich zurueck - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau 2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes  - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: frisch speichert NakamaState schema 2, legacy - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: 312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu h - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+      - B2: == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden - Grund: mit Root-Schema 3 liest dieser Build jeden Schema-2-Stand als fremdes Major (read-only) und schreibt Schema 3: jede Golden-, Matrix- und Ladepruefung von B2 faellt
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 278 Pruefungen ok, 55 Fehler; Einzelzeilen in NAK-313-e2-mutation-SV.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:13:07: SHA-256 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:13:11.470, Quelle 04:13:07.639, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-SV-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 5: Identitaet unveraendert - Etikett: Regressionswache ---
+Am Basisstand: das Bein lief gruen (Kanon vorher geerbt, GRUEN 70/70 an ac6b2069).
+
+  Mutation ID (plugin/CMakeLists.txt - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau)), Stand c7d7dd93:
+    Datei eq-copilot/plugin/CMakeLists.txt (LF)
+    SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+    Mutation ab Zeile 123 (Stand vor der Mutation):
+      vorher:
+        |     PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+        | 
+      nachher:
+        |     PLUGIN_CODE Eqcq
+        | 
+    Mutiert 24.09.2026 04:13:13, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+    Kette (R-313-11): PLUGIN_CODE im Zielblock literal - B1 Exit 1, 'CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest' faellt; mitgefallen die zwei Frischepruefungen moduleinfo.json gegen die Aenderungszeit der CMakeLists.txt (die Mutation schreibt die Datei)
+    Lauf unter der Mutation:
+      kein Bau: das Bein liest die mutierte Datei zur Laufzeit
+      B1 (EqCopIdentityTest): Binaer 04:03:42.590 unveraendert (liest eq-copilot/plugin/CMakeLists.txt zur Laufzeit)
+      B1: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-ID-mutiert-B1.txt
+      Summe: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+    Zusagepruefung: CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+      gefallen: FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - B1: main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt - Grund: die Mutation schreibt plugin/CMakeLists.txt neu; die Frischepruefung 'moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt' vergleicht Aenderungszeiten und faellt fuer beide gebauten Ziele (nach der Ruecknahme mit der alten Aenderungszeit wieder gruen)
+      - B1: active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt - Grund: die Mutation schreibt plugin/CMakeLists.txt neu; die Frischepruefung 'moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt' vergleicht Aenderungszeiten und faellt fuer beide gebauten Ziele (nach der Ruecknahme mit der alten Aenderungszeit wieder gruen)
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B1: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e2-mutation-ID.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:13:13: Aenderungszeit auf den Stand vor der Mutation (04:17:56.551) zurueckgesetzt
+      Ruecknahme 24.09.2026 04:13:13: SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      B1 (EqCopIdentityTest): Binaer 04:03:42.590 unveraendert (liest eq-copilot/plugin/CMakeLists.txt zur Laufzeit)
+      B1: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-ID-zurueck-B1.txt
+      Summe: IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+      B1 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

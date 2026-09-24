@@ -1,0 +1,262 @@
+NAK-313 Etappe 2 - Rotbeweis M-09 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-09 - T3-02-04 - [NAK-312] M-37 bleibt, auch mit langem Label - R-313-12
+Zustand: (a) frischer Gen, leeres Label (legacy/insert, sensor); (b) Stand x aus M-01.
+Ereignis: Panel ohne Aenderung schliessen.
+Zusage: kein Aufruf der Bindungs-API, keine Mutation (Label in (a) leer, in (b) 121/61) und keine Dirty-Meldung in (a) und (b).
+Bein: B15; (a) bestehender Fall 312/M-37 (Wache) und derselbe Lauf mit der Zaehlerpruefung 313/M-09 (a); (b) eigener Lauf 313/M-09 (b).
+
+--- Haelfte 1: (a) kein Aufruf - Etikett: heute nicht messbar ---
+Pruefung: 313/M-09 (a) ohne_aenderung_kein_aufruf ...
+Am Basisstand: nicht messbar (der Zaehler entsteht erst im Bau).
+
+  Mutation P1 (PluginEditor.cpp - die Unveraendert-Pruefung in uebernehmen() entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P1-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 847 (Stand vor der Mutation):
+      vorher:
+        |             if (! rolle.has_value() && ! label.has_value() && ! paarName.has_value())
+        |                 return;   // unverändert: kein Aufruf
+        | 
+      nachher:
+        |             // MUTATION P1 (NAK-313 E2): Unveraendert-Pruefung entfernt
+        | 
+    Mutiert 24.09.2026 04:04:56, SHA-256 mutiert 49cdf2cdf373feed0319981cf9720b9fdd54e6f3579f024f3d5e1dd046ded6c4
+    Kette (R-313-11): ohne Unveraendert-Pruefung ruft das Schliessen mit drei leeren Feldern (Ende am Fruehausstieg) - beobachtet Aufrufe 1, Host-Dirty 0
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:02.271, Quelle 04:04:56.495, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 9, Rohausgabe rot-P1-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 9 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-09 (a) ohne_aenderung_kein_aufruf
+      gefallen: FEHLER  313/M-09 (a) ohne_aenderung_kein_aufruf [NAK-312] M-37 (R-313-3 Satz 4): frischer Gen, das Panel ohne Aenderung geschlossen - kein Aufruf der Bindungs-API  [Aufrufe 1, geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf
+      - B15: 313/M-13 (b) zahlenraender_text: geladen legacy/insert mit Label 120 x U+10FFFF (480 Bytes), nichts aendern, schliessen - 0 Aufrufe, 0 Host-Dirty
+    mitgefallen (mit Grund):
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf - Grund: ohne Unveraendert-Pruefung ruft das Schliessen nach der erfolgreichen Rollenwahl noch einmal, mit drei leeren Feldern; der Aufruf endet am Fruehausstieg (State.cpp:380-381), Aufrufe 2 - den Einzelbruch dieser Zaehlerhaelfte traegt P3
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf - Grund: wie 313/M-04 (Zaehler): das Schliessen nach der Uebernahme ruft ein zweites Mal ohne Aenderung, Aufrufe 2 - Einzelbruch P3
+      - B15: 313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust (Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf - Grund: wie 313/M-04 (Zaehler): nach der Uebernahme am Fokusverlust ruft das Schliessen ein zweites Mal ohne Aenderung, Aufrufe 2 - Einzelbruch P3
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 9 Fehler; Einzelzeilen in NAK-313-e2-mutation-P1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:05:09: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:14.459, Quelle 04:05:09.057, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P1-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: (a) keine Mutation, keine Dirty-Meldung (312/M-37) - Etikett: Regressionswache (Einzelbruch M-10) ---
+Pruefung: 312/M-37 ohne_aenderung_keine_mutation ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation S4 (prozessor/State.cpp - den Fruehausstieg if (neu == zustand.common) return false; entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\S4-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 380 (Stand vor der Mutation):
+      vorher:
+        |         if (neu == zustand.common)
+        |             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+        | 
+      nachher:
+        |         // MUTATION S4: Fruehausstieg entfernt
+        | 
+    Mutiert 24.09.2026 04:10:51, SHA-256 mutiert efbed2a42f0925ab315b287da17e574a3b47a9db450cd0f3e65f79536ef1c068
+    Kette (R-313-11): nach dem Bau tragen zwei Sperren; Einzelbruch dort, wo der Fruehausstieg allein traegt: M-10 (S4 -> Rueckgabe true, 1 Host-Dirty, 1 Reconnect). Unter S4 bleibt 312/M-37 in B15 gruen, weil das Panel ohne Aenderung nicht ruft
+    Lauf unter der Mutation:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:11:01.197, Quelle 04:10:51.099, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 10, Rohausgabe rot-S4-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 318 Pruefungen ok, 10 Fehler
+      B15 (EqCopShot): Binaer 04:10:56.208, Quelle 04:10:51.099, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      (keine)
+    Einzelbruch der Wache dort, wo der Fruehausstieg allein traegt (M-10): 313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3
+      gefallen: FEHLER  313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, 0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60  [geladen ja, Rueckgabe true, Host-Dirty nach dem Laden 1 (beim Laden 0), Reconnect-Anforderungen 1, Save bytegleich ja]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    Einzelbruch der Wache dort, wo der Fruehausstieg allein traegt (M-10): 313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler)
+      gefallen: FEHLER  313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler): 0 Reconnect-Anforderungen  [geladen ja, Rueckgabe true, Host-Dirty nach dem Laden 1 (beim Laden 0), Reconnect-Anforderungen 1, Save bytegleich ja]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    In B15 unter derselben Mutation: ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+      -> gruen: die Unveraendert-Pruefung im Panel traegt als zweite Sperre; die Wache hat ihren Einzelbruch an M-10 (oben), nicht hier (R-313-12)
+    mitgefallen (mit Grund):
+      - B2: setzeBindung ohne Aenderung: keine Meldung - Grund: die bestehende Wache desselben Fruehausstiegs (SONDE-006, G11): der Aufruf ohne Aenderung meldet jetzt Host-Dirty
+      - B2: setzeBindung mit Aenderung: genau eine Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: Rollenwechsel zu hub: zweite Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: getStateInformation meldet nichts - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: unbekannte v2-Rolle wird verweigert, keine Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: read-only verweigert setzeBindung und neueSensorId ohne Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler; B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 318 Pruefungen ok, 10 Fehler; Einzelzeilen in NAK-313-e2-mutation-S4.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:11:09: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:11:19.311, Quelle 04:11:09.317, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      B15 (EqCopShot): Binaer 04:11:14.262, Quelle 04:11:09.317, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 3: (b) keine Mutation, keine Dirty-Meldung - Etikett: heute rot ---
+Pruefung: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  FEHLER  313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation (121/61), keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe nicht messbar, Reconnect-Anforderungen nicht messbar, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/120 Bytes (endet 'aa'), Paarname 60 Codepunkte/60 Bytes (endet 'pp')]
+  -> die Zusage haelt am Basisstand nicht: heute rot bestaetigt
+
+  Mutation P2 (PluginEditor.cpp - die heutige Wertbildung (substring 120/60) vor dem Vergleich wieder eingesetzt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P2-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 843 (Stand vor der Mutation):
+      vorher:
+        |             if (labelFeld.getText() != gemerktesLabel)
+        |                 label = labelFeld.getText();
+        |             if (paar && paarFeld.getText() != gemerkterPaarname)
+        |                 paarName = paarFeld.getText();
+        | 
+      nachher:
+        |             if (labelFeld.getText().substring (0, 120) != gemerktesLabel)   // MUTATION P2
+        |                 label = labelFeld.getText().substring (0, 120);
+        |             if (paar && paarFeld.getText().substring (0, 60) != gemerkterPaarname)
+        |                 paarName = paarFeld.getText().substring (0, 60);
+        | 
+    Mutiert 24.09.2026 04:05:21, SHA-256 mutiert 4416ee0199f70faf73396ca5956ffb14872470b9ca0e5fffe071c2c5e4165770
+    Kette (R-313-11): die Wertbildung kuerzt vor dem Vergleich, 120 != 121 und 60 != 61, der Aufruf schreibt 120/60 - beobachtet Label 120, Host-Dirty 1
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:26.933, Quelle 04:05:21.374, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 14, Rohausgabe rot-P2-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 14 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312]
+      gefallen: FEHLER  313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation (121/61), keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/120 Bytes (endet 'aa'), Paarname 60 Codepunkte/60 Bytes (endet 'pp')]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich
+      - B15: 313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen 
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand
+    mitgefallen (mit Grund):
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe - Grund: der gekuerzte Wert gilt als Aenderung, der Rueckruf ruft einmal (Aufrufe 1) - den Einzelbruch dieser Zaehlerhaelfte traegt P1
+      - B15: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf - Grund: der gekuerzte Wert gilt als Aenderung, das Schliessen ruft einmal (Aufrufe 1) - Einzelbruch P1
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schlie - Grund: auch das bearbeitete Label (124) wird vor dem Vergleich auf 120 gekuerzt und damit angenommen: Host-Dirty 1, Label 120, keine Meldung - genau die stille Kuerzung aus T3-02-04; den Einzelbruch der Grenzmeldung traegt S2
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loesche - Grund: das unveraenderte Label (125) wird auf 120 gekuerzt und als Aenderung angenommen, der Paarname auf 60 - Host-Dirty 1, keine Meldung; Einzelbruch S2
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Ho - Grund: dieselbe Kuerzung beider Texte, angenommen, keine Meldung; Einzelbruch S2
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 14 Fehler; Einzelzeilen in NAK-313-e2-mutation-P2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:05:33: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:39.184, Quelle 04:05:33.541, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P2-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 4: (b) kein Aufruf - Etikett: heute nicht messbar ---
+Pruefung: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler) ...
+Am Basisstand: nicht messbar (der Zaehler entsteht erst im Bau).
+
+  Mutation P1 (PluginEditor.cpp - die Unveraendert-Pruefung in uebernehmen() entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\P1-PluginEditor.cpp (SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8)
+    Mutation ab Zeile 847 (Stand vor der Mutation):
+      vorher:
+        |             if (! rolle.has_value() && ! label.has_value() && ! paarName.has_value())
+        |                 return;   // unverändert: kein Aufruf
+        | 
+      nachher:
+        |             // MUTATION P1 (NAK-313 E2): Unveraendert-Pruefung entfernt
+        | 
+    Mutiert 24.09.2026 04:04:56, SHA-256 mutiert 49cdf2cdf373feed0319981cf9720b9fdd54e6f3579f024f3d5e1dd046ded6c4
+    Kette (R-313-11): ohne Unveraendert-Pruefung ruft das Schliessen - beobachtet Aufrufe 1, Host-Dirty 0
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:02.271, Quelle 04:04:56.495, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 9, Rohausgabe rot-P1-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 9 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    Zusagepruefung: 313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler)
+      gefallen: FEHLER  313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B15: 313/M-09 (a) ohne_aenderung_kein_aufruf [NAK-312] M-37 (R-313-3 Satz 4): frischer Gen, das Panel ohne Aenderung geschlossen - kein Aufruf der Bindungs-API
+      - B15: 313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen
+      - B15: 313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen
+      - B15: 313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe
+      - B15: 313/M-13 (b) zahlenraender_text: geladen legacy/insert mit Label 120 x U+10FFFF (480 Bytes), nichts aendern, schliessen - 0 Aufrufe, 0 Host-Dirty
+    mitgefallen (mit Grund):
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf - Grund: ohne Unveraendert-Pruefung ruft das Schliessen nach der erfolgreichen Rollenwahl noch einmal, mit drei leeren Feldern; der Aufruf endet am Fruehausstieg (State.cpp:380-381), Aufrufe 2 - den Einzelbruch dieser Zaehlerhaelfte traegt P3
+      - B15: 313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf - Grund: wie 313/M-04 (Zaehler): das Schliessen nach der Uebernahme ruft ein zweites Mal ohne Aenderung, Aufrufe 2 - Einzelbruch P3
+      - B15: 313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust (Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf - Grund: wie 313/M-04 (Zaehler): nach der Uebernahme am Fokusverlust ruft das Schliessen ein zweites Mal ohne Aenderung, Aufrufe 2 - Einzelbruch P3
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 9 Fehler; Einzelzeilen in NAK-313-e2-mutation-P1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:05:09: SHA-256 595c9bffb5762410fb06a754da12aea91a68c62063ae2381d27b66f6055acaa8 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 04:05:14.459, Quelle 04:05:09.057, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P1-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

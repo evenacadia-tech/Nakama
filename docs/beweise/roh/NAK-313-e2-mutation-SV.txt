@@ -1,0 +1,157 @@
+NAK-313 Etappe 2 - Mutationslauf SV: state/NakamaState.cpp - kRootSchema auf 3
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine gruen,
+git status und git diff --stat. Die Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das
+Protokoll und die Pruefzeilen der gemessenen Abschnitte.
+
+=== Protokoll ===
+Rotlauf SV - 24.09.2026 04:12:58 - HEAD c7d7dd93f6860149f7141e37610bbcebe056d33e
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\SV-NakamaState.cpp (SHA-256 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5)
+Mutation ab Zeile 72 (Stand vor der Mutation):
+  vorher:
+    | constexpr int kRootSchema   = 2;
+    | 
+  nachher:
+    | constexpr int kRootSchema   = 3;   // MUTATION M-16 State-Version
+    | 
+Mutiert 24.09.2026 04:12:58, SHA-256 mutiert 4ea1006309a9dfcf0c6bf5f3f63f7854cff42aaff5cdf2f8e4f4936ccfe21590
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2 (EqCopStateMigrationTest): Binaer 04:13:06.963, Quelle 04:12:58.434, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 55, Rohausgabe rot-SV-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 278 Pruefungen ok, 55 Fehler
+  gefallen in B2:
+    - FEHLER  Golden 'sensor' weicht ab  [178 Bytes]
+    - FEHLER  Golden 'hub' weicht ab  [205 Bytes]
+    - FEHLER  Golden 'pre' weicht ab  [195 Bytes]
+    - FEHLER  Golden 'post' weicht ab  [197 Bytes]
+    - FEHLER  4 Rollen bytegleich zum Schema-2-Golden  [0]
+    - FEHLER  Intent-Golden main-intent-v1.bin bytegleich zum Writer
+    - FEHLER  M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert  [nurLesen, Bindung '']
+    - FEHLER  M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes  [256 Bytes vom Writer, 256 auf der Platte]
+    - FEHLER  M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich
+    - FEHLER  legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)  [2397 Bytes vom Writer, 2397 auf der Platte, Kinder Common,RetainedMainProject]
+    - FEHLER  legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich  [nurLesen, 0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+    - FEHLER  Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+    - FEHLER  Layout-v1-Golden layout-v1.bin bytegleich
+    - FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+    - FEHLER  Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [6]
+    - FEHLER  == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+    - FEHLER  legacy_instance_id_save_load_bytegleich
+    - FEHLER  == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+    - FEHLER  read-only-Fall: Root schema 3  [bib FALSCH proz FALSCH grund '']
+    - FEHLER  21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [20]
+    - FEHLER  63 verschachtelte Arrays plus Blatt passieren und laden
+    - FEHLER  Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [1024]
+    - FEHLER  additive Binaer- und Array-Properties bleiben bytegleich lesbar
+    - FEHLER  312/M-115 read-only: main-intent-v1.bin + Bestandskind (in main neben MainProject)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: dsp-v2-voll.bin + Bestandskind (in active_probe)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+    - FEHLER  312/M-115 read-only: Golden mit plugin_kind passive_probe  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+    - FEHLER  312/M-115 read-only: Golden mit doppeltem Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit Bestandskind schema 2  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit ungerader confirmed_members_v1  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit doppelter instance_id im Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit 65 Paaren im Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit Intentinhalt ohne intent_revision_v1  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 kind_matrix_des_bestandskinds: 10 Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund  [0]
+    - FEHLER  read-only gesetzt
+    - FEHLER  == Unbekanntes Major: 20 Faelle read-only, Originalbytes bytegleich zurueck
+    - FEHLER  312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau 2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes mit Bestandskind und Speichern melden 0  [Wechsel 2, nach dem Speichern 2, Laden des Goldens 0]
+    - FEHLER  == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+    - FEHLER  frisch speichert NakamaState schema 2, legacy
+    - FEHLER  Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+    - FEHLER  == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+    - FEHLER  312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 0 Byte, VERSCHIEDEN]
+    - FEHLER  == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+    - FEHLER  312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject  [legacy gespeichert bytegleich]
+    - FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+  erwartet gefallen: '4 Rollen bytegleich zum Schema-2-Golden': JA
+Ruecknahme 24.09.2026 04:13:07: SHA-256 9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5 - gleich dem Stand vor der Mutation
+Lauf nach der Ruecknahme:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2 (EqCopStateMigrationTest): Binaer 04:13:11.470, Quelle 04:13:07.639, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-SV-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+  B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B2 unter der Mutation: gefallene Pruefungen und die Faelle 313/ ===
+  FEHLER  Golden 'sensor' weicht ab  [178 Bytes]
+  FEHLER  Golden 'hub' weicht ab  [205 Bytes]
+  FEHLER  Golden 'pre' weicht ab  [195 Bytes]
+  FEHLER  Golden 'post' weicht ab  [197 Bytes]
+  FEHLER  4 Rollen bytegleich zum Schema-2-Golden  [0]
+  FEHLER  Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  FEHLER  M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert  [nurLesen, Bindung '']
+  FEHLER  M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes  [256 Bytes vom Writer, 256 auf der Platte]
+  FEHLER  M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich
+  FEHLER  legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)  [2397 Bytes vom Writer, 2397 auf der Platte, Kinder Common,RetainedMainProject]
+  FEHLER  legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich  [nurLesen, 0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+  FEHLER  Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  FEHLER  Layout-v1-Golden layout-v1.bin bytegleich
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  FEHLER  Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [6]
+  FEHLER  == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  FEHLER  legacy_instance_id_save_load_bytegleich
+  FEHLER  == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  FEHLER  read-only-Fall: Root schema 3  [bib FALSCH proz FALSCH grund '']
+  FEHLER  21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [20]
+  FEHLER  63 verschachtelte Arrays plus Blatt passieren und laden
+  FEHLER  Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [1024]
+  FEHLER  additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  FEHLER  312/M-115 read-only: main-intent-v1.bin + Bestandskind (in main neben MainProject)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: dsp-v2-voll.bin + Bestandskind (in active_probe)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+  FEHLER  312/M-115 read-only: Golden mit plugin_kind passive_probe  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+  FEHLER  312/M-115 read-only: Golden mit doppeltem Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: Golden mit Bestandskind schema 2  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: Golden mit ungerader confirmed_members_v1  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: Golden mit doppelter instance_id im Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: Golden mit 65 Paaren im Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: Golden mit Intentinhalt ohne intent_revision_v1  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 read-only: Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+  FEHLER  312/M-115 kind_matrix_des_bestandskinds: 10 Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund  [0]
+  FEHLER  read-only gesetzt
+  FEHLER  == Unbekanntes Major: 20 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, 0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60  [geladen ja, Rueckgabe false, Host-Dirty nach dem Laden 0 (beim Laden 0), Reconnect-Anforderungen 0, Save bytegleich ja]
+  ok      313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler): 0 Reconnect-Anforderungen  [geladen ja, Rueckgabe false, Host-Dirty nach dem Laden 0 (beim Laden 0), Reconnect-Anforderungen 0, Save bytegleich ja]
+  ok      313/M-04 api_rolle_mit_unveraendert_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (post, 121, 61) - Rueckgabe true, genau 1 Host-Dirty, Rolle post, Label und Paarname 121/61 unveraendert  [Rueckgabe true, Host-Dirty 1, Rolle 'post', Label 121 Zeichen, Paarname 61 Zeichen]
+  FEHLER  312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau 2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes mit Bestandskind und Speichern melden 0  [Wechsel 2, nach dem Speichern 2, Laden des Goldens 0]
+  FEHLER  == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  FEHLER  frisch speichert NakamaState schema 2, legacy
+  FEHLER  Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  FEHLER  == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+  FEHLER  312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 0 Byte, VERSCHIEDEN]
+  FEHLER  == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+  FEHLER  312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject  [legacy gespeichert bytegleich]
+  FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 278 Pruefungen ok, 55 Fehler
+=== B2 nach der Ruecknahme: Summenzeilen ===
+STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+gefallene Pruefungen nach der Ruecknahme: 0

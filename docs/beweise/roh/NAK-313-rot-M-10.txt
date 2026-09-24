@@ -1,0 +1,142 @@
+NAK-313 Etappe 2 - Rotbeweis M-10 (Manifest docs/beweise/NAK-313.md §6.1, Ablauf §8.1, R-313-11, R-313-12)
+Stand: c7d7dd93 (Reparatur a1ab8c1c, Korrektur c7d7dd93: Grenzmeldung als Helfer); Mutationslaeufe 24.09.2026, 04:04 bis 04:13 Uhr (erste Runde an a1ab8c1c, 03:06 bis 03:15 Uhr, mit denselben Ergebnissen); Gegenprobe am Basisstand 24.09.2026, 02:52 und 02:57 Uhr gegen den Produktcode von 9bf629bf (NAK-313-e2-basisstand.txt).
+
+Matrixzeile M-10 - T3-02-04 - R-313-3 - API-Kante ohne Aenderung
+Zustand: Gen (auf dem Heap) mit dem Stand x aus M-01, geladen ueber setStateInformation.
+Ereignis: setzeBindung ("pre", <121 Zeichen>, <61 Zeichen>), alle Werte gleich dem Zustand.
+Zusage: Rueckgabe false, 0 Host-Dirty, 0 Reconnect-Anforderungen, Zustand unveraendert (Save bytegleich zu x) - auch mit Werten ueber 120/60, weil keiner geaendert ist.
+Bein: B2 (EqCopStateMigrationTest), StateMigrationTestMain.cpp, Abschnitt G11, 313/M-10 api_ohne_aenderung_mit_langem_label.
+
+--- Haelfte 1: Rueckgabe false, 0 Host-Dirty, Zustand unveraendert - Etikett: Regressionswache ---
+Pruefung: 313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 ...
+Am Basisstand (vor der Reparatur, Zaehlerhaelften ungewertet):
+  ok      313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, 0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60  [geladen ja, Rueckgabe false, Host-Dirty nach dem Laden 0 (beim Laden 0), Reconnect-Anforderungen nicht messbar, Save bytegleich ja]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation S4 (prozessor/State.cpp - den Fruehausstieg if (neu == zustand.common) return false; entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\S4-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 380 (Stand vor der Mutation):
+      vorher:
+        |         if (neu == zustand.common)
+        |             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+        | 
+      nachher:
+        |         // MUTATION S4: Fruehausstieg entfernt
+        | 
+    Mutiert 24.09.2026 04:10:51, SHA-256 mutiert efbed2a42f0925ab315b287da17e574a3b47a9db450cd0f3e65f79536ef1c068
+    Kette (R-313-11): ohne Fruehausstieg laeuft der Aufruf ohne Aenderung weiter: zustand.common = neu (gleich), werteSourcesPublikationAus meldet Host-Dirty - beobachtet Rueckgabe true, Host-Dirty 1
+    Lauf unter der Mutation:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:11:01.197, Quelle 04:10:51.099, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 10, Rohausgabe rot-S4-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 318 Pruefungen ok, 10 Fehler
+      B15 (EqCopShot): Binaer 04:10:56.208, Quelle 04:10:51.099, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      (keine)
+    Zusagepruefung: 313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3
+      gefallen: FEHLER  313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, 0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60  [geladen ja, Rueckgabe true, Host-Dirty nach dem Laden 1 (beim Laden 0), Reconnect-Anforderungen 1, Save bytegleich ja]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B2: 313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler): 0 Reconnect-Anforderungen
+    mitgefallen (mit Grund):
+      - B2: setzeBindung ohne Aenderung: keine Meldung - Grund: die bestehende Wache desselben Fruehausstiegs (SONDE-006, G11): der Aufruf ohne Aenderung meldet jetzt Host-Dirty
+      - B2: setzeBindung mit Aenderung: genau eine Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: Rollenwechsel zu hub: zweite Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: getStateInformation meldet nichts - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: unbekannte v2-Rolle wird verweigert, keine Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: read-only verweigert setzeBindung und neueSensorId ohne Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler; B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 318 Pruefungen ok, 10 Fehler; Einzelzeilen in NAK-313-e2-mutation-S4.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:11:09: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:11:19.311, Quelle 04:11:09.317, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      B15 (EqCopShot): Binaer 04:11:14.262, Quelle 04:11:09.317, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: 0 Reconnect-Anforderungen - Etikett: heute nicht messbar ---
+Pruefung: 313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler) ...
+Am Basisstand: nicht messbar (der Zaehler entsteht erst im Bau).
+
+  Mutation S4 (prozessor/State.cpp - den Fruehausstieg if (neu == zustand.common) return false; entfernt), Stand c7d7dd93:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\3c810c44\tmp\rot-sicherung\S4-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 380 (Stand vor der Mutation):
+      vorher:
+        |         if (neu == zustand.common)
+        |             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+        | 
+      nachher:
+        |         // MUTATION S4: Fruehausstieg entfernt
+        | 
+    Mutiert 24.09.2026 04:10:51, SHA-256 mutiert efbed2a42f0925ab315b287da17e574a3b47a9db450cd0f3e65f79536ef1c068
+    Kette (R-313-11): derselbe Aufruf erreicht pipe.reconnect() - beobachtet Reconnect-Anforderungen 1
+    Lauf unter der Mutation:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:11:01.197, Quelle 04:10:51.099, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 10, Rohausgabe rot-S4-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 318 Pruefungen ok, 10 Fehler
+      B15 (EqCopShot): Binaer 04:10:56.208, Quelle 04:10:51.099, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-mutiert-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      (keine)
+    Zusagepruefung: 313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler)
+      gefallen: FEHLER  313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler): 0 Reconnect-Anforderungen  [geladen ja, Rueckgabe true, Host-Dirty nach dem Laden 1 (beim Laden 0), Reconnect-Anforderungen 1, Save bytegleich ja]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften derselben Mutation:
+      - B2: 313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe fa
+    mitgefallen (mit Grund):
+      - B2: setzeBindung ohne Aenderung: keine Meldung - Grund: die bestehende Wache desselben Fruehausstiegs (SONDE-006, G11): der Aufruf ohne Aenderung meldet jetzt Host-Dirty
+      - B2: setzeBindung mit Aenderung: genau eine Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: Rollenwechsel zu hub: zweite Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: getStateInformation meldet nichts - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: unbekannte v2-Rolle wird verweigert, keine Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: read-only verweigert setzeBindung und neueSensorId ohne Meldung - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+      - B2: == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert - Grund: Folgefehler im Abschnitt G11 von B2: der gemeinsame Zaehler dirty.nonParam steht nach dem ersten Aufruf ohne Aenderung um 1 hoeher, jede folgende absolute Zaehlpruefung verschiebt sich
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (Summenzeilen: B15: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler; B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 318 Pruefungen ok, 10 Fehler; Einzelzeilen in NAK-313-e2-mutation-S4.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 04:11:09: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+      Lauf nach der Ruecknahme:
+      Bau EqCopShot EqCopStateMigrationTest: Exit 0
+      B2 (EqCopStateMigrationTest): Binaer 04:11:19.311, Quelle 04:11:09.317, Binaer juenger: ja
+      B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-zurueck-B2.txt
+      Summe: STATE-MIGRATION-TEST OK - 328 Pruefungen ok, 0 Fehler
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      B15 (EqCopShot): Binaer 04:11:14.262, Quelle 04:11:09.317, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S4-zurueck-B15.txt
+      Summe: SONDE-012 SHOTS 29/29 gruen
+      Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 37 geprueft, 0 Fehler
+      Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+      Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+      Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+      Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+      git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+      git diff --stat: (leer)

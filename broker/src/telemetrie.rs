@@ -567,6 +567,24 @@ fn pruefe_adresse(a: &fb::Adresse, p: &str, out: &mut Vec<Verstoss>) {
             out.push(Verstoss::neu(&format!("{p}/{name}"), "hex32"));
         }
     }
+
+    // 🔑 NAK-313 R-313-8 (E-313-13): die Zieladresse ist geschlossen. Der
+    // Verifier kennt nur die fuenf Felder und laesst einen belegten Slot
+    // jenseits von Feld-ID 4 stehen; hier faellt er. Belegt heisst: der
+    // VTable-Eintrag ist ungleich 0 - gelesen wird der Eintrag selbst, nie der
+    // Feldinhalt und nie die VTable-Laenge allein, denn ein laengerer Eintrag
+    // mit 0 bleibt zulaessig. Nicht ueber offset_nicht_null: das liefert fuer
+    // einen fehlenden Slot true und liest bei einem belegten den Inhalt. Ein
+    // Verstoss je Eintrag, derselbe Name wie auf der C++-Seite.
+    let vtable = a._tab.vtable();
+    let mut slot = fb::Adresse::VT_RUNTIME_NONCE as usize + 2;
+    while slot + 2 <= vtable.num_bytes() {
+        if vtable.get(slot as ::flatbuffers::VOffsetT) != 0 {
+            out.push(Verstoss::neu(p, "adresse_zusatzfeld"));
+            break;
+        }
+        slot += 2;
+    }
 }
 
 fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {

@@ -762,6 +762,45 @@ void fahreFbKorpus()
     }
 }
 
+/*  NAK-313 Etappe 6 (R-313-7, R-313-8): die Samplerategrenze des C++-Writers
+    ist die des Tors (M-101), und die Zieladresse ist geschlossen - ein
+    belegter Slot jenseits von Feld-ID 4 ist genau ein Verstoss (M-114), ein
+    laengerer VTable-Eintrag mit leerem Slot bleibt gueltig (M-118).
+*/
+void fahreNak313Etappe6()
+{
+    pruefe (nakama::ipc::audioGueltig (1e-307, 512, 2),
+            "313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet");
+    pruefe (! nakama::ipc::audioGueltig (768000.5, 512, 2),
+            "313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000");
+
+    const auto lade = [] (const char* relativ, juce::MemoryBlock& roh)
+    {
+        const auto datei = finde (juce::String ("eq-copilot/fixtures/v3/flatbuffers/") + relativ);
+        return datei.existsAsFile() && datei.loadFileAsData (roh);
+    };
+    juce::MemoryBlock zusatz;
+    const bool zusatzDa = lade ("ungueltig/adresse-zusatzfeld-id5.bin", zusatz);
+    const auto v = zusatzDa ? nakama::telemetrie::pruefe (
+                                  static_cast<const uint8_t*> (zusatz.getData()), zusatz.getSize())
+                            : juce::Array<nakama::telemetrie::Verstoss>();
+    pruefe (zusatzDa && v.size() == 1 && v.getReference (0).pfad == "/eintraege/0/quelle"
+                && v.getReference (0).regel == "adresse_zusatzfeld",
+            "313/M-114 adresse_zusatzfeld: genau ein Verstoss am Eintrag 0",
+            v.isEmpty() ? juce::String ("keine Verstoesse")
+                        : v.getReference (0).pfad + " | " + v.getReference (0).regel
+                              + " (" + juce::String (v.size()) + ")");
+
+    juce::MemoryBlock leer;
+    const bool leerDa = lade ("gueltig/adresse-vtable-slot5-leer.bin", leer);
+    const auto w = leerDa ? nakama::telemetrie::pruefe (
+                                static_cast<const uint8_t*> (leer.getData()), leer.getSize())
+                          : juce::Array<nakama::telemetrie::Verstoss> { { "", "fehlt" } };
+    pruefe (leerDa && w.isEmpty(),
+            "313/M-118 adresse_vtable_slot5_leer: ein Nullslot bleibt gueltig",
+            w.isEmpty() ? juce::String() : w.getReference (0).pfad + " | " + w.getReference (0).regel);
+}
+
 /*  T2-Runde 3, Befund 8: die Bandwertgrenzen der beiden Leser standen nur im
     Quelltext, waehrend README und Beweismanifest `bereich_db` als ihre Quelle
     nannten - ein Feld, das etwas ganz anderes bedeutet (den Traegerumfang
@@ -1990,6 +2029,7 @@ int main (int, char*[])
     fahreTextriegelproben();
     fahreRiegelproben();
     fahreFbKorpus();
+    fahreNak313Etappe6();
     fahreBandwertgrenzen();
     fahreBandStereoRoundtrip();
     fahreWireZahlFixture();

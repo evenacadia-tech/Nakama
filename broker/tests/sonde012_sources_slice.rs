@@ -551,6 +551,52 @@ fn p2_reject_reason_reaches_subscriber_and_keeps_last_valid_frame() {
     assert!(messung.messung_ungueltig);
 }
 
+/// NAK-313 M-116 (R-313-8, R-313-15): ein Batch mit belegtem Adressslot
+/// jenseits von Feld-ID 4 erreicht Gen nicht. Die Quelle ist mit der Adresse
+/// des Fixtures gekoppelt - sonst lehnte schon der Adressvergleich ab -, und
+/// der naechste Snapshot an das abonnierte Main ist der einzige Push: er traegt
+/// p2_reject feature_batch_ungueltig.
+#[test]
+fn nak313_m116_zusatzslot_wird_nicht_weitergereicht() {
+    let (c, _clock, push) = coordinator();
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/flatbuffers/ungueltig/adresse-zusatzfeld-id5.bin");
+    let batch = std::fs::read(&fixture).unwrap_or_else(|e| panic!("{}: {e}", fixture.display()));
+    // Die Adresse des Grundbatches live-64-band (erzeuge_fb_fixtures.py, adresse(3)).
+    let adresse_fuer = |instanz: String, nonce: String| Adresse {
+        logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001".into(),
+        project_binding_id: "1".repeat(32),
+        session_epoch: "2".repeat(32),
+        instance_id: instanz,
+        runtime_nonce: nonce,
+    };
+    let main = adresse_fuer(hex(10), hex(100));
+    anmelden(&c, "main", &main, "main", Some(77));
+    assert!(heartbeat(&c, "main", &main, 1));
+    assert!(abonnieren(&c, "main", &main));
+    let quelle = adresse_fuer(hex(3), "4".repeat(32));
+    quelle_anmelden(&c, "probe", &quelle);
+
+    let frames_vorher = push.frames().len();
+    let snapshots_vorher = push.snapshots().len();
+    Senke::p2(&c, "probe", &batch);
+    assert_eq!(push.frames().len(), frames_vorher, "die P2-Bytes erreichen Gen nicht");
+    c.liveness_tick();
+
+    let snapshots = push.snapshots();
+    assert_eq!(
+        snapshots.len(),
+        snapshots_vorher + 1,
+        "der Snapshot mit dem Ablehnungsgrund ist der einzige Push"
+    );
+    assert_eq!(push.frames().len(), frames_vorher, "auch nach dem Tick kein Frame");
+    let wire = mitglied(&snapshots.last().unwrap().1, &quelle.instance_id);
+    assert_eq!(
+        wire["p2_reject"],
+        json!({"grund": "feature_batch_ungueltig", "zaehler": 1})
+    );
+}
+
 #[test]
 fn latest_per_source_no_cross_gap_interpolation() {
     let (c, clock, _push) = coordinator();

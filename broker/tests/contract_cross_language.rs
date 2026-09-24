@@ -248,6 +248,32 @@ fn fb_korpus_klassifiziert_wie_das_manifest() {
     println!("{geprueft} Binaerfixtures gegen das Manifest geprueft");
 }
 
+/// NAK-313 M-115 (R-313-8, E-313-13): die Zieladresse ist geschlossen. Ein
+/// belegter Slot jenseits von Feld-ID 4 ist genau ein Verstoss je Eintrag, mit
+/// demselben Namen und derselben Ordnung wie auf der C++-Seite (M-114).
+#[test]
+fn nak313_m115_adresse_zusatzfeld() {
+    use eqcop_broker::telemetrie::{pruefe, Verstoss};
+    let pfad = wurzel().join("eq-copilot/fixtures/v3/flatbuffers/ungueltig/adresse-zusatzfeld-id5.bin");
+    let roh = std::fs::read(&pfad).unwrap_or_else(|e| panic!("{}: {e}", pfad.display()));
+    assert_eq!(
+        pruefe(&roh),
+        vec![Verstoss { pfad: "/eintraege/0/quelle".into(), regel: "adresse_zusatzfeld".into() }],
+        "der Zusatzslot ist genau ein Verstoss am Eintrag 0"
+    );
+}
+
+/// NAK-313 M-118 (R-313-8, E-313-13): ein laengerer VTable-Eintrag mit Offset
+/// 0 bleibt gueltig - der Riegel fragt je Slot den Eintrag, weder die
+/// VTable-Laenge noch den Feldinhalt.
+#[test]
+fn nak313_m118_nullslot_bleibt_gueltig() {
+    use eqcop_broker::telemetrie::pruefe;
+    let pfad = wurzel().join("eq-copilot/fixtures/v3/flatbuffers/gueltig/adresse-vtable-slot5-leer.bin");
+    let roh = std::fs::read(&pfad).unwrap_or_else(|e| panic!("{}: {e}", pfad.display()));
+    assert_eq!(pruefe(&roh), vec![], "eine Adress-VTable mit leerem Slot 5 ist gueltig");
+}
+
 #[test]
 fn bandgitter_ist_lesbar_und_in_sich_stimmig() {
     let w = wurzel();

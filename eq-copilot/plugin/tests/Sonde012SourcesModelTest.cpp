@@ -679,6 +679,74 @@ void nak313M61Ruecknahme (Zeitpunkt t0)
     }
 }
 
+/// NAK-313 M-108 (R-313-15, Beobachtung B-8): Gen ordnet die Meldungen des
+/// Handschlags der Etappe 6 ueber Teilwoerter ein. Eine gelesene Ablehnung
+/// des Brokers ist incompatible ohne Handgriff; die Lesegruende des flachen
+/// Lesers ("welcome: " + Grund) bleiben brokerUnavailable mit Handgriff.
+void nak313M108Diagnose()
+{
+    const struct { const char* meldung; bool inkompatibel; } faelle[] = {
+        { "Broker lehnt ab: bootstrap: KeinHello(\"schema: /host verletzt type\")", true },
+        { "welcome: kein gueltiges UTF-8", false },
+        { "welcome: NUL-Escape", false },
+        { "welcome: einsames Surrogat", false },
+        { "welcome: unbekanntes Escape", false },
+        { "welcome: \\u-Escape ohne vier Hexziffern", false },
+        { "welcome: rohes Steuerzeichen", false },
+        { "welcome: doppelter Name", false },
+        { "welcome: Syntax", false },
+        { "welcome: kein type", false },
+    };
+    for (const auto& f : faelle)
+    {
+        Model m;
+        nakama::ipc::ControlClient::Snapshot s;
+        s.status = nakama::ipc::ControlClient::Status::getrennt;
+        s.letzterFehler = f.meldung;
+        m.setzeControlTransport (s);
+        const auto sicht = m.sicht();
+        const bool ok = f.inkompatibel
+            ? sicht.diagnose == Model::Diagnose::incompatible && ! sicht.diagnoseHatHandgriff
+            : sicht.diagnose == Model::Diagnose::brokerUnavailable && sicht.diagnoseHatHandgriff;
+        pruefe (ok, (juce::String ("313/M-108 diagnose_der_handshakemeldungen: ") + f.meldung).toRawUTF8(),
+                juce::String ((int) sicht.diagnose) + (sicht.diagnoseHatHandgriff ? ", mit Handgriff" : ", ohne Handgriff"));
+    }
+}
+
+/// NAK-313 M-117 (R-313-8, R-313-15): Gens P2-Leser verwirft einen Batch, dessen
+/// Adresse einen Slot jenseits von Feld-ID 4 belegt. Das Modell kennt die
+/// Quelle des Fixtures (dieselbe Adresse wie live-64-band) - ohne diese
+/// Einrichtung liefert uebernehmeP2 auch heute false, mit leerem Grund.
+void nak313M117UebernehmeP2 (Zeitpunkt t0)
+{
+    const auto basis = p2Fixture ("live-64-band");
+    {
+        // Gegenprobe der Einrichtung: der gueltige Grundbatch wird uebernommen.
+        Model m;
+        initialisiereFuer (m, basis, t0);
+        pruefe (basis.ok && p2InModell (m, basis, t0 + std::chrono::milliseconds (1)),
+                "313/M-117 uebernehme_p2_zusatzslot (Einrichtung: live-64-band wird uebernommen)");
+    }
+    Model m;
+    initialisiereFuer (m, basis, t0);
+    const auto vorher = m.sicht();
+    juce::MemoryBlock roh;
+    const bool da = finde ("eq-copilot/fixtures/v3/flatbuffers/ungueltig/adresse-zusatzfeld-id5.bin")
+                        .loadFileAsData (roh);
+    juce::String grund;
+    const bool uebernommen = da && m.uebernehmeP2 (
+        static_cast<const std::uint8_t*> (roh.getData()), roh.getSize(),
+        nakama::ipc::kFeatureBatchSchemaMinor, t0 + std::chrono::milliseconds (1), grund);
+    pruefe (da && ! uebernommen && grund == "/eintraege/0/quelle:adresse_zusatzfeld",
+            "313/M-117 uebernehme_p2_zusatzslot (Rueckgabe false, Grund)", grund);
+    const auto nachher = m.sicht();
+    const bool zeileGleich = vorher.quellen.size() == 1 && nachher.quellen.size() == 1
+        && nachher.quellen.front().messung == vorher.quellen.front().messung
+        && nachher.quellen.front().lautheit == vorher.quellen.front().lautheit
+        && nachher.quellen.front().fensterDauerMs == vorher.quellen.front().fensterDauerMs;
+    pruefe (zeileGleich, "313/M-117 uebernehme_p2_zusatzslot (Zeile unveraendert: keine Messung)");
+}
+
 } // namespace
 
 int main()
@@ -694,6 +762,10 @@ int main()
     // gepufferte Ausgabe der Tabellenfaelle ginge dabei verloren.
     nak313Produkteingaenge (t0);
     nak313M61Ruecknahme (t0);
+    // NAK-313 Etappe 6: die Diagnose der Handschlagmeldungen und Gens P2-Leser
+    // an der geschlossenen Zieladresse.
+    nak313M108Diagnose();
+    nak313M117UebernehmeP2 (t0);
     std::cout << std::flush;
 
     const auto pair = p2Fixture ("loudness-i-pair");

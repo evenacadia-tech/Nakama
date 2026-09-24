@@ -180,6 +180,25 @@ void pruefeAdresse (const fb::Adresse& a, const juce::String& p, juce::Array<Ver
     for (const auto& t : tokens)
         if (! istHex32 (t.wert))
             hinzu (out, p + "/" + t.name, "hex32");
+
+    /*  NAK-313 R-313-8 (E-313-13): die Zieladresse ist geschlossen. Der
+        Verifier kennt nur die fuenf Felder und laesst einen belegten Slot
+        jenseits von Feld-ID 4 stehen; hier faellt er. Belegt heisst: der
+        VTable-Eintrag ist ungleich 0 - gelesen wird der Eintrag selbst, nie
+        der Feldinhalt und nie die VTable-Laenge allein, denn ein laengerer
+        Eintrag mit 0 bleibt zulaessig. fb::Adresse erbt privat von
+        flatbuffers::Table, deshalb der Zeiger auf die Tabelle. Ein Verstoss je
+        Eintrag, derselbe Name wie auf der Rust-Seite. */
+    const auto* tabelle = reinterpret_cast<const flatbuffers::Table*> (&a);
+    const auto vtableLaenge = flatbuffers::ReadScalar<flatbuffers::voffset_t> (tabelle->GetVTable());
+    for (std::uint32_t slot = fb::Adresse::VT_RUNTIME_NONCE + 2u; slot + 2u <= vtableLaenge; slot += 2u)
+    {
+        if (tabelle->GetOptionalFieldOffset (static_cast<flatbuffers::voffset_t> (slot)) != 0)
+        {
+            hinzu (out, p, "adresse_zusatzfeld");
+            break;
+        }
+    }
 }
 
 void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,

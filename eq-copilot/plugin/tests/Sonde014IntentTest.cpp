@@ -1220,7 +1220,7 @@ void m11()
 // VOR dem Riegel - an der Revisionsobergrenze war der Eintrag entfernt, der
 // Handgriff meldete `false`, `veraendert` blieb `false`, also KEIN Host-Dirty
 // und keine Revision. Eine persistente Aenderung ohne Marke verletzt
-// `nakama-state-v2.md:139` und "State bleibt verlustfrei". (2) die
+// nakama-state-v2.md:187 und "State bleibt verlustfrei". (2) die
 // Assistentenrevision hatte keine obere Schranke - `a.revision += 1` an
 // `int64max` ist signed-integer-UB, und der erzeugte negative Wert wird vom
 // EIGENEN Reader abgewiesen ("revision must be at least 1").
@@ -1401,7 +1401,7 @@ void m283_07_bis_09()
     // Der Fix haette den No-op-Pfad verschieben koennen: waere die Revision
     // jetzt auch dann gehoben, wenn gar kein Eintrag passt, meldete ein
     // folgenloser Aufruf Host-Dirty. Diese Probe haelt fest, dass das nicht
-    // passiert (M-12, `nakama-state-v2.md:139`).
+    // passiert (M-12, nakama-state-v2.md:187).
     {
         state::Zustand z;
         const auto erg = lade (writer, z);
@@ -1752,7 +1752,7 @@ void m283_12()
     }
 
     // Und der Weg ueber den PRODUKTPFAD am Normalstand: ein echter Handgriff
-    // meldet genau einmal Host-Dirty (`nakama-state-v2.md:139`).
+    // meldet genau einmal Host-Dirty (nakama-state-v2.md:187).
     {
         auto p = mainProzessor();
         DirtyZaehler dirty;

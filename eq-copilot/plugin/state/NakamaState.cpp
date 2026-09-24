@@ -2492,7 +2492,7 @@ bool entferneIntent (Zustand& z, const juce::String& quelleId, const juce::Strin
         Revisionsobergrenze war der Eintrag entfernt, der Handgriff meldete
         `false`, `veraendert` blieb `false` - also kein Host-Dirty, keine
         Revision, und eine persistente Aenderung ohne Marke. Das verletzt
-        `nakama-state-v2.md:139` ("steigt bei jeder persistenten Aenderung genau
+        nakama-state-v2.md:187 ("steigt bei jeder persistenten Aenderung genau
         einmal") und "State bleibt verlustfrei".
 
         Deshalb in DREI Schritten: erst FRAGEN, ob ueberhaupt etwas passt (ohne
@@ -2878,7 +2878,7 @@ namespace
     signed-integer-UB, und der MSVC-Lauf erzeugte `-9223372036854775808` - einen
     Stand, den der EIGENE Reader danach ablehnt („revision must be at least 1",
     `:1905-1909`). Das verletzt "State bleibt verlustfrei" und den Vertragssatz
-    `nakama-state-v2.md:136` ("`revision` `int64` >= 1").
+    nakama-state-v2.md:184 ("revision int64 >= 1", seit NAK-313 "<= 2^53-1").
 
     Der Rand ist kein Ueberlauf, sondern ein HALT - dieselbe Form wie beim
     Bestand: die Aenderung wird abgewiesen, der Wert bleibt stehen. Seit

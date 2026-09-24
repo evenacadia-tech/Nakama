@@ -22,6 +22,12 @@
 // Eigenschaften wandern mit, jedes unzulaessige Bestandskind ist read-only mit
 // Originalbytes, und je Wechsel meldet der Prozessor genau ein Host-Dirty.
 //
+// Seit NAK-313 Etappe 2 (R-313-3; 313/M-04 API-Haelfte, 313/M-10) misst das
+// Bein, dass setzeBindung die Grenzen 120/60 nur fuer geaenderte Werte prueft:
+// an einem geladenen Stand mit Label 121 und Paarnamen 61 Zeichen gelingt die
+// Rollenwahl mit genau einem Host-Dirty; ohne Aenderung bleibt es bei false,
+// ohne Host-Dirty und ohne Reconnect-Anforderung.
+//
 //   EqCopStateMigrationTest.exe                    misst
 //   EqCopStateMigrationTest.exe --schreibe-goldens schreibt fixtures/state/schema2/*.bin
 //   EqCopStateMigrationTest.exe --lade-bericht <datei>

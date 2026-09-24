@@ -698,6 +698,21 @@ std::function<bool()>& messpunktMarkeFuerTest()
 } // namespace testzugang
 #endif
 
+// NAK-313 Etappe 2 (R-313-3, M-12): die ehrliche Statuszeile, wenn die
+// Bindungs-API einen geänderten Text über seiner Grenze abweist. Leer, wenn
+// keiner der gegebenen Texte darüber liegt - dann hatte `false` eine andere
+// Ursache. Englisch wie die Nachbarmeldungen des Panels.
+static juce::String grenzMeldung (const std::optional<juce::String>& label,
+                                  const std::optional<juce::String>& paarName)
+{
+    juce::StringArray meldung;
+    if (label.has_value() && label->length() > 120)
+        meldung.add ("Name is longer than 120 characters and was not saved.");
+    if (paarName.has_value() && paarName->length() > 60)
+        meldung.add ("Pair name is longer than 60 characters and was not saved.");
+    return meldung.joinIntoString (" ");
+}
+
 // ── Messpunkt-Popover: die OPTIONALE Bindung (Aufgabe/Name/Paar) — bewusst
 // nicht im Dauer-Kopf, damit kein Setup-Gefühl entsteht (USER-VORGABE:
 // laden → Musik spielen → Befund; alles andere ist Beiwerk). ───────────────
@@ -803,14 +818,12 @@ void EqCopilotEditor::zeigeMesspunkt()
             paarFeld.setEnabled (paar);
             paarFeld.setAlpha (paar ? 1.0f : 0.5f);
         }
-        // Übernimmt NUR, was der User geändert hat (NAK-313 R-313-3):
-        // verglichen wird gegen die Merkwerte - die Werte beim Öffnen, nach
-        // einer erfolgreichen Übernahme die übernommenen. Ohne Abweichung
-        // kein Aufruf, also kein Dirty, kein Reconnect-Geflacker beim
-        // Öffnen/Schließen oder Fokuswechsel und kein veränderter Text.
-        // Unveränderte Felder gibt das Panel nicht mit; der Prozessor nimmt
-        // sie aus seinem aktuellen Zustand. Das deaktivierte Paarfeld einer
-        // Rolle ohne Paar wird nicht gelesen.
+        // Übernimmt NUR, was der User geändert hat (NAK-313 R-313-3): Vergleich
+        // gegen die Merkwerte (beim Öffnen, nach jeder Übernahme nachgezogen);
+        // ohne Abweichung kein Aufruf - kein Dirty, kein Reconnect-Geflacker,
+        // kein veränderter Text. Unveränderte Felder reisen nicht mit, der
+        // Prozessor nimmt sie aus seinem Zustand; das deaktivierte Paarfeld
+        // einer Rolle ohne Paar wird nicht gelesen.
         //
         // NAK-312 R-312-2: die Lebendprüfung steht VOR jedem Zugriff. Ist der
         // Editor weg, kehrt der Rückruf zurück - kein Zugriff, keine
@@ -850,22 +863,15 @@ void EqCopilotEditor::zeigeMesspunkt()
                     geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
                 return;
             }
-            // false hat vier Ursachen (read-only, unbekannte Rolle, Grenze,
-            // keine Änderung); die Meldung gilt nur einem geänderten Text über
-            // seiner Grenze. Die Merkwerte bleiben: nichts ist übernommen.
-            juce::StringArray meldung;
-            if (label.has_value() && label->length() > 120)
-                meldung.add ("Name is longer than 120 characters and was not saved.");
-            if (paarName.has_value() && paarName->length() > 60)
-                meldung.add ("Pair name is longer than 60 characters and was not saved.");
-            if (meldung.isEmpty())
+            // false hat vier Ursachen (read-only, unbekannte Rolle, Grenze, keine
+            // Änderung); die Merkwerte bleiben, gemeldet wird nur die Grenze.
+            const auto meldung = grenzMeldung (label, paarName);
+            auto* lebend = editor.getComponent();
+            if (meldung.isEmpty() || lebend == nullptr)
                 return;
-            if (auto* lebend = editor.getComponent())
-            {
-                lebend->statusMeldung = meldung.joinIntoString (" ");
-                lebend->statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
-                lebend->uiDirty = true;
-            }
+            lebend->statusMeldung = meldung;
+            lebend->statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
+            lebend->uiDirty = true;
         }
         void comboBoxChanged (juce::ComboBox*) override { paarSichtbarkeit(); uebernehmen(); }
         void textEditorFocusLost (juce::TextEditor&) override { uebernehmen(); }

@@ -139,6 +139,7 @@ abhängt.
 | `quelle_doppelt` | Zwei Einträge mit derselben `instance_id`. §33.1: „Ein Batch trägt nie mehrere Frames derselben Quelle." **Genau diese Regel erspart dem Format die zweite Wrapper-Ebene** — sie kann kein Schema ausdrücken. |
 | `hex32` | Eines der vier Token ist nicht 32 Kleinbuchstaben-Hexziffern. |
 | `sid_laenge` | `logon_sid` ist leer oder länger als 184 Zeichen. |
+| `adresse_zusatzfeld` | Die Adresse eines Eintrags belegt einen Slot jenseits von Feld-ID 4 (VTable-Eintrag ≠ 0). Eine unbekannte Eigenschaft wäre eine unbekannte Zieladresse (Entwurf §33.1: nicht additiv); beide Leser melden sie nach der Verifikation, und der Broker reicht den Batch nicht weiter. Ein längerer VTable-Eintrag mit Offset 0 bleibt zulässig. |
 | `enum_unbekannt` | Ein Enumfeld trägt `unbekannt` (= 0, der Default eines fehlenden Skalarfelds) oder einen Wert außerhalb der Deklaration. |
 | `validity_unbekanntes_bit` | Ein gesetztes Bit außerhalb der sieben aus §32.3. |
 | `context_bit_fehlt` | `process_context_present` ist nicht gesetzt. §32.3 wörtlich: „Die Wrapper-Bridge liefert deshalb `process_context_present` und unabhängige Validity-Bits." Es ist ein **Optional** und kein `bool` mit Default — sonst wäre „der Sender hat es weggelassen" ununterscheidbar von „der Host hat keinen Context angelegt", und das sind zwei verschiedene Konfidenzaussagen. |

@@ -222,6 +222,9 @@ inline const char *EnumNameGueltigkeit(Gueltigkeit e) {
 /// das prueft schon der FlatBuffers-Verifier, nicht erst unser Leser.
 /// Die vier Hex-Token sind je 32 Kleinbuchstaben-Hexziffern (Def. `hex32` des
 /// JSON-Vertrags); die SID wird nie geparst, nur verglichen.
+/// Ein belegter Slot jenseits von Feld-ID 4 ist in beiden Lesern der Verstoss
+/// `adresse_zusatzfeld` (NAK-313 R-313-8); ein laengerer VTable-Eintrag mit
+/// Offset 0 bleibt zulaessig.
 struct Adresse FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef AdresseBuilder Builder;
   struct Traits;

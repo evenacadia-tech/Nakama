@@ -64,7 +64,10 @@ dasselbe sehen koennen, ist der Text.
    verschobenen Endnullen geschrieben sind. Nichtganzzahlige Werte tragen
    hoechstens 15 signifikante Dezimalziffern. Andernfalls kann binary64 den
    Nachkommateil verlieren und ein `type: integer` faelschlich passieren.
-3. **Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern.**
+3. **Zahlen ungleich 0 betragsmaessig ab 1e-307 und unter 1e308, und ein `e`
+   braucht Ziffern.** Gemessen am Literal: die fuehrende signifikante Ziffer
+   steht bei einem Dezimalexponenten zwischen −308 und 308 (ausschliesslich);
+   `1e-307` ist gueltig, `1e-308`, `2e-308` und `9.9e-308` sind es nicht.
 4. **Genau vier ASCII-Hexziffern** in einem `\u`-Escape. Vorher hatten die drei
    Beine drei Hex-Grammatiken: Pythons `int(roh, 16)` nahm `+123`, `` 12 ``,
    `0x1f`, `1_23` und arabisch-indische Ziffern, Rusts `from_str_radix` das

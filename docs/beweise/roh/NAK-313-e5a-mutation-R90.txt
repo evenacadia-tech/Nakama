@@ -1,0 +1,73 @@
+NAK-313 Etappe 5a - Mutationslauf R90: broker/src/vertrag.rs - im Rust-Textriegel Regel 2 fuer Literale ohne Bruch und Exponent abgeschaltet
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R90 - im Rust-Textriegel Regel 2 fuer Literale ohne Bruch und Exponent abgeschaltet - 24.09.2026 14:03:00 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei broker/src/vertrag.rs (LF)
+SHA-256 vorher e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R90-vertrag.rs (SHA-256 e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863)
+Mutation 1 ab Zeile 246 (Stand vor der Mutation):
+  vorher:
+    |         if zu_gross {
+    |             return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+    |         }
+    |         return Ok(());
+  nachher:
+    |         if zu_gross && lit.is_empty() {
+    |             // MUTATION R90: Regel 2 abgeschaltet
+    |             return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+    |         }
+    |         return Ok(());
+Mutiert 24.09.2026 14:03:00, SHA-256 mutiert e6d375151ee05b71075bd114a42f39ce8ee8a57562476bc8622c2791c300eb3f
+Kette (R-313-11): Ohne Regel 2 passiert state_revision 2^53 den Textriegel: der Heartbeat wird beantwortet (kein Leser der Revision), der state_report faellt erst am Ganzzahlhelfer (feldregel statt textriegel) (M-90).
+Lauf unter der Mutation:
+  A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R90-mutiert-A4-sonde013.txt
+    Summe: test nak313_m90_revision_ueber_2hoch53 ... FAILED
+    Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+    Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+  A4-lib: Exit 101, Fehlzeilen 2, Rohausgabe R90-mutiert-A4-lib.txt
+    Summe: test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+    Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+    Summe: test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 290 filtered out; finished in 0.09s
+    Summe: error: test failed, to rerun pass `--lib`
+Ruecknahme 24.09.2026 14:03:09: broker/src/vertrag.rs SHA-256 e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863 - gleich dem Stand vor der Mutation
+  A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R90-zurueck-A4-sonde013.txt
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R90-zurueck-A4-lib.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-sonde013: 'nak313_m90_revision_ueber_2hoch53 ... FAILED' gefallen: JA
+  A4-lib: 'PE-129: Urteil/Stufe' gefallen: JA
+  A4-lib: 'PE-138: Urteil/Stufe' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-sonde013: Exit 0, Fehlzeilen 0
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+  test nak313_m90_revision_ueber_2hoch53 ... FAILED
+  thread 'nak313_m90_revision_ueber_2hoch53' (155892) panicked at tests\sonde013_verdrahtung.rs:6982:5:
+    M-90 (i): kein heartbeat_ack
+=== A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (2) ===
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (366596) panicked at src\coordinator\schema.rs:1029:9:
+    rust_p0 weicht von `produkt` ab:
+    PE-128: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("textriegel"))
+    PE-129: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel"))
+    PE-129: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+    PE-129: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+    PE-129: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (233560) panicked at src\coordinator\senke.rs:421:9:
+    rust_p1 weicht von `produkt` ab:
+    PE-137: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("textriegel"))
+    PE-138: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("textriegel"))
+=== A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===

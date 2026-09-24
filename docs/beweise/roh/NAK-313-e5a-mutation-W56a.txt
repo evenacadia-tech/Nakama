@@ -1,0 +1,54 @@
+NAK-313 Etappe 5a - Mutationslauf W56a: eq-copilot/plugin/core/ipc/controlclient/Intern.h - im ACK-Leser der Zifferntext-Vergleich zurueck
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W56a - im ACK-Leser der Zifferntext-Vergleich zurueck - 24.09.2026 13:16:34 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+SHA-256 vorher d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W56a-Intern.h (SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40)
+Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+  vorher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+  nachher:
+    |         || revision.find_first_not_of ("0123456789") != std::string::npos   // MUTATION W56a: Zifferntext-Vergleich zurueck
+    |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+Mutiert 24.09.2026 13:16:34, SHA-256 mutiert d683fb0d3ab5971c548e3639b41506ab2490d7b885a360858b3827dc6364d289
+Kette (R-313-11): Der Zifferntext-Vergleich lehnt Punkt, Exponent und Vorzeichen ab -> 7.0, 7e0 und -0 sind keinAck, der Auftrag bleibt liegen (M-56); der Konflikt mit 5.0 wird nicht wiederholt (M-59).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:17:51.765, Quelle 13:16:34.865, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 7, Rohausgabe W56a-mutiert-B10.txt
+    Summe: FEHLER — 108 Pruefungen, 7 Fehler
+Ruecknahme 24.09.2026 13:18:08: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:19:24.552, Quelle 13:18:08.379, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W56a-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: 'PE-057 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-058 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-060 (Urteil, Stufe)' gefallen: JA
+  B10: '313/M-59 konfliktkopf_aus_gelesener_revision 5.0' gefallen: JA
+  B10: 'PE-059 (Urteil, Stufe)' gruen geblieben: JA
+  B10: '313/M-59 konfliktkopf_aus_gelesener_revision 5 ' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (7) ===
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5.0  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

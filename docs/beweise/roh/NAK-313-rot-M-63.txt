@@ -1,0 +1,61 @@
+NAK-313 Etappe 5a - Rotbeweis M-63 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-63 - T3-03-02 - R-313-5 - Rust-Ganzzahlhelfer, Zahlenraender
+Zustand: die JSON-Zahlen aus M-55 als geparste Value, dazu null, "1", true
+Ereignis: crate::vertrag::ganzzahl
+Zusage: dieselben Werte und Ablehnungen wie M-55; f64 mit Nachkommateil und Nicht-Zahlen None, nie 0; -0 ist 0
+Bein: A4, broker/src/vertrag.rs Modultest nak313_m63_ganzzahl_aus_wert
+
+--- Haelfte 1: Werte und Ablehnungen - Etikett: heute nicht messbar ---
+Pruefung: nak313_m63_ganzzahl_aus_wert
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: nicht messbar - der Helfer fehlt am Basisstand
+  Mutation R63: broker/src/vertrag.rs - im Ganzzahlhelfer die Pruefung fract() == 0 weggelassen (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R63.txt):
+    Rotlauf R63 - im Ganzzahlhelfer die Pruefung fract() == 0 weggelassen - 24.09.2026 14:04:38 - HEAD 3d7542b517bcc0f8a6d790f51d340a418d9e92e4
+    Datei broker/src/vertrag.rs (LF)
+    SHA-256 vorher 291804170015e233aefb933d466b5514d8a962aab64c11bc71dd7383a0d156d4; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R63-vertrag.rs (SHA-256 291804170015e233aefb933d466b5514d8a962aab64c11bc71dd7383a0d156d4)
+    Mutation 1 ab Zeile 616 (Stand vor der Mutation):
+      vorher:
+        |         if !f.is_finite() || f.fract() != 0.0 {
+        |             return None;
+        |         }
+      nachher:
+        |         if !f.is_finite() {
+        |             // MUTATION R63: fract() == 0 weggelassen
+        |             return None;
+        |         }
+    Mutiert 24.09.2026 14:04:38, SHA-256 mutiert 401c5c5fee89a645fa1a9c952f6ee1a8f5ac02495e7a20fb7bdec6da16b8e4e9
+    Kette (R-313-11): Ohne fract() == 0 wird 1.5 die Ganzzahl 1 (M-63); die Protokollwahl liest 3.5 als 3, und die Normalisierung ueber denselben Helfer macht 3.5 zu 3 -> V3Control (M-72, Regressionswache 3.5).
+    Lauf unter der Mutation:
+      A4-lib: Exit 101, Fehlzeilen 2, Rohausgabe R63-mutiert-A4-lib.txt
+        Summe: test vertrag::tests::nak313_m63_ganzzahl_aus_wert ... FAILED
+        Summe: test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 290 filtered out; finished in 0.00s
+        Summe: error: test failed, to rerun pass `--lib`
+    Ruecknahme 24.09.2026 14:04:42: broker/src/vertrag.rs SHA-256 291804170015e233aefb933d466b5514d8a962aab64c11bc71dd7383a0d156d4 - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R63-zurueck-A4-lib.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-lib: 'nak313_m63_ganzzahl_aus_wert ... FAILED' gefallen: JA
+      A4-lib: '1.5: Some(1)' gefallen: JA
+      A4-lib: 'ganzzahl_optional 3.5: Some(Some(3))' gefallen: JA
+      A4-lib: 'nak313_m72_hello_als_1punkt0 ... FAILED' gefallen: JA
+      A4-lib: 'protocol 3.5 ist kein v3-Hello' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-lib unter der Mutation: gefallene Pruefungen (2) ===
+      test vertrag::tests::nak313_m63_ganzzahl_aus_wert ... FAILED
+      test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+      thread 'vertrag::tests::nak313_m63_ganzzahl_aus_wert' (369784) panicked at src\vertrag.rs:1370:9:
+        M-63:
+        1.5: Some(1), soll None
+        ganzzahl_optional 3.5: Some(Some(3)), soll None
+      thread 'transport::bootstrap::tests::nak313_m72_hello_als_1punkt0' (174268) panicked at src\transport\bootstrap.rs:770:13:
+        protocol 3.5 ist kein v3-Hello
+    === A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-63: 1 von 1 Haelften fallen an der erwarteten Pruefung

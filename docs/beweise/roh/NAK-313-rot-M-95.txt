@@ -1,0 +1,303 @@
+NAK-313 Etappe 5a - Rotbeweis M-95 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-95 - T3-03-08 - Cross-Language v2 - Vertragsreferenz A11 - R-313-13 - E-313-10
+Zustand: die v2-Eintraege der Tabelle (fassung v2)
+Ereignis: A11 prueft jede Instanz gegen die v2-Definition ihres Nachrichtentyps, Zahlen als decimal.Decimal
+Zusage: A11 liefert fuer jeden v2-Eintrag genau vertrag (Urteil und Stufe), bei Urteil gueltig den Wert exakt; 25 Eintraege
+Bein: A11, tools/eq-copilot/pruefe_v2_schemas.py
+
+--- Haelfte 1: Vertragsurteil der v2-Zahlen - Etikett: heute nicht messbar ---
+Pruefung: PE-112, PE-115, PE-119
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A11 pruefe_v2_schemas.py, Fassung von HEAD (Exit 2) ===
+  ROT  PE-112 cpp_v2_client welcome M-91: ist gueltig/None, soll ungueltig/schema
+  ROT  PE-115 cpp_v2_client heartbeat_ack M-93: ist gueltig/None, soll ungueltig/schema
+  ROT  PE-119 cpp_v2_client reject M-94: ist gueltig/None, soll ungueltig/schema
+  - PE-112 cpp_v2_client welcome M-91: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+  - PE-115 cpp_v2_client heartbeat_ack M-93: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+  - PE-119 cpp_v2_client reject M-94: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+  -> am Basisstand: rot gemessen - Abweichung vom Etikett: der Tabellenlauf von A11 besteht seit Etappe 4, und die Fassung von HEAD las 2.0000000000000001 als float (gueltig statt ungueltig/schema)
+  Mutation PY95: tools/eq-copilot/pruefe_v2_schemas.py - A11 liest Zahlen wieder als float statt als Decimal (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-PY95.txt):
+    Rotlauf PY95 - A11 liest Zahlen wieder als float statt als Decimal - 24.09.2026 13:57:44 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei tools/eq-copilot/pruefe_v2_schemas.py (LF)
+    SHA-256 vorher 52586b218aed6f5932d1586f914e39b0867d23865f5f7c32f2f786cbc4ba677b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\PY95-pruefe_v2_schemas.py (SHA-256 52586b218aed6f5932d1586f914e39b0867d23865f5f7c32f2f786cbc4ba677b)
+    Mutation 1 ab Zeile 119 (Stand vor der Mutation):
+      vorher:
+        |             daten = json_laden_strikt(bytes.fromhex(fall["bytes_hex"]).decode("utf-8"),
+        |                                       parse_float=decimal.Decimal)
+      nachher:
+        |             daten = json_laden_strikt(bytes.fromhex(fall["bytes_hex"]).decode("utf-8"))  # MUTATION PY95: float statt Decimal
+    Mutiert 24.09.2026 13:57:44, SHA-256 mutiert e0726706e89a0ad553419691dd26ae2148120ad0ce6c92980495a32b8f297b4f
+    Kette (R-313-11): Als float wird 2.0000000000000001 zu 2.0, gilt als integer und liegt im enum -> A11 urteilt gueltig statt ungueltig/schema (M-95); ebenso 1.0000000000000001 und der reject.
+    Lauf unter der Mutation:
+      A11: Exit 2, Fehlzeilen 3, Rohausgabe PY95-mutiert-A11.txt
+        Summe: - PE-119 cpp_v2_client reject M-94: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+    Ruecknahme 24.09.2026 13:57:45: tools/eq-copilot/pruefe_v2_schemas.py SHA-256 52586b218aed6f5932d1586f914e39b0867d23865f5f7c32f2f786cbc4ba677b - gleich dem Stand vor der Mutation
+      A11: Exit 0, Fehlzeilen 0, Rohausgabe PY95-zurueck-A11.txt
+        Summe: GRUEN — 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren; v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert (Zahlen als Decimal), Werte exakt verglichen und gezaehlt.
+    Erwartete Pruefungen unter der Mutation:
+      A11: 'PE-112' gefallen: JA
+      A11: 'PE-115' gefallen: JA
+      A11: 'PE-119' gefallen: JA
+      A11: 'PE-113' gruen geblieben: JA
+      A11: 'PE-116' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A11: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A11 unter der Mutation: gefallene Pruefungen (3) ===
+      ROT  PE-112 cpp_v2_client welcome M-91: ist gueltig/None, soll ungueltig/schema
+      ROT  PE-115 cpp_v2_client heartbeat_ack M-93: ist gueltig/None, soll ungueltig/schema
+      ROT  PE-119 cpp_v2_client reject M-94: ist gueltig/None, soll ungueltig/schema
+    === A11 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: Wert exakt (2.0 ist die 2) - Etikett: heute nicht messbar ---
+Pruefung: PE-113 (Wert)
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: nicht messbar - die Fassung von HEAD verglich keine Werte und lehnte PE-113 und PE-116 fail-closed ab
+  Mutation T73w: eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json - in der Tabelle fuenf Sollwerte um 1 verschoben (PE-057, PE-089, PE-113, PE-134, PE-143); die C++-Beine lesen die Tabelle zur Laufzeit (vorab gebaut, im Lauf ohne Bau) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-T73w.txt):
+    Rotlauf T73w - in der Tabelle fuenf Sollwerte um 1 verschoben (PE-057, PE-089, PE-113, PE-134, PE-143); die C++-Beine lesen die Tabelle zur Laufzeit (vorab gebaut, im Lauf ohne Bau) - 24.09.2026 14:08:29 - HEAD 3d7542b517bcc0f8a6d790f51d340a418d9e92e4
+    Datei eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json (LF)
+    SHA-256 vorher b52617fb8b0a20451df4342226561b0dea1ff73abbc6fb503b98dcdd4e9e0085; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\T73w-PRODUKTEINGAENGE-FAELLE.json (SHA-256 b52617fb8b0a20451df4342226561b0dea1ff73abbc6fb503b98dcdd4e9e0085)
+    Mutation 1 ab Zeile 1859 (Stand vor der Mutation):
+      vorher:
+        |       "zeigetext": "command_ack angewandt, state_revision 7.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/state_revision",
+        |       "wert": "7",
+      nachher:
+        |       "zeigetext": "command_ack angewandt, state_revision 7.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/state_revision",
+        |       "wert": "8",
+    Mutation 2 ab Zeile 2763 (Stand vor der Mutation):
+      vorher:
+        |       "zeigetext": "session_snapshot, letzter_kontakt_ms 1500.0 in Mitglied und Deskriptor",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/mitglieder/0/frische/letzter_kontakt_ms",
+        |       "wert": "1500",
+      nachher:
+        |       "zeigetext": "session_snapshot, letzter_kontakt_ms 1500.0 in Mitglied und Deskriptor",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/mitglieder/0/frische/letzter_kontakt_ms",
+        |       "wert": "1501",
+    Mutation 3 ab Zeile 3433 (Stand vor der Mutation):
+      vorher:
+        |       "zeigetext": "welcome, protocol_version 2.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/protocol_version",
+        |       "wert": "2",
+      nachher:
+        |       "zeigetext": "welcome, protocol_version 2.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/protocol_version",
+        |       "wert": "3",
+    Mutation 4 ab Zeile 4026 (Stand vor der Mutation):
+      vorher:
+        |       "zeigetext": "evidence_snapshot, transport.sequence 8241.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/transport/sequence",
+        |       "wert": "8241",
+      nachher:
+        |       "zeigetext": "evidence_snapshot, transport.sequence 8241.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/transport/sequence",
+        |       "wert": "8242",
+    Mutation 5 ab Zeile 4267 (Stand vor der Mutation):
+      vorher:
+        |       "zeigetext": "Control-Hello, protocol 3.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/protocol",
+        |       "wert": "3",
+      nachher:
+        |       "zeigetext": "Control-Hello, protocol 3.0",
+        |       "vertrag": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "produkt": {
+        |         "urteil": "gueltig",
+        |         "stufe": null
+        |       },
+        |       "abweichung": null,
+        |       "feld": "/protocol",
+        |       "wert": "4",
+    Mutiert 24.09.2026 14:08:29, SHA-256 mutiert 1554a1e6fd0bb43fd80be775225873f00737510b718b26f4513ef649dbd40901
+    Kette (R-313-11): Liest ein Bein den Wert wirklich und vergleicht ihn exakt, faellt sein Wertvergleich, sobald der Sollwert um 1 daneben liegt - in jedem Produktbein (B10, B13, A4b, A4) und jedem Referenzbein (A5, A11, B16), bei unveraendertem Urteil (M-73: derselbe Wert; M-95: A11 exakt).
+    Lauf unter der Mutation:
+      A5: Exit 2, Fehlzeilen 4, Rohausgabe T73w-mutiert-A5.txt
+        Summe: $defs ohne Negativfixture: keine
+      A11: Exit 2, Fehlzeilen 1, Rohausgabe T73w-mutiert-A11.txt
+        Summe: - PE-113 cpp_v2_client welcome M-91: Wert Decimal('2.0'), erwartet 3
+      B16: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B16: Exit 1, Fehlzeilen 1, Rohausgabe T73w-mutiert-B16.txt
+        Summe: 204 bestanden, 1 gescheitert
+      B10: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B10: Exit 1, Fehlzeilen 1, Rohausgabe T73w-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 1 Fehler
+      B13: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B13: Exit 1, Fehlzeilen 1, Rohausgabe T73w-mutiert-B13.txt
+        Summe: SONDE-012 SourcesModel: 193/194 gruen
+      A4b: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      A4b: Exit 1, Fehlzeilen 1, Rohausgabe T73w-mutiert-A4b.txt
+        Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 1 Fehler
+      A4-lib: Exit 101, Fehlzeilen 2, Rohausgabe T73w-mutiert-A4-lib.txt
+        Summe: test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+        Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+        Summe: test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 290 filtered out; finished in 0.07s
+        Summe: error: test failed, to rerun pass `--lib`
+    Ruecknahme 24.09.2026 14:09:49: eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json SHA-256 b52617fb8b0a20451df4342226561b0dea1ff73abbc6fb503b98dcdd4e9e0085 - gleich dem Stand vor der Mutation
+      A5: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-A5.txt
+        Summe: $defs ohne Negativfixture: keine
+      A11: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-A11.txt
+        Summe: GRUEN — 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren; v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert (Zahlen als Decimal), Werte exakt verglichen und gezaehlt.
+      B16: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B16: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-B16.txt
+        Summe: 205 bestanden, 0 gescheitert
+      B10: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+      B13: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 194/194 gruen
+      A4b: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      A4b: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-A4b.txt
+        Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe T73w-zurueck-A4-lib.txt
+    Erwartete Pruefungen unter der Mutation:
+      A5: 'PE-057' gefallen: JA
+      A5: 'PE-089' gefallen: JA
+      A5: 'PE-134' gefallen: JA
+      A5: 'PE-143' gefallen: JA
+      A5: 'PE-135' gruen geblieben: JA
+      A11: 'PE-113' gefallen: JA
+      A11: 'PE-116' gruen geblieben: JA
+      B16: 'PE-134 (Wert)' gefallen: JA
+      B16: 'PE-135 (Wert)' gruen geblieben: JA
+      B10: 'PE-057 (Wert)' gefallen: JA
+      B10: 'PE-058 (Wert)' gruen geblieben: JA
+      B13: 'PE-089 (Wert)' gefallen: JA
+      B13: 'PE-090 (Wert)' gruen geblieben: JA
+      A4b: 'PE-113 (Wert)' gefallen: JA
+      A4-lib: 'PE-134: Wert' gefallen: JA
+      A4-lib: 'PE-143: Wert' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A5: Exit 0, Fehlzeilen 0
+      A11: Exit 0, Fehlzeilen 0
+      B16: Exit 0, Fehlzeilen 0
+      B10: Exit 0, Fehlzeilen 0
+      B13: Exit 0, Fehlzeilen 0
+      A4b: Exit 0, Fehlzeilen 0
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-T73w-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-T73w.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A5 unter der Mutation: gefallene Pruefungen (4) ===
+      ROT: PE-057 cpp_control_ack M-56: Wert — gelesen 7.0, soll 8
+      ROT: PE-089 cpp_sources_snapshot M-61: Wert — gelesen 1500.0, soll 1501
+      ROT: PE-134 rust_p1 M-66: Wert — gelesen 8241.0, soll 8242
+      ROT: PE-143 rust_bootstrap M-72: Wert — gelesen 3.0, soll 4
+    === A5 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A11 unter der Mutation: gefallene Pruefungen (1) ===
+      ROT  PE-113 cpp_v2_client welcome M-91: Wert Decimal('2.0'), soll 3
+    === A11 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === B16 unter der Mutation: gefallene Pruefungen (1) ===
+      [ROT]  313/M-73 evidence_snapshot_vertragsweg PE-134 (Wert)  [gelesen 8241, soll 8242]
+    === B16 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === B10 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wert)  [gelesen 7, soll 8]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === B13 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wert)  [controlAlterMs 1500, soll 1501]
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A4b unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-91 v2_zahlriegel_welcome PE-113 (Wert)  [Version 2, soll 3]
+    === A4b nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A4-lib unter der Mutation: gefallene Pruefungen (2) ===
+      test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+      test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+      thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (370428) panicked at src\transport\bootstrap.rs:853:9:
+        rust_bootstrap weicht von `produkt` ab:
+        PE-143: Wert Some(3) am Feld "/protocol", soll 4
+      thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (56876) panicked at src\coordinator\senke.rs:421:9:
+        rust_p1 weicht von `produkt` ab:
+        PE-134: Wert Some(8241) am Feld "/transport/sequence", soll 8242
+    === A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-95: 2 von 2 Haelften fallen an der erwarteten Pruefung

@@ -1,0 +1,45 @@
+NAK-313 Etappe 5a - Mutationslauf ID: eq-copilot/plugin/CMakeLists.txt - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau; Aenderungszeit bei der Ruecknahme zurueck)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf ID - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau; Aenderungszeit bei der Ruecknahme zurueck) - 24.09.2026 14:05:13 - HEAD 3d7542b517bcc0f8a6d790f51d340a418d9e92e4
+Datei eq-copilot/plugin/CMakeLists.txt (LF)
+SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+Mutation 1 ab Zeile 123 (Stand vor der Mutation):
+  vorher:
+    |     PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+    | 
+  nachher:
+    |     PLUGIN_CODE Eqcq
+    | 
+Mutiert 24.09.2026 14:05:13, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+Kette (R-313-11): Ein literaler PLUGIN_CODE statt des Manifestwerts bricht die eingefrorene Identitaetskette -> B1 rot.
+Lauf unter der Mutation:
+  B1: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+  B1: Exit 1, Fehlzeilen 3, Rohausgabe ID-mutiert-B1.txt
+    Summe: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+Ruecknahme 24.09.2026 14:05:13: eq-copilot/plugin/CMakeLists.txt SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation
+  Aenderungszeit zurueck auf 21.09.2026 04:42:02 (die Datei liest B1 zur Laufzeit; kein Bau)
+  B1: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+  B1: Exit 0, Fehlzeilen 0, Rohausgabe ID-zurueck-B1.txt
+    Summe: IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B1: 'CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B1: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B1 unter der Mutation: gefallene Pruefungen (3) ===
+  FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 10:01:29am vs 24 Sep 2026 2:05:13pm]
+  FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 10:02:10am vs 24 Sep 2026 2:05:13pm]
+=== B1 nach der Ruecknahme: gefallene Pruefungen 0 ===

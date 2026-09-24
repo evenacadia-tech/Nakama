@@ -1,0 +1,138 @@
+NAK-313 Etappe 5a - Rotbeweis M-66 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-66 - T3-03-02 - R-313-5 - R-313-15 - Produktleser Rust P1 (Evidenz) und die Leser des gespeicherten Evidenzstands
+Zustand: evidence_snapshot mit transport.sequence 8241.0, transport_epoch 3.0, continuity_segment 2.0, sample_count 256.0, project_sample_start 1024.0, ereignisse.verloren 1.0, konfidenz.verteilung_fenster 4.0, samples_nicht_endlich 2.0; Gegenprobe transport_epoch 3, dann 3.0
+Ereignis: P1-Weiche -> evidenzstand_aus_wert
+Zusage: evidenz_sicht traegt genau diese Werte; nach 3 und 3.0 keine Transportbruch-Invalidierung; ein vorhandenes, nicht lesbares Feld lehnt ab (None), nie 0
+Bein: A4, sonde013_verdrahtung.rs nak313_m66_evidenzfelder_als_1punkt0; evidenz.rs nak313_m66_feld_ohne_ganzzahl_lehnt_ab; PE-134, PE-135 (senke.rs nak313_m44, Wert)
+
+--- Haelfte 1: Werte und Gegenprobe - Etikett: heute rot ---
+Pruefung: nak313_m66_evidenzfelder_als_1punkt0; PE-134, PE-135
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 (Exit 101) ===
+  PE-134: Wert Some(0) am Feld "/transport/sequence", soll 8241
+  PE-135: Wert Some(0) am Feld "/transport/sequence", soll 8241
+  test nak313_m66_evidenzfelder_als_1punkt0 ... FAILED
+  ---- nak313_m66_evidenzfelder_als_1punkt0 stdout ----
+  thread 'nak313_m66_evidenzfelder_als_1punkt0' (304492) panicked at tests\sonde013_verdrahtung.rs:6701:9:
+    assertion `left == right` failed: M-66: der Evidenzstand traegt die Werte, nie 0 und nie einen verlorenen Start (1024)
+    left: (0, 0, 0, 0, None, 0, 0, 0)
+    right: (8241, 3, 2, 256, Some(1024), 1, 4, 2)
+  nak313_m66_evidenzfelder_als_1punkt0
+  -> am Basisstand: rot (as_u64().unwrap_or(0) macht 8241.0 zu 0, as_i64 verliert den Start)
+  Mutation R66a: broker/src/coordinator/evidenz.rs - im Evidenzleser die alten Leser zurueck (as_u64 mit unwrap_or(0), as_i64 fuer den Start) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R66a.txt):
+    Rotlauf R66a - im Evidenzleser die alten Leser zurueck (as_u64 mit unwrap_or(0), as_i64 fuer den Start) - 24.09.2026 13:59:08 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/evidenz.rs (CRLF)
+    SHA-256 vorher 1ec74ffd01045a76db6673d26da1c56ff3098228a1b0ffe0bb9fac8536356ffe; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R66a-evidenz.rs (SHA-256 1ec74ffd01045a76db6673d26da1c56ff3098228a1b0ffe0bb9fac8536356ffe)
+    Mutation 1 ab Zeile 273 (Stand vor der Mutation):
+      vorher:
+        |         let feld = |zeiger: &str, max: i64| -> Option<i64> {
+        |             crate::vertrag::ganzzahl_optional(wert.pointer(zeiger), 0, max).map(|w| w.unwrap_or(0))
+        |         };
+      nachher:
+        |         // MUTATION R66a: die alten Leser zurueck
+        |         let feld = |zeiger: &str, _max: i64| -> Option<i64> {
+        |             Some(wert.pointer(zeiger).and_then(Value::as_u64).unwrap_or(0) as i64)
+        |         };
+    Mutation 2 ab Zeile 285 (Stand vor der Mutation):
+      vorher:
+        |         let project_sample_start = crate::vertrag::ganzzahl_optional(
+        |             wert.pointer("/transport/project_sample_start"),
+        |             -max,
+        |             max,
+        |         )?;
+      nachher:
+        |         let project_sample_start = wert.pointer("/transport/project_sample_start").and_then(Value::as_i64); // MUTATION R66a
+    Mutiert 24.09.2026 13:59:09, SHA-256 mutiert c150d709c2e477b9416663d81898c6506e29c0bae2df05484c2025bda73543d4
+    Kette (R-313-11): Mit as_u64().unwrap_or(0) wird 8241.0 zu 0, as_i64 verliert den Start 1024.0, und 3.0 nach 3 ist ein Epochwechsel (M-66, Werte und Gegenprobe).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R66a-mutiert-A4-sonde013.txt
+        Summe: test nak313_m66_evidenzfelder_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.02s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+      A4-lib: Exit 101, Fehlzeilen 1, Rohausgabe R66a-mutiert-A4-lib.txt
+        Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.07s
+        Summe: error: test failed, to rerun pass `--lib`
+    Ruecknahme 24.09.2026 13:59:17: broker/src/coordinator/evidenz.rs SHA-256 1ec74ffd01045a76db6673d26da1c56ff3098228a1b0ffe0bb9fac8536356ffe - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R66a-zurueck-A4-sonde013.txt
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R66a-zurueck-A4-lib.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m66_evidenzfelder_als_1punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-66: der Evidenzstand traegt die Werte' gefallen: JA
+      A4-lib: 'PE-134: Wert' gefallen: JA
+      A4-lib: 'PE-135: Wert' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m66_evidenzfelder_als_1punkt0 ... FAILED
+      thread 'nak313_m66_evidenzfelder_als_1punkt0' (379580) panicked at tests\sonde013_verdrahtung.rs:6701:9:
+        assertion `left == right` failed: M-66: der Evidenzstand traegt die Werte, nie 0 und nie einen verlorenen Start (1024)
+        left: (0, 0, 0, 0, None, 0, 0, 0)
+        right: (8241, 3, 2, 256, Some(1024), 1, 4, 2)
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A4-lib unter der Mutation: gefallene Pruefungen (1) ===
+      test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+      thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (221832) panicked at src\coordinator\senke.rs:421:9:
+        rust_p1 weicht von `produkt` ab:
+        PE-134: Wert Some(0) am Feld "/transport/sequence", soll 8241
+        PE-135: Wert Some(0) am Feld "/transport/sequence", soll 8241
+    === A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: Ablehnung - Etikett: heute nicht messbar ---
+Pruefung: nak313_m66_feld_ohne_ganzzahl_lehnt_ab
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: nicht messbar - evidenzstand_aus_wert lieferte am Basisstand keinen Option-Wert
+  Mutation R66b: broker/src/coordinator/evidenz.rs - im Evidenzleser ein vorhandenes, nicht lesbares Feld wieder als 0 statt Ablehnung (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R66b.txt):
+    Rotlauf R66b - im Evidenzleser ein vorhandenes, nicht lesbares Feld wieder als 0 statt Ablehnung - 24.09.2026 13:59:26 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/evidenz.rs (CRLF)
+    SHA-256 vorher 1ec74ffd01045a76db6673d26da1c56ff3098228a1b0ffe0bb9fac8536356ffe; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R66b-evidenz.rs (SHA-256 1ec74ffd01045a76db6673d26da1c56ff3098228a1b0ffe0bb9fac8536356ffe)
+    Mutation 1 ab Zeile 274 (Stand vor der Mutation):
+      vorher:
+        |             crate::vertrag::ganzzahl_optional(wert.pointer(zeiger), 0, max).map(|w| w.unwrap_or(0))
+      nachher:
+        |             Some(crate::vertrag::ganzzahl_optional(wert.pointer(zeiger), 0, max).flatten().unwrap_or(0)) // MUTATION R66b
+    Mutiert 24.09.2026 13:59:26, SHA-256 mutiert d2e03260e1e1aa68856f21495c0e21faf4c633270c53575b5660a56355b6d6ec
+    Kette (R-313-11): Setzt der Leser ein Feld, das der Helfer nicht liest, auf 0, entsteht ein Stand statt der Ablehnung (M-66, Ablehnung).
+    Lauf unter der Mutation:
+      A4-lib: Exit 101, Fehlzeilen 1, Rohausgabe R66b-mutiert-A4-lib.txt
+        Summe: test coordinator::evidenz::nak313_tests::nak313_m66_feld_ohne_ganzzahl_lehnt_ab ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.00s
+        Summe: error: test failed, to rerun pass `--lib`
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R66b-mutiert-A4-sonde013.txt
+    Ruecknahme 24.09.2026 13:59:35: broker/src/coordinator/evidenz.rs SHA-256 1ec74ffd01045a76db6673d26da1c56ff3098228a1b0ffe0bb9fac8536356ffe - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R66b-zurueck-A4-lib.txt
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R66b-zurueck-A4-sonde013.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-lib: 'nak313_m66_feld_ohne_ganzzahl_lehnt_ab ... FAILED' gefallen: JA
+      A4-lib: 'statt der Ablehnung' gefallen: JA
+      A4-sonde013: 'nak313_m66_evidenzfelder_als_1punkt0' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-lib: Exit 0, Fehlzeilen 0
+      A4-sonde013: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-lib unter der Mutation: gefallene Pruefungen (1) ===
+      test coordinator::evidenz::nak313_tests::nak313_m66_feld_ohne_ganzzahl_lehnt_ab ... FAILED
+      thread 'coordinator::evidenz::nak313_tests::nak313_m66_feld_ohne_ganzzahl_lehnt_ab' (98416) panicked at src\coordinator\evidenz.rs:601:9:
+        M-66:
+        /transport/sequence = 1.5: ein Stand (sequence 0, Start Some(-1024)) statt der Ablehnung
+        /transport/transport_epoch = -1: ein Stand (sequence 8241, Start Some(-1024)) statt der Ablehnung
+        /transport/continuity_segment = "2": ein Stand (sequence 8241, Start Some(-1024)) statt der Ablehnung
+        /transport/sample_count = 4294967296: ein Stand (sequence 8241, Start Some(-1024)) statt der Ablehnung
+        /ereignisse/verloren = 9007199254740992: ein Stand (sequence 8241, Start Some(-1024)) statt der Ablehnung
+        /konfidenz/verteilung_fenster = true: ein Stand (sequence 8241, Start Some(-1024)) statt der Ablehnung
+        /konfidenz/samples_nicht_endlich = 2.5: ein Stand (sequence 8241, Start Some(-1024)) statt der Ablehnung
+    === A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (0) ===
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-66: 2 von 2 Haelften fallen an der erwarteten Pruefung

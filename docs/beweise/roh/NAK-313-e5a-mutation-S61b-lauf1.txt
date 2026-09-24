@@ -1,0 +1,76 @@
+NAK-313 Etappe 5a - Mutationslauf S61b: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - wertAlsVar liefert fuer jede ganzzahlige Zahl 0
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S61b - wertAlsVar liefert fuer jede ganzzahlige Zahl 0 - 24.09.2026 13:40:02 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61b-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+Mutation 1 ab Zeile 792 (Stand vor der Mutation):
+  vorher:
+    |             if (std::isfinite (d) && std::trunc (d) == d
+    |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+    |                 return juce::var (static_cast<juce::int64> (d));
+    |             return juce::var (d);
+  nachher:
+    |             if (std::isfinite (d) && std::trunc (d) == d
+    |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+    |                 return juce::var (static_cast<juce::int64> (0));   // MUTATION S61b: jede Ganzzahl wird 0
+    |             return juce::var (d);
+Mutiert 24.09.2026 13:40:02, SHA-256 mutiert 39a67789d22fee2cd613c2296af6dd54c2467d3b82c2ddfe6c718b4693f03f48
+Kette (R-313-11): Traegt jede Ganzzahl den Wert 0, ist die vertauschte Ordnung 2048.0 bis 1024e0 geordnet (0 bis 0) und wird angenommen (M-61, Regressionswache der Ordnung). B16 vergleicht den Wert aus demselben Lauf: 8241.0 wird 0 -> der Wertvergleich von PE-134 und PE-135 faellt (M-73, Referenzbein).
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:05.771, Quelle 13:40:02.255, Binaer juenger: ja
+  B13: Exit -1073741819, Fehlzeilen 11, Rohausgabe S61b-mutiert-B13.txt
+    Summe: FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig
+  Bau EqCopSonde013EventWireTest: Exit 0
+  B16: Binaer 13:40:07.290, Quelle 13:40:02.255, Binaer juenger: ja
+  B16: Exit 1, Fehlzeilen 4, Rohausgabe S61b-mutiert-B16.txt
+    Summe: 199 bestanden, 4 gescheitert
+Ruecknahme 24.09.2026 13:40:09: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:13.813, Quelle 13:40:09.541, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe S61b-zurueck-B13.txt
+    Summe: SONDE-012 SourcesModel: 194/194 gruen
+  Bau EqCopSonde013EventWireTest: Exit 0
+  B16: Binaer 13:40:15.168, Quelle 13:40:09.541, Binaer juenger: ja
+  B16: Exit 0, Fehlzeilen 0, Rohausgabe S61b-zurueck-B16.txt
+    Summe: 205 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B13: '313/M-61 ruecknahme_vertauschte_ordnung_ungueltig' gefallen: JA
+  B16: 'PE-134 (Wert)' gefallen: NEIN
+  B16: 'PE-135 (Wert)' gefallen: NEIN
+Die Zusage faellt an der erwarteten Pruefung: NEIN
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+  B16: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (11) ===
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wert)  [controlAlterMs 0, soll 1500]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Wert)  [controlAlterMs 0, soll 1500]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - probe_descriptor is invalid or disagrees with its member]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Wert)  [Gegengrenze sample_end 1024: an, 1023: an, soll 1024]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Wert)  [Gegengrenze sample_start 2048: an, 2049: an, soll 2048]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-102 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-102 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig
+=== B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+=== B16 unter der Mutation: gefallene Pruefungen (4) ===
+  [ROT]  313/M-49 evidence_snapshot_vertragsweg PE-048 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+  [ROT]  313/M-49 evidence_snapshot_vertragsweg PE-050 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+  [ROT]  313/M-73 evidence_snapshot_vertragsweg PE-134 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+  [ROT]  313/M-73 evidence_snapshot_vertragsweg PE-135 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+=== B16 nach der Ruecknahme: gefallene Pruefungen 0 ===

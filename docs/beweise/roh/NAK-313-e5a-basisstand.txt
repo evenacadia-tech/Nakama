@@ -1,0 +1,410 @@
+NAK-313 Etappe 5a - Gegenprobe am Basisstand (Manifest docs/beweise/NAK-313.md §8.1, R-313-12)
+Gemessen 24.09.2026: Bau der betroffenen Beine 11:52 bis 11:56 Uhr, Laeufe 11:56 bis 12:01 Uhr, Wiederholung der
+fuenf C++-Laeufe mit gemessenem Exitcode 12:07 bis 12:08 Uhr (Rohausgaben unten, jeweils die Wiederholung);
+HEAD a9cbbbb7e72b6441a250978802ff465b185b7749 (Basis der Teiletappe 5a), Produktcode unveraendert.
+
+Reihenfolge: (1) Erzeuger erweitert; A8 am Basisstand Exit 0 (420 Dateien bytegleich), nach der Erweiterung und
+VOR dem Erzeugen Exit 2 ('PRODUKTEINGAENGE-FAELLE.json weicht ab'), Tabelle erzeugt, A8 danach Exit 0 (420
+Dateien bytegleich, MANIFEST sha256=f5a1db4e... unveraendert); (2) die neuen Faelle 313/M-55 bis M-73, M-90,
+M-91, M-93 bis M-96 geschrieben (Tabellenlaeufe mit PE-nnn und Zaehlpruefung je Bein, Riegeleinheit,
+Modultests, Testserver-Schalter fuer rohe welcome- und ACK-Bytes); der PRODUKTCODE blieb der von a9cbbbb7;
+(3) nur die betroffenen Beine gebaut und gefahren (C++ B10, B13, B16, B3c, A4b; Rust cargo test fuer A4;
+Python A5, A11 direkt). Dieser Stand wurde nicht committet.
+
+Basisstand-Varianten (nur hier, nicht committet; Marke BASIS-GEGENPROBE im Quelltext):
+- IpcTestMain.cpp: die Riegeleinheit M-55 (ganzzahlAusLiteralFaelle) setzt 'gelesen = false' statt
+  nakama::wire::ganzzahlAusLiteral und laeuft in nak313e5::alle NICHT mit, weil der Leser am Basisstand fehlt
+  (M-55 heute nicht messbar; belegt die Mutation nach dem Bau).
+- PipeClientLifecycleTestMain.cpp: die Riegeleinheit nak313ZahlriegelEinheit setzt 'sauber = false' statt
+  nakama::vertrag::zahlriegelBytes und laeuft in main NICHT mit (Riegeleinheit heute nicht messbar). A4b lief
+  mit --ohne-ueberlaufvektoren: die sechs ub_bei_juce-Eintraege PE-109, PE-110, PE-111, PE-114, PE-117 und
+  PE-118 laufen nie durch JUCE (UB-Regel §8.1); die Zaehlpruefung nennt sie als ausgelassen (19 gefahren,
+  6 ausgelassen, Kopf 25).
+- SchemaTestMain.cpp (B3c): die Korpusschleife liest mit dem alten Testleser ueber JUCE statt ueber
+  nakama::vertrag::wertAlsVar (fehlt am Basisstand; B3c-Anteil von M-73 heute nicht messbar).
+- Sonde013EventWireTest.cpp (B16): der Tabellenlauf liest die Werte mit juce::JSON::parse statt wertAlsVar
+  (fehlt am Basisstand); der Wertvergleich laeuft, aber ueber die Zahl, die JUCE liefert.
+- V3TestServer.h, Sonde012SourcesModelTest.cpp und die Rust-Tests sind die Endfassungen (sie rufen nur
+  Produktfunktionen, die es am Basisstand gibt).
+- A5 und A11 liefen in der Fassung von HEAD (Blob pruefe_v3_vertrag.py 28370c2d, pruefe_v2_schemas.py
+  189c548f) gegen die neue Tabelle: beide vergleichen noch keine Werte und lehnen einen Eintrag mit Wert
+  fail-closed ab ('Bein vergleicht noch keine Werte').
+
+SHA-256 des unveraenderten Produktcodes (gegen HEAD: git diff --quiet je Datei):
+  eq-copilot/plugin/core/ipc/WireZahl.h  8fa88a32bc4c7f5da3191e40ceea963124362458f45b2156f8348057a17f28a1  (gegen HEAD: unveraendert)
+  eq-copilot/plugin/core/ipc/controlclient/Intern.h  33195f01e64d6197dea805fc930e9272daf3d0c0a4fda0e81a1d8efb66303288  (gegen HEAD: unveraendert)
+  eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp  e9fa3da02bb472d40de853b34ddbc5e5bcfb426bef14df5fffd3fc31de2bb8aa  (gegen HEAD: unveraendert)
+  eq-copilot/plugin/vertrag/NakamaVertrag.h  84b829f472265fb758ed9e8a9188b28edb422c2a7b07720c3e44598f1bb49ba8  (gegen HEAD: unveraendert)
+  eq-copilot/plugin/vertrag/NakamaVertrag.cpp  3068bcd0da4fbf472803237456b0d0dfa9e5fe82b1780274ae920a81511f5847  (gegen HEAD: unveraendert)
+  eq-copilot/plugin/src/SourcesModel.cpp  4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28  (gegen HEAD: unveraendert)
+  eq-copilot/plugin/src/PipeClient.cpp  4e07b607d1f06659b85785d302f96ff076d36f99d9c64ece76aa68a400b613c9  (gegen HEAD: unveraendert)
+  broker/src/vertrag.rs  c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1  (gegen HEAD: unveraendert)
+  broker/src/coordinator/befehl.rs  24af54fcf450cb4c4a5f69b101b4f2a52362e2b92333d152ff1bc30df26d60c7  (gegen HEAD: unveraendert)
+  broker/src/coordinator/evidenz.rs  162e49b31ef76adb243d0c2a84d1e209ad2c7b0c954a624dd7d8c01ccabd29d3  (gegen HEAD: unveraendert)
+  broker/src/coordinator/liveness.rs  7140f2fd578b3fdd3fbbcbbf1b59b9995cf8c9c9298515c6cf8b11a69bb5e5e0  (gegen HEAD: unveraendert)
+  broker/src/coordinator/intent.rs  ce5505a8f4951b2e8e1445207fd966099525d76b494f24dbd89d3481b3abf2f4  (gegen HEAD: unveraendert)
+  broker/src/coordinator/assistent.rs  518a23f3b5bfbf0eda03940aeede35dbd200e54b0dfd245ffaad3c905c62b3cc  (gegen HEAD: unveraendert)
+  broker/src/coordinator/experiment_verdrahtung.rs  2dfbe2d1350d350e835980945a088dc0e5109acf61c98c3fce2c4021bf4f46ad  (gegen HEAD: unveraendert)
+  broker/src/transport/bootstrap.rs  e0e3b622968fe122d7f0bd71a8f2278c6e94b5adeca3cadc4dff92141c48fa7e  (gegen HEAD: nur das Testmodul geaendert (nak313_m72, Wertvergleich in nak313_m45); Produktteil unveraendert)
+SHA-256 der Test-, Werkzeug- und Fixturedateien der Gegenprobe (Stand der Laeufe):
+  eq-copilot/plugin/tests/IpcTestMain.cpp  ef64949f4363662331296a395b59d35c79d02fab40d7d6e5123936436d103067
+  eq-copilot/plugin/tests/V3TestServer.h  b3f7f21b25802562b0a615ded49bdfc59579f00f8b2f4fae742cf42d379d8e25
+  eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp  2b42d377492961b7bf6df5a7bbcea79f28c62d2e8249a0ac148de79536041633
+  eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp  a7d08221ce83a000b00de7fd30cfd648def1fe229158435ce09ea283a11fae56
+  eq-copilot/plugin/tests/SchemaTestMain.cpp  d99db504f7f8924bd15f5c633320bec4392829c95290bc7ba51407c937b0e90f
+  eq-copilot/plugin/tests/Sonde013EventWireTest.cpp  45d2c8724220e2ce38dca8e126c32cb1377ac77d5fad13e6e34ffcbbb32f4074
+  broker/src/coordinator/schema.rs  fed9baf432d59af483fa1470603198008754427b03b7f31d34935e0e32996802
+  broker/src/coordinator/senke.rs  dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f
+  broker/src/transport/bootstrap.rs  e0e3b622968fe122d7f0bd71a8f2278c6e94b5adeca3cadc4dff92141c48fa7e
+  broker/tests/sonde013_verdrahtung.rs  3acd49a545e5196ff5ca11712416dcca324f7378abc84e3912be9b720fb61b07
+  broker/tests/sonde014_verdrahtung.rs  dab4854ecd5c24c273f39a9219e6b6c8f2dbc101addb0f79ca5059248d0a6343
+  tools/eq-copilot/erzeuge_v3_fixtures.py  dd7ae21484aac0c60d993696b27e4a1b53d746799cbfbcdb109ef4a65b49d8cc
+  eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json  b52617fb8b0a20451df4342226561b0dea1ff73abbc6fb503b98dcdd4e9e0085
+  eq-copilot/fixtures/v3/MANIFEST.json  f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b
+  tools/eq-copilot/pruefe_v3_vertrag.py  Fassung von HEAD, Blob 28370c2d88331e1e26f22f1da314a8e91eff60f4
+  tools/eq-copilot/pruefe_v2_schemas.py  Fassung von HEAD, Blob 189c548fdd41b73722fa234142dcd1904fbf1df9
+
+Exitcodes der fuenf C++-Laeufe (gemessen in der Wiederholung):
+  B10 EqCopIpcTest --nak313-e5: Exit 1 (12:07:08-12:07:22)
+  B13 EqCopSonde012SourcesModelTest : Exit 1 (12:07:22-12:07:23)
+  A4b EqCopPipeClientTest --ohne-ueberlaufvektoren: Exit 1 (12:07:23-12:08:32)
+  B3c EqCopSchemaTest : Exit 0 (12:08:32-12:08:32)
+  B16 EqCopSonde013EventWireTest : Exit 0 (12:08:32-12:08:34)
+
+=== B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  ok      313/M-73 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-56 ack_revision_als_1punkt0 PE-059 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - inFlight 0, Erfolg 1, endgueltig 0]
+  ok      313/M-56 ack_revision_als_1punkt0 PE-059 (Wirkung)  [annahme - inFlight 0, Erfolg 1, endgueltig 0]
+  ok      313/M-56 ack_revision_als_1punkt0 PE-059 (Wert)  [gelesen 0, soll 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-57 ack_wertstufe PE-061 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-57 ack_wertstufe PE-061 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+  ok      313/M-73 ack_wertstufe PE-062 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-73 ack_wertstufe PE-062 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-063 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-063 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-064 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-064 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-065 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-065 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-066 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-066 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Wirkung)  [verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Wert)  [soll 3]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Wirkung)  [nicht verbunden]
+  ok      313/M-73 welcome_wertstufe control PE-072 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-73 welcome_wertstufe control PE-072 (Wirkung)  [nicht verbunden]
+  ok      313/M-73 welcome_wertstufe control PE-073 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-73 welcome_wertstufe control PE-073 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-074 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-074 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-075 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-075 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-076 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-076 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-077 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-077 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Wirkung)  [verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Wert)  [soll 3]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Wirkung)  [nicht verbunden]
+  ok      313/M-73 welcome_wertstufe telemetrie PE-083 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-73 welcome_wertstufe telemetrie PE-083 (Wirkung)  [nicht verbunden]
+  ok      313/M-73 welcome_wertstufe telemetrie PE-084 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-73 welcome_wertstufe telemetrie PE-084 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-085 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-085 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-086 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-086 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-087 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-087 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-088 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-088 (Wirkung)  [nicht verbunden]
+  ok      313/M-73 Zaehlpruefung B10: cpp_control_ack  [10 gefahren, Kopf 10]
+  ok      313/M-73 Zaehlpruefung B10: cpp_control_handshake  [11 gefahren, Kopf 11]
+  ok      313/M-73 Zaehlpruefung B10: cpp_telemetrie_handshake  [11 gefahren, Kopf 11]
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)  [inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [1 Texte mit der Kennung]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (keinAck, kein Haken, keine 0)  [Haken 1, Wiederholungen 1, inFlight 0, Erfolg 1, Kopf 0: 1]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect derselbe Text mit base_revision 5)  [1 Texte mit Kopf 5]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (keinAck, kein Haken, keine 0)  [Haken 0, Wiederholungen 0, inFlight 0, Erfolg 1, Kopf 0: 0]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect derselbe Text mit base_revision 5)  [1 Texte mit Kopf 5]
+  ok      313/M-59 konfliktkopf_aus_gelesener_revision 5  [Texte mit Kopf 5: 1, Wiederholungen 1, Erfolg 1]
+  FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5.0  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+  FEHLER — 79 Pruefungen, 23 Fehler
+
+=== B13 EqCopSonde012SourcesModelTest (Exit 1; nur die NAK-313-Faelle der Etappe 5a und die Summe) ===
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - probe_descriptor is invalid or disagrees with its member]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-092 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-092 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-093 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-73 snapshot_wertstufe PE-094 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+  ok      313/M-73 snapshot_wertstufe PE-094 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-095 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal NaN an Position 719]
+  ok      313/M-96 nicht_endlich_snapshot PE-095 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-096 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal Infinity an Position 719]
+  ok      313/M-96 nicht_endlich_snapshot PE-096 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-097 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal -Infinity an Position 719]
+  ok      313/M-96 nicht_endlich_snapshot PE-097 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-098 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Zahl ausserhalb +/-1e308: 1e999]
+  ok      313/M-96 nicht_endlich_snapshot PE-098 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-101 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-101 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-102 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-102 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-73 ruecknahme_wertstufe PE-103 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+  ok      313/M-73 ruecknahme_wertstufe PE-103 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-104 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal NaN an Position 124]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-104 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-105 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal Infinity an Position 124]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-105 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-106 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal -Infinity an Position 124]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-106 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-107 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Zahl ausserhalb +/-1e308: 1e999]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-107 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext  [evidence_invalidate sample range is not ordered]
+  ok      313/M-61 ruecknahme_vertauschte_ordnung_ungueltig  [evidence_invalidate sample range is not ordered]
+  SONDE-012 SourcesModel: 178/189 gruen
+
+=== A4b EqCopPipeClientTest --ohne-ueberlaufvektoren (Exit 1; nur die v2-Zahlfaelle und die Summe) ===
+  PIPECLIENT-LIFECYCLE-TEST (--ohne-ueberlaufvektoren)
+  ok      313/M-91 v2_zahlriegel_welcome PE-108 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  ok      313/M-91 v2_zahlriegel_welcome PE-108 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  FEHLER  313/M-91 v2_zahlriegel_welcome PE-112 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/textriegel - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-91 v2_zahlriegel_welcome PE-112 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  ok      313/M-91 v2_zahlriegel_welcome PE-113 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  ok      313/M-91 v2_zahlriegel_welcome PE-113 (Wirkung)  [annahme - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  ok      313/M-91 v2_zahlriegel_welcome PE-113 (Wert)  [Version 2, soll 2]
+  FEHLER  313/M-93 v2_zahlriegel_heartbeat_ack PE-115 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/textriegel - Status nicht getrennt, Version 2, Heartbeats 3/2, letzterFehler '']
+  FEHLER  313/M-93 v2_zahlriegel_heartbeat_ack PE-115 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Version 2, Heartbeats 3/2, letzterFehler '']
+  ok      313/M-93 v2_zahlriegel_heartbeat_ack PE-116 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - Status getrennt, Version 0, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+  ok      313/M-93 v2_zahlriegel_heartbeat_ack PE-116 (Wirkung)  [ablehnung, kein_ack - Status getrennt, Version 0, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+  FEHLER  313/M-94 v2_zahlriegel_reject PE-119 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/textriegel - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'Broker lehnt ab: inkompatibel']
+  ok      313/M-94 v2_zahlriegel_reject PE-119 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'Broker lehnt ab: inkompatibel']
+  ok      313/M-96 nicht_endlich_v2 PE-120 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-120 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-121 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-121 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-122 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl ohne Ziffern']
+  ok      313/M-96 nicht_endlich_v2 PE-122 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl ohne Ziffern']
+  FEHLER  313/M-96 nicht_endlich_v2 PE-123 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl nicht darstellbar: 1e999']
+  ok      313/M-96 nicht_endlich_v2 PE-123 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl nicht darstellbar: 1e999']
+  ok      313/M-49 Zaehlpruefung A4b: cpp_v2_client  [19 gefahren, 6 ausgelassen (--ohne-ueberlaufvektoren), Kopf 25]
+  PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 6 Fehler
+
+=== B3c EqCopSchemaTest (Exit 0; Korpuslauf ueber den alten Testleser) ===
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json  [doppelter Schluessel: logon_sid]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json  [doppelter Schluessel: logon_sid]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-nachspann.json  [Text nach dem Dokument]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-schlusskomma.json  [Objektschluessel erwartet]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json  [doppelter Schluessel: session_epoch]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json  [doppelter Schluessel: session_epoch]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-fremd-zuletzt.json  [doppelter Schluessel: type]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-passend-zuletzt.json  [doppelter Schluessel: type]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-escape-alias.json  [doppelter Schluessel: type]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-unbekanntes-escape.json  [unbekanntes Escape]
+  [ok]   313/M-47 korpus_parser_lehnt_ab ungueltig/parser-zweites-dokument.json  [Text nach dem Dokument]
+  173 bestanden, 0 gescheitert
+
+=== B16 EqCopSonde013EventWireTest (Exit 0; Werte ueber juce::JSON::parse) ===
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: die Byteinstanz liegt im Korpus
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der echte Frame ist local_monotonic ohne Startwert
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der Snapshot wird gebaut
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis":"local_monotonic","sample_count":512,"sample_rate":48000,"playing":true,"recording":false,"validity":{"project_time":false,"play_state":true,"record_state":false,"cycle_bounds":false,"continuous_time":false,"input_presentation_latency":false,"output_presentation_latency":false}}]
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der Snapshot passiert den Textriegel
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an
+  [ok]   313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus
+  [ok]   313/M-49 v3-Schema laedt
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-044 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - doppelter Schluessel: type]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-045 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - doppelter Schluessel: type]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-048 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-049 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - zu tief verschachtelt]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-050 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-051 (Urteil, Stufe)  [ist ungueltig/schema, soll ungueltig/schema]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-134 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-134 (Wert)  [gelesen 8241.0 (double), soll 8241]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-135 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-135 (Wert)  [gelesen 8241.0 (double), soll 8241]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-136 (Urteil, Stufe)  [ist ungueltig/schema, soll ungueltig/schema]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-137 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - Ganzzahl ausserhalb 2^53-1: 9007199254740992]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-139 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - unbekanntes Literal NaN an Position 529]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-140 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - unbekanntes Literal Infinity an Position 529]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-141 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - unbekanntes Literal -Infinity an Position 529]
+  [ok]   313/M-73 evidence_snapshot_vertragsweg PE-142 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - Zahl ausserhalb +/-1e308: 1e999]
+  [ok]   313/M-49 Zaehlpruefung B16: evidence_snapshot  [14 gefahren, Kopf 14]
+  205 bestanden, 0 gescheitert
+
+=== A4 cargo test -- nak313 (Exit 101; nur die Ziele mit NAK-313-Faellen, je Panik die Meldung) ===
+  Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-143b14e85e30b6d6.exe)
+  test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+  test coordinator::schema::nak313_tests::nak313_strenger_lauf_raender ... ok
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  thread 'transport::bootstrap::tests::nak313_m72_hello_als_1punkt0' (155120) panicked at src\transport\bootstrap.rs:715:27:
+    protocol 3.0 ist die Ganzzahl 3 und wird ein V3Control: Err(KeinHello("weder protocol noch protocol_version"))
+  thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (77028) panicked at src\transport\bootstrap.rs:818:9:
+    rust_bootstrap weicht von `produkt` ab:
+    PE-143: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-143: Wirkung annahme nicht gehalten (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-144: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-144: Wirkung annahme nicht gehalten (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-145: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("invalid type: floating point `256.0`, expected u32")))
+    PE-145: Wirkung annahme nicht gehalten (Err(KeinHello("invalid type: floating point `256.0`, expected u32")))
+    PE-146: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("invalid type: floating point `2.0`, expected u32")))
+    PE-146: Wirkung annahme nicht gehalten (Err(KeinHello("invalid type: floating point `2.0`, expected u32")))
+    PE-147: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("invalid type: floating point `1234.0`, expected u32")))
+    PE-147: Wirkung annahme nicht gehalten (Err(KeinHello("invalid type: floating point `1234.0`, expected u32")))
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (177408) panicked at src\coordinator\schema.rs:1029:9:
+    rust_p0 weicht von `produkt` ab:
+    PE-124: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None)
+    PE-124: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(true))
+    PE-125: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None)
+    PE-125: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(true))
+    PE-126: Wert nicht gelesen (3.0 ist keine Ganzzahl), soll 3
+  thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (136276) panicked at src\coordinator\senke.rs:421:9:
+    rust_p1 weicht von `produkt` ab:
+    PE-134: Wert Some(0) am Feld "/transport/sequence", soll 8241
+    PE-135: Wert Some(0) am Feld "/transport/sequence", soll 8241
+  test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.06s
+  Running tests\sonde013_verdrahtung.rs (broker\target\debug\deps\sonde013_verdrahtung-d96c67d3d49460e0.exe)
+  test nak313_m71_assistent_als_3punkt0 ... FAILED
+  test nak313_m64_heartbeat_sequence_als_1punkt0 ... FAILED
+  test nak313_m70_intent_als_1punkt0 ... FAILED
+  test nak313_m52_lokale_evidenz_ohne_startwert ... ok
+  test nak313_m66_evidenzfelder_als_1punkt0 ... FAILED
+  test nak313_m67_intervention_als_1punkt0 ... FAILED
+  test nak313_m69_state_report_als_1punkt0 ... FAILED
+  test nak313_m90_revision_ueber_2hoch53 ... ok
+  test nak313_m68_befehlskopf_als_1punkt0 ... FAILED
+  thread 'nak313_m71_assistent_als_3punkt0' (263828) panicked at tests\sonde013_verdrahtung.rs:6959:5:
+    M-71: der Schritt mit Revision 3.0 wird angenommen: Err(Vertrag)
+  thread 'nak313_m64_heartbeat_sequence_als_1punkt0' (282804) panicked at tests\sonde013_verdrahtung.rs:6659:5:
+    assertion `left == right` failed: M-64: der Resync laeuft genau dann, wenn eine Antwort entsteht (Antwort false, unknown false)
+    left: false
+    right: true
+  thread 'nak313_m70_intent_als_1punkt0' (23472) panicked at tests\sonde013_verdrahtung.rs:6944:5:
+    M-70:
+    M-70 kombiniert: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    M-70 bestand_revision: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    M-70 revision: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    M-70 band.von: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+    M-70 band.bis: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+  thread 'nak313_m66_evidenzfelder_als_1punkt0' (304492) panicked at tests\sonde013_verdrahtung.rs:6701:9:
+    assertion `left == right` failed: M-66: der Evidenzstand traegt die Werte, nie 0 und nie einen verlorenen Start (1024)
+    left: (0, 0, 0, 0, None, 0, 0, 0)
+    right: (8241, 3, 2, 256, Some(1024), 1, 4, 2)
+  thread 'nak313_m67_intervention_als_1punkt0' (83208) panicked at tests\sonde013_verdrahtung.rs:6817:5:
+    M-67:
+    M-67 kombiniert: der Beginn wird nicht angenommen (Interventionssicht { aktive: 0, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: true })
+    M-67 begin.event_sequence: der Beginn wird nicht angenommen (Interventionssicht { aktive: 0, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: true })
+    M-67 begin.project_sample_start: nicht genau der Bereich 4800 bis 10080 (5000: Some(true), 20000: Some(true))
+    M-67 end.event_sequence: das Ende wird nicht angenommen (Interventionssicht { aktive: 1, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: false })
+    M-67 end.tail_samples: das Ende wird nicht angenommen (Interventionssicht { aktive: 1, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: false })
+    M-67 end.project_sample_end: nicht genau der Bereich 4800 bis 10080 (5000: Some(true), 20000: Some(true))
+  thread 'nak313_m69_state_report_als_1punkt0' (294716) panicked at tests\sonde013_verdrahtung.rs:6891:5:
+    assertion `left == right` failed: M-69: Basis 7 trifft die gemeldete 7: {"code":"record_state_unknown","command_id":"00000000000000000000000000006901","ergebnis":"abgelehnt","state_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state_revision":7,"type":"command_ack"}
+    left: (String("abgelehnt"), Number(7))
+    right: (String("angewandt"), Number(7))
+  thread 'nak313_m68_befehlskopf_als_1punkt0' (271484) panicked at tests\sonde013_verdrahtung.rs:6848:5:
+    assertion `left == right` failed: M-68 (a): preview_begin mit 5.0 wie mit 5 (None)
+    left: None
+    right: Some((String("angewandt"), Number(5)))
+  test result: FAILED. 2 passed; 7 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.55s
+  Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+  test nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel ... FAILED
+  thread 'nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel' (381492) panicked at tests\sonde014_verdrahtung.rs:3146:5:
+    assertion `left == right` failed: M-65: 3 und 3.0 sind derselbe Kanal - keine Kanalwechselreaktion
+    left: (1, 8)
+    right: (0, 0)
+  test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 62 filtered out; finished in 0.22s
+  error: 3 targets failed:
+  `--lib`
+  `--test sonde013_verdrahtung`
+  `--test sonde014_verdrahtung`
+
+=== A5 pruefe_v3_vertrag.py --abdeckung, Fassung von HEAD (Exit 2) ===
+  Produkteingaenge: 122 v3-Eintraege gegen `vertrag` gefahren (Kopf: 122)
+  ROT: PE-057 cpp_control_ack M-56: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-058 cpp_control_ack M-56: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-059 cpp_control_ack M-56: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-060 cpp_control_ack M-56: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-067 cpp_control_handshake M-60: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-068 cpp_control_handshake M-60: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-069 cpp_control_handshake M-60: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-078 cpp_telemetrie_handshake M-60: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-079 cpp_telemetrie_handshake M-60: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-080 cpp_telemetrie_handshake M-60: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-089 cpp_sources_snapshot M-61: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-090 cpp_sources_snapshot M-61: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-091 cpp_sources_snapshot M-61: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-099 cpp_sources_ruecknahme M-61: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-100 cpp_sources_ruecknahme M-61: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-124 rust_p0 M-64: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-125 rust_p0 M-64: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-126 rust_p0 M-65: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-134 rust_p1 M-66: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-135 rust_p1 M-66: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-143 rust_bootstrap M-72: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-144 rust_bootstrap M-72: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-145 rust_bootstrap M-72: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-146 rust_bootstrap M-72: Wert verglichen — Bein vergleicht noch keine Werte
+  ROT: PE-147 rust_bootstrap M-72: Wert verglichen — Bein vergleicht noch keine Werte
+
+=== A11 pruefe_v2_schemas.py, Fassung von HEAD (Exit 2) ===
+  ok   PE-108 cpp_v2_client welcome M-91: ist ungueltig/schema, soll ungueltig/schema
+  ok   PE-109 cpp_v2_client welcome M-91: ist ungueltig/schema, soll ungueltig/schema
+  ok   PE-110 cpp_v2_client welcome M-91: ist ungueltig/schema, soll ungueltig/schema
+  ok   PE-111 cpp_v2_client welcome M-91: ist ungueltig/schema, soll ungueltig/schema
+  ROT  PE-112 cpp_v2_client welcome M-91: ist gueltig/None, soll ungueltig/schema
+  ok   PE-114 cpp_v2_client heartbeat_ack M-93: ist ungueltig/schema, soll ungueltig/schema
+  ROT  PE-115 cpp_v2_client heartbeat_ack M-93: ist gueltig/None, soll ungueltig/schema
+  ok   PE-117 cpp_v2_client reject M-94: ist ungueltig/schema, soll ungueltig/schema
+  ok   PE-118 cpp_v2_client reject M-94: ist ungueltig/schema, soll ungueltig/schema
+  ROT  PE-119 cpp_v2_client reject M-94: ist gueltig/None, soll ungueltig/schema
+  ok   PE-120 cpp_v2_client welcome M-96: ist ungueltig/parser, soll ungueltig/parser
+  ok   PE-121 cpp_v2_client welcome M-96: ist ungueltig/parser, soll ungueltig/parser
+  ok   PE-122 cpp_v2_client welcome M-96: ist ungueltig/parser, soll ungueltig/parser
+  ok   PE-123 cpp_v2_client welcome M-96: ist ungueltig/schema, soll ungueltig/schema
+  Produkteingaenge: 25 v2-Eintraege gefahren, der Kopf nennt 25
+  ROT — 5 Befund(e):
+  - PE-112 cpp_v2_client welcome M-91: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+  - PE-113 cpp_v2_client welcome M-91: traegt einen Wert, dieses Bein vergleicht noch keine
+  - PE-115 cpp_v2_client heartbeat_ack M-93: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+  - PE-116 cpp_v2_client heartbeat_ack M-93: traegt einen Wert, dieses Bein vergleicht noch keine
+  - PE-119 cpp_v2_client reject M-94: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+
+Heute nicht messbar am Basisstand (belegt die Mutation nach dem Bau, siehe die Rohdateien NAK-313-rot-M-NN.txt):
+  M-55 Riegeleinheit ganzzahlAusLiteral (Leser fehlt); v2-Riegeleinheit zahlriegelBytes (fehlt); M-63 Rust ganzzahl (fehlt);
+  B3c-Anteil von M-73 (wertAlsVar fehlt); die ub_bei_juce-Eintraege (nie durch JUCE).

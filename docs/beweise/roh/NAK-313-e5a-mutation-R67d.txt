@@ -1,0 +1,50 @@
+NAK-313 Etappe 5a - Mutationslauf R67d: broker/src/coordinator/befehl.rs - im Ende der Intervention event_sequence wieder mit as_u64
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R67d - im Ende der Intervention event_sequence wieder mit as_u64 - 24.09.2026 14:00:14 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei broker/src/coordinator/befehl.rs (CRLF)
+SHA-256 vorher df16779105a7b452ddbd286f2eaf2ae29aafe0a111c376f40d7da3ebba8cbda9; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R67d-befehl.rs (SHA-256 df16779105a7b452ddbd286f2eaf2ae29aafe0a111c376f40d7da3ebba8cbda9)
+Mutation 1 ab Zeile 842 (Stand vor der Mutation):
+  vorher:
+    |                 let event_sequence = crate::vertrag::ganzzahl(
+    |                     wert.get("event_sequence")?,
+    |                     0,
+    |                     crate::vertrag::GANZZAHL_MAX,
+    |                 )? as u64;
+    |                 let ende = crate::vertrag::ganzzahl_optional(
+  nachher:
+    |                 let event_sequence = wert.get("event_sequence")?.as_u64()?; // MUTATION R67d
+    |                 let ende = crate::vertrag::ganzzahl_optional(
+Mutiert 24.09.2026 14:00:14, SHA-256 mutiert d2b6493fe0f97a0ecad5531228a5fad889f7fa281de87a35dfcfb3d21afd3082
+Kette (R-313-11): Liest P0 ein Feld der Intervention wieder mit as_u64 beziehungsweise as_i64, faellt 7.0/8.0/480.0 still weg (kein Beginn, kein Ende) beziehungsweise geht 4800.0/9600.0 verloren und das Ende nimmt die ganze Sitzung zurueck (M-67).
+Lauf unter der Mutation:
+  A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R67d-mutiert-A4-sonde013.txt
+    Summe: test nak313_m67_intervention_als_1punkt0 ... FAILED
+    Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.17s
+    Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+Ruecknahme 24.09.2026 14:00:19: broker/src/coordinator/befehl.rs SHA-256 df16779105a7b452ddbd286f2eaf2ae29aafe0a111c376f40d7da3ebba8cbda9 - gleich dem Stand vor der Mutation
+  A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R67d-zurueck-A4-sonde013.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-sonde013: 'nak313_m67_intervention_als_1punkt0 ... FAILED' gefallen: JA
+  A4-sonde013: 'M-67 end.event_sequence' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-sonde013: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+  test nak313_m67_intervention_als_1punkt0 ... FAILED
+  thread 'nak313_m67_intervention_als_1punkt0' (288960) panicked at tests\sonde013_verdrahtung.rs:6817:5:
+    M-67:
+    M-67 kombiniert: das Ende wird nicht angenommen (Interventionssicht { aktive: 1, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: false })
+    M-67 end.event_sequence: das Ende wird nicht angenommen (Interventionssicht { aktive: 1, tail_samples_offen: 0, unknown: false, starke_evidenz_erlaubt: false })
+=== A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===

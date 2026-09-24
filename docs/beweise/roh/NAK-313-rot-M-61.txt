@@ -1,0 +1,300 @@
+NAK-313 Etappe 5a - Rotbeweis M-61 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-61 - T3-03-02 - R-313-5 - E-313-9 - Produktleser SourcesModel Snapshot und Ruecknahme
+Zustand: Snapshot mit einer Sonde, letzter_kontakt_ms 1500.0 beziehungsweise 1.5e3, host_mixer_index 3.0; Ruecknahme 1024.0 bis 2048e0, Gegenprobe 2048.0 bis 1024e0; Gegenfaelle 1.5 und -1
+Ereignis: Uebernahme bei jetzt = empfangen
+Zusage: Snapshot uebernommen mit controlAlterMs 1500 und hostMixerIndex 3; Ruecknahme uebernommen wie mit Zifferntext, die vertauschte Ordnung ungueltig; 1.5 und -1 ungueltig, nie 0; die Werte kommen aus dem strengen Lauf
+Bein: B13, eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp 313/M-61 ganzzahl_in_1punkt0_form PE-089 bis PE-093, PE-099 bis PE-102; ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext; ruecknahme_vertauschte_ordnung_ungueltig
+
+--- Haelfte 1: .0- und e-Formen (PE-089, PE-090, PE-091, PE-099, PE-100, Ruecknahme 1024.0 bis 2048e0) - Etikett: heute rot ---
+Pruefung: Urteil, Stufe, Wirkung und Wert
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B13 EqCopSonde012SourcesModelTest (Exit 1) ===
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - probe_descriptor is invalid or disagrees with its member]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext  [evidence_invalidate sample range is not ordered]
+  -> am Basisstand: rot (JUCE liest 1500.0 und 3.0 als double, nichtnegativeGanzzahl nimmt nur isInt/isInt64)
+  Mutation S61a: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - wertAlsVar gibt ganzzahlige Zahlen wieder als double (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-S61a.txt):
+    Rotlauf S61a - wertAlsVar gibt ganzzahlige Zahlen wieder als double - 24.09.2026 13:39:53 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+    SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61a-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+    Mutation 1 ab Zeile 792 (Stand vor der Mutation):
+      vorher:
+        |             if (std::isfinite (d) && std::trunc (d) == d
+        |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+        |                 return juce::var (static_cast<juce::int64> (d));
+        |             return juce::var (d);
+      nachher:
+        |             if (false && std::isfinite (d) && std::trunc (d) == d   // MUTATION S61a: Ganzzahlen wieder als double
+        |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+        |                 return juce::var (static_cast<juce::int64> (d));
+        |             return juce::var (d);
+    Mutiert 24.09.2026 13:39:53, SHA-256 mutiert 248fb75321aee677edc84ec428f0db9d1683a73652b2fccc8a170e63d0f546c1
+    Kette (R-313-11): Als double nimmt nichtnegativeGanzzahl keine Ganzzahl an -> Snapshot und Ruecknahme mit 1500.0, 1.5e3, 3.0, 1024.0 und 2048e0 enden ungueltig (M-61).
+    Lauf unter der Mutation:
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:39:56.819, Quelle 13:39:53.526, Binaer juenger: ja
+      B13: Exit -1073741819, Fehlzeilen 50, Rohausgabe S61a-mutiert-B13.txt
+        Summe: FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig  [evidence_invalidate sample range is not ordered]
+    Ruecknahme 24.09.2026 13:39:57: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:01.146, Quelle 13:39:57.313, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe S61a-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 194/194 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B13: 'PE-089 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-090 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-091 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-099 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-100 (Urteil, Stufe)' gefallen: JA
+      B13: '313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B13 unter der Mutation: gefallene Pruefungen (50) ===
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: Objektschluessel erwartet - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: unbekanntes Escape - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Objektschluessel erwartet - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: unbekanntes Escape - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-092 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-73 snapshot_wertstufe PE-094 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Ganzzahl ausserhalb 2^53-1: 9007199254740992 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-095 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal NaN an Position 719 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-096 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal Infinity an Position 719 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-097 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal -Infinity an Position 719 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-098 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Zahl ausserhalb +/-1e308: 1e999 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-101 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-102 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-73 ruecknahme_wertstufe PE-103 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Ganzzahl ausserhalb 2^53-1: 9007199254740992 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-104 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal NaN an Position 124 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-105 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal Infinity an Position 124 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-106 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal -Infinity an Position 124 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-107 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Zahl ausserhalb +/-1e308: 1e999 - Basis nicht uebernommen: session member kind or freshness is invalid]
+      FEHLER  313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext  [evidence_invalidate sample range is not ordered]
+      FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig  [evidence_invalidate sample range is not ordered]
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: vertauschte Ordnung, 1.5, -1 (PE-092, PE-093, PE-101, PE-102) - Etikett: Regressionswache ---
+Pruefung: Urteil und Stufe; drei Einzelbrueche
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B13 EqCopSonde012SourcesModelTest (Exit 1) ===
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-092 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-092 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-093 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-101 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-101 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-102 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered]
+  ok      313/M-61 ganzzahl_in_1punkt0_form PE-102 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-61 ruecknahme_vertauschte_ordnung_ungueltig  [evidence_invalidate sample range is not ordered]
+  -> am Basisstand: gruen (PE-092, PE-093, PE-101, PE-102 und ruecknahme_vertauschte_ordnung_ungueltig)
+  Mutation S61b: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - wertAlsVar liefert fuer jede ganzzahlige Zahl 0 (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-S61b.txt):
+    Rotlauf S61b - wertAlsVar liefert fuer jede ganzzahlige Zahl 0 - 24.09.2026 14:04:46 - HEAD 3d7542b517bcc0f8a6d790f51d340a418d9e92e4
+    Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+    SHA-256 vorher 6422ecb9754121b3eff56fe93daba91c19dba5f0300339ac16de69923cf80de1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61b-NakamaVertrag.cpp (SHA-256 6422ecb9754121b3eff56fe93daba91c19dba5f0300339ac16de69923cf80de1)
+    Mutation 1 ab Zeile 793 (Stand vor der Mutation):
+      vorher:
+        |             if (std::isfinite (d) && std::trunc (d) == d
+        |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+        |                 return juce::var (static_cast<juce::int64> (d));
+        |             return juce::var (d);
+      nachher:
+        |             if (std::isfinite (d) && std::trunc (d) == d
+        |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+        |                 return juce::var (static_cast<juce::int64> (0));   // MUTATION S61b: jede Ganzzahl wird 0
+        |             return juce::var (d);
+    Mutiert 24.09.2026 14:04:46, SHA-256 mutiert 07c96f5ec7bcf432b93f484b17d52c1f4a5a8862f8f3f499fe47eb793028c327
+    Kette (R-313-11): Traegt jede Ganzzahl den Wert 0, ist die vertauschte Ordnung 2048.0 bis 1024e0 geordnet (0 bis 0) und wird angenommen (M-61, Regressionswache der Ordnung). B16 liest seine Werte aus demselben Lauf: mit 0 statt 8241, 3, 1 urteilt die Engine ueber PE-134 und PE-135 ungueltig/schema statt gueltig (M-73, Referenzbein; der Wertvergleich laeuft nur bei Urteil gueltig und misst T73w).
+    Lauf unter der Mutation:
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 14:04:53.439, Quelle 14:04:46.166, Binaer juenger: ja
+      B13: Exit -1073741819, Fehlzeilen 11, Rohausgabe S61b-mutiert-B13.txt
+        Summe: FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig
+      Bau EqCopSonde013EventWireTest: Exit 0
+      B16: Binaer 14:05:03.799, Quelle 14:04:46.166, Binaer juenger: ja
+      B16: Exit 1, Fehlzeilen 4, Rohausgabe S61b-mutiert-B16.txt
+        Summe: 199 bestanden, 4 gescheitert
+    Ruecknahme 24.09.2026 14:05:05: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 6422ecb9754121b3eff56fe93daba91c19dba5f0300339ac16de69923cf80de1 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 14:05:09.419, Quelle 14:05:05.755, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe S61b-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 194/194 gruen
+      Bau EqCopSonde013EventWireTest: Exit 0
+      B16: Binaer 14:05:10.687, Quelle 14:05:05.755, Binaer juenger: ja
+      B16: Exit 0, Fehlzeilen 0, Rohausgabe S61b-zurueck-B16.txt
+        Summe: 205 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B13: '313/M-61 ruecknahme_vertauschte_ordnung_ungueltig' gefallen: JA
+      B16: 'PE-134 (Urteil, Stufe)' gefallen: JA
+      B16: 'PE-135 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B13: Exit 0, Fehlzeilen 0
+      B16: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B13 unter der Mutation: gefallene Pruefungen (11) ===
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wert)  [controlAlterMs 0, soll 1500]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Wert)  [controlAlterMs 0, soll 1500]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - probe_descriptor is invalid or disagrees with its member]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Wirkung)  [annahme - Sicht: keine, Zeilen 1]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Wert)  [Gegengrenze sample_end 1024: an, 1023: an, soll 1024]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Wert)  [Gegengrenze sample_start 2048: an, 2049: an, soll 2048]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-102 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-102 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+      FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === B16 unter der Mutation: gefallene Pruefungen (4) ===
+      [ROT]  313/M-49 evidence_snapshot_vertragsweg PE-048 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+      [ROT]  313/M-49 evidence_snapshot_vertragsweg PE-050 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+      [ROT]  313/M-73 evidence_snapshot_vertragsweg PE-134 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+      [ROT]  313/M-73 evidence_snapshot_vertragsweg PE-135 (Urteil, Stufe)  [ist ungueltig/schema, soll gueltig/]
+    === B16 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation S61c: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - in wertAlsVar die Pruefung trunc (d) == d entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-S61c.txt):
+    Rotlauf S61c - in wertAlsVar die Pruefung trunc (d) == d entfernt - 24.09.2026 13:40:17 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+    SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61c-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+    Mutation 1 ab Zeile 792 (Stand vor der Mutation):
+      vorher:
+        |             if (std::isfinite (d) && std::trunc (d) == d
+        |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+        |                 return juce::var (static_cast<juce::int64> (d));
+        |             return juce::var (d);
+      nachher:
+        |             if (std::isfinite (d)   // MUTATION S61c: ohne trunc (d) == d
+        |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+        |                 return juce::var (static_cast<juce::int64> (d));
+        |             return juce::var (d);
+    Mutiert 24.09.2026 13:40:17, SHA-256 mutiert 26557991734766272c0753b74578ff9d092465508ef1e98a1adad17896a3f4fe
+    Kette (R-313-11): Ohne die Ganzzahlpruefung wird 1.5 die Ganzzahl 1 -> der Snapshot mit letzter_kontakt_ms 1.5 wird angenommen (M-61), und die Engine sieht nicht_endliche_samples 2 statt 2.5, die type-Verletzung entfaellt (M-62, B3c).
+    Lauf unter der Mutation:
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:21.155, Quelle 13:40:17.921, Binaer juenger: ja
+      B13: Exit 1, Fehlzeilen 4, Rohausgabe S61c-mutiert-B13.txt
+        Summe: SONDE-012 SourcesModel: 190/194 gruen
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 13:40:26.461, Quelle 13:40:17.921, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 11, Rohausgabe S61c-mutiert-B3c.txt
+        Summe: 172 bestanden, 1 gescheitert
+    Ruecknahme 24.09.2026 13:40:29: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:32.996, Quelle 13:40:29.669, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe S61c-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 194/194 gruen
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 13:40:34.486, Quelle 13:40:29.669, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe S61c-zurueck-B3c.txt
+        Summe: 173 bestanden, 0 gescheitert
+    Erwartete Pruefungen unter der Mutation:
+      B13: 'PE-092 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-101 (Urteil, Stufe)' gefallen: JA
+      B3c: 'experiment-referenz-bruchzahl-nicht-endliche-samples.json' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B13: Exit 0, Fehlzeilen 0
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B13 unter der Mutation: gefallene Pruefungen (4) ===
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-092 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-092 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-101 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-101 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === B3c unter der Mutation: gefallene Pruefungen (11) ===
+      [ROT]  ungueltig/abdeckung-negativ.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/abdeckung-ueber-1.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/bandwert-q0p01-nicht-ganzzahlig.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/bandwert-q0p1-nicht-ganzzahlig.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/dsp-auto-gain-ausserhalb.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/evidence-stereo-werte-ausserhalb.json: Verletzungsmenge weicht ab
+      [ROT]  ungueltig/experiment-begin-passage-abdeckung-ueber-eins.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/experiment-referenz-bruchzahl-nicht-endliche-samples.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/intent-konfidenz-ueber-eins.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  ungueltig/sequence-mit-nachkomma.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [10 Abweichungen]
+    === B3c nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation S61d: eq-copilot/plugin/src/SourcesModel.cpp - nichtnegativeGanzzahl ohne die Pruefung n < 0 und ohne Obergrenze (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-S61d.txt):
+    Rotlauf S61d - nichtnegativeGanzzahl ohne die Pruefung n < 0 und ohne Obergrenze - 24.09.2026 13:40:35 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/src/SourcesModel.cpp (CRLF)
+    SHA-256 vorher 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61d-SourcesModel.cpp (SHA-256 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639)
+    Mutation 1 ab Zeile 113 (Stand vor der Mutation):
+      vorher:
+        |         const auto n = static_cast<juce::int64> (v);
+        |         if (n < 0) return false;
+        |         aus = static_cast<std::uint64_t> (n);
+        |         return aus <= 9007199254740991ULL;
+      nachher:
+        |         const auto n = static_cast<juce::int64> (v);
+        |         aus = static_cast<std::uint64_t> (n);   // MUTATION S61d: ohne n < 0, ohne Obergrenze
+        |         return true;
+    Mutiert 24.09.2026 13:40:35, SHA-256 mutiert 5faf9b3bbeb9203e202e0c194c628d147a80f3120e4cd1162c60aa4b4f9d8589
+    Kette (R-313-11): Ohne die Vorzeichenpruefung wird -1 zu 18446744073709551615 und der Snapshot mit letzter_kontakt_ms -1 wird angenommen (M-61, Regressionswache -1).
+    Lauf unter der Mutation:
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:40.941, Quelle 13:40:35.721, Binaer juenger: ja
+      B13: Exit 1, Fehlzeilen 2, Rohausgabe S61d-mutiert-B13.txt
+        Summe: SONDE-012 SourcesModel: 192/194 gruen
+    Ruecknahme 24.09.2026 13:40:41: eq-copilot/plugin/src/SourcesModel.cpp SHA-256 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:46.615, Quelle 13:40:41.248, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe S61d-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 194/194 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B13: 'PE-093 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B13 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-61: 2 von 2 Haelften fallen an der erwarteten Pruefung

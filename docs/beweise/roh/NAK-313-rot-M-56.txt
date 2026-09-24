@@ -1,0 +1,111 @@
+NAK-313 Etappe 5a - Rotbeweis M-56 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-56 - T3-03-02 - R-313-5 - flacher C++-Leser Control (ACK), senden<->bestaetigen
+Zustand: verbundener ControlClient, ein persistenzpflichtiger P0 in Flight; der Testserver antwortet angewandt mit state_revision 7.0, 7e0, 0, -0 (rohe Tabellenbytes)
+Ereignis: inFlightAck; dieselben Bytes direkt durch commandAckArtLesen
+Zusage: das ACK gilt, der Auftrag wird frei; der Direktaufruf liefert die Revision 7, 7, 0, 0
+Bein: B10, IpcTestMain.cpp 313/M-56 ack_revision_als_1punkt0 PE-057 bis PE-060 (Urteil, Stufe; Wirkung; Wert)
+
+--- Haelfte 1: 7.0, 7e0, -0 (PE-057, PE-058, PE-060) - Etikett: heute rot ---
+Pruefung: Urteil, Stufe und Wirkung von PE-057, PE-058, PE-060
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  -> am Basisstand: rot (nichtnegativeJsonGanzzahl lehnt Punkt, Exponent und Vorzeichen ab: keinAck, der Auftrag bleibt liegen)
+  Mutation W56a: eq-copilot/plugin/core/ipc/controlclient/Intern.h - im ACK-Leser der Zifferntext-Vergleich zurueck (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W56a.txt):
+    Rotlauf W56a - im ACK-Leser der Zifferntext-Vergleich zurueck - 24.09.2026 13:16:34 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W56a-Intern.h (SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40)
+    Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+      vorher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+      nachher:
+        |         || revision.find_first_not_of ("0123456789") != std::string::npos   // MUTATION W56a: Zifferntext-Vergleich zurueck
+        |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+    Mutiert 24.09.2026 13:16:34, SHA-256 mutiert d683fb0d3ab5971c548e3639b41506ab2490d7b885a360858b3827dc6364d289
+    Kette (R-313-11): Der Zifferntext-Vergleich lehnt Punkt, Exponent und Vorzeichen ab -> 7.0, 7e0 und -0 sind keinAck, der Auftrag bleibt liegen (M-56); der Konflikt mit 5.0 wird nicht wiederholt (M-59).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:17:51.765, Quelle 13:16:34.865, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 7, Rohausgabe W56a-mutiert-B10.txt
+        Summe: FEHLER — 108 Pruefungen, 7 Fehler
+    Ruecknahme 24.09.2026 13:18:08: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:19:24.552, Quelle 13:18:08.379, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W56a-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: 'PE-057 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-058 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-060 (Urteil, Stufe)' gefallen: JA
+      B10: '313/M-59 konfliktkopf_aus_gelesener_revision 5.0' gefallen: JA
+      B10: 'PE-059 (Urteil, Stufe)' gruen geblieben: JA
+      B10: '313/M-59 konfliktkopf_aus_gelesener_revision 5 ' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (7) ===
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5.0  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: 0 (PE-059) - Etikett: Regressionswache ---
+Pruefung: Urteil, Stufe, Wirkung und Wert von PE-059
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  ok      313/M-56 ack_revision_als_1punkt0 PE-059 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - inFlight 0, Erfolg 1, endgueltig 0]
+  ok      313/M-56 ack_revision_als_1punkt0 PE-059 (Wirkung)  [annahme - inFlight 0, Erfolg 1, endgueltig 0]
+  ok      313/M-56 ack_revision_als_1punkt0 PE-059 (Wert)  [gelesen 0, soll 0]
+  -> am Basisstand: gruen
+  Mutation W56b: eq-copilot/plugin/core/ipc/controlclient/Intern.h - im ACK-Leser die Untergrenze der Revision auf 1 (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W56b.txt):
+    Rotlauf W56b - im ACK-Leser die Untergrenze der Revision auf 1 - 24.09.2026 13:21:39 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W56b-Intern.h (SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40)
+    Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+      vorher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+      nachher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (revision, 1, nakama::wire::kGanzzahlMax, revisionWert))   // MUTATION W56b: Untergrenze 1
+    Mutiert 24.09.2026 13:21:39, SHA-256 mutiert ebaf9958130eb79a9de8cf02217511bb37ac1522a10916989b7ffd81d94f9e36
+    Kette (R-313-11): Mit der Untergrenze 1 ist die Revision 0 kein ACK mehr -> keinAck, der Auftrag bleibt liegen (M-56, Regressionswache 0).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:22:59.563, Quelle 13:21:39.929, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 4, Rohausgabe W56b-mutiert-B10.txt
+        Summe: FEHLER — 109 Pruefungen, 4 Fehler
+    Ruecknahme 24.09.2026 13:23:06: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:24:25.186, Quelle 13:23:06.757, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W56b-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: 'PE-059 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-057 (Urteil, Stufe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (4) ===
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-56: 2 von 2 Haelften fallen an der erwarteten Pruefung

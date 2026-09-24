@@ -1,0 +1,76 @@
+NAK-313 Etappe 5a - Mutationslauf S61c: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - in wertAlsVar die Pruefung trunc (d) == d entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S61c - in wertAlsVar die Pruefung trunc (d) == d entfernt - 24.09.2026 13:40:17 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61c-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+Mutation 1 ab Zeile 792 (Stand vor der Mutation):
+  vorher:
+    |             if (std::isfinite (d) && std::trunc (d) == d
+    |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+    |                 return juce::var (static_cast<juce::int64> (d));
+    |             return juce::var (d);
+  nachher:
+    |             if (std::isfinite (d)   // MUTATION S61c: ohne trunc (d) == d
+    |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+    |                 return juce::var (static_cast<juce::int64> (d));
+    |             return juce::var (d);
+Mutiert 24.09.2026 13:40:17, SHA-256 mutiert 26557991734766272c0753b74578ff9d092465508ef1e98a1adad17896a3f4fe
+Kette (R-313-11): Ohne die Ganzzahlpruefung wird 1.5 die Ganzzahl 1 -> der Snapshot mit letzter_kontakt_ms 1.5 wird angenommen (M-61), und die Engine sieht nicht_endliche_samples 2 statt 2.5, die type-Verletzung entfaellt (M-62, B3c).
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:21.155, Quelle 13:40:17.921, Binaer juenger: ja
+  B13: Exit 1, Fehlzeilen 4, Rohausgabe S61c-mutiert-B13.txt
+    Summe: SONDE-012 SourcesModel: 190/194 gruen
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 13:40:26.461, Quelle 13:40:17.921, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 11, Rohausgabe S61c-mutiert-B3c.txt
+    Summe: 172 bestanden, 1 gescheitert
+Ruecknahme 24.09.2026 13:40:29: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:32.996, Quelle 13:40:29.669, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe S61c-zurueck-B13.txt
+    Summe: SONDE-012 SourcesModel: 194/194 gruen
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 13:40:34.486, Quelle 13:40:29.669, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe S61c-zurueck-B3c.txt
+    Summe: 173 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B13: 'PE-092 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-101 (Urteil, Stufe)' gefallen: JA
+  B3c: 'experiment-referenz-bruchzahl-nicht-endliche-samples.json' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (4) ===
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-092 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-092 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-101 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-101 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+=== B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+=== B3c unter der Mutation: gefallene Pruefungen (11) ===
+  [ROT]  ungueltig/abdeckung-negativ.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/abdeckung-ueber-1.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/bandwert-q0p01-nicht-ganzzahlig.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/bandwert-q0p1-nicht-ganzzahlig.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/dsp-auto-gain-ausserhalb.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/evidence-stereo-werte-ausserhalb.json: Verletzungsmenge weicht ab
+  [ROT]  ungueltig/experiment-begin-passage-abdeckung-ueber-eins.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/experiment-referenz-bruchzahl-nicht-endliche-samples.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/intent-konfidenz-ueber-eins.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/sequence-mit-nachkomma.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [10 Abweichungen]
+=== B3c nach der Ruecknahme: gefallene Pruefungen 0 ===

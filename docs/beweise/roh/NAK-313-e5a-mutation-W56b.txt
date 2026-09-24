@@ -1,0 +1,46 @@
+NAK-313 Etappe 5a - Mutationslauf W56b: eq-copilot/plugin/core/ipc/controlclient/Intern.h - im ACK-Leser die Untergrenze der Revision auf 1
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W56b - im ACK-Leser die Untergrenze der Revision auf 1 - 24.09.2026 13:21:39 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+SHA-256 vorher d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W56b-Intern.h (SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40)
+Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+  vorher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+  nachher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (revision, 1, nakama::wire::kGanzzahlMax, revisionWert))   // MUTATION W56b: Untergrenze 1
+Mutiert 24.09.2026 13:21:39, SHA-256 mutiert ebaf9958130eb79a9de8cf02217511bb37ac1522a10916989b7ffd81d94f9e36
+Kette (R-313-11): Mit der Untergrenze 1 ist die Revision 0 kein ACK mehr -> keinAck, der Auftrag bleibt liegen (M-56, Regressionswache 0).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:22:59.563, Quelle 13:21:39.929, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 4, Rohausgabe W56b-mutiert-B10.txt
+    Summe: FEHLER — 109 Pruefungen, 4 Fehler
+Ruecknahme 24.09.2026 13:23:06: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:24:25.186, Quelle 13:23:06.757, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W56b-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: 'PE-059 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-057 (Urteil, Stufe)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (4) ===
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,317 @@
+NAK-313 Etappe 5a - Rotbeweis M-96 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-96 - T3-03-02, T3-03-03 - Zahlenraender NaN und +/-Inf - R-313-13
+Zustand: jede Vergleichsstelle der Etappe
+Ereignis: NaN, Infinity, -Infinity, 1e999 in einem Ganzzahlfeld
+Zusage: kein Leser liefert einen Wert; flacher Leser feldregel; Quellenmodell, Rust P0 und P1 textriegel; v2 NaN/Infinity/-Infinity parser, 1e999 textriegel
+Bein: B10 nicht_endlich_flach, B13 nicht_endlich_snapshot/-ruecknahme, A4b nicht_endlich_v2, A4 nak313_m96_nicht_endlich_p0_p1; M-55 um -Infinity und 1e999
+
+--- Haelfte 1: flacher Leser - Etikett: Regressionswache ---
+Pruefung: PE-063 bis PE-066, PE-074 bis PE-077, PE-085 bis PE-088
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  ok      313/M-96 nicht_endlich_flach PE-063 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-063 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-064 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-064 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-065 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-065 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-066 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach PE-066 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+  ok      313/M-96 nicht_endlich_flach control PE-074 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-074 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-075 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-075 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-076 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-076 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach control PE-077 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-96 nicht_endlich_flach control PE-077 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-085 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-085 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-086 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-086 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-087 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-087 (Wirkung)  [nicht verbunden]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-088 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-96 nicht_endlich_flach telemetrie PE-088 (Wirkung)  [nicht verbunden]
+  -> am Basisstand: gruen
+  Mutation W96: eq-copilot/plugin/core/ipc/WireZahl.h - ganzzahlAusLiteral nimmt das Literal Infinity als Grenzwert an (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W96.txt):
+    Rotlauf W96 - ganzzahlAusLiteral nimmt das Literal Infinity als Grenzwert an - 24.09.2026 13:37:05 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+    SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W96-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+    Mutation 1 ab Zeile 344 (Stand vor der Mutation):
+      vorher:
+        |     const std::size_t n = literal.size();
+        |     std::size_t i = 0;
+      nachher:
+        |     const std::size_t n = literal.size();
+        |     std::size_t i = 0;
+        |     if (literal == "Infinity") { aus = max; return true; }   // MUTATION W96: Infinity als Grenzwert
+    Mutiert 24.09.2026 13:37:05, SHA-256 mutiert ea8e86c5b264f7b0cec3ade35c94d3068e372a0ef6072a6e56571e4899d2b777
+    Kette (R-313-11): Liest der flache Leser Infinity als Obergrenze, gilt das ACK mit state_revision Infinity und welcome.protocol Infinity verbindet (M-96, flacher Leser).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:38:24.167, Quelle 13:37:05.539, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 7, Rohausgabe W96-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 7 Fehler
+    Ruecknahme 24.09.2026 13:38:29: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:39:46.898, Quelle 13:38:29.599, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W96-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: 'PE-064 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-075 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-086 (Urteil, Stufe)' gefallen: JA
+      B10: '313/M-55 ganzzahl_aus_literal Infinity' gefallen: JA
+      B10: 'PE-063 (Urteil, Stufe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (7) ===
+      FEHLER  313/M-55 ganzzahl_aus_literal Infinity  [gelesen 9007199254740991]
+      FEHLER  313/M-96 nicht_endlich_flach PE-064 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-96 nicht_endlich_flach PE-064 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-96 nicht_endlich_flach control PE-075 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-96 nicht_endlich_flach control PE-075 (Wirkung)  [verbunden]
+      FEHLER  313/M-96 nicht_endlich_flach telemetrie PE-086 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-96 nicht_endlich_flach telemetrie PE-086 (Wirkung)  [verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: Quellenmodell - Etikett: Regressionswache ---
+Pruefung: PE-095 bis PE-098, PE-104 bis PE-107
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B13 EqCopSonde012SourcesModelTest (Exit 1) ===
+  ok      313/M-96 nicht_endlich_snapshot PE-095 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal NaN an Position 719]
+  ok      313/M-96 nicht_endlich_snapshot PE-095 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-096 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal Infinity an Position 719]
+  ok      313/M-96 nicht_endlich_snapshot PE-096 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-097 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal -Infinity an Position 719]
+  ok      313/M-96 nicht_endlich_snapshot PE-097 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_snapshot PE-098 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Zahl ausserhalb +/-1e308: 1e999]
+  ok      313/M-96 nicht_endlich_snapshot PE-098 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-104 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal NaN an Position 124]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-104 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-105 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal Infinity an Position 124]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-105 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-106 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal -Infinity an Position 124]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-106 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-107 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Zahl ausserhalb +/-1e308: 1e999]
+  ok      313/M-96 nicht_endlich_ruecknahme PE-107 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  -> am Basisstand: gruen
+  Mutation S96: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - im C++-Textriegel Regel 8 (alphabetische Literale) abgeschaltet (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-S96.txt):
+    Rotlauf S96 - im C++-Textriegel Regel 8 (alphabetische Literale) abgeschaltet - 24.09.2026 13:40:47 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+    SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S96-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+    Mutation 1 ab Zeile 598 (Stand vor der Mutation):
+      vorher:
+        |             if (literal != "true" && literal != "false" && literal != "null")
+      nachher:
+        |             if (false && literal != "true" && literal != "false" && literal != "null")   // MUTATION S96: Regel 8 abgeschaltet
+    Mutiert 24.09.2026 13:40:47, SHA-256 mutiert dbf90f5186ba9010488b3e50b10f8090f551a21ce84240b5c0ef08aff0146168
+    Kette (R-313-11): Ohne Regel 8 faellt NaN erst im strengen Lauf -> der Grund wechselt vom Textriegel- zum Parsergrund, die Stufe von textriegel zu parser (M-96, Quellenmodell).
+    Lauf unter der Mutation:
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:50.673, Quelle 13:40:47.447, Binaer juenger: ja
+      B13: Exit 1, Fehlzeilen 6, Rohausgabe S96-mutiert-B13.txt
+        Summe: SONDE-012 SourcesModel: 188/194 gruen
+    Ruecknahme 24.09.2026 13:40:50: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 13:40:54.539, Quelle 13:40:50.986, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe S96-zurueck-B13.txt
+        Summe: SONDE-012 SourcesModel: 194/194 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B13: 'PE-095 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-096 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-097 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-104 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-105 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-106 (Urteil, Stufe)' gefallen: JA
+      B13: 'PE-098 (Urteil, Stufe)' gruen geblieben: JA
+      B13: 'PE-107 (Urteil, Stufe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B13 unter der Mutation: gefallene Pruefungen (6) ===
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-095 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - session_snapshot parser: unerwartetes Zeichen]
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-096 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - session_snapshot parser: unerwartetes Zeichen]
+      FEHLER  313/M-96 nicht_endlich_snapshot PE-097 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - session_snapshot parser: Zahl ohne Ziffern]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-104 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - evidence_invalidate parser: unerwartetes Zeichen]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-105 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - evidence_invalidate parser: unerwartetes Zeichen]
+      FEHLER  313/M-96 nicht_endlich_ruecknahme PE-106 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - evidence_invalidate parser: Zahl ohne Ziffern]
+    === B13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 3: Rust P0 und P1 - Etikett: Regressionswache ---
+Pruefung: nak313_m96_nicht_endlich_p0_p1; PE-130 bis PE-133, PE-139 bis PE-142
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: der Modultest entstand mit dem Bau; die Eintraege liefen am Basisstand in nak313_m43/m44 ohne Abweichung (keine Fehlzeile fuer PE-130 bis PE-133, PE-139 bis PE-142 in NAK-313-e5a-basisstand.txt)
+  Mutation R96: broker/src/vertrag.rs - im Rust-Textriegel Regel 8 (alphabetische Literale) abgeschaltet (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R96.txt):
+    Rotlauf R96 - im Rust-Textriegel Regel 8 (alphabetische Literale) abgeschaltet - 24.09.2026 14:03:18 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/vertrag.rs (LF)
+    SHA-256 vorher e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R96-vertrag.rs (SHA-256 e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863)
+    Mutation 1 ab Zeile 476 (Stand vor der Mutation):
+      vorher:
+        |             if !matches!(literal.as_str(), "true" | "false" | "null") {
+      nachher:
+        |             if literal.is_empty() && !matches!(literal.as_str(), "true" | "false" | "null") { // MUTATION R96: Regel 8 abgeschaltet
+    Mutiert 24.09.2026 14:03:18, SHA-256 mutiert 3bcb8138871457cc858d73c05f6d682742b966f54dd2b15f4051ebfb6697035f
+    Kette (R-313-11): Ohne Regel 8 faellt NaN erst im strengen Lauf -> die Stufe wechselt von textriegel zu parser (M-96, Rust P0 und P1).
+    Lauf unter der Mutation:
+      A4-lib: Exit 101, Fehlzeilen 1, Rohausgabe R96-mutiert-A4-lib.txt
+        Summe: test coordinator::schema::nak313_tests::nak313_m96_nicht_endlich_p0_p1 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.02s
+        Summe: error: test failed, to rerun pass `--lib`
+    Ruecknahme 24.09.2026 14:03:22: broker/src/vertrag.rs SHA-256 e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863 - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R96-zurueck-A4-lib.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-lib: 'nak313_m96_nicht_endlich_p0_p1 ... FAILED' gefallen: JA
+      A4-lib: 'Stufe Some("parser"), soll textriegel' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-lib unter der Mutation: gefallene Pruefungen (1) ===
+      test coordinator::schema::nak313_tests::nak313_m96_nicht_endlich_p0_p1 ... FAILED
+      thread 'coordinator::schema::nak313_tests::nak313_m96_nicht_endlich_p0_p1' (151228) panicked at src\coordinator\schema.rs:1079:9:
+        M-96:
+        PE-130 (rust_p0): Stufe Some("parser"), soll textriegel
+        PE-131 (rust_p0): Stufe Some("parser"), soll textriegel
+        PE-132 (rust_p0): Stufe Some("parser"), soll textriegel
+        PE-139 (rust_p1): Stufe Some("parser"), soll textriegel
+        PE-140 (rust_p1): Stufe Some("parser"), soll textriegel
+        PE-141 (rust_p1): Stufe Some("parser"), soll textriegel
+    === A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 4: v2 1e999 - Etikett: heute rot ---
+Pruefung: PE-123
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A4b EqCopPipeClientTest --ohne-ueberlaufvektoren (Exit 1) ===
+  FEHLER  313/M-96 nicht_endlich_v2 PE-123 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl nicht darstellbar: 1e999']
+  ok      313/M-96 nicht_endlich_v2 PE-123 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl nicht darstellbar: 1e999']
+  -> am Basisstand: rot, UB-frei (der strenge Lauf meldete Zahl nicht darstellbar, Stufe parser statt textriegel)
+  Mutation V91e: eq-copilot/plugin/src/PipeClient.cpp - im v2-Client den Aufruf des Zahlriegels entfernt (Lauf mit --ohne-ueberlaufvektoren) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-V91e.txt):
+    Rotlauf V91e - im v2-Client den Aufruf des Zahlriegels entfernt (Lauf mit --ohne-ueberlaufvektoren) - 24.09.2026 13:40:55 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/src/PipeClient.cpp (CRLF)
+    SHA-256 vorher 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\V91e-PipeClient.cpp (SHA-256 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394)
+    Mutation 1 ab Zeile 713 (Stand vor der Mutation):
+      vorher:
+        |     juce::String zahlGrund;
+        |     if (! nakama::vertrag::zahlriegelBytes (puffer.getData(), len,
+        |                                             nakama::vertrag::v2Ganzzahlgrenze, zahlGrund))
+        |     {
+        |         fehler = "Zahlriegel: " + zahlGrund;
+        |         return false;
+        |     }
+      nachher:
+        |     juce::String zahlGrund;   // MUTATION V91e: Riegelaufruf entfernt
+    Mutiert 24.09.2026 13:40:55, SHA-256 mutiert 38145262aa3fca6930ea0fdc10e236bd3e7fd79a74a8268b4ab29d45caba29f1
+    Kette (R-313-11): Ohne den Zahlriegel liest JUCE 2.0000000000000001 als 2.0 und 1.0000000000000001 als 1.0: das welcome verbindet (M-91 e), das ACK bestaetigt (M-93 b), das reject meldet Broker lehnt ab (M-94 c), und 1e999 faellt erst im strengen Lauf (M-96 v2).
+    Lauf unter der Mutation:
+      Bau EqCopPipeClientTest: Exit 0
+      A4b: Binaer 13:40:59.053, Quelle 13:40:55.375, Binaer juenger: ja
+      A4b: Exit 1, Fehlzeilen 6, Rohausgabe V91e-mutiert-A4b.txt
+        Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 6 Fehler
+    Ruecknahme 24.09.2026 13:42:08: eq-copilot/plugin/src/PipeClient.cpp SHA-256 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394 - gleich dem Stand vor der Mutation
+      Bau EqCopPipeClientTest: Exit 0
+      A4b: Binaer 13:42:11.935, Quelle 13:42:08.359, Binaer juenger: ja
+      A4b: Exit 0, Fehlzeilen 0, Rohausgabe V91e-zurueck-A4b.txt
+        Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      A4b: 'PE-112 (Urteil, Stufe)' gefallen: JA
+      A4b: 'PE-115 (Urteil, Stufe)' gefallen: JA
+      A4b: 'PE-119 (Urteil, Stufe)' gefallen: JA
+      A4b: 'PE-123 (Urteil, Stufe)' gefallen: JA
+      A4b: 'zahlriegel_int64_rand' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4b: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4b unter der Mutation: gefallene Pruefungen (6) ===
+      FEHLER  313/M-91 v2_zahlriegel_welcome PE-112 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/textriegel - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-91 v2_zahlriegel_welcome PE-112 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-93 v2_zahlriegel_heartbeat_ack PE-115 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/textriegel - Status nicht getrennt, Version 2, Heartbeats 3/2, letzterFehler '']
+      FEHLER  313/M-93 v2_zahlriegel_heartbeat_ack PE-115 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Version 2, Heartbeats 3/2, letzterFehler '']
+      FEHLER  313/M-94 v2_zahlriegel_reject PE-119 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/textriegel - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'Broker lehnt ab: inkompatibel']
+      FEHLER  313/M-96 nicht_endlich_v2 PE-123 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl nicht darstellbar: 1e999']
+    === A4b nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 5: v2 NaN, Infinity, -Infinity - Etikett: Regressionswache (aus Etappe 4) ---
+Pruefung: PE-120 bis PE-122
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A4b EqCopPipeClientTest --ohne-ueberlaufvektoren (Exit 1) ===
+  ok      313/M-96 nicht_endlich_v2 PE-120 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-120 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-121 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-121 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: unerwartetes Zeichen']
+  ok      313/M-96 nicht_endlich_v2 PE-122 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl ohne Ziffern']
+  ok      313/M-96 nicht_endlich_v2 PE-122 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'eingehender Pipe-Frame: Zahl ohne Ziffern']
+  -> am Basisstand: gruen (Stufe parser)
+  Mutation V96: eq-copilot/plugin/src/PipeClient.cpp - im v2-Client den strengen Lauf kanon::lies entfernt (Lauf mit --ohne-ueberlaufvektoren) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-V96.txt):
+    Rotlauf V96 - im v2-Client den strengen Lauf kanon::lies entfernt (Lauf mit --ohne-ueberlaufvektoren) - 24.09.2026 13:55:21 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/src/PipeClient.cpp (CRLF)
+    SHA-256 vorher 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\V96-PipeClient.cpp (SHA-256 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394)
+    Mutation 1 ab Zeile 729 (Stand vor der Mutation):
+      vorher:
+        |     if (! nakama::kanon::lies (text, streng, grund))
+        |     {
+        |         fehler = "eingehender Pipe-Frame: " + grund;
+        |         return false;
+        |     }
+      nachher:
+        |     // MUTATION V96: der strenge Lauf entfernt
+    Mutiert 24.09.2026 13:55:21, SHA-256 mutiert e4a419acf1a1c4040d9b2c03937eee3af1098af60b4bceed7b8181457c1957de
+    Kette (R-313-11): Ohne den strengen Lauf erreichen NaN, Infinity und -Infinity JUCE, das sie nicht liest -> die Meldung ist die des Aufrufers (feldregel) statt eingehender Pipe-Frame (parser) (M-96 v2, Regressionswache aus Etappe 4).
+    Lauf unter der Mutation:
+      Bau EqCopPipeClientTest: Exit 0
+      A4b: Binaer 13:55:24.988, Quelle 13:55:21.792, Binaer juenger: ja
+      A4b: Exit 1, Fehlzeilen 18, Rohausgabe V96-mutiert-A4b.txt
+        Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 18 Fehler
+    Ruecknahme 24.09.2026 13:56:33: eq-copilot/plugin/src/PipeClient.cpp SHA-256 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394 - gleich dem Stand vor der Mutation
+      Bau EqCopPipeClientTest: Exit 0
+      A4b: Binaer 13:56:36.919, Quelle 13:56:33.812, Binaer juenger: ja
+      A4b: Exit 0, Fehlzeilen 0, Rohausgabe V96-zurueck-A4b.txt
+        Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      A4b: 'PE-120 (Urteil, Stufe)' gefallen: JA
+      A4b: 'PE-121 (Urteil, Stufe)' gefallen: JA
+      A4b: 'PE-122 (Urteil, Stufe)' gefallen: JA
+      A4b: 'PE-123 (Urteil, Stufe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4b: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4b unter der Mutation: gefallene Pruefungen (18) ===
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-028 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-030 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Version 2, Heartbeats 2/1, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Version 2, Heartbeats 2/1, letzterFehler '']
+      FEHLER  313/M-42 v2_parser_lehnt_ab PE-032 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Version 0, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+      FEHLER  313/M-96 nicht_endlich_v2 PE-120 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'ungueltiges JSON auf hello']
+      FEHLER  313/M-96 nicht_endlich_v2 PE-121 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'ungueltiges JSON auf hello']
+      FEHLER  313/M-96 nicht_endlich_v2 PE-122 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'ungueltiges JSON auf hello']
+    === A4b nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-96: 5 von 5 Haelften fallen an der erwarteten Pruefung

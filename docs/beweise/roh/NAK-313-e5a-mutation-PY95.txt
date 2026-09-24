@@ -1,0 +1,45 @@
+NAK-313 Etappe 5a - Mutationslauf PY95: tools/eq-copilot/pruefe_v2_schemas.py - A11 liest Zahlen wieder als float statt als Decimal
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf PY95 - A11 liest Zahlen wieder als float statt als Decimal - 24.09.2026 13:57:44 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei tools/eq-copilot/pruefe_v2_schemas.py (LF)
+SHA-256 vorher 52586b218aed6f5932d1586f914e39b0867d23865f5f7c32f2f786cbc4ba677b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\PY95-pruefe_v2_schemas.py (SHA-256 52586b218aed6f5932d1586f914e39b0867d23865f5f7c32f2f786cbc4ba677b)
+Mutation 1 ab Zeile 119 (Stand vor der Mutation):
+  vorher:
+    |             daten = json_laden_strikt(bytes.fromhex(fall["bytes_hex"]).decode("utf-8"),
+    |                                       parse_float=decimal.Decimal)
+  nachher:
+    |             daten = json_laden_strikt(bytes.fromhex(fall["bytes_hex"]).decode("utf-8"))  # MUTATION PY95: float statt Decimal
+Mutiert 24.09.2026 13:57:44, SHA-256 mutiert e0726706e89a0ad553419691dd26ae2148120ad0ce6c92980495a32b8f297b4f
+Kette (R-313-11): Als float wird 2.0000000000000001 zu 2.0, gilt als integer und liegt im enum -> A11 urteilt gueltig statt ungueltig/schema (M-95); ebenso 1.0000000000000001 und der reject.
+Lauf unter der Mutation:
+  A11: Exit 2, Fehlzeilen 3, Rohausgabe PY95-mutiert-A11.txt
+    Summe: - PE-119 cpp_v2_client reject M-94: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'schema')
+Ruecknahme 24.09.2026 13:57:45: tools/eq-copilot/pruefe_v2_schemas.py SHA-256 52586b218aed6f5932d1586f914e39b0867d23865f5f7c32f2f786cbc4ba677b - gleich dem Stand vor der Mutation
+  A11: Exit 0, Fehlzeilen 0, Rohausgabe PY95-zurueck-A11.txt
+    Summe: GRUEN — 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren; v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert (Zahlen als Decimal), Werte exakt verglichen und gezaehlt.
+Erwartete Pruefungen unter der Mutation:
+  A11: 'PE-112' gefallen: JA
+  A11: 'PE-115' gefallen: JA
+  A11: 'PE-119' gefallen: JA
+  A11: 'PE-113' gruen geblieben: JA
+  A11: 'PE-116' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A11: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A11 unter der Mutation: gefallene Pruefungen (3) ===
+  ROT  PE-112 cpp_v2_client welcome M-91: ist gueltig/None, soll ungueltig/schema
+  ROT  PE-115 cpp_v2_client heartbeat_ack M-93: ist gueltig/None, soll ungueltig/schema
+  ROT  PE-119 cpp_v2_client reject M-94: ist gueltig/None, soll ungueltig/schema
+=== A11 nach der Ruecknahme: gefallene Pruefungen 0 ===

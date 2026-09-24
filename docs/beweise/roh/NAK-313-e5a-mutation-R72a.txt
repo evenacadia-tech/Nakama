@@ -1,0 +1,54 @@
+NAK-313 Etappe 5a - Mutationslauf R72a: broker/src/transport/bootstrap.rs - in der Bootstrap-Protokollwahl wieder as_u64
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R72a - in der Bootstrap-Protokollwahl wieder as_u64 - 24.09.2026 14:02:32 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei broker/src/transport/bootstrap.rs (LF)
+SHA-256 vorher a78457a25d5d16474f3bf81a9efbee3c974bf04c3f712cedd6e857abac1d09bf; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R72a-bootstrap.rs (SHA-256 a78457a25d5d16474f3bf81a9efbee3c974bf04c3f712cedd6e857abac1d09bf)
+Mutation 1 ab Zeile 280 (Stand vor der Mutation):
+  vorher:
+    |     match obj
+    |         .get("protocol")
+    |         .and_then(|v| crate::vertrag::ganzzahl(v, 0, crate::vertrag::GANZZAHL_MAX))
+    |     {
+  nachher:
+    |     match obj.get("protocol").and_then(|v| v.as_u64()) { // MUTATION R72a
+Mutiert 24.09.2026 14:02:32, SHA-256 mutiert 5b7593d864397643ae4651f0dadd83aa11defd1b11b833c71ef2ed88f4ff56ae
+Kette (R-313-11): Mit as_u64 ist protocol 3.0 None -> weder protocol noch protocol_version -> KeinHello (M-72).
+Lauf unter der Mutation:
+  A4-lib: Exit 101, Fehlzeilen 2, Rohausgabe R72a-mutiert-A4-lib.txt
+    Summe: test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+    Summe: test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+    Summe: test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 290 filtered out; finished in 0.01s
+    Summe: error: test failed, to rerun pass `--lib`
+Ruecknahme 24.09.2026 14:02:36: broker/src/transport/bootstrap.rs SHA-256 a78457a25d5d16474f3bf81a9efbee3c974bf04c3f712cedd6e857abac1d09bf - gleich dem Stand vor der Mutation
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R72a-zurueck-A4-lib.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-lib: 'nak313_m72_hello_als_1punkt0 ... FAILED' gefallen: JA
+  A4-lib: 'protocol 3.0 ist die Ganzzahl 3' gefallen: JA
+  A4-lib: 'PE-143: Urteil/Stufe' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (2) ===
+  test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... FAILED
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+  thread 'transport::bootstrap::tests::nak313_m72_hello_als_1punkt0' (128752) panicked at src\transport\bootstrap.rs:747:27:
+    protocol 3.0 ist die Ganzzahl 3 und wird ein V3Control: Err(KeinHello("weder protocol noch protocol_version"))
+  thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (293852) panicked at src\transport\bootstrap.rs:850:9:
+    rust_bootstrap weicht von `produkt` ab:
+    PE-143: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-143: Wirkung annahme nicht gehalten (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-144: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None) (Err(KeinHello("weder protocol noch protocol_version")))
+    PE-144: Wirkung annahme nicht gehalten (Err(KeinHello("weder protocol noch protocol_version")))
+=== A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===

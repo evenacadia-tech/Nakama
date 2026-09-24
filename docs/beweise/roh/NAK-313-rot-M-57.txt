@@ -1,0 +1,102 @@
+NAK-313 Etappe 5a - Rotbeweis M-57 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-57 - T3-03-03, T3-02-03 - R-313-4 - ACK ueber dem Bereich, verbinden<->trennen
+Zustand: wie M-56, Antwort angewandt mit state_revision 9007199254740992, danach control.reconnect()
+Ereignis: ACK, Reconnect, gueltiges ACK 7
+Zusage: keinAck: der Auftrag bleibt im Register; nach dem Reconnect steht derselbe Payload ein zweites Mal in p0Texte, und erst das gueltige ACK gibt ihn frei; Stufen produkt feldregel, vertrag textriegel (PE-061)
+Bein: B10, IpcTestMain.cpp 313/M-57 ack_ueber_2hoch53_ist_kein_ack; Tabelleneintrag PE-061
+
+--- Haelfte 1: keinAck und keine Freigabe - Etikett: heute rot ---
+Pruefung: 313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe); PE-061
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  FEHLER  313/M-57 ack_wertstufe PE-061 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-57 ack_wertstufe PE-061 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)  [inFlight 0, Erfolg 1, endgueltig 0]
+  -> am Basisstand: rot (nichtnegativeJsonGanzzahl nimmt 2^53 an, stoull liefert 2^53, angewandt gibt frei)
+  Mutation W57a: eq-copilot/plugin/core/ipc/controlclient/Intern.h - im ACK-Leser die Obergrenze der Revision auf INT64_MAX (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W57a.txt):
+    Rotlauf W57a - im ACK-Leser die Obergrenze der Revision auf INT64_MAX - 24.09.2026 13:24:31 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W57a-Intern.h (SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40)
+    Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+      vorher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+      nachher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (revision, 0, (std::numeric_limits<std::int64_t>::max)(), revisionWert))   // MUTATION W57a: Obergrenze INT64_MAX
+    Mutiert 24.09.2026 13:24:31, SHA-256 mutiert 561dd38e73a5ea878ebd99094e42101cf5aa4b615c00bbf0ba39529265e89947
+    Kette (R-313-11): Mit der Obergrenze INT64_MAX gilt 2^53 als Revision -> das ACK angewandt gibt den Auftrag frei (M-57).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:25:49.596, Quelle 13:24:31.770, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 4, Rohausgabe W57a-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 4 Fehler
+    Ruecknahme 24.09.2026 13:25:54: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 d5e6af31343efef4ad8d754a31f460dda476d65593e785959a0cdbb4671bae40 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:27:10.971, Quelle 13:25:54.413, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W57a-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)' gefallen: JA
+      B10: 'PE-061 (Urteil, Stufe)' gefallen: JA
+      B10: '313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (keinAck' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (4) ===
+      FEHLER  313/M-57 ack_wertstufe PE-061 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-57 ack_wertstufe PE-061 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)  [inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [1 Texte mit der Kennung]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: Wiederholung nach dem Reconnect - Etikett: Regressionswache ---
+Pruefung: 313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [1 Texte mit der Kennung]
+  -> am Basisstand: rot als Folge der ersten Haelfte: das ACK mit 2^53 gab den Auftrag schon frei, nach dem Reconnect gab es nichts zu wiederholen (1 Text); die Wiederholung selbst misst der Bruch nach dem Bau
+  Mutation W57b: eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp - nach dem Reconnect reiht das In-Flight-Register nicht mehr ein (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W57b.txt):
+    Rotlauf W57b - nach dem Reconnect reiht das In-Flight-Register nicht mehr ein - 24.09.2026 13:27:17 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp (CRLF)
+    SHA-256 vorher 3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W57b-Nachrichten.cpp (SHA-256 3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9)
+    Mutation 1 ab Zeile 268 (Stand vor der Mutation):
+      vorher:
+        |             if (! p0.einreihen (P0Eintrag { e.json, P0Klasse::ereignis,
+        |                                             wireGeneration.load(), 0 }))
+        |                 break;
+      nachher:
+        |             break;   // MUTATION W57b: nach dem Reconnect nicht mehr eingereiht
+    Mutiert 24.09.2026 13:27:17, SHA-256 mutiert c6027eda1c67732b63b007c644adadc684c3ac242f926947ef440c5f6b8500a9
+    Kette (R-313-11): Ohne das Einreihen nach dem Reconnect steht der Auftrag kein zweites Mal in p0Texte, und kein gueltiges ACK gibt ihn frei (Wiederholung in M-57 und M-58).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:27:21.312, Quelle 13:27:17.721, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 3, Rohausgabe W57b-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 3 Fehler
+    Ruecknahme 24.09.2026 13:28:07: eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp SHA-256 3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:28:11.012, Quelle 13:28:07.702, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W57b-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect' gefallen: JA
+      B10: '313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect' gefallen: JA
+      B10: '313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect' gefallen: JA
+      B10: '313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (3) ===
+      FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [1 Texte mit der Kennung]
+      FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect derselbe Text mit base_revision 5)  [1 Texte mit Kopf 5]
+      FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect derselbe Text mit base_revision 5)  [1 Texte mit Kopf 5]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-57: 2 von 2 Haelften fallen an der erwarteten Pruefung

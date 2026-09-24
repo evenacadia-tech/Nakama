@@ -1,0 +1,102 @@
+NAK-313 Etappe 5a - Mutationslauf S61a: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - wertAlsVar gibt ganzzahlige Zahlen wieder als double
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S61a - wertAlsVar gibt ganzzahlige Zahlen wieder als double - 24.09.2026 13:39:53 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61a-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+Mutation 1 ab Zeile 792 (Stand vor der Mutation):
+  vorher:
+    |             if (std::isfinite (d) && std::trunc (d) == d
+    |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+    |                 return juce::var (static_cast<juce::int64> (d));
+    |             return juce::var (d);
+  nachher:
+    |             if (false && std::isfinite (d) && std::trunc (d) == d   // MUTATION S61a: Ganzzahlen wieder als double
+    |                 && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+    |                 return juce::var (static_cast<juce::int64> (d));
+    |             return juce::var (d);
+Mutiert 24.09.2026 13:39:53, SHA-256 mutiert 248fb75321aee677edc84ec428f0db9d1683a73652b2fccc8a170e63d0f546c1
+Kette (R-313-11): Als double nimmt nichtnegativeGanzzahl keine Ganzzahl an -> Snapshot und Ruecknahme mit 1500.0, 1.5e3, 3.0, 1024.0 und 2048e0 enden ungueltig (M-61).
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:39:56.819, Quelle 13:39:53.526, Binaer juenger: ja
+  B13: Exit -1073741819, Fehlzeilen 50, Rohausgabe S61a-mutiert-B13.txt
+    Summe: FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig  [evidence_invalidate sample range is not ordered]
+Ruecknahme 24.09.2026 13:39:57: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:01.146, Quelle 13:39:57.313, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe S61a-zurueck-B13.txt
+    Summe: SONDE-012 SourcesModel: 194/194 gruen
+Erwartete Pruefungen unter der Mutation:
+  B13: 'PE-089 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-090 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-091 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-099 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-100 (Urteil, Stufe)' gefallen: JA
+  B13: '313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (50) ===
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: Objektschluessel erwartet - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - session_snapshot parser: unbekanntes Escape - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Objektschluessel erwartet - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: unbekanntes Escape - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-089 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-090 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-091 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-092 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - session member kind or freshness is invalid - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-73 snapshot_wertstufe PE-094 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Ganzzahl ausserhalb 2^53-1: 9007199254740992 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-095 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal NaN an Position 719 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-096 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal Infinity an Position 719 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-097 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: unbekanntes Literal -Infinity an Position 719 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-098 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - session_snapshot text boundary: Zahl ausserhalb +/-1e308: 1e999 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-099 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-100 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-101 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-102 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - evidence_invalidate sample range is not ordered - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-73 ruecknahme_wertstufe PE-103 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Ganzzahl ausserhalb 2^53-1: 9007199254740992 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-104 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal NaN an Position 124 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-105 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal Infinity an Position 124 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-106 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: unbekanntes Literal -Infinity an Position 124 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-107 (Urteil, Stufe)  [ist ungueltig/textriegel, soll ungueltig/textriegel - evidence_invalidate text boundary: Zahl ausserhalb +/-1e308: 1e999 - Basis nicht uebernommen: session member kind or freshness is invalid]
+  FEHLER  313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext  [evidence_invalidate sample range is not ordered]
+  FEHLER  313/M-61 ruecknahme_vertauschte_ordnung_ungueltig  [evidence_invalidate sample range is not ordered]
+=== B13 nach der Ruecknahme: gefallene Pruefungen 0 ===

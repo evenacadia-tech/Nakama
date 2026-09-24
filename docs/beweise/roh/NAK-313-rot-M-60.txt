@@ -1,0 +1,247 @@
+NAK-313 Etappe 5a - Rotbeweis M-60 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-60 - T3-03-02 - R-313-5 - flacher C++-Leser Control und Telemetrie (Welcome)
+Zustand: v3-Testserver, welcome mit protocol 3.0, 3e0, 3, 4, 3.5 (rohe Tabellenbytes; die Telemetriebytes tragen die Kopplungswerte des Testservers)
+Ereignis: Verbindungsaufbau Control und Telemetrie
+Zusage: 3.0, 3e0, 3 verbinden mit dem Wert 3; 4 und 3.5 verbinden nicht (unerwartete Antwort auf hello beziehungsweise auf das Telemetry-Hello); Stufen fuer 4, 3.5: produkt feldregel, vertrag schema
+Bein: B10, IpcTestMain.cpp 313/M-60 welcome_protocol_als_3punkt0 control|telemetrie PE-067 bis PE-071, PE-078 bis PE-082
+
+--- Haelfte 1: 3.0, 3e0 (PE-067, PE-068, PE-078, PE-079) - Etikett: heute rot ---
+Pruefung: Urteil, Stufe und Wirkung
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Wirkung)  [nicht verbunden]
+  -> am Basisstand: rot (Textvergleich protocol != "3", beide Clients)
+  Mutation W60a: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - im Welcome-Leser der Textvergleich protocol == "3" zurueck (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W60a.txt):
+    Rotlauf W60a - im Welcome-Leser der Textvergleich protocol == "3" zurueck - 24.09.2026 13:31:22 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W60a-Vertrag.cpp (SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34)
+    Mutation 1 ab Zeile 215 (Stand vor der Mutation):
+      vorher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+      nachher:
+        |         || protokoll != "3"   // MUTATION W60a: Textvergleich zurueck
+        |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+    Mutiert 24.09.2026 13:31:22, SHA-256 mutiert db3b8af08c93ba826d3cb7ab659d2cc022d2922af209c1e71efb0fd1ace52d47
+    Kette (R-313-11): Der Textvergleich lehnt 3.0 und 3e0 ab -> weder Control noch Telemetrie verbinden (M-60).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:31:26.363, Quelle 13:31:22.413, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 8, Rohausgabe W60a-mutiert-B10.txt
+        Summe: FEHLER — 107 Pruefungen, 8 Fehler
+    Ruecknahme 24.09.2026 13:31:32: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:31:36.107, Quelle 13:31:32.323, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W60a-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: 'PE-067 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-068 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-078 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-079 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-069 (Urteil, Stufe)' gruen geblieben: JA
+      B10: 'PE-080 (Urteil, Stufe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (8) ===
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Wirkung)  [nicht verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: 3, 4, 3.5 (PE-069, PE-070, PE-071, PE-080, PE-081, PE-082) - Etikett: Regressionswache ---
+Pruefung: Urteil, Stufe und Wirkung; drei Einzelbrueche
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === B10 EqCopIpcTest --nak313-e5 (Exit 1) ===
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Wirkung)  [verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Wert)  [soll 3]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Wirkung)  [verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Wert)  [soll 3]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Wirkung)  [nicht verbunden]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+  ok      313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Wirkung)  [nicht verbunden]
+  -> am Basisstand: gruen
+  Mutation W60b: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - im Welcome-Leser der Bereich 4 bis 4 (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W60b.txt):
+    Rotlauf W60b - im Welcome-Leser der Bereich 4 bis 4 - 24.09.2026 13:31:42 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W60b-Vertrag.cpp (SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34)
+    Mutation 1 ab Zeile 215 (Stand vor der Mutation):
+      vorher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+      nachher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 4, 4, protokollWert))   // MUTATION W60b: Bereich 4 bis 4
+    Mutiert 24.09.2026 13:31:42, SHA-256 mutiert bc7f83dde9168b0aefbe28053a38c3bcde1331f789a832c91a15c4cbb676261f
+    Kette (R-313-11): Mit dem Bereich 4 bis 4 verbindet 3 nicht mehr (M-60, Regressionswache 3).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:31:46.671, Quelle 13:31:42.919, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 44, Rohausgabe W60b-mutiert-B10.txt
+        Summe: FEHLER — 101 Pruefungen, 44 Fehler
+    Ruecknahme 24.09.2026 13:33:52: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:33:56.546, Quelle 13:33:52.217, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W60b-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: 'PE-069 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-080 (Urteil, Stufe)' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (44) ===
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-57 ack_wertstufe PE-061 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-57 ack_wertstufe PE-061 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-73 ack_wertstufe PE-062 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-73 ack_wertstufe PE-062 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-96 nicht_endlich_flach PE-063 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-96 nicht_endlich_flach PE-063 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-96 nicht_endlich_flach PE-064 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-96 nicht_endlich_flach PE-064 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-96 nicht_endlich_flach PE-065 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-96 nicht_endlich_flach PE-065 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-96 nicht_endlich_flach PE-066 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+      FEHLER  313/M-96 nicht_endlich_flach PE-066 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Wirkung)  [verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Wirkung)  [nicht verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Wirkung)  [verbunden]
+      FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)  [inFlight 0, Erfolg 0, endgueltig 0]
+      FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [0 Texte mit der Kennung]
+      FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (keinAck, kein Haken, keine 0)  [Haken 0, Wiederholungen 0, inFlight 0, Erfolg 0, Kopf 0: 0]
+      FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect derselbe Text mit base_revision 5)  [0 Texte mit Kopf 5]
+      FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (keinAck, kein Haken, keine 0)  [Haken 0, Wiederholungen 0, inFlight 0, Erfolg 0, Kopf 0: 0]
+      FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect derselbe Text mit base_revision 5)  [0 Texte mit Kopf 5]
+      FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+      FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5.0  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation W60c: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - im Welcome-Leser der Bereich 3 bis 4 (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W60c.txt):
+    Rotlauf W60c - im Welcome-Leser der Bereich 3 bis 4 - 24.09.2026 13:34:03 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W60c-Vertrag.cpp (SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34)
+    Mutation 1 ab Zeile 215 (Stand vor der Mutation):
+      vorher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+      nachher:
+        |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 4, protokollWert))   // MUTATION W60c: Bereich 3 bis 4
+    Mutiert 24.09.2026 13:34:03, SHA-256 mutiert d13e502f23a2d8fb1343a0bfaf6926084cb649d3ad47fc2110d738f876d439d3
+    Kette (R-313-11): Mit dem Bereich 3 bis 4 verbindet 4 (M-60, Regressionswache 4).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:34:07.655, Quelle 13:34:03.145, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 4, Rohausgabe W60c-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 4 Fehler
+    Ruecknahme 24.09.2026 13:34:13: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:34:17.469, Quelle 13:34:13.579, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W60c-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: 'PE-070 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-081 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-069 (Urteil, Stufe)' gruen geblieben: JA
+      B10: 'PE-071 (Urteil, Stufe)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (4) ===
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Wirkung)  [verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Wirkung)  [verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation W55: eq-copilot/plugin/core/ipc/WireZahl.h - in der gemeinsamen Zerlegung die Pruefung Nachkommateil null entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W55.txt):
+    Rotlauf W55 - in der gemeinsamen Zerlegung die Pruefung Nachkommateil null entfernt - 24.09.2026 13:13:39 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+    SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W55-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+    Mutation 1 ab Zeile 297 (Stand vor der Mutation):
+      vorher:
+        |     for (std::size_t i = alle - abschneiden; i < alle; ++i)
+        |         if (ziffer (i) != '0')
+        |             return false;                    // ein Nachkommateil bleibt
+      nachher:
+        |     for (std::size_t i = alle - abschneiden; i < alle; ++i)
+        |         (void) ziffer (i);                   // MUTATION W55: Nachkommateil nicht geprueft
+    Mutiert 24.09.2026 13:13:39, SHA-256 mutiert 8693b7265992309f8ce079e7798003dc7d830c3fb595b6180c0445265a721198
+    Kette (R-313-11): Ohne die Nachkommapruefung hat 1.5 den Betrag 1 -> ganzzahlAusLiteral liest 1.5 als 1 (M-55), welcome.protocol 3.5 als 3 und verbindet (M-60), die ACK-Revision 1.5 wird 1 und das ACK gilt (M-73).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:14:49.906, Quelle 13:13:39.212, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 7, Rohausgabe W55-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 7 Fehler
+    Ruecknahme 24.09.2026 13:14:55: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:16:07.050, Quelle 13:14:55.423, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W55-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-55 ganzzahl_aus_literal 1.5' gefallen: JA
+      B10: 'PE-071 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-082 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-062 (Urteil, Stufe)' gefallen: JA
+      B10: '313/M-55 ganzzahl_aus_literal 1.0' gruen geblieben: JA
+      B10: 'PE-069' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (7) ===
+      FEHLER  313/M-55 ganzzahl_aus_literal 1.5  [gelesen 1]
+      FEHLER  313/M-73 ack_wertstufe PE-062 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-73 ack_wertstufe PE-062 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Wirkung)  [verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Wirkung)  [verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-60: 2 von 2 Haelften fallen an der erwarteten Pruefung

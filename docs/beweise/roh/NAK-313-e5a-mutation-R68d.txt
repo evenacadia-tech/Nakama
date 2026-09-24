@@ -1,0 +1,46 @@
+NAK-313 Etappe 5a - Mutationslauf R68d: broker/src/coordinator/experiment_verdrahtung.rs - in ziel_aus_wert die Bandgrenzen wieder mit as_u64
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R68d - in ziel_aus_wert die Bandgrenzen wieder mit as_u64 - 24.09.2026 14:01:14 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei broker/src/coordinator/experiment_verdrahtung.rs (CRLF)
+SHA-256 vorher 196aaf04e987416dcec03e3e1ff38ad04495d4b86bcde5aeb2be88be2668f076; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R68d-experiment_verdrahtung.rs (SHA-256 196aaf04e987416dcec03e3e1ff38ad04495d4b86bcde5aeb2be88be2668f076)
+Mutation 1 ab Zeile 411 (Stand vor der Mutation):
+  vorher:
+    |         let von = band(w.get("band_von")?)?;
+    |         let bis = band(w.get("band_bis")?)?;
+  nachher:
+    |         let von = u32::try_from(w.get("band_von")?.as_u64()?).ok()?; // MUTATION R68d
+    |         let bis = u32::try_from(w.get("band_bis")?.as_u64()?).ok()?;
+Mutiert 24.09.2026 14:01:14, SHA-256 mutiert 5953c169bbd4d69dae2b6747accb819e66576a60457eb97f245917a6aedad44d
+Kette (R-313-11): Mit as_u64 liefert ziel_aus_wert fuer band_von 3.0 None: der Versuch beginnt mit der Heuristik, das ACK entsteht, aber das Ziel ist leer (M-68 b).
+Lauf unter der Mutation:
+  A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R68d-mutiert-A4-sonde013.txt
+    Summe: test nak313_m68_befehlskopf_als_1punkt0 ... FAILED
+    Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 2.00s
+    Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+Ruecknahme 24.09.2026 14:01:21: broker/src/coordinator/experiment_verdrahtung.rs SHA-256 196aaf04e987416dcec03e3e1ff38ad04495d4b86bcde5aeb2be88be2668f076 - gleich dem Stand vor der Mutation
+  A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R68d-zurueck-A4-sonde013.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-sonde013: 'nak313_m68_befehlskopf_als_1punkt0 ... FAILED' gefallen: JA
+  A4-sonde013: 'M-68 (b) band_von: das Ziel traegt das Band 3 bis 9' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-sonde013: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+  test nak313_m68_befehlskopf_als_1punkt0 ... FAILED
+  thread 'nak313_m68_befehlskopf_als_1punkt0' (289920) panicked at tests\sonde013_verdrahtung.rs:6869:9:
+    assertion `left == right` failed: M-68 (b) band_von: das Ziel traegt das Band 3 bis 9
+    left: None
+    right: Some((3, 9))
+=== A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,55 @@
+NAK-313 Etappe 5a - Mutationslauf W96: eq-copilot/plugin/core/ipc/WireZahl.h - ganzzahlAusLiteral nimmt das Literal Infinity als Grenzwert an
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W96 - ganzzahlAusLiteral nimmt das Literal Infinity als Grenzwert an - 24.09.2026 13:37:05 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W96-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+Mutation 1 ab Zeile 344 (Stand vor der Mutation):
+  vorher:
+    |     const std::size_t n = literal.size();
+    |     std::size_t i = 0;
+  nachher:
+    |     const std::size_t n = literal.size();
+    |     std::size_t i = 0;
+    |     if (literal == "Infinity") { aus = max; return true; }   // MUTATION W96: Infinity als Grenzwert
+Mutiert 24.09.2026 13:37:05, SHA-256 mutiert ea8e86c5b264f7b0cec3ade35c94d3068e372a0ef6072a6e56571e4899d2b777
+Kette (R-313-11): Liest der flache Leser Infinity als Obergrenze, gilt das ACK mit state_revision Infinity und welcome.protocol Infinity verbindet (M-96, flacher Leser).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:38:24.167, Quelle 13:37:05.539, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 7, Rohausgabe W96-mutiert-B10.txt
+    Summe: FEHLER — 111 Pruefungen, 7 Fehler
+Ruecknahme 24.09.2026 13:38:29: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:39:46.898, Quelle 13:38:29.599, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W96-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: 'PE-064 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-075 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-086 (Urteil, Stufe)' gefallen: JA
+  B10: '313/M-55 ganzzahl_aus_literal Infinity' gefallen: JA
+  B10: 'PE-063 (Urteil, Stufe)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (7) ===
+  FEHLER  313/M-55 ganzzahl_aus_literal Infinity  [gelesen 9007199254740991]
+  FEHLER  313/M-96 nicht_endlich_flach PE-064 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-96 nicht_endlich_flach PE-064 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-96 nicht_endlich_flach control PE-075 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-96 nicht_endlich_flach control PE-075 (Wirkung)  [verbunden]
+  FEHLER  313/M-96 nicht_endlich_flach telemetrie PE-086 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-96 nicht_endlich_flach telemetrie PE-086 (Wirkung)  [verbunden]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,88 @@
+NAK-313 Etappe 5a - Rotbeweis M-64 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-64 - T3-03-02 - R-313-5 - Produktleser Rust P0 (Heartbeat), senden<->bestaetigen
+Zustand: Probe-Link vor dem ersten Heartbeat, Sitzung mit sticky unknown; Heartbeat mit sequence 91.0 und intervention_state_unknown false
+Ereignis: Senke::p0 -> p0_json_mit_minor
+Zusage: Antwort heartbeat_ack mit sequence 91; resync_bestaetigen laeuft genau dann, wenn eine Antwort entsteht
+Bein: A4, broker/tests/sonde013_verdrahtung.rs nak313_m64_heartbeat_sequence_als_1punkt0; Tabelleneintraege PE-124, PE-125 (schema.rs nak313_m43)
+
+--- Haelfte 1: Antwort und Resync - Etikett: heute rot ---
+Pruefung: nak313_m64; PE-124, PE-125
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 (Exit 101) ===
+  PE-124: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None)
+  PE-124: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(true))
+  PE-125: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None)
+  PE-125: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(true))
+  test nak313_m64_heartbeat_sequence_als_1punkt0 ... FAILED
+  ---- nak313_m64_heartbeat_sequence_als_1punkt0 stdout ----
+  thread 'nak313_m64_heartbeat_sequence_als_1punkt0' (282804) panicked at tests\sonde013_verdrahtung.rs:6659:5:
+    assertion `left == right` failed: M-64: der Resync laeuft genau dann, wenn eine Antwort entsteht (Antwort false, unknown false)
+    left: false
+    right: true
+  nak313_m64_heartbeat_sequence_als_1punkt0
+  -> am Basisstand: rot (der Erstling ist verbraucht und unknown geloescht, bevor as_u64 auf 91.0 None liefert)
+  Mutation R64: broker/src/coordinator/befehl.rs - die Heartbeat-sequence wieder mit as_u64 hinter den Seiteneffekten gelesen (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R64.txt):
+    Rotlauf R64 - die Heartbeat-sequence wieder mit as_u64 hinter den Seiteneffekten gelesen - 24.09.2026 13:58:29 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/befehl.rs (CRLF)
+    SHA-256 vorher df16779105a7b452ddbd286f2eaf2ae29aafe0a111c376f40d7da3ebba8cbda9; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R64-befehl.rs (SHA-256 df16779105a7b452ddbd286f2eaf2ae29aafe0a111c376f40d7da3ebba8cbda9)
+    Mutation 1 ab Zeile 692 (Stand vor der Mutation):
+      vorher:
+        |                 let sequence = crate::vertrag::ganzzahl(
+        |                     wert.get("sequence")?,
+        |                     0,
+        |                     crate::vertrag::GANZZAHL_MAX,
+        |                 )?;
+      nachher:
+        |                 // MUTATION R64: die sequence nicht mehr vor den Seiteneffekten
+    Mutation 2 ab Zeile 767 (Stand vor der Mutation):
+      vorher:
+        |                 let _ = self.heartbeat_kontakt(link_id, Some(&wert));
+      nachher:
+        |                 let sequence = wert.get("sequence")?.as_u64()?; // MUTATION R64: as_u64 hinter der Markierung
+        |                 let _ = self.heartbeat_kontakt(link_id, Some(&wert));
+    Mutiert 24.09.2026 13:58:29, SHA-256 mutiert 76fbc85ed675c23010890cbf626b9f9808737ecb8385b25fe69c5f94b6eb6316
+    Kette (R-313-11): Liest P0 die sequence erst nach ersten_heartbeat_markieren und resync_bestaetigen, ist der Erstling verbraucht und unknown geloescht, bevor as_u64 auf 91.0 None liefert -> Resync ohne ACK (M-64).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R64-mutiert-A4-sonde013.txt
+        Summe: test nak313_m64_heartbeat_sequence_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+      A4-lib: Exit 101, Fehlzeilen 1, Rohausgabe R64-mutiert-A4-lib.txt
+        Summe: test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.02s
+        Summe: error: test failed, to rerun pass `--lib`
+    Ruecknahme 24.09.2026 13:58:41: broker/src/coordinator/befehl.rs SHA-256 df16779105a7b452ddbd286f2eaf2ae29aafe0a111c376f40d7da3ebba8cbda9 - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R64-zurueck-A4-sonde013.txt
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R64-zurueck-A4-lib.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m64_heartbeat_sequence_als_1punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-64: der Resync laeuft genau dann, wenn eine Antwort entsteht' gefallen: JA
+      A4-lib: 'PE-124: Urteil/Stufe' gefallen: JA
+      A4-lib: 'PE-125: Urteil/Stufe' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m64_heartbeat_sequence_als_1punkt0 ... FAILED
+      thread 'nak313_m64_heartbeat_sequence_als_1punkt0' (98676) panicked at tests\sonde013_verdrahtung.rs:6659:5:
+        assertion `left == right` failed: M-64: der Resync laeuft genau dann, wenn eine Antwort entsteht (Antwort false, unknown false)
+        left: false
+        right: true
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A4-lib unter der Mutation: gefallene Pruefungen (1) ===
+      test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+      thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (307088) panicked at src\coordinator\schema.rs:1029:9:
+        rust_p0 weicht von `produkt` ab:
+        PE-124: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None)
+        PE-124: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(true))
+        PE-125: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("gueltig", None)
+        PE-125: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(true))
+    === A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-64: 1 von 1 Haelften fallen an der erwarteten Pruefung

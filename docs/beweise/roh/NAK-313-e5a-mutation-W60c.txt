@@ -1,0 +1,48 @@
+NAK-313 Etappe 5a - Mutationslauf W60c: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - im Welcome-Leser der Bereich 3 bis 4
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W60c - im Welcome-Leser der Bereich 3 bis 4 - 24.09.2026 13:34:03 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+SHA-256 vorher 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W60c-Vertrag.cpp (SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34)
+Mutation 1 ab Zeile 215 (Stand vor der Mutation):
+  vorher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+  nachher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 4, protokollWert))   // MUTATION W60c: Bereich 3 bis 4
+Mutiert 24.09.2026 13:34:03, SHA-256 mutiert d13e502f23a2d8fb1343a0bfaf6926084cb649d3ad47fc2110d738f876d439d3
+Kette (R-313-11): Mit dem Bereich 3 bis 4 verbindet 4 (M-60, Regressionswache 4).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:34:07.655, Quelle 13:34:03.145, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 4, Rohausgabe W60c-mutiert-B10.txt
+    Summe: FEHLER — 111 Pruefungen, 4 Fehler
+Ruecknahme 24.09.2026 13:34:13: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:34:17.469, Quelle 13:34:13.579, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W60c-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: 'PE-070 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-081 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-069 (Urteil, Stufe)' gruen geblieben: JA
+  B10: 'PE-071 (Urteil, Stufe)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (4) ===
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Wirkung)  [verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Wirkung)  [verbunden]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

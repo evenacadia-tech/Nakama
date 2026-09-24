@@ -1,0 +1,43 @@
+NAK-313 Etappe 5a - Mutationslauf V91b: eq-copilot/plugin/vertrag/NakamaVertrag.h - die v2-Ganzzahlgrenze um 1 erhoeht (Lauf mit --ohne-ueberlaufvektoren)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf V91b - die v2-Ganzzahlgrenze um 1 erhoeht (Lauf mit --ohne-ueberlaufvektoren) - 24.09.2026 13:43:20 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.h (LF)
+SHA-256 vorher ec6de722dc9e8a6f223ceac5d0f4e96943d20b354d285d8863ccb5b991601d58; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\V91b-NakamaVertrag.h (SHA-256 ec6de722dc9e8a6f223ceac5d0f4e96943d20b354d285d8863ccb5b991601d58)
+Mutation 1 ab Zeile 130 (Stand vor der Mutation):
+  vorher:
+    | inline constexpr std::uint64_t v2Ganzzahlgrenze = 9223372036854775807ULL;
+  nachher:
+    | inline constexpr std::uint64_t v2Ganzzahlgrenze = 9223372036854775807ULL + 1;   // MUTATION V91b: Grenze + 1
+Mutiert 24.09.2026 13:43:20, SHA-256 mutiert e9a6b1b23b70f2fed142496fb4b383e0048278417eed1ac16fcffba6cacd2ce5
+Kette (R-313-11): Mit der Grenze + 1 passiert 9223372036854775808 den Riegel (M-91 b, M-94 a; Riegeleinheit).
+Lauf unter der Mutation:
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:43:27.280, Quelle 13:43:20.126, Binaer juenger: ja
+  A4b: Exit 1, Fehlzeilen 1, Rohausgabe V91b-mutiert-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 1 Fehler
+Ruecknahme 24.09.2026 13:44:34: eq-copilot/plugin/vertrag/NakamaVertrag.h SHA-256 ec6de722dc9e8a6f223ceac5d0f4e96943d20b354d285d8863ccb5b991601d58 - gleich dem Stand vor der Mutation
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:44:41.574, Quelle 13:44:34.372, Binaer juenger: ja
+  A4b: Exit 0, Fehlzeilen 0, Rohausgabe V91b-zurueck-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  A4b: '313/M-91 zahlriegel_int64_rand 9223372036854775808' gefallen: JA
+  A4b: '313/M-91 zahlriegel_int64_rand 9223372036854775807' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4b: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4b unter der Mutation: gefallene Pruefungen (1) ===
+  FEHLER  313/M-91 zahlriegel_int64_rand 9223372036854775808  [angenommen]
+=== A4b nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,167 @@
+NAK-313 Etappe 5a - Rotbeweis M-70 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-70 - T3-03-02 - R-313-5 - R-313-11 - Produktleser Rust P1 (Intent)
+Zustand: intent_update mit bestand_revision 5.0, Eintrag revision 2.0, Schutzband 0.0 bis 12.0; je Feld ein Einzelvektor
+Ereignis: P1-Weiche -> Intentleser; Grund ueber intent_update_json_grund_fuer_test
+Zusage: Ok; intent_sicht traegt Bestand 5, Eintrag 2, Band 0 bis 12; intent_updates + 1
+Bein: A4, sonde013_verdrahtung.rs nak313_m70_intent_als_1punkt0 (je Vektor gesammelt)
+
+--- Haelfte 1: Bestand, Eintrag, Schutzband - Etikett: heute rot ---
+Pruefung: je Vektor: kombiniert, bestand_revision, revision, band.von, band.bis
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 (Exit 101) ===
+  test nak313_m70_intent_als_1punkt0 ... FAILED
+  ---- nak313_m70_intent_als_1punkt0 stdout ----
+  thread 'nak313_m70_intent_als_1punkt0' (23472) panicked at tests\sonde013_verdrahtung.rs:6944:5:
+    M-70:
+    M-70 kombiniert: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    M-70 bestand_revision: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    M-70 revision: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    M-70 band.von: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+    M-70 band.bis: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+  nak313_m70_intent_als_1punkt0
+  -> am Basisstand: rot (5.0 -> -1 -> Err(Vertrag); 2.0 -> 0 -> Err(Vertrag); 0.0/12.0 -> u64::MAX/0 -> Err(BandintervallLeer))
+  Mutation R70a: broker/src/coordinator/intent.rs - im Intentleser die Bestandsrevision wieder mit as_i64().unwrap_or(-1) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R70a.txt):
+    Rotlauf R70a - im Intentleser die Bestandsrevision wieder mit as_i64().unwrap_or(-1) - 24.09.2026 14:01:40 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/intent.rs (LF)
+    SHA-256 vorher abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R70a-intent.rs (SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56)
+    Mutation 1 ab Zeile 357 (Stand vor der Mutation):
+      vorher:
+        |         let Some(revision) =
+        |             crate::vertrag::ganzzahl(&wert["bestand_revision"], 0, crate::vertrag::GANZZAHL_MAX)
+        |         else {
+        |             return Err(IntentAbweisung::Vertrag);
+        |         };
+      nachher:
+        |         let revision = wert["bestand_revision"].as_i64().unwrap_or(-1); // MUTATION R70a
+        |         if revision < 0 {
+        |             return Err(IntentAbweisung::Vertrag);
+        |         }
+    Mutiert 24.09.2026 14:01:40, SHA-256 mutiert 6027a3ae49c6cedfc263c76580400d59ee10f7224b8c508ac7247f828044ece9
+    Kette (R-313-11): Mit unwrap_or(-1) wird 5.0 zu -1 -> Err(Vertrag), der vertragsgueltige Bestand wird abgewiesen (M-70).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R70a-mutiert-A4-sonde013.txt
+        Summe: test nak313_m70_intent_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+    Ruecknahme 24.09.2026 14:01:45: broker/src/coordinator/intent.rs SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56 - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R70a-zurueck-A4-sonde013.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m70_intent_als_1punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-70 bestand_revision' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m70_intent_als_1punkt0 ... FAILED
+      thread 'nak313_m70_intent_als_1punkt0' (250188) panicked at tests\sonde013_verdrahtung.rs:6944:5:
+        M-70:
+        M-70 kombiniert: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+        M-70 bestand_revision: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation R70b: broker/src/coordinator/intent.rs - im Intentleser die Eintragsrevision wieder mit as_i64().unwrap_or(0) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R70b.txt):
+    Rotlauf R70b - im Intentleser die Eintragsrevision wieder mit as_i64().unwrap_or(0) - 24.09.2026 14:01:51 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/intent.rs (LF)
+    SHA-256 vorher abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R70b-intent.rs (SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56)
+    Mutation 1 ab Zeile 414 (Stand vor der Mutation):
+      vorher:
+        |             let objekt_revision =
+        |                 crate::vertrag::ganzzahl(&eintrag["revision"], 1, crate::vertrag::GANZZAHL_MAX);
+      nachher:
+        |             let objekt_revision = Some(eintrag["revision"].as_i64().unwrap_or(0)).filter(|r| *r >= 1); // MUTATION R70b
+    Mutiert 24.09.2026 14:01:51, SHA-256 mutiert fe5e8ba3c5cc50e5ba1fdc4a2d69bc96e681a0d60551d794b98ac393e82371e4
+    Kette (R-313-11): Mit unwrap_or(0) wird 2.0 zu 0 -> Err(Vertrag) (M-70).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R70b-mutiert-A4-sonde013.txt
+        Summe: test nak313_m70_intent_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+    Ruecknahme 24.09.2026 14:01:56: broker/src/coordinator/intent.rs SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56 - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R70b-zurueck-A4-sonde013.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m70_intent_als_1punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-70 revision:' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m70_intent_als_1punkt0 ... FAILED
+      thread 'nak313_m70_intent_als_1punkt0' (273188) panicked at tests\sonde013_verdrahtung.rs:6944:5:
+        M-70:
+        M-70 kombiniert: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+        M-70 revision: der vertragsgueltige Bestand wird abgewiesen: Err(Vertrag)
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation R70c: broker/src/coordinator/intent.rs - im Schutzband die Untergrenze wieder mit as_u64().unwrap_or(u64::MAX) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R70c.txt):
+    Rotlauf R70c - im Schutzband die Untergrenze wieder mit as_u64().unwrap_or(u64::MAX) - 24.09.2026 14:02:02 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/intent.rs (LF)
+    SHA-256 vorher abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R70c-intent.rs (SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56)
+    Mutation 1 ab Zeile 310 (Stand vor der Mutation):
+      vorher:
+        |     let (Some(von), Some(bis)) = (grenze("von"), grenze("bis")) else {
+      nachher:
+        |     let (Some(von), Some(bis)) = (Some(band.get("von").and_then(Value::as_u64).map_or(i64::MAX, |v| v as i64)), grenze("bis")) else { // MUTATION R70c
+    Mutiert 24.09.2026 14:02:02, SHA-256 mutiert af7cf9639754b7abeed0a73fd52b5bd15ac2726e88a72284cf9ff902e7a7d287
+    Kette (R-313-11): Mit unwrap_or(u64::MAX) wird 0.0 zum groessten Wert -> von >= bis -> Err(BandintervallLeer) (M-70).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R70c-mutiert-A4-sonde013.txt
+        Summe: test nak313_m70_intent_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+    Ruecknahme 24.09.2026 14:02:07: broker/src/coordinator/intent.rs SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56 - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R70c-zurueck-A4-sonde013.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m70_intent_als_1punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-70 band.von' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m70_intent_als_1punkt0 ... FAILED
+      thread 'nak313_m70_intent_als_1punkt0' (330624) panicked at tests\sonde013_verdrahtung.rs:6944:5:
+        M-70:
+        M-70 kombiniert: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+        M-70 band.von: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation R70d: broker/src/coordinator/intent.rs - im Schutzband die Obergrenze wieder mit as_u64().unwrap_or(0) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R70d.txt):
+    Rotlauf R70d - im Schutzband die Obergrenze wieder mit as_u64().unwrap_or(0) - 24.09.2026 14:02:12 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/intent.rs (LF)
+    SHA-256 vorher abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R70d-intent.rs (SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56)
+    Mutation 1 ab Zeile 310 (Stand vor der Mutation):
+      vorher:
+        |     let (Some(von), Some(bis)) = (grenze("von"), grenze("bis")) else {
+      nachher:
+        |     let (Some(von), Some(bis)) = (grenze("von"), Some(band.get("bis").and_then(Value::as_u64).map_or(0, |v| v as i64))) else { // MUTATION R70d
+    Mutiert 24.09.2026 14:02:12, SHA-256 mutiert 0a72a055dd99d59731de5fe77f0908d0a1b728cb9fea7b1f2dcd3f931d30c1b8
+    Kette (R-313-11): Mit unwrap_or(0) wird 12.0 zu 0 -> von >= bis -> Err(BandintervallLeer) (M-70).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R70d-mutiert-A4-sonde013.txt
+        Summe: test nak313_m70_intent_als_1punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+    Ruecknahme 24.09.2026 14:02:17: broker/src/coordinator/intent.rs SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56 - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R70d-zurueck-A4-sonde013.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m70_intent_als_1punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-70 band.bis' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m70_intent_als_1punkt0 ... FAILED
+      thread 'nak313_m70_intent_als_1punkt0' (106124) panicked at tests\sonde013_verdrahtung.rs:6944:5:
+        M-70:
+        M-70 kombiniert: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+        M-70 band.bis: der vertragsgueltige Bestand wird abgewiesen: Err(BandintervallLeer)
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-70: 1 von 1 Haelften fallen an der erwarteten Pruefung

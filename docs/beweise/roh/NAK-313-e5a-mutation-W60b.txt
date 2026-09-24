@@ -1,0 +1,86 @@
+NAK-313 Etappe 5a - Mutationslauf W60b: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - im Welcome-Leser der Bereich 4 bis 4
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W60b - im Welcome-Leser der Bereich 4 bis 4 - 24.09.2026 13:31:42 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+SHA-256 vorher 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W60b-Vertrag.cpp (SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34)
+Mutation 1 ab Zeile 215 (Stand vor der Mutation):
+  vorher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+  nachher:
+    |         || ! nakama::wire::ganzzahlAusLiteral (protokoll, 4, 4, protokollWert))   // MUTATION W60b: Bereich 4 bis 4
+Mutiert 24.09.2026 13:31:42, SHA-256 mutiert bc7f83dde9168b0aefbe28053a38c3bcde1331f789a832c91a15c4cbb676261f
+Kette (R-313-11): Mit dem Bereich 4 bis 4 verbindet 3 nicht mehr (M-60, Regressionswache 3).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:31:46.671, Quelle 13:31:42.919, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 44, Rohausgabe W60b-mutiert-B10.txt
+    Summe: FEHLER — 101 Pruefungen, 44 Fehler
+Ruecknahme 24.09.2026 13:33:52: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 6c8f6a707d491ac3c96a6dbab3e13ea947b308a0b8801153a37e91e2dd43bf34 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:33:56.546, Quelle 13:33:52.217, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W60b-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: 'PE-069 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-080 (Urteil, Stufe)' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (44) ===
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-057 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-058 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-059 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-56 ack_revision_als_1punkt0 PE-060 (Wirkung)  [annahme - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-57 ack_wertstufe PE-061 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-57 ack_wertstufe PE-061 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-73 ack_wertstufe PE-062 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-73 ack_wertstufe PE-062 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-96 nicht_endlich_flach PE-063 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-96 nicht_endlich_flach PE-063 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-96 nicht_endlich_flach PE-064 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-96 nicht_endlich_flach PE-064 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-96 nicht_endlich_flach PE-065 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-96 nicht_endlich_flach PE-065 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-96 nicht_endlich_flach PE-066 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - inFlight 0, Erfolg 0, endgueltig 0 - ACK nicht gelesen]
+  FEHLER  313/M-96 nicht_endlich_flach PE-066 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-067 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-068 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-069 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-070 (Wirkung)  [verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-078 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-079 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-080 (Wirkung)  [nicht verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-081 (Wirkung)  [verbunden]
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)  [inFlight 0, Erfolg 0, endgueltig 0]
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [0 Texte mit der Kennung]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (keinAck, kein Haken, keine 0)  [Haken 0, Wiederholungen 0, inFlight 0, Erfolg 0, Kopf 0: 0]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect derselbe Text mit base_revision 5)  [0 Texte mit Kopf 5]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (keinAck, kein Haken, keine 0)  [Haken 0, Wiederholungen 0, inFlight 0, Erfolg 0, Kopf 0: 0]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect derselbe Text mit base_revision 5)  [0 Texte mit Kopf 5]
+  FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+  FEHLER  313/M-59 konfliktkopf_aus_gelesener_revision 5.0  [Texte mit Kopf 5: 0, Wiederholungen 0, Erfolg 0]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,48 @@
+NAK-313 Etappe 5a - Mutationslauf R96: broker/src/vertrag.rs - im Rust-Textriegel Regel 8 (alphabetische Literale) abgeschaltet
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R96 - im Rust-Textriegel Regel 8 (alphabetische Literale) abgeschaltet - 24.09.2026 14:03:18 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei broker/src/vertrag.rs (LF)
+SHA-256 vorher e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R96-vertrag.rs (SHA-256 e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863)
+Mutation 1 ab Zeile 476 (Stand vor der Mutation):
+  vorher:
+    |             if !matches!(literal.as_str(), "true" | "false" | "null") {
+  nachher:
+    |             if literal.is_empty() && !matches!(literal.as_str(), "true" | "false" | "null") { // MUTATION R96: Regel 8 abgeschaltet
+Mutiert 24.09.2026 14:03:18, SHA-256 mutiert 3bcb8138871457cc858d73c05f6d682742b966f54dd2b15f4051ebfb6697035f
+Kette (R-313-11): Ohne Regel 8 faellt NaN erst im strengen Lauf -> die Stufe wechselt von textriegel zu parser (M-96, Rust P0 und P1).
+Lauf unter der Mutation:
+  A4-lib: Exit 101, Fehlzeilen 1, Rohausgabe R96-mutiert-A4-lib.txt
+    Summe: test coordinator::schema::nak313_tests::nak313_m96_nicht_endlich_p0_p1 ... FAILED
+    Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.02s
+    Summe: error: test failed, to rerun pass `--lib`
+Ruecknahme 24.09.2026 14:03:22: broker/src/vertrag.rs SHA-256 e1c3a51bf3cf718c955fea85e7bcb3713d3038954e4e91a28e1ab58d28f0a863 - gleich dem Stand vor der Mutation
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R96-zurueck-A4-lib.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-lib: 'nak313_m96_nicht_endlich_p0_p1 ... FAILED' gefallen: JA
+  A4-lib: 'Stufe Some("parser"), soll textriegel' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (1) ===
+  test coordinator::schema::nak313_tests::nak313_m96_nicht_endlich_p0_p1 ... FAILED
+  thread 'coordinator::schema::nak313_tests::nak313_m96_nicht_endlich_p0_p1' (151228) panicked at src\coordinator\schema.rs:1079:9:
+    M-96:
+    PE-130 (rust_p0): Stufe Some("parser"), soll textriegel
+    PE-131 (rust_p0): Stufe Some("parser"), soll textriegel
+    PE-132 (rust_p0): Stufe Some("parser"), soll textriegel
+    PE-139 (rust_p1): Stufe Some("parser"), soll textriegel
+    PE-140 (rust_p1): Stufe Some("parser"), soll textriegel
+    PE-141 (rust_p1): Stufe Some("parser"), soll textriegel
+=== A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===

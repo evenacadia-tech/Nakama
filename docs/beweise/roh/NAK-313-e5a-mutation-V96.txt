@@ -1,0 +1,66 @@
+NAK-313 Etappe 5a - Mutationslauf V96: eq-copilot/plugin/src/PipeClient.cpp - im v2-Client den strengen Lauf kanon::lies entfernt (Lauf mit --ohne-ueberlaufvektoren)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf V96 - im v2-Client den strengen Lauf kanon::lies entfernt (Lauf mit --ohne-ueberlaufvektoren) - 24.09.2026 13:55:21 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/src/PipeClient.cpp (CRLF)
+SHA-256 vorher 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\V96-PipeClient.cpp (SHA-256 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394)
+Mutation 1 ab Zeile 729 (Stand vor der Mutation):
+  vorher:
+    |     if (! nakama::kanon::lies (text, streng, grund))
+    |     {
+    |         fehler = "eingehender Pipe-Frame: " + grund;
+    |         return false;
+    |     }
+  nachher:
+    |     // MUTATION V96: der strenge Lauf entfernt
+Mutiert 24.09.2026 13:55:21, SHA-256 mutiert e4a419acf1a1c4040d9b2c03937eee3af1098af60b4bceed7b8181457c1957de
+Kette (R-313-11): Ohne den strengen Lauf erreichen NaN, Infinity und -Infinity JUCE, das sie nicht liest -> die Meldung ist die des Aufrufers (feldregel) statt eingehender Pipe-Frame (parser) (M-96 v2, Regressionswache aus Etappe 4).
+Lauf unter der Mutation:
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:55:24.988, Quelle 13:55:21.792, Binaer juenger: ja
+  A4b: Exit 1, Fehlzeilen 18, Rohausgabe V96-mutiert-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 18 Fehler
+Ruecknahme 24.09.2026 13:56:33: eq-copilot/plugin/src/PipeClient.cpp SHA-256 72b6d4e53de5ff9d7f7ba16d6571284705bc292165dfa31e4adba2e33e870394 - gleich dem Stand vor der Mutation
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:56:36.919, Quelle 13:56:33.812, Binaer juenger: ja
+  A4b: Exit 0, Fehlzeilen 0, Rohausgabe V96-zurueck-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  A4b: 'PE-120 (Urteil, Stufe)' gefallen: JA
+  A4b: 'PE-121 (Urteil, Stufe)' gefallen: JA
+  A4b: 'PE-122 (Urteil, Stufe)' gefallen: JA
+  A4b: 'PE-123 (Urteil, Stufe)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4b: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4b unter der Mutation: gefallene Pruefungen (18) ===
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-028 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Version 2, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-030 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Version 2, Heartbeats 2/1, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Version 2, Heartbeats 2/1, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-032 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Version 0, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+  FEHLER  313/M-96 nicht_endlich_v2 PE-120 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'ungueltiges JSON auf hello']
+  FEHLER  313/M-96 nicht_endlich_v2 PE-121 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'ungueltiges JSON auf hello']
+  FEHLER  313/M-96 nicht_endlich_v2 PE-122 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/parser - Status getrennt, Version 0, Heartbeats 0/0, letzterFehler 'ungueltiges JSON auf hello']
+=== A4b nach der Ruecknahme: gefallene Pruefungen 0 ===

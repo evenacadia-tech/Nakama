@@ -1,0 +1,53 @@
+NAK-313 Etappe 5a - Mutationslauf V91d: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - im Zahlriegel die Dreiziffernschranke des Exponenten entfernt, der Exponent akkumuliert vorzeichenlos (Lauf mit --ohne-ueberlaufvektoren)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf V91d - im Zahlriegel die Dreiziffernschranke des Exponenten entfernt, der Exponent akkumuliert vorzeichenlos (Lauf mit --ohne-ueberlaufvektoren) - 24.09.2026 13:50:38 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\V91d-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+Mutation 1 ab Zeile 358 (Stand vor der Mutation):
+  vorher:
+    |     if (ohneNull.size() > 3)
+    |     {
+    |         fehler = "Exponent ausserhalb +/-" + juce::String (dezGrenze) + ": " + lit.substring (0, 40);
+    |         return false;
+    |     }
+    |     int exp = 0;
+    |     for (const char c : ohneNull)
+    |         exp = exp * 10 + (c - '0');
+  nachher:
+    |     // MUTATION V91d: ohne Dreiziffernschranke; der Exponent akkumuliert vorzeichenlos wie JUCE
+    |     std::uint32_t expRoh = 0;
+    |     for (const char c : ohneNull)
+    |         expRoh = expRoh * 10u + static_cast<std::uint32_t> (c - '0');
+    |     int exp = static_cast<int> (expRoh);
+Mutiert 24.09.2026 13:50:38, SHA-256 mutiert 8b099e8b32d90733912cb6124414c901efb463680293b014beeb96c4315287de
+Kette (R-313-11): Ohne die Schranke klappt der Exponent 4294967296 auf 0 um -> 2e4294967296 ist 2 und passiert den Riegel (M-91 d, M-94 b; Riegeleinheit).
+Lauf unter der Mutation:
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:50:41.009, Quelle 13:50:38.205, Binaer juenger: ja
+  A4b: Exit 1, Fehlzeilen 1, Rohausgabe V91d-mutiert-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 1 Fehler
+Ruecknahme 24.09.2026 13:51:47: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:51:50.652, Quelle 13:51:47.860, Binaer juenger: ja
+  A4b: Exit 0, Fehlzeilen 0, Rohausgabe V91d-zurueck-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  A4b: '313/M-91 zahlriegel_int64_rand 2e4294967296' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4b: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4b unter der Mutation: gefallene Pruefungen (1) ===
+  FEHLER  313/M-91 zahlriegel_int64_rand 2e4294967296  [angenommen]
+=== A4b nach der Ruecknahme: gefallene Pruefungen 0 ===

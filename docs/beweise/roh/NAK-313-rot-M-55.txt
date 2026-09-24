@@ -1,0 +1,61 @@
+NAK-313 Etappe 5a - Rotbeweis M-55 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-55 - T3-03-02, T3-03-03 - R-313-5 - C++-Ganzzahlleser, Zahlenraender
+Zustand: Tabelle je Literal, Bereich 0 bis 2^53-1
+Ereignis: nakama::wire::ganzzahlAusLiteral
+Zusage: 0, -0, 1, 1.0, 1e0, 10E-1, 91.0, 1.00e2 und 2^53-1 in Ziffern- und e-Form gelten mit ihrem Wert; 1.5, 1e, 01, -1, +1, 1., 1e400, 2^53 auch als Bruchform, 2^64, NaN, Infinity, -Infinity, 1e999 und leer nicht - nie 0 als Ersatz, kein Gleitkommaschritt
+Bein: B10, eq-copilot/plugin/tests/IpcTestMain.cpp 313/M-55 ganzzahl_aus_literal <Literal>
+
+--- Haelfte 1: Werte und Ablehnungen je Literal - Etikett: heute nicht messbar ---
+Pruefung: je Literal ein Fall 313/M-55 ganzzahl_aus_literal
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: nicht messbar - ganzzahlAusLiteral fehlt am Basisstand; die Basisvariante setzt gelesen = false und faehrt den Abschnitt nicht (NAK-313-e5a-basisstand.txt)
+  Mutation W55: eq-copilot/plugin/core/ipc/WireZahl.h - in der gemeinsamen Zerlegung die Pruefung Nachkommateil null entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-W55.txt):
+    Rotlauf W55 - in der gemeinsamen Zerlegung die Pruefung Nachkommateil null entfernt - 24.09.2026 13:13:39 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+    SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W55-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+    Mutation 1 ab Zeile 297 (Stand vor der Mutation):
+      vorher:
+        |     for (std::size_t i = alle - abschneiden; i < alle; ++i)
+        |         if (ziffer (i) != '0')
+        |             return false;                    // ein Nachkommateil bleibt
+      nachher:
+        |     for (std::size_t i = alle - abschneiden; i < alle; ++i)
+        |         (void) ziffer (i);                   // MUTATION W55: Nachkommateil nicht geprueft
+    Mutiert 24.09.2026 13:13:39, SHA-256 mutiert 8693b7265992309f8ce079e7798003dc7d830c3fb595b6180c0445265a721198
+    Kette (R-313-11): Ohne die Nachkommapruefung hat 1.5 den Betrag 1 -> ganzzahlAusLiteral liest 1.5 als 1 (M-55), welcome.protocol 3.5 als 3 und verbindet (M-60), die ACK-Revision 1.5 wird 1 und das ACK gilt (M-73).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:14:49.906, Quelle 13:13:39.212, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 7, Rohausgabe W55-mutiert-B10.txt
+        Summe: FEHLER — 111 Pruefungen, 7 Fehler
+    Ruecknahme 24.09.2026 13:14:55: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 13:16:07.050, Quelle 13:14:55.423, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe W55-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-55 ganzzahl_aus_literal 1.5' gefallen: JA
+      B10: 'PE-071 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-082 (Urteil, Stufe)' gefallen: JA
+      B10: 'PE-062 (Urteil, Stufe)' gefallen: JA
+      B10: '313/M-55 ganzzahl_aus_literal 1.0' gruen geblieben: JA
+      B10: 'PE-069' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B10 unter der Mutation: gefallene Pruefungen (7) ===
+      FEHLER  313/M-55 ganzzahl_aus_literal 1.5  [gelesen 1]
+      FEHLER  313/M-73 ack_wertstufe PE-062 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-73 ack_wertstufe PE-062 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Wirkung)  [verbunden]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+      FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Wirkung)  [verbunden]
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-55: 1 von 1 Haelften fallen an der erwarteten Pruefung

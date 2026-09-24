@@ -1,0 +1,61 @@
+NAK-313 Etappe 5a - Mutationslauf R65: broker/src/coordinator/liveness.rs - in descriptor_aus_heartbeat wieder der Rohwert statt der Ganzzahl
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R65 - in descriptor_aus_heartbeat wieder der Rohwert statt der Ganzzahl - 24.09.2026 13:58:51 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei broker/src/coordinator/liveness.rs (LF)
+SHA-256 vorher 024314d0a0887bb9e7f5e6b351a5bc2f7ac9992a478c7acacef70ac84fd325fc; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R65-liveness.rs (SHA-256 024314d0a0887bb9e7f5e6b351a5bc2f7ac9992a478c7acacef70ac84fd325fc)
+Mutation 1 ab Zeile 782 (Stand vor der Mutation):
+  vorher:
+    |             let index = crate::vertrag::ganzzahl(index, 1, crate::vertrag::GANZZAHL_MAX)?;
+    |             objekt.insert("host_mixer_index".into(), Value::from(index));
+  nachher:
+    |             objekt.insert("host_mixer_index".into(), index.clone()); // MUTATION R65: wieder der Rohwert
+Mutiert 24.09.2026 13:58:51, SHA-256 mutiert 0dc188501f0553e2da4a0fe3eb7cded441ed17ce7f7d714e9f954af79497e15a
+Kette (R-313-11): Traegt der Deskriptor den Rohwert 3.0, liefert kanal_von None -> Some(3) gegen None ist ein Kanalwechsel, die Evidenz der Quelle wird invalidiert, und der Snapshot traegt 3.0 (M-65, beide Haelften).
+Lauf unter der Mutation:
+  A4-sonde014: Exit 101, Fehlzeilen 1, Rohausgabe R65-mutiert-A4-sonde014.txt
+    Summe: test nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel ... FAILED
+    Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 62 filtered out; finished in 0.27s
+    Summe: error: test failed, to rerun pass `--test sonde014_verdrahtung`
+  A4-lib: Exit 101, Fehlzeilen 1, Rohausgabe R65-mutiert-A4-lib.txt
+    Summe: test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+    Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.02s
+    Summe: error: test failed, to rerun pass `--lib`
+Ruecknahme 24.09.2026 13:59:00: broker/src/coordinator/liveness.rs SHA-256 024314d0a0887bb9e7f5e6b351a5bc2f7ac9992a478c7acacef70ac84fd325fc - gleich dem Stand vor der Mutation
+  A4-sonde014: Exit 0, Fehlzeilen 0, Rohausgabe R65-zurueck-A4-sonde014.txt
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe R65-zurueck-A4-lib.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-sonde014: 'nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel ... FAILED' gefallen: JA
+  A4-sonde014: 'M-65 Kanalwechselreaktion: Invalidierungen' gefallen: JA
+  A4-sonde014: 'M-65 Deskriptor und Snapshot' gefallen: JA
+  A4-lib: 'PE-126: Wert' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-sonde014: Exit 0, Fehlzeilen 0
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-sonde014 unter der Mutation: gefallene Pruefungen (1) ===
+  test nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel ... FAILED
+  thread 'nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel' (49012) panicked at tests\sonde014_verdrahtung.rs:3175:5:
+    M-65:
+    M-65 Kanalwechselreaktion: Invalidierungen und Ausschluesse (1, 8), soll (0, 0)
+    M-65 Kanalwechselreaktion: ein Beleg der Sonde traegt einen Ausschlussgrund
+    M-65 Deskriptor und Snapshot: host_mixer_index 3.0, soll die Ganzzahl 3
+=== A4-sonde014 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (1) ===
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (198184) panicked at src\coordinator\schema.rs:1029:9:
+    rust_p0 weicht von `produkt` ab:
+    PE-126: Wert nicht gelesen (3.0 ist keine Ganzzahl), soll 3
+=== A4-lib nach der Ruecknahme: gefallene Pruefungen 0 ===

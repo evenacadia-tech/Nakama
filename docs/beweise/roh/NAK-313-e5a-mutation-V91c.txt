@@ -1,0 +1,54 @@
+NAK-313 Etappe 5a - Mutationslauf V91c: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - im Zahlriegel der Grenzvergleich fuer Literale ohne Bruch und Exponent ueber getLargeIntValue statt als Ziffernfolge (Lauf mit --ohne-ueberlaufvektoren)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf V91c - im Zahlriegel der Grenzvergleich fuer Literale ohne Bruch und Exponent ueber getLargeIntValue statt als Ziffernfolge (Lauf mit --ohne-ueberlaufvektoren) - 24.09.2026 13:48:18 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\V91c-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+Mutation 1 ab Zeile 342 (Stand vor der Mutation):
+  vorher:
+    |     if (bruch.empty() && expZiffern.empty())
+    |     {
+    |         nakama::wire::ganzzahlBetrag (ganz, {}, 0, betrag);
+    |         if (nakama::wire::betragUeberGrenze (betrag, ganzzahlGrenze))
+    |         {
+  nachher:
+    |     if (bruch.empty() && expZiffern.empty())
+    |     {
+    |         // MUTATION V91c: Grenzvergleich ueber getLargeIntValue statt als Ziffernfolge
+    |         if (static_cast<std::uint64_t> (juce::String (std::string (ganz)).getLargeIntValue()) > ganzzahlGrenze)
+    |         {
+Mutiert 24.09.2026 13:48:18, SHA-256 mutiert 62c4e75fd3baeb37151a73779679f80b73999b383671272a8bba888e6677bc16
+Kette (R-313-11): getLargeIntValue akkumuliert vorzeichenlos und klappt um: 18446744073709551618 wird 2, 18446744073709551616 wird 0 - beide passieren den Riegel (M-91 c, M-93 a; Riegeleinheit).
+Lauf unter der Mutation:
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:48:21.262, Quelle 13:48:18.279, Binaer juenger: ja
+  A4b: Exit 1, Fehlzeilen 3, Rohausgabe V91c-mutiert-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 3 Fehler
+Ruecknahme 24.09.2026 13:49:28: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 13:49:30.724, Quelle 13:49:28.118, Binaer juenger: ja
+  A4b: Exit 0, Fehlzeilen 0, Rohausgabe V91c-zurueck-A4b.txt
+    Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  A4b: '313/M-93 zahlriegel_int64_rand 18446744073709551616' gefallen: JA
+  A4b: '313/M-91 zahlriegel_int64_rand 18446744073709551618' gefallen: JA
+  A4b: '313/M-91 zahlriegel_int64_rand 9223372036854775808' gruen geblieben: NEIN
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4b: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4b unter der Mutation: gefallene Pruefungen (3) ===
+  FEHLER  313/M-91 zahlriegel_int64_rand 9223372036854775808  [angenommen]
+  FEHLER  313/M-93 zahlriegel_int64_rand 18446744073709551616  [angenommen]
+  FEHLER  313/M-91 zahlriegel_int64_rand 18446744073709551618  [angenommen]
+=== A4b nach der Ruecknahme: gefallene Pruefungen 0 ===

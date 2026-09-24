@@ -1,0 +1,49 @@
+NAK-313 Etappe 5a - Mutationslauf W57b: eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp - nach dem Reconnect reiht das In-Flight-Register nicht mehr ein
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W57b - nach dem Reconnect reiht das In-Flight-Register nicht mehr ein - 24.09.2026 13:27:17 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp (CRLF)
+SHA-256 vorher 3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W57b-Nachrichten.cpp (SHA-256 3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9)
+Mutation 1 ab Zeile 268 (Stand vor der Mutation):
+  vorher:
+    |             if (! p0.einreihen (P0Eintrag { e.json, P0Klasse::ereignis,
+    |                                             wireGeneration.load(), 0 }))
+    |                 break;
+  nachher:
+    |             break;   // MUTATION W57b: nach dem Reconnect nicht mehr eingereiht
+Mutiert 24.09.2026 13:27:17, SHA-256 mutiert c6027eda1c67732b63b007c644adadc684c3ac242f926947ef440c5f6b8500a9
+Kette (R-313-11): Ohne das Einreihen nach dem Reconnect steht der Auftrag kein zweites Mal in p0Texte, und kein gueltiges ACK gibt ihn frei (Wiederholung in M-57 und M-58).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:27:21.312, Quelle 13:27:17.721, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 3, Rohausgabe W57b-mutiert-B10.txt
+    Summe: FEHLER — 111 Pruefungen, 3 Fehler
+Ruecknahme 24.09.2026 13:28:07: eq-copilot/plugin/core/ipc/controlclient/Nachrichten.cpp SHA-256 3b3e31e112bb6155e475c6cea4bf284ae69a5414e0c6c8b3fbc73c23394072a9 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:28:11.012, Quelle 13:28:07.702, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W57b-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect' gefallen: JA
+  B10: '313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect' gefallen: JA
+  B10: '313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect' gefallen: JA
+  B10: '313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (3) ===
+  FEHLER  313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)  [1 Texte mit der Kennung]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (a) konflikt (nach dem Reconnect derselbe Text mit base_revision 5)  [1 Texte mit Kopf 5]
+  FEHLER  313/M-58 ueberlauftext_ist_kein_ack (b) angewandt (nach dem Reconnect derselbe Text mit base_revision 5)  [1 Texte mit Kopf 5]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,56 @@
+NAK-313 Etappe 5a - Mutationslauf W55: eq-copilot/plugin/core/ipc/WireZahl.h - in der gemeinsamen Zerlegung die Pruefung Nachkommateil null entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W55 - in der gemeinsamen Zerlegung die Pruefung Nachkommateil null entfernt - 24.09.2026 13:13:39 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/core/ipc/WireZahl.h (LF)
+SHA-256 vorher d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\W55-WireZahl.h (SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2)
+Mutation 1 ab Zeile 297 (Stand vor der Mutation):
+  vorher:
+    |     for (std::size_t i = alle - abschneiden; i < alle; ++i)
+    |         if (ziffer (i) != '0')
+    |             return false;                    // ein Nachkommateil bleibt
+  nachher:
+    |     for (std::size_t i = alle - abschneiden; i < alle; ++i)
+    |         (void) ziffer (i);                   // MUTATION W55: Nachkommateil nicht geprueft
+Mutiert 24.09.2026 13:13:39, SHA-256 mutiert 8693b7265992309f8ce079e7798003dc7d830c3fb595b6180c0445265a721198
+Kette (R-313-11): Ohne die Nachkommapruefung hat 1.5 den Betrag 1 -> ganzzahlAusLiteral liest 1.5 als 1 (M-55), welcome.protocol 3.5 als 3 und verbindet (M-60), die ACK-Revision 1.5 wird 1 und das ACK gilt (M-73).
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:14:49.906, Quelle 13:13:39.212, Binaer juenger: ja
+  B10: Exit 1, Fehlzeilen 7, Rohausgabe W55-mutiert-B10.txt
+    Summe: FEHLER — 111 Pruefungen, 7 Fehler
+Ruecknahme 24.09.2026 13:14:55: eq-copilot/plugin/core/ipc/WireZahl.h SHA-256 d7de56c71ca88b0780b81076f969984f6eb2c1f2437422112fe2add643f7fad2 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0
+  B10: Binaer 13:16:07.050, Quelle 13:14:55.423, Binaer juenger: ja
+  B10: Exit 0, Fehlzeilen 0, Rohausgabe W55-zurueck-B10.txt
+    Summe: ALLE PRUEFUNGEN GRUEN — 111 Pruefungen, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B10: '313/M-55 ganzzahl_aus_literal 1.5' gefallen: JA
+  B10: 'PE-071 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-082 (Urteil, Stufe)' gefallen: JA
+  B10: 'PE-062 (Urteil, Stufe)' gefallen: JA
+  B10: '313/M-55 ganzzahl_aus_literal 1.0' gruen geblieben: JA
+  B10: 'PE-069' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B10 unter der Mutation: gefallene Pruefungen (7) ===
+  FEHLER  313/M-55 ganzzahl_aus_literal 1.5  [gelesen 1]
+  FEHLER  313/M-73 ack_wertstufe PE-062 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-73 ack_wertstufe PE-062 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 1, endgueltig 0]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 control PE-071 (Wirkung)  [verbunden]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-60 welcome_protocol_als_3punkt0 telemetrie PE-082 (Wirkung)  [verbunden]
+=== B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

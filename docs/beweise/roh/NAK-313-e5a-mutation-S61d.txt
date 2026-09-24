@@ -1,0 +1,48 @@
+NAK-313 Etappe 5a - Mutationslauf S61d: eq-copilot/plugin/src/SourcesModel.cpp - nichtnegativeGanzzahl ohne die Pruefung n < 0 und ohne Obergrenze
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S61d - nichtnegativeGanzzahl ohne die Pruefung n < 0 und ohne Obergrenze - 24.09.2026 13:40:35 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/src/SourcesModel.cpp (CRLF)
+SHA-256 vorher 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S61d-SourcesModel.cpp (SHA-256 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639)
+Mutation 1 ab Zeile 113 (Stand vor der Mutation):
+  vorher:
+    |         const auto n = static_cast<juce::int64> (v);
+    |         if (n < 0) return false;
+    |         aus = static_cast<std::uint64_t> (n);
+    |         return aus <= 9007199254740991ULL;
+  nachher:
+    |         const auto n = static_cast<juce::int64> (v);
+    |         aus = static_cast<std::uint64_t> (n);   // MUTATION S61d: ohne n < 0, ohne Obergrenze
+    |         return true;
+Mutiert 24.09.2026 13:40:35, SHA-256 mutiert 5faf9b3bbeb9203e202e0c194c628d147a80f3120e4cd1162c60aa4b4f9d8589
+Kette (R-313-11): Ohne die Vorzeichenpruefung wird -1 zu 18446744073709551615 und der Snapshot mit letzter_kontakt_ms -1 wird angenommen (M-61, Regressionswache -1).
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:40.941, Quelle 13:40:35.721, Binaer juenger: ja
+  B13: Exit 1, Fehlzeilen 2, Rohausgabe S61d-mutiert-B13.txt
+    Summe: SONDE-012 SourcesModel: 192/194 gruen
+Ruecknahme 24.09.2026 13:40:41: eq-copilot/plugin/src/SourcesModel.cpp SHA-256 6414ea9cdca7452c5079f03b55ca57d0731dadf98cde44d17f60a0a149aa7639 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:46.615, Quelle 13:40:41.248, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe S61d-zurueck-B13.txt
+    Summe: SONDE-012 SourcesModel: 194/194 gruen
+Erwartete Pruefungen unter der Mutation:
+  B13: 'PE-093 (Urteil, Stufe)' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (2) ===
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/feldregel]
+  FEHLER  313/M-61 ganzzahl_in_1punkt0_form PE-093 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+=== B13 nach der Ruecknahme: gefallene Pruefungen 0 ===

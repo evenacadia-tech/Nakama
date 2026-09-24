@@ -1,0 +1,54 @@
+NAK-313 Etappe 5a - Mutationslauf S96: eq-copilot/plugin/vertrag/NakamaVertrag.cpp - im C++-Textriegel Regel 8 (alphabetische Literale) abgeschaltet
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf S96 - im C++-Textriegel Regel 8 (alphabetische Literale) abgeschaltet - 24.09.2026 13:40:47 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+Datei eq-copilot/plugin/vertrag/NakamaVertrag.cpp (CRLF)
+SHA-256 vorher dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\S96-NakamaVertrag.cpp (SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17)
+Mutation 1 ab Zeile 598 (Stand vor der Mutation):
+  vorher:
+    |             if (literal != "true" && literal != "false" && literal != "null")
+  nachher:
+    |             if (false && literal != "true" && literal != "false" && literal != "null")   // MUTATION S96: Regel 8 abgeschaltet
+Mutiert 24.09.2026 13:40:47, SHA-256 mutiert dbf90f5186ba9010488b3e50b10f8090f551a21ce84240b5c0ef08aff0146168
+Kette (R-313-11): Ohne Regel 8 faellt NaN erst im strengen Lauf -> der Grund wechselt vom Textriegel- zum Parsergrund, die Stufe von textriegel zu parser (M-96, Quellenmodell).
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:50.673, Quelle 13:40:47.447, Binaer juenger: ja
+  B13: Exit 1, Fehlzeilen 6, Rohausgabe S96-mutiert-B13.txt
+    Summe: SONDE-012 SourcesModel: 188/194 gruen
+Ruecknahme 24.09.2026 13:40:50: eq-copilot/plugin/vertrag/NakamaVertrag.cpp SHA-256 dd945db19432f0785edc8afbdf90a1b59146cf0e2bdbbfe151dd1a36096c9d17 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 13:40:54.539, Quelle 13:40:50.986, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe S96-zurueck-B13.txt
+    Summe: SONDE-012 SourcesModel: 194/194 gruen
+Erwartete Pruefungen unter der Mutation:
+  B13: 'PE-095 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-096 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-097 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-104 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-105 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-106 (Urteil, Stufe)' gefallen: JA
+  B13: 'PE-098 (Urteil, Stufe)' gruen geblieben: JA
+  B13: 'PE-107 (Urteil, Stufe)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (6) ===
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-095 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - session_snapshot parser: unerwartetes Zeichen]
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-096 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - session_snapshot parser: unerwartetes Zeichen]
+  FEHLER  313/M-96 nicht_endlich_snapshot PE-097 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - session_snapshot parser: Zahl ohne Ziffern]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-104 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - evidence_invalidate parser: unerwartetes Zeichen]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-105 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - evidence_invalidate parser: unerwartetes Zeichen]
+  FEHLER  313/M-96 nicht_endlich_ruecknahme PE-106 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/textriegel - evidence_invalidate parser: Zahl ohne Ziffern]
+=== B13 nach der Ruecknahme: gefallene Pruefungen 0 ===

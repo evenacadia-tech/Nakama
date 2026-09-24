@@ -1,0 +1,196 @@
+NAK-313 Etappe 5a - Rotbeweis M-97 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-97 - Etappe 5a - Grenze und Audio (Wire-Anteil)
+Zustand: Endstand der Teiletappe 5a
+Ereignis: voller Kanon und git diff gegen a9cbbbb7
+Zusage: Audio unberuehrt (kein neuer Leser im Callback; A1, A16 bitidentisch), Identitaet eingefroren (B1), keine State-Version, keine Migration, kein neuer Writer, Zifferntext bleibt kanonische Ausgabe; die Revisionszeilen des State misst 5b
+Bein: A1, A16, B1; Lesemass ueber git diff a9cbbbb7..HEAD
+
+--- Haelfte 1: A1 - Etikett: Regressionswache ---
+Pruefung: Nulltest Gen
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: gruen (geerbter Kanon; A1 einzeln nach dem Bau Exit 0)
+  Mutation A1: eq-copilot/plugin/src/PluginProcessor.cpp - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-A1.txt):
+    Rotlauf A1 - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 24.09.2026 13:57:46 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+    SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+    Mutation 1 ab Zeile 641 (Stand vor der Mutation):
+      vorher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        | 
+      nachher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        |     buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-97 A1: 1 LSB
+        | 
+    Mutiert 24.09.2026 13:57:46, SHA-256 mutiert 6fb755d9d5458f38baaa5ca76643f29e1df4d934ac65fdb0fed1eeafff9154af
+    Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Gen-Callback bricht die Bitidentitaet des Passthrough -> A1 rot.
+    Lauf unter der Mutation:
+      Bau EqCopNullTest: Exit 0
+      A1: Binaer 13:57:54.439, Quelle 13:57:46.732, Binaer juenger: ja
+      A1: Exit 1, Fehlzeilen 2, Rohausgabe A1-mutiert-A1.txt
+        Summe: NULLTEST FEHLGESCHLAGEN
+    Ruecknahme 24.09.2026 13:57:54: eq-copilot/plugin/src/PluginProcessor.cpp SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+      Bau EqCopNullTest: Exit 0
+      A1: Binaer 13:58:01.233, Quelle 13:57:54.685, Binaer juenger: ja
+      A1: Exit 0, Fehlzeilen 0, Rohausgabe A1-zurueck-A1.txt
+        Summe: NULLTEST OK
+    Erwartete Pruefungen unter der Mutation:
+      A1: '1000 Bloecke Rauschen: Ausgang bitgleich' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A1: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A1 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+      FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+    === A1 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 2: A16 - Etikett: Regressionswache ---
+Pruefung: Nulltest Probeeq
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: gruen (geerbter Kanon; A16 einzeln nach dem Bau Exit 0)
+  Mutation A16: eq-copilot/plugin/sonde/SondeProcessor.cpp - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-A16.txt):
+    Rotlauf A16 - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 24.09.2026 13:58:01 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei eq-copilot/plugin/sonde/SondeProcessor.cpp (CRLF)
+    SHA-256 vorher 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\A16-SondeProcessor.cpp (SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b)
+    Mutation 1 ab Zeile 510 (Stand vor der Mutation):
+      vorher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+        | 
+      nachher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+        |     if (puffer.getNumSamples() > 0 && puffer.getNumChannels() > 0)   // MUTATION M-97 A16: 1 LSB
+        |         puffer.getWritePointer (0)[0] = std::nextafter (puffer.getSample (0, 0), 2.0f);
+        | 
+    Mutiert 24.09.2026 13:58:01, SHA-256 mutiert 3480a2a832284203176fb22c7c532edf9b6492f257139d751b23350d4c7de3bf
+    Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Probeeq-Callback bricht die Bitidentitaet -> A16 rot.
+    Lauf unter der Mutation:
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16: Binaer 13:58:08.734, Quelle 13:58:01.975, Binaer juenger: ja
+      A16: Exit 1, Fehlzeilen 37, Rohausgabe A16-mutiert-A16.txt
+        Summe: SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler
+    Ruecknahme 24.09.2026 13:58:09: eq-copilot/plugin/sonde/SondeProcessor.cpp SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b - gleich dem Stand vor der Mutation
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16: Binaer 13:58:16.333, Quelle 13:58:09.717, Binaer juenger: ja
+      A16: Exit 0, Fehlzeilen 0, Rohausgabe A16-zurueck-A16.txt
+        Summe: SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      A16: 'default_ist_bitidentisch_ueber_1000_bloecke' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A16: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A16 unter der Mutation: gefallene Pruefungen (37) ===
+      FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      FEHLER    im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 1000 abweichend, NaN/Inf roh nein]
+      FEHLER  kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+      FEHLER  passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+      FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+      FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+      FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+      FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+      FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+      FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+      FEHLER  eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 1000 abweichend]
+      FEHLER  nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 92000 abweichende Samples (das Band war hoerbar); danach 395 abweichend in 183744]
+      FEHLER  311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [995 von 13336 Musterstellen veraendert]
+      FEHLER  311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [995 von 13336 Musterstellen veraendert]
+      FEHLER  311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [995 von 13336 Musterstellen veraendert]
+      FEHLER  mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich nein, Band rechnet ja]
+      FEHLER  311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf Kanal 0 bytegleich heraus  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 6676 veraendert]
+      FEHLER  311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 5 abweichend (ab Sample 512: 0), Muster 995 von 13352 veraendert]
+      FEHLER  311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 5 abweichend (ab Sample 512: 0), Muster 995 von 13352 veraendert]
+      FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 13352, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+      FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 6676, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+      FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 13352, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 22050.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+      FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 6676, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 22050.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+      FEHLER  311/M-139 frueher_rueckweg_bei_jeder_blockgroesse (Teilfall von 311/M-132) bei 32 kHz: Bloecke 1, 255, 256, 257, 2048 und 4096 (ueber maxBlock 2048) kommen mit Wachmarke bytegleich heraus, kein Tap gefuellt, kein Zaehler bewegt, 0 Samples Latenz, Tail 0,0 s  [Blockgroessen 6, bytegleich nein, Latenz 0, Tail 0, Taplaenge 0, Zaehler 0/0/0]
+      FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x3ee059b66fbaca4a gegen Basisstand 0xcb14d6eee50e7d7c (gleich nein), Kern-Samplerate 44100.0, autoGainDb -0.759373668958, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+      FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 48000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xa453526d08dd0fab gegen Basisstand 0xbd787728731ba929 (gleich nein), Kern-Samplerate 48000.0, autoGainDb -0.853206521983, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+      FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 96000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x16d0988477a2b27 gegen Basisstand 0x5ece3bcf185baff5 (gleich nein), Kern-Samplerate 96000.0, autoGainDb -1.275649859551, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+      FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 192000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xa8edf428c96e1236 gegen Basisstand 0x33f35b42b6693e06 (gleich nein), Kern-Samplerate 192000.0, autoGainDb -1.390377442677, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+      FEHLER  312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio; CLAUDE.md Grundgesetz, [SONDE-015] M-05): mit eq_enabled aus, im Hard-Bypass und nach releaseResources() ohne neues prepareToPlay ist der Ausgang ueber 10 Bloecke processBlock, 20 processBlockBypassed und 10 processBlock bytegleich zum Eingang - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf -, und die Zaehler fuer nicht endliche Eingaenge und geheilte Filterzustaende steigen nicht  [(a) Default: 20 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (b) Hard-Bypass: 20 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (c) unvorbereitet: 20 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10]
+      FEHLER  312/M-107 hostbypass_ueber_release (Audio; starten<->stoppen, NAK-283 R-283-3): ohne Vorbereitung laeuft jeder Block in beiden Eintritten unberuehrt durch - 10 Bypass, 10 normal, 10 Bypass mit Rauschen, Bitmuster, Wachmarke, NaN und +-Inf bytegleich, kein Zaehler steigt; nach prepareToPlay ist der erste Bypassblock ab Sample 0 bytegleich (M-106)  [ohne Vorbereitung 10 abweichend, Zaehler still; nach prepareToPlay 0 abweichend]
+    === A16 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Haelfte 3: Identitaet - Etikett: Regressionswache ---
+Pruefung: B1
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  -> am Basisstand: gruen (geerbter Kanon; B1 einzeln nach dem Bau Exit 0)
+  Mutation ID: eq-copilot/plugin/CMakeLists.txt - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau; Aenderungszeit bei der Ruecknahme zurueck) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-ID.txt):
+    Rotlauf ID - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau; Aenderungszeit bei der Ruecknahme zurueck) - 24.09.2026 14:05:13 - HEAD 3d7542b517bcc0f8a6d790f51d340a418d9e92e4
+    Datei eq-copilot/plugin/CMakeLists.txt (LF)
+    SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+    Mutation 1 ab Zeile 123 (Stand vor der Mutation):
+      vorher:
+        |     PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+        | 
+      nachher:
+        |     PLUGIN_CODE Eqcq
+        | 
+    Mutiert 24.09.2026 14:05:13, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+    Kette (R-313-11): Ein literaler PLUGIN_CODE statt des Manifestwerts bricht die eingefrorene Identitaetskette -> B1 rot.
+    Lauf unter der Mutation:
+      B1: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B1: Exit 1, Fehlzeilen 3, Rohausgabe ID-mutiert-B1.txt
+        Summe: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+    Ruecknahme 24.09.2026 14:05:13: eq-copilot/plugin/CMakeLists.txt SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation
+      Aenderungszeit zurueck auf 21.09.2026 04:42:02 (die Datei liest B1 zur Laufzeit; kein Bau)
+      B1: ohne Bau (das Bein liest die Quelle zur Laufzeit)
+      B1: Exit 0, Fehlzeilen 0, Rohausgabe ID-zurueck-B1.txt
+        Summe: IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B1: 'CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B1: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R71.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R72c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R90.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === B1 unter der Mutation: gefallene Pruefungen (3) ===
+      FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+      FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 10:01:29am vs 24 Sep 2026 2:05:13pm]
+      FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 10:02:10am vs 24 Sep 2026 2:05:13pm]
+    === B1 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+--- Lesemass ---
+  git diff a9cbbbb7..3d7542b5, gemessen 24.09.2026 14:11:53:
+    unveraendert (State, Schemas, State-Fixtures, dsp, sonde, identity, hostbridge, PluginProcessor.cpp, prozessor/, intent-wire-v1.json, NAK-283.md): JA (Diff leer)
+    eq-copilot/install: unveraendert
+    Produktstellen mit ganzzahlAusLiteral, wertAlsVar oder zahlriegelBytes (ohne Tests, HEAD):
+      eq-copilot/plugin/core/ipc/WireZahl.h:241:    Zerlegung traegt zwei Leser: `ganzzahlAusLiteral` (der flache C++-Leser,
+      eq-copilot/plugin/core/ipc/WireZahl.h:340:inline bool ganzzahlAusLiteral (std::string_view literal, std::int64_t min, std::int64_t max,
+      eq-copilot/plugin/core/ipc/controlclient/Intern.h:210:        || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
+      eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp:215:        || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
+      eq-copilot/plugin/src/PipeClient.cpp:714:    if (! nakama::vertrag::zahlriegelBytes (puffer.getData(), len,
+      eq-copilot/plugin/src/SourcesModel.cpp:740:    // DIESES Laufs (`wertAlsVar`): ein Lauf statt zwei, und eine Ganzzahl in
+      eq-copilot/plugin/src/SourcesModel.cpp:750:    const auto root = nakama::vertrag::wertAlsVar (streng);
+      eq-copilot/plugin/src/SourcesModel.cpp:1509:    const auto root = nakama::vertrag::wertAlsVar (streng);
+      eq-copilot/plugin/vertrag/NakamaVertrag.cpp:5:#include "../state/NakamaKanon.h"   // NAK-313 R-313-5: der Wert des strengen Laufs (wertAlsVar)
+      eq-copilot/plugin/vertrag/NakamaVertrag.cpp:677:bool zahlriegelBytes (const void* daten, size_t laenge, std::uint64_t ganzzahlGrenze,
+      eq-copilot/plugin/vertrag/NakamaVertrag.cpp:778:juce::var wertAlsVar (const nakama::kanon::Wert& wert)
+      eq-copilot/plugin/vertrag/NakamaVertrag.cpp:805:                liste.add (wertAlsVar (element));
+      eq-copilot/plugin/vertrag/NakamaVertrag.cpp:815:                                     wertAlsVar (wert.objektWerte[k]));
+      eq-copilot/plugin/vertrag/NakamaVertrag.h:148:bool zahlriegelBytes (const void* daten, size_t laenge, std::uint64_t ganzzahlGrenze,
+      eq-copilot/plugin/vertrag/NakamaVertrag.h:159:juce::var wertAlsVar (const nakama::kanon::Wert& wert);
+    davon unter plugin/dsp/, in PluginProcessor, SondeProcessor oder prozessor/: keine
+    davon mit processBlock im Text: keine
+    Sender heartbeatAlsJson, stateReportJson, jsonSafe im Diff: nicht beruehrt
+
+Ergebnis M-97: 3 von 3 Haelften fallen an der erwarteten Pruefung

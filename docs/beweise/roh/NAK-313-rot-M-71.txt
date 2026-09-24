@@ -1,0 +1,60 @@
+NAK-313 Etappe 5a - Rotbeweis M-71 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 287927c4 bis 1a53305b; die Neubelege R63, S61b, ID und T73w an 3d7542b5, das nur den M-63-Test und einen Kommentar aendert); Mutationslaeufe 24.09.2026, 13:13 bis 14:11 Uhr, je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am Basisstand 24.09.2026, 11:56 bis 12:08 Uhr gegen den Produktcode von a9cbbbb7 (NAK-313-e5a-basisstand.txt).
+
+Matrixzeile M-71 - T3-03-02 - R-313-5 - Produktleser Rust P1 (Assistent)
+Zustand: assistant_step_update mit revision 3.0
+Ereignis: P1-Weiche -> Assistentenleser
+Zusage: Ok; assistent_sicht traegt Revision 3; assistent_updates + 1
+Bein: A4, sonde013_verdrahtung.rs nak313_m71_assistent_als_3punkt0
+
+--- Haelfte 1: Revision 3.0 - Etikett: heute rot ---
+Pruefung: nak313_m71
+Am Basisstand (Produktcode von a9cbbbb7, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 (Exit 101) ===
+  test nak313_m71_assistent_als_3punkt0 ... FAILED
+  ---- nak313_m71_assistent_als_3punkt0 stdout ----
+  thread 'nak313_m71_assistent_als_3punkt0' (263828) panicked at tests\sonde013_verdrahtung.rs:6959:5:
+    M-71: der Schritt mit Revision 3.0 wird angenommen: Err(Vertrag)
+  nak313_m71_assistent_als_3punkt0
+  -> am Basisstand: rot (3.0 wird 0, revision < 1 -> Err(Vertrag))
+  Mutation R71: broker/src/coordinator/assistent.rs - im Assistentenleser die Revision wieder mit as_i64().unwrap_or(0) (Protokoll und alle Pruefzeilen: NAK-313-e5a-mutation-R71.txt):
+    Rotlauf R71 - im Assistentenleser die Revision wieder mit as_i64().unwrap_or(0) - 24.09.2026 14:02:22 - HEAD 1a53305b5219447fde3b77ccd162b1ff0f03aa11
+    Datei broker/src/coordinator/assistent.rs (LF)
+    SHA-256 vorher edfd1021be36166cc49d3023ae8bd608ad853a3bb1cb7c7ac9dbb44a5e6ac271; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\ca9fee75\tmp\rot\sicherung\R71-assistent.rs (SHA-256 edfd1021be36166cc49d3023ae8bd608ad853a3bb1cb7c7ac9dbb44a5e6ac271)
+    Mutation 1 ab Zeile 118 (Stand vor der Mutation):
+      vorher:
+        |         let Some(revision) =
+        |             crate::vertrag::ganzzahl(&wert["revision"], 1, crate::vertrag::GANZZAHL_MAX)
+        |         else {
+        |             return Err(SchrittAbweisung::Vertrag);
+        |         };
+      nachher:
+        |         let revision = wert["revision"].as_i64().unwrap_or(0); // MUTATION R71
+        |         if revision < 1 {
+        |             return Err(SchrittAbweisung::Vertrag);
+        |         }
+    Mutiert 24.09.2026 14:02:22, SHA-256 mutiert bcd9702757ee08e3112b9b25d1c40e289b7eb4521b67386c4fa2b25e2a13768c
+    Kette (R-313-11): Mit unwrap_or(0) wird 3.0 zu 0 -> revision < 1 -> Err(Vertrag), kein Spiegel (M-71).
+    Lauf unter der Mutation:
+      A4-sonde013: Exit 101, Fehlzeilen 1, Rohausgabe R71-mutiert-A4-sonde013.txt
+        Summe: test nak313_m71_assistent_als_3punkt0 ... FAILED
+        Summe: test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 90 filtered out; finished in 0.01s
+        Summe: error: test failed, to rerun pass `--test sonde013_verdrahtung`
+    Ruecknahme 24.09.2026 14:02:27: broker/src/coordinator/assistent.rs SHA-256 edfd1021be36166cc49d3023ae8bd608ad853a3bb1cb7c7ac9dbb44a5e6ac271 - gleich dem Stand vor der Mutation
+      A4-sonde013: Exit 0, Fehlzeilen 0, Rohausgabe R71-zurueck-A4-sonde013.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-sonde013: 'nak313_m71_assistent_als_3punkt0 ... FAILED' gefallen: JA
+      A4-sonde013: 'M-71: der Schritt mit Revision 3.0 wird angenommen' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-sonde013: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5a-basisstand.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-PY95.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R63.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R64.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R65.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R66b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R67e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R68d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R69.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-R70d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b-lauf1.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S61d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-S96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91d.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91e.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V91f.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-V96.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W55.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W56b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W57b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W58.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W59.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60a.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60b.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W60c.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W73z.txt | ?? docs/beweise/roh/NAK-313-e5a-mutation-W96.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    === A4-sonde013 unter der Mutation: gefallene Pruefungen (1) ===
+      test nak313_m71_assistent_als_3punkt0 ... FAILED
+      thread 'nak313_m71_assistent_als_3punkt0' (47604) panicked at tests\sonde013_verdrahtung.rs:6959:5:
+        M-71: der Schritt mit Revision 3.0 wird angenommen: Err(Vertrag)
+    === A4-sonde013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Zusage dieser Haelfte faellt an der erwarteten Pruefung: JA
+
+Ergebnis M-71: 1 von 1 Haelften fallen an der erwarteten Pruefung

@@ -218,10 +218,12 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
     }
     let roh = std::str::from_utf8(&daten[4..ende]).map_err(|_| BootstrapFehler::KeinUtf8)?;
     // 🔑 NAK-313 R-313-6 (M-45): EIN strenger Lauf ueber die Hello-Bytes.
-    // Protokollwahl und typisierte Uebernahme lesen danach denselben Wert —
-    // nie mehr einen zweiten Parselauf ueber den Rohtext. Ein doppelter
-    // dekodierter Name endet hier als `KeinJson` mit der Marke
-    // `nakama:doppelter-schluessel` (NAK-310 M-77, Alternative „abgelehnt").
+    // Protokollwahl und die typisierte Uebernahme der v3-Hellos lesen danach
+    // denselben Wert, keinen zweiten Parselauf ueber den Rohtext; ein v2-Hello
+    // verlaesst das Tor nach diesem Lauf unveraendert als `V2 { roh }`
+    // (Manifest NAK-313 §6.5). Ein doppelter dekodierter Name endet hier als
+    // `KeinJson` mit der Marke `nakama:doppelter-schluessel` (NAK-310 M-77,
+    // Alternative „abgelehnt").
     let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
     let obj = wert
         .as_object()

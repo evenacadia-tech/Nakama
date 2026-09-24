@@ -234,10 +234,10 @@ pub fn bestand() -> &'static Bestand {
 //
 // 🔑 NAK-313 R-313-6: der strenge Leser mit der Ablehnung doppelter
 // Schluessel stand bis Etappe 4 nur hier. Er ist nach `crate::vertrag`
-// umgezogen (`json_streng`, Marke `MARKE_DOPPELT`) und liest dort JEDEN
-// JSON-Produkteingang des Brokers; die DTO-Kante ruft dieselbe Funktion.
-// Ohne ihn waere das Rust-Bein SCHWAECHER als die anderen beiden, und
-// `doppelter-schluessel.json` ginge als gueltig durch.
+// umgezogen (`json_streng`, Marke `MARKE_DOPPELT`); dieselbe Funktion lesen
+// die Lesefunktion des Coordinators (P0, P1-Weiche), der Bootstrap und diese
+// DTO-Kante. Ohne ihn waere das Rust-Bein SCHWAECHER als die anderen beiden,
+// und `doppelter-schluessel.json` ginge als gueltig durch.
 
 // ------------------------------------------------------------------- Leiter
 

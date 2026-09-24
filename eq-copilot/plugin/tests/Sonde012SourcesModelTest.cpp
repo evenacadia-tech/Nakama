@@ -531,6 +531,17 @@ void nak313Produkteingaenge (Zeitpunkt t0)
 int main()
 {
     const auto t0 = Zeitpunkt {} + std::chrono::seconds (10);
+
+    // NAK-313 Etappe 4 (R-313-6): der strenge Lauf an beiden Lesern des
+    // Quellenmodells, Eintrag fuer Eintrag aus der Produkteingangstabelle.
+    // Die Tabellenfaelle laufen vor allen anderen, und ihre Ausgabe wird
+    // sofort geleert: jeder baut sein eigenes Modell, aeltere Faelle greifen
+    // dagegen ungeprueft auf `quellen.front()` zu. Ein Parserbruch, der jeden
+    // Snapshot ablehnt (Rotbeweis M-41), laesst sie abstuerzen, und die
+    // gepufferte Ausgabe der Tabellenfaelle ginge dabei verloren.
+    nak313Produkteingaenge (t0);
+    std::cout << std::flush;
+
     const auto pair = p2Fixture ("loudness-i-pair");
     const auto collecting = p2Fixture ("loudness-i-collecting");
     const auto gated = p2Fixture ("loudness-i-gated");
@@ -1671,10 +1682,6 @@ int main()
                     "trifft die geschlossenen Enums, nicht jedes `null`");
         }
     }
-
-    // NAK-313 Etappe 4 (R-313-6): der strenge Lauf an beiden Lesern des
-    // Quellenmodells, Eintrag fuer Eintrag aus der Produkteingangstabelle.
-    nak313Produkteingaenge (t0);
 
     // ═══════════════════════════════════════════════════════════════════
     // NAK-246 D6 · M-30 reload_und_subscription_leeren_dieselbe_sitzungsmenge

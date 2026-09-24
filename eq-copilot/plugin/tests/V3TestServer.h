@@ -142,6 +142,39 @@ public:
     /// die Rueckwaertskompatibilitaet sichtbar; einzelne Tests setzen 1 bzw.
     /// einen unbekannten Wert.
     std::atomic<int> controlAntwortMinor { 0 };
+    /// NAK-313 Etappe 5 (Manifest §8.5, „Testserver fuer Tabelleneintraege"):
+    /// ROHE Antwortbytes auf das Hello, je Verbindungsart. Leer heisst: das
+    /// feste welcome unten. Die Bytes gehen unveraendert als Payload auf die
+    /// Leitung - so erreicht ein Eintrag der Tabelle
+    /// `PRODUKTEINGAENGE-FAELLE.json` den flachen Leser Byte fuer Byte, auch
+    /// in einer Form, die der Server selbst nie schriebe (`3.0`, `NaN`).
+    std::mutex rohMutex;
+    std::string welcomeRohControl, welcomeRohTelemetrie;
+    /// Rohe ACK-Bytes, in dieser Reihenfolge je ACK-Entscheidung verbraucht,
+    /// an BEIDEN ACK-Stellen (sofort und nachgetragen). Ist die Liste leer,
+    /// antwortet der Server wie bisher nach `commandAckArt`. Die Bytes tragen
+    /// ihre `command_id` selbst - der Test reiht den P0 dazu passend ein.
+    std::vector<std::string> ackRoh;
+    void setzeWelcomeRoh (bool telemetrie, std::string bytes)
+    {
+        std::lock_guard<std::mutex> l (rohMutex);
+        (telemetrie ? welcomeRohTelemetrie : welcomeRohControl) = std::move (bytes);
+    }
+    void ackRohAnhaengen (std::string bytes)
+    {
+        std::lock_guard<std::mutex> l (rohMutex);
+        ackRoh.push_back (std::move (bytes));
+    }
+    /// Das naechste rohe ACK oder leer; `false`, wenn keines ansteht.
+    bool naechstesAckRoh (std::string& aus)
+    {
+        std::lock_guard<std::mutex> l (rohMutex);
+        if (ackRoh.empty())
+            return false;
+        aus = ackRoh.front();
+        ackRoh.erase (ackRoh.begin());
+        return true;
+    }
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
     /// Jeder empfangene P0-/P1-Payload, woertlich. Damit laesst sich pruefen,
@@ -423,6 +456,15 @@ private:
         if (welcomeZusatzfeld.load())
             welcome += ",\"extra\":1";                          // additionalProperties:false
         welcome += "}";
+        {
+            // NAK-313 Etappe 5: die rohen Tabellenbytes ersetzen das feste
+            // welcome ganz - Kopplungswerte tragen sie selbst (Register der
+            // Tabelle, `cpp_telemetrie_handshake`).
+            std::lock_guard<std::mutex> l (rohMutex);
+            const auto& rohesWelcome = istTelemetry ? welcomeRohTelemetrie : welcomeRohControl;
+            if (! rohesWelcome.empty())
+                welcome = rohesWelcome;
+        }
         std::vector<std::uint8_t> aus;
         envelopeSchreiben (welcomeAlsP2.load() ? Familie::p2 : Familie::p0,
                            static_cast<std::uint8_t> (welcomeMinor.load()),
@@ -620,6 +662,9 @@ private:
                         if (art == 1 || art == 5)
                             ack += ",\"state_hash\":\"" + std::string (64, 'd') + "\"";
                         ack += "}";
+                        // NAK-313 Etappe 5: ein anstehendes rohes ACK geht
+                        // statt des gebauten auf die Leitung.
+                        naechstesAckRoh (ack);
                         std::vector<std::uint8_t> antwort;
                         envelopeSchreiben (Familie::p0, 0,
                             reinterpret_cast<const std::uint8_t*> (ack.data()),
@@ -691,6 +736,24 @@ private:
                             std::lock_guard<std::mutex> l (ackFilterMutex);
                             gefiltert = ! commandAckNurFuer.empty()
                                      && commandAckNurFuer != commandId;
+                        }
+                        // NAK-313 Etappe 5: ein anstehendes rohes ACK hat
+                        // Vorrang vor `commandAckArt` und geht unveraendert
+                        // auf die Leitung.
+                        std::string rohesAck;
+                        if (! gefiltert && naechstesAckRoh (rohesAck))
+                        {
+                            std::vector<std::uint8_t> antwort;
+                            envelopeSchreiben (Familie::p0, 0,
+                                reinterpret_cast<const std::uint8_t*> (rohesAck.data()),
+                                rohesAck.size(), antwort);
+                            if (! schreiben (h, antwort.data(), antwort.size()))
+                            {
+                                schliessen (h);
+                                return;
+                            }
+                            ++commandAckEntschieden;
+                            continue;
                         }
                         const int art = gefiltert ? 0 : commandAckArt.load();
                         if (art >= 1 && art <= 5)

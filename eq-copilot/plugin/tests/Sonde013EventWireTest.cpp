@@ -29,6 +29,7 @@
 
 #include <juce_core/juce_core.h>
 
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <limits>
@@ -221,6 +222,41 @@ juce::var liesFixture (const juce::String& relativ, bool& ok)
         return {};
     ok = true;
     return wert;
+}
+
+/** NAK-313 Etappe 5: der Wert am JSON-Pointer `zeiger` (RFC 6901, ohne
+    Escapes - die Tabelle nennt nur einfache Namen und Indizes). */
+juce::var amZeiger (const juce::var& wurzel, const juce::String& zeiger)
+{
+    juce::var knoten = wurzel;
+    for (const auto& teil : juce::StringArray::fromTokens (zeiger.substring (1), "/", ""))
+    {
+        if (knoten.isArray())
+            knoten = knoten[teil.getIntValue()];
+        else if (knoten.getDynamicObject() != nullptr)
+            knoten = knoten.getProperty (juce::Identifier (teil), {});
+        else
+            return {};
+    }
+    return knoten;
+}
+
+/** Ist `w` genau die Ganzzahl `soll` (Dezimaltext)? Ein `double` zaehlt nur,
+    wenn er endlich, ganzzahlig und binary64-exakt ist (Betrag bis 2^53 - 1). */
+bool ganzzahlGleich (const juce::var& w, const juce::String& soll)
+{
+    std::int64_t erwartet = 0;
+    const auto text = soll.toStdString();
+    const auto r = std::from_chars (text.data(), text.data() + text.size(), erwartet);
+    if (text.empty() || r.ec != std::errc() || r.ptr != text.data() + text.size() || w.isBool())
+        return false;
+    if (w.isInt() || w.isInt64())
+        return static_cast<juce::int64> (w) == erwartet;
+    if (! w.isDouble())
+        return false;
+    const auto d = static_cast<double> (w);
+    return std::isfinite (d) && std::trunc (d) == d && std::fabs (d) <= 9007199254740991.0
+        && static_cast<std::int64_t> (d) == erwartet;
 }
 
 /** Ein `bandwerte`-Objekt, wie es AUF DER LEITUNG steht: das Encoding-Wort,
@@ -615,16 +651,17 @@ int main()
                 if (fall.getProperty ("nachricht", {}).toString() != "evidence_snapshot")
                     continue;
                 ++gefahren;
-                const auto name = "313/M-49 evidence_snapshot_vertragsweg "
+                // Die Faelle der Etappe 4 behalten ihren Namen (M-49); die
+                // Wertfaelle der Etappe 5 stehen unter ihrer Zeile M-73.
+                const auto nummer = fall.getProperty ("matrix", {}).toString()
+                                        .fromFirstOccurrenceOf ("M-", false, false).getIntValue();
+                const auto name = juce::String (nummer >= 55 ? "313/M-73" : "313/M-49")
+                                + " evidence_snapshot_vertragsweg "
                                 + fall.getProperty ("id", {}).toString();
-                if (! fall.getProperty ("wert", {}).isVoid())
-                {
-                    pruefe (false, name + " (Wert)", "dieses Bein vergleicht noch keine Werte");
-                    continue;
-                }
                 juce::MemoryBlock roh;
                 roh.loadFromHexString (fall.getProperty ("bytes_hex", {}).toString());
                 juce::String urteil = "gueltig", stufe, grund;
+                juce::var daten;
                 if (! nakama::vertrag::textriegelBytes (roh.getData(), roh.getSize(), grund))
                 {
                     urteil = "ungueltig";
@@ -640,10 +677,16 @@ int main()
                         urteil = "ungueltig";
                         stufe = grund.contains ("doppelter Schluessel") ? "duplikat" : "parser";
                     }
-                    else if (! schema.pruefe (juce::JSON::parse (text)).isEmpty())
+                    else
                     {
-                        urteil = "ungueltig";
-                        stufe = "schema";
+                        // NAK-313 Etappe 5 (R-313-5): die Engine sieht die
+                        // Werte aus DEMSELBEN strengen Lauf, wie B3c.
+                        daten = nakama::vertrag::wertAlsVar (streng);
+                        if (! schema.pruefe (daten).isEmpty())
+                        {
+                            urteil = "ungueltig";
+                            stufe = "schema";
+                        }
                     }
                 }
                 const auto soll = fall.getProperty ("vertrag", {});
@@ -653,6 +696,16 @@ int main()
                 pruefe (urteil == sollUrteil && stufe == sollStufe, name + " (Urteil, Stufe)",
                         "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe
                             + (grund.isEmpty() ? juce::String() : " - " + grund));
+                // Etappe 5 (§7.2): bei eigenem Urteil `gueltig` der Wert am
+                // Zeiger `feld` - als Ganzzahl, nie als gerundete Naeherung.
+                if (urteil == "gueltig" && ! fall.getProperty ("wert", {}).isVoid())
+                {
+                    const auto w = amZeiger (daten, fall.getProperty ("feld", {}).toString());
+                    const auto sollWert = fall.getProperty ("wert", {}).toString();
+                    pruefe (ganzzahlGleich (w, sollWert), name + " (Wert)",
+                            "gelesen " + w.toString() + (w.isDouble() ? " (double)" : "")
+                                + ", soll " + sollWert);
+                }
             }
         const int soll = kopf.getProperty ("anzahl_je_nachricht", {}).getProperty ("evidence_snapshot", {});
         pruefe (gefahren == soll && gefahren > 0, "313/M-49 Zaehlpruefung B16: evidence_snapshot",

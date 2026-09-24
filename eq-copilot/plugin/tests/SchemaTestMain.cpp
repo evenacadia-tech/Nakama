@@ -565,8 +565,9 @@ void fahreKorpus (const nakama::vertrag::Schema& schema)
         // und las bei doppelten Namen den letzten Wert - die Engine urteilte
         // dann ueber ein anderes Dokument als Rust und Python. Die Klasse
         // `parser_lehnt_ab` muss hier fallen, jedes andere Fixture passieren
-        // (auch das tiefste gueltige). Die Engine liest bis Etappe 5 weiter aus
-        // `juce::JSON::parse`.
+        // (auch das tiefste gueltige). Seit Etappe 5 (R-313-5, M-62) liest die
+        // Engine die Werte aus DIESEM Lauf (`wertAlsVar`), wie das
+        // Quellenmodell - ein Lauf statt zwei, und kein JUCE-Zahlenleser.
         nakama::kanon::Wert streng;
         juce::String strengGrund;
         const bool strengGelesen = nakama::kanon::lies (
@@ -588,11 +589,7 @@ void fahreKorpus (const nakama::vertrag::Schema& schema)
             continue;
         }
 
-        bool gelesen = false;
-        const auto daten = lies ("eq-copilot/fixtures/v3/" + name, gelesen);
-        if (! gelesen)
-            { ++abweichungen; continue; }
-
+        const auto daten = nakama::vertrag::wertAlsVar (streng);
         const auto ist = schema.pruefe (daten);
         const bool sollGueltig = eintrag.getProperty ("urteil", {}).toString() == "gueltig";
 

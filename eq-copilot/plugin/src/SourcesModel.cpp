@@ -736,7 +736,9 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
     // Nachspann, Schlusskomma und unbekannte Escapes an und las bei einem
     // doppelten Namen still den letzten Wert - auch beim Discriminator und bei
     // `session_epoch`. `kanon::lies` lehnt all das ab, dazu mehr als 64
-    // Ebenen. Die Felder liest der JUCE-Leser dahinter bis Etappe 5 weiter.
+    // Ebenen. Seit NAK-313 Etappe 5 (R-313-5, M-61) lesen die Felder die Werte
+    // DIESES Laufs (`wertAlsVar`): ein Lauf statt zwei, und eine Ganzzahl in
+    // `.0`- oder `e`-Form ist fuer `nichtnegativeGanzzahl` dieselbe Zahl.
     const auto text = juce::String::fromUTF8 (json.data(), static_cast<int> (json.size()));
     nakama::kanon::Wert streng;
     juce::String strengGrund;
@@ -745,10 +747,9 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         fehler = "session_snapshot parser: " + strengGrund;
         return SnapshotErgebnis::ungueltig;
     }
-    juce::var root;
-    const auto parse = juce::JSON::parse (text, root);
+    const auto root = nakama::vertrag::wertAlsVar (streng);
     const auto* o = objekt (root);
-    if (parse.failed() || o == nullptr)
+    if (o == nullptr)
         return SnapshotErgebnis::ignoriert;
     const auto typ = o->getProperty ("type");
     if (! typ.isString() || typ.toString() != "session_snapshot")
@@ -1495,7 +1496,8 @@ SourcesModel::RuecknahmeErgebnis SourcesModel::uebernehmeEvidenzruecknahme (
         return RuecknahmeErgebnis::ungueltig;
     }
     // 🔑 NAK-313 R-313-6 (M-40): derselbe eine strenge Lauf wie am Snapshot.
-    // Scheitert er, nimmt die Nachricht keine Evidenz zurueck.
+    // Scheitert er, nimmt die Nachricht keine Evidenz zurueck. Die Werte
+    // kommen aus diesem Lauf (R-313-5, M-61), wie am Snapshot.
     const auto text = juce::String::fromUTF8 (json.data(), static_cast<int> (json.size()));
     nakama::kanon::Wert streng;
     juce::String strengGrund;
@@ -1504,10 +1506,9 @@ SourcesModel::RuecknahmeErgebnis SourcesModel::uebernehmeEvidenzruecknahme (
         fehler = "evidence_invalidate parser: " + strengGrund;
         return RuecknahmeErgebnis::ungueltig;
     }
-    juce::var root;
-    const auto parse = juce::JSON::parse (text, root);
+    const auto root = nakama::vertrag::wertAlsVar (streng);
     const auto* o = objekt (root);
-    if (parse.failed() || o == nullptr)
+    if (o == nullptr)
         return RuecknahmeErgebnis::ignoriert;
     const auto typ = o->getProperty ("type");
     if (! typ.isString() || typ.toString() != "evidence_invalidate")

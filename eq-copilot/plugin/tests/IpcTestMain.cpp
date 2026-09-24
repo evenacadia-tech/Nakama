@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -3339,6 +3340,481 @@ void nak289AllokationsfehlerTerminiert()
                     + " (71 terminate, 72 verschluckt, 74 keine Allokation)");
     }
 }
+
+//==============================================================================
+// NAK-313 Etappe 5a (R-313-5, Wire-Teil von R-313-4): der flache C++-Leser
+// mit seinem Ganzzahlleser. Die Zeilen M-55 bis M-60 und M-96 des Manifests
+// `docs/beweise/NAK-313.md`; je Tabelleneintrag ein Fall mit seiner Kennung.
+namespace nak313e5
+{
+/// Die Tabelle - Testeingabe, kein Produkteingang, deshalb mit JUCE gelesen.
+juce::var produkteingaenge (bool& ok)
+{
+    juce::var kopf;
+    const auto datei = wurzel().getChildFile ("eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json");
+    ok = datei.existsAsFile()
+      && juce::JSON::parse (datei.loadFileAsString(), kopf).wasOk()
+      && kopf.getProperty ("faelle", {}).isArray();
+    return kopf;
+}
+
+std::string feldText (const juce::var& v, const char* name)
+{
+    return v.getProperty (name, {}).toString().toStdString();
+}
+
+std::string ausHex (const juce::String& hex)
+{
+    juce::MemoryBlock b;
+    b.loadFromHexString (hex);
+    return std::string (static_cast<const char*> (b.getData()), b.getSize());
+}
+
+/// `wert` der Tabelle als Zahl - derselbe Weg in allen drei Sprachen (§7.2).
+bool wertAusText (const std::string& t, std::int64_t& aus)
+{
+    const auto r = std::from_chars (t.data(), t.data() + t.size(), aus);
+    return ! t.empty() && r.ec == std::errc() && r.ptr == t.data() + t.size();
+}
+
+/// Die Stufe des flachen Lesers (Manifest §7.2): liest `flachesJsonObjekt`
+/// die Bytes, faellt der Eintrag an der Feldregel, sonst am Parser.
+std::string stufeDesFlachenLesers (const std::string& bytes)
+{
+    std::vector<JsonFeld> felder;
+    return flachesJsonObjekt (bytes, felder) ? "feldregel" : "parser";
+}
+
+std::string pruefname (const juce::var& fall)
+{
+    const auto eingang = feldText (fall, "eingang");
+    const auto matrix = feldText (fall, "matrix");
+    std::string name;
+    if (matrix == "M-96")
+        name = "nicht_endlich_flach";
+    else if (eingang == "cpp_control_ack")
+        name = matrix == "M-56" ? "ack_revision_als_1punkt0" : "ack_wertstufe";
+    else
+        name = matrix == "M-60" ? "welcome_protocol_als_3punkt0" : "welcome_wertstufe";
+    if (eingang == "cpp_control_handshake")
+        name += " control";
+    else if (eingang == "cpp_telemetrie_handshake")
+        name += " telemetrie";
+    return "313/" + matrix + " " + name + " " + feldText (fall, "id");
+}
+
+/// Ein Eintrag von `cpp_control_ack`: der Testserver antwortet auf einen
+/// eingereihten P0 mit den Bytes (Schalter fuer rohe ACK-Bytes). Gemessen
+/// werden Urteil und Stufe, die Wirkung am In-Flight-Register und - bei
+/// eigenem Urteil `gueltig` - der Wert, den `commandAckArtLesen` liest.
+void ackEintrag (const juce::var& fall, const std::string& commandId)
+{
+    const auto name = pruefname (fall);
+    const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+    TestServer server (testPipeName ("nak313-ack"));
+    server.commandAckArt.store (0);            // allein das rohe ACK antwortet
+    server.ackRohAnhaengen (bytes);
+    server.starten();
+    ControlClient control ([&] {
+        ControlHello h;
+        h.adresse = testAdresse (hex32 ('d'));
+        return h;
+    }, server.pipeName());
+    control.start();
+    const bool verbunden = warteAuf (5000, [&] {
+        return control.snapshot().status == ControlClient::Status::verbunden;
+    });
+    const bool eingereiht = verbunden
+        && control.sendePersistenzP0 (userVerdictBefehl (commandId)) == PersistenzP0Ergebnis::eingereiht;
+    const bool gelesen = eingereiht && warteAuf (5000, [&] {
+        return server.commandAckEntschieden.load() >= 1 && control.snapshot().empfangen >= 1;
+    });
+    // Eine Freigabe laeuft im selben Lesezug wie der Zaehler; ohne sie bleibt
+    // der Auftrag stehen. Die Frist trennt beides.
+    warteAuf (500, [&] { return control.snapshot().inFlight == 0; });
+    const auto s = control.snapshot();
+    control.stop();
+    server.stoppen();
+
+    const bool frei = s.inFlight == 0 && s.inFlightErfolg == 1;
+    const bool offen = s.inFlight == 1 && s.inFlightErfolg == 0 && s.inFlightEndgueltigOhneErfolg == 0;
+    const std::string urteil = frei ? "gueltig" : "ungueltig";
+    const std::string stufe = frei ? std::string() : stufeDesFlachenLesers (bytes);
+    const auto soll = fall.getProperty ("produkt", {});
+    const auto sollUrteil = feldText (soll, "urteil");
+    const auto sollStufe = soll.getProperty ("stufe", {}).isString() ? feldText (soll, "stufe") : std::string();
+    const std::string zustand = "inFlight " + std::to_string (s.inFlight)
+        + ", Erfolg " + std::to_string (s.inFlightErfolg)
+        + ", endgueltig " + std::to_string (s.inFlightEndgueltigOhneErfolg);
+    pruefe (gelesen && (frei || offen) && urteil == sollUrteil && stufe == sollStufe,
+            name + " (Urteil, Stufe)",
+            "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe + " - " + zustand
+                + (gelesen ? "" : " - ACK nicht gelesen"));
+
+    // Der Direktaufruf - dieselben Bytes durch die Kernfunktion hinter
+    // `Ipc.cpp` (`commandAckHaeltVertrag`) und den Leser selbst.
+    std::string id;
+    std::uint64_t revision = 0;
+    const auto art = controlclient_intern::commandAckArtLesen (bytes, id, &revision);
+    GelesenesCommandAck gelesenesAck;
+    const bool haelt = commandAckHaeltVertrag (bytes, gelesenesAck);
+    bool gehalten = true;
+    std::string worte;
+    for (const auto& w : *fall.getProperty ("wirkung", {}).getArray())
+    {
+        const auto wort = w.toString().toStdString();
+        worte += (worte.empty() ? "" : ", ") + wort;
+        if (wort == "annahme")
+            gehalten = gehalten && frei && art == controlclient_intern::CommandAckArt::angewandt && haelt;
+        else if (wort == "kein_ack")
+            gehalten = gehalten && art == controlclient_intern::CommandAckArt::keinAck && ! haelt;
+        else if (wort == "kein_freigegebener_auftrag")
+            gehalten = gehalten && offen;
+        else
+            gehalten = false;   // fremde Wirkung: rot
+    }
+    pruefe (gehalten, name + " (Wirkung)", worte + " - " + zustand);
+
+    if (urteil == "gueltig" && ! fall.getProperty ("wert", {}).isVoid())
+    {
+        std::int64_t soll64 = -1;
+        const bool wertDa = wertAusText (feldText (fall, "wert"), soll64);
+        pruefe (wertDa && art == controlclient_intern::CommandAckArt::angewandt
+                    && revision == static_cast<std::uint64_t> (soll64),
+                name + " (Wert)",
+                "gelesen " + std::to_string (revision) + ", soll " + feldText (fall, "wert"));
+    }
+}
+
+/// Ein Eintrag von `cpp_control_handshake` oder `cpp_telemetrie_handshake`:
+/// der Testserver sendet die Bytes als Antwort auf das Hello der Art.
+void welcomeEintrag (const juce::var& fall, bool telemetrie)
+{
+    const auto name = pruefname (fall);
+    const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+    TestServer server (testPipeName (telemetrie ? "nak313-wt" : "nak313-wc"));
+    server.setzeWelcomeRoh (telemetrie, bytes);
+    server.starten();
+    bool verbunden = false;
+    std::string meldung;
+    if (telemetrie)
+    {
+        TelemetryClient t ([&] {
+            TelemetryHello h;
+            h.adresse = testAdresse (hex32 ('7'));
+            h.linkId = hex32 ('a');
+            h.challenge = hex32 ('b');
+            return h;
+        }, server.pipeName());
+        t.start();
+        warteAuf (2500, [&] {
+            const auto s = t.snapshot();
+            return s.status == TelemetryClient::Status::verbunden || ! s.letzterFehler.empty();
+        });
+        verbunden = t.snapshot().status == TelemetryClient::Status::verbunden;
+        meldung = t.snapshot().letzterFehler;
+        t.stop();
+    }
+    else
+    {
+        ControlClient c ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('c'));
+            return h;
+        }, server.pipeName());
+        c.start();
+        warteAuf (2500, [&] {
+            const auto s = c.snapshot();
+            return s.status == ControlClient::Status::verbunden || ! s.letzterFehler.empty();
+        });
+        verbunden = c.snapshot().status == ControlClient::Status::verbunden;
+        meldung = c.snapshot().letzterFehler;
+        c.stop();
+    }
+    server.stoppen();
+
+    // Die Stufe steht in `letzterFehler` (Manifest §7.2): die Meldungen nach
+    // dem Lesen sind die Feldregel, „welcome: kein flaches JSON-Objekt" der
+    // Parser.
+    const std::string urteil = verbunden ? "gueltig" : "ungueltig";
+    std::string stufe;
+    if (! verbunden)
+        stufe = meldung.rfind ("welcome: ", 0) == 0 ? "parser"
+              : (meldung == "unerwartete Antwort auf hello"
+                 || meldung == "unerwartete Antwort auf das Telemetry-Hello"
+                 || meldung == "reject haelt den Vertrag nicht") ? "feldregel"
+              : "unbekannt: " + meldung;
+    const auto soll = fall.getProperty ("produkt", {});
+    const auto sollUrteil = feldText (soll, "urteil");
+    const auto sollStufe = soll.getProperty ("stufe", {}).isString() ? feldText (soll, "stufe") : std::string();
+    pruefe (urteil == sollUrteil && stufe == sollStufe, name + " (Urteil, Stufe)",
+            "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe
+                + (meldung.empty() ? "" : " - " + meldung));
+
+    bool gehalten = true;
+    for (const auto& w : *fall.getProperty ("wirkung", {}).getArray())
+    {
+        const auto wort = w.toString();
+        if (wort == "annahme")        gehalten = gehalten && verbunden;
+        else if (wort == "ablehnung") gehalten = gehalten && ! verbunden;
+        else                          gehalten = false;
+    }
+    pruefe (gehalten, name + " (Wirkung)", verbunden ? "verbunden" : "nicht verbunden");
+
+    // Der Wert: `welcomeHaeltVertrag` liest `protocol` im Bereich 3 bis 3 - ein
+    // verbundener Client hat also genau den Wert 3 gelesen, und derselbe
+    // Direktaufruf bestaetigt es.
+    if (urteil == "gueltig" && ! fall.getProperty ("wert", {}).isVoid())
+    {
+        std::vector<JsonFeld> felder;
+        std::string linkId, challenge, epoch, version;
+        std::int64_t soll64 = -1;
+        pruefe (wertAusText (feldText (fall, "wert"), soll64) && soll64 == 3
+                    && flachesJsonObjekt (bytes, felder)
+                    && welcomeHaeltVertrag (felder, linkId, challenge, epoch, version),
+                name + " (Wert)", "soll " + feldText (fall, "wert"));
+    }
+}
+
+/// M-56, M-60, M-73, M-96: die drei Eingaenge des flachen Lesers an der
+/// Tabelle, mit Zaehlpruefung je Eingang.
+void tabelle()
+{
+    abschnitt ("NAK-313 Etappe 5 · der flache Leser an PRODUKTEINGAENGE-FAELLE.json");
+    bool ok = false;
+    const auto kopf = produkteingaenge (ok);
+    pruefe (ok, "313/M-73 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus");
+    if (! ok)
+        return;
+    const auto commandId = feldText (kopf.getProperty ("eingaenge", {})
+                                         .getProperty ("cpp_control_ack", {})
+                                         .getProperty ("einspeisung", {}), "command_id");
+    int ack = 0, control = 0, telemetrie = 0;
+    for (const auto& fall : *kopf.getProperty ("faelle", {}).getArray())
+    {
+        const auto eingang = feldText (fall, "eingang");
+        if (eingang == "cpp_control_ack")
+        {
+            ++ack;
+            ackEintrag (fall, commandId);
+        }
+        else if (eingang == "cpp_control_handshake")
+        {
+            ++control;
+            welcomeEintrag (fall, false);
+        }
+        else if (eingang == "cpp_telemetrie_handshake")
+        {
+            ++telemetrie;
+            welcomeEintrag (fall, true);
+        }
+    }
+    const auto anzahl = kopf.getProperty ("anzahl_je_eingang", {});
+    for (const auto& [eingang, gefahren] : { std::pair<const char*, int> { "cpp_control_ack", ack },
+                                             { "cpp_control_handshake", control },
+                                             { "cpp_telemetrie_handshake", telemetrie } })
+    {
+        const int soll = anzahl.getProperty (eingang, {});
+        pruefe (gefahren == soll && gefahren > 0,
+                std::string ("313/M-73 Zaehlpruefung B10: ") + eingang,
+                std::to_string (gefahren) + " gefahren, Kopf " + std::to_string (soll));
+    }
+}
+
+/// M-55: der Ganzzahlleser selbst, Literal fuer Literal im Bereich 0 bis
+/// 2^53-1. Kein Gleitkommaschritt: `NaN` und `Infinity` sind hier Texte, die
+/// die Grammatik ablehnt, keine Werte.
+void ganzzahlAusLiteralFaelle()
+{
+    abschnitt ("NAK-313 M-55 · ganzzahlAusLiteral");
+    constexpr std::int64_t max53 = 9007199254740991LL;
+    struct Fall { const char* literal; bool gueltig; std::int64_t wert; };
+    const Fall faelle[] = {
+        { "0", true, 0 }, { "-0", true, 0 }, { "1", true, 1 }, { "1.0", true, 1 },
+        { "1e0", true, 1 }, { "10E-1", true, 1 }, { "91.0", true, 91 }, { "1.00e2", true, 100 },
+        { "9007199254740991", true, max53 }, { "9007199254740991e0", true, max53 },
+        { "1.5", false, 0 }, { "1e", false, 0 }, { "01", false, 0 }, { "-1", false, 0 },
+        { "+1", false, 0 }, { "1.", false, 0 }, { "1e400", false, 0 },
+        { "9007199254740992", false, 0 }, { "9007199254740992.0", false, 0 },
+        { "18446744073709551616", false, 0 }, { "NaN", false, 0 }, { "Infinity", false, 0 },
+        { "-Infinity", false, 0 }, { "1e999", false, 0 }, { "", false, 0 },
+    };
+    for (const auto& f : faelle)
+    {
+        std::int64_t aus = -7;   // unberuehrt, solange der Leser ablehnt
+        const bool gelesen = nakama::wire::ganzzahlAusLiteral (f.literal, 0, max53, aus);
+        pruefe (gelesen == f.gueltig && (f.gueltig ? aus == f.wert : aus == -7),
+                std::string ("313/M-55 ganzzahl_aus_literal ") + (*f.literal ? f.literal : "(leer)"),
+                gelesen ? "gelesen " + std::to_string (aus) : std::string ("abgelehnt"));
+    }
+}
+
+/// Ein ControlClient an `server`, verbunden.
+bool verbinde (ControlClient& c)
+{
+    c.start();
+    return warteAuf (5000, [&] { return c.snapshot().status == ControlClient::Status::verbunden; });
+}
+
+/// Wie oft steht ein Text mit dieser Kennung und diesem Kopf in `p0Texte`?
+int texteMit (TestServer& server, const std::string& id, const std::string& teil)
+{
+    std::lock_guard<std::mutex> l (server.textMutex);
+    int n = 0;
+    for (const auto& t : server.p0Texte)
+        if (t.find ("\"command_id\":\"" + id + "\"") != std::string::npos
+            && t.find (teil) != std::string::npos)
+            ++n;
+    return n;
+}
+
+std::string ackText (const std::string& id, const std::string& ergebnis, const std::string& revision)
+{
+    std::string t = "{\"type\":\"command_ack\",\"command_id\":\"" + id + "\",\"ergebnis\":\""
+                  + ergebnis + "\",\"state_revision\":" + revision;
+    if (ergebnis == "angewandt")
+        t += ",\"state_hash\":\"" + std::string (64, 'd') + "\"";
+    return t + "}";
+}
+
+/// M-57: ein ACK mit 2^53 ist `keinAck` - der Auftrag bleibt im Register, und
+/// erst nach dem Reconnect gibt ein gueltiges ACK (`7`) ihn frei.
+void ackUeber2hoch53()
+{
+    abschnitt ("NAK-313 M-57 · ack_ueber_2hoch53_ist_kein_ack");
+    const auto id = hex32 ('6');
+    TestServer server (testPipeName ("nak313-m57"));
+    server.commandAckArt.store (1);            // nach dem rohen ACK: angewandt mit 7
+    server.ackRohAnhaengen (ackText (id, "angewandt", "9007199254740992"));
+    server.starten();
+    ControlClient control ([&] {
+        ControlHello h;
+        h.adresse = testAdresse (hex32 ('e'));
+        return h;
+    }, server.pipeName());
+    const bool gesendet = verbinde (control)
+        && control.sendePersistenzP0 (userVerdictBefehl (id)) == PersistenzP0Ergebnis::eingereiht;
+    const bool gelesen = gesendet && warteAuf (5000, [&] {
+        return server.commandAckEntschieden.load() >= 1 && control.snapshot().empfangen >= 1;
+    });
+    warteAuf (500, [&] { return control.snapshot().inFlight == 0; });
+    const auto s = control.snapshot();
+    pruefe (gelesen && s.inFlight == 1 && s.inFlightErfolg == 0 && s.inFlightEndgueltigOhneErfolg == 0,
+            "313/M-57 ack_ueber_2hoch53_ist_kein_ack (keinAck, keine Freigabe)",
+            "inFlight " + std::to_string (s.inFlight) + ", Erfolg " + std::to_string (s.inFlightErfolg)
+                + ", endgueltig " + std::to_string (s.inFlightEndgueltigOhneErfolg));
+    control.reconnect();
+    const bool frei = warteAuf (12000, [&] {
+        const auto t = control.snapshot();
+        return t.inFlight == 0 && t.inFlightErfolg == 1;
+    });
+    pruefe (frei && texteMit (server, id, "\"type\":\"user_verdict\"") == 2,
+            "313/M-57 ack_ueber_2hoch53_ist_kein_ack (Wiederholung nach dem Reconnect, erst 7 gibt frei)",
+            std::to_string (texteMit (server, id, "\"type\":\"user_verdict\"")) + " Texte mit der Kennung");
+    control.stop();
+    server.stoppen();
+}
+
+/// M-58: ein Ueberlauftext in der Revision ist `keinAck` - als `konflikt` ruft
+/// er den Haken nicht (keine 0 im Kopf), als `angewandt` gibt er nichts frei.
+void ueberlauftextIstKeinAck (bool konflikt)
+{
+    const std::string fall = konflikt ? "(a) konflikt" : "(b) angewandt";
+    abschnitt (konflikt ? "NAK-313 M-58 · ueberlauftext_ist_kein_ack (a)"
+                        : "NAK-313 M-58 · ueberlauftext_ist_kein_ack (b)");
+    const auto id = hex32 (konflikt ? '7' : '8');
+    TestServer server (testPipeName (konflikt ? "nak313-m58a" : "nak313-m58b"));
+    server.commandAckArt.store (1);
+    server.ackRohAnhaengen (ackText (id, konflikt ? "konflikt" : "angewandt", "18446744073709551616"));
+    server.starten();
+    ControlClient control ([&] {
+        ControlHello h;
+        h.adresse = testAdresse (hex32 (konflikt ? '1' : '2'));
+        return h;
+    }, server.pipeName());
+    std::atomic<int> hakenRufe { 0 };
+    control.setzeKonfliktWiederholungHook (
+        [&] (const std::string&, const std::string& json, std::uint64_t brokerRevision) -> std::string
+        {
+            ++hakenRufe;
+            return auftragMitBasisRevision (json, brokerRevision);   // wie Ipc.cpp
+        });
+    const auto auftrag = auftragMitBasisRevision (userVerdictBefehl (id), 5);
+    const bool gesendet = verbinde (control) && ! auftrag.empty()
+        && control.sendePersistenzP0 (auftrag) == PersistenzP0Ergebnis::eingereiht;
+    const bool gelesen = gesendet && warteAuf (5000, [&] {
+        return server.commandAckEntschieden.load() >= 1 && control.snapshot().empfangen >= 1;
+    });
+    warteAuf (500, [&] { return control.snapshot().inFlight == 0 || hakenRufe.load() > 0; });
+    const auto s = control.snapshot();
+    pruefe (gelesen && hakenRufe.load() == 0 && s.inFlightWiederholungen == 0
+                && texteMit (server, id, "\"base_revision\":0") == 0
+                && s.inFlight == 1 && s.inFlightErfolg == 0 && s.inFlightEndgueltigOhneErfolg == 0,
+            "313/M-58 ueberlauftext_ist_kein_ack " + fall + " (keinAck, kein Haken, keine 0)",
+            "Haken " + std::to_string (hakenRufe.load()) + ", Wiederholungen "
+                + std::to_string (s.inFlightWiederholungen) + ", inFlight " + std::to_string (s.inFlight)
+                + ", Erfolg " + std::to_string (s.inFlightErfolg) + ", Kopf 0: "
+                + std::to_string (texteMit (server, id, "\"base_revision\":0")));
+    control.reconnect();
+    const bool frei = warteAuf (12000, [&] {
+        const auto t = control.snapshot();
+        return t.inFlight == 0 && t.inFlightErfolg == 1;
+    });
+    pruefe (frei && texteMit (server, id, "\"base_revision\":5") == 2,
+            "313/M-58 ueberlauftext_ist_kein_ack " + fall
+                + " (nach dem Reconnect derselbe Text mit base_revision 5)",
+            std::to_string (texteMit (server, id, "\"base_revision\":5")) + " Texte mit Kopf 5");
+    control.stop();
+    server.stoppen();
+}
+
+/// M-59: der Konflikthaken erhaelt die GELESENE Revision - 5 wie 5.0.
+void konfliktkopfAusGelesenerRevision (const char* literal)
+{
+    const std::string name = std::string ("313/M-59 konfliktkopf_aus_gelesener_revision ") + literal;
+    abschnitt ("NAK-313 M-59 · konfliktkopf_aus_gelesener_revision");
+    const auto id = hex32 (literal[1] == '\0' ? '3' : '4');
+    TestServer server (testPipeName ("nak313-m59"));
+    server.commandAckArt.store (1);            // die Wiederholung bekommt angewandt
+    server.ackRohAnhaengen (ackText (id, "konflikt", literal));
+    server.starten();
+    ControlClient control ([&] {
+        ControlHello h;
+        h.adresse = testAdresse (hex32 ('5'));
+        return h;
+    }, server.pipeName());
+    control.setzeKonfliktWiederholungHook (
+        [&] (const std::string&, const std::string& json, std::uint64_t brokerRevision) -> std::string
+        {
+            return auftragMitBasisRevision (json, brokerRevision);   // wie Ipc.cpp
+        });
+    const bool gesendet = verbinde (control)
+        && control.sendePersistenzP0 (userVerdictBefehl (id)) == PersistenzP0Ergebnis::eingereiht;
+    const bool fertig = gesendet && warteAuf (8000, [&] {
+        const auto s = control.snapshot();
+        return s.inFlightErfolg == 1 && s.inFlight == 0;
+    });
+    const auto s = control.snapshot();
+    const int kopf5 = texteMit (server, id, "\"base_revision\":5");
+    pruefe (fertig && kopf5 == 1 && s.inFlightWiederholungen == 1,
+            name, "Texte mit Kopf 5: " + std::to_string (kopf5) + ", Wiederholungen "
+                      + std::to_string (s.inFlightWiederholungen) + ", Erfolg "
+                      + std::to_string (s.inFlightErfolg));
+    control.stop();
+    server.stoppen();
+}
+
+void alle()
+{
+    ganzzahlAusLiteralFaelle();
+    tabelle();
+    ackUeber2hoch53();
+    ueberlauftextIstKeinAck (true);
+    ueberlauftextIstKeinAck (false);
+    konfliktkopfAusGelesenerRevision ("5");
+    konfliktkopfAusGelesenerRevision ("5.0");
+}
+} // namespace nak313e5
 } // namespace
 
 //==============================================================================
@@ -3362,6 +3838,15 @@ int main (int argc, char** argv)
     if (argc == 2 && std::string (argv[1]) == "--nak246-d4")
     {
         nak246::nak246D4Dreiwert();
+        std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
+                  << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
+    // NAK-313 Etappe 5a: nur der Abschnitt des flachen Ganzzahllesers - fuer
+    // Gegenprobe und Rotlaeufe, damit die Rohausgabe die Faelle traegt.
+    if (argc == 2 && std::string (argv[1]) == "--nak313-e5")
+    {
+        nak313e5::alle();
         std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
                   << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;
         return fehler == 0 ? 0 : 1;
@@ -8110,6 +8595,10 @@ int main (int argc, char** argv)
 
     // NAK-289 Etappe 1: Allokationsfehler in noexcept-Funktionen (Kindprozesse).
     nak289AllokationsfehlerTerminiert();
+
+    // NAK-313 Etappe 5a: der flache Leser mit seinem Ganzzahlleser (M-55 bis
+    // M-60, M-73, M-96).
+    nak313e5::alle();
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")
               << " — " << geprueft << " Pruefungen, " << fehler << " Fehler" << std::endl;

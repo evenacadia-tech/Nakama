@@ -1,11 +1,14 @@
 #include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 — keine JucePlugin_*-Konstante im Kern
 #include "NakamaVertrag.h"
 #include "NakamaUtf8.h"
+#include "../core/ipc/WireZahl.h"   // NAK-313 R-313-5: die Zerlegung der Ganzzahlleser
+#include "../state/NakamaKanon.h"   // NAK-313 R-313-5: der Wert des strengen Laufs (wertAlsVar)
 
 #include <cmath>
 #include <cstring>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace nakama::vertrag
@@ -319,19 +322,29 @@ bool istHexziffer (juce::juce_wchar c) noexcept
 
     Hier wird deshalb nur mit kleinen ganzen Zahlen gerechnet, ohne jede
     Gleitkommaoperation.
+
+    Seit NAK-313 R-313-5 ist die Ganzzahlgrenze ein Parameter (v3 2^53-1, der
+    v2-Zahlriegel `INT64_MAX`), und Ganzzahligkeit und Grenze bestimmt
+    DIESELBE Zerlegung wie im flachen Leser (`core/ipc/WireZahl.h`): erst die
+    Stellenzahl, dann lexikographisch - auch fuer ein Literal ohne Bruch und
+    Exponent, das bis dahin `getLargeIntValue()` las (sicher nur bis 16 Stellen,
+    darueber klappt JUCE vorzeichenlos um).
 */
-bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
-                  const juce::String& expZiffern, bool expNegativ,
+bool zahlPruefen (std::string_view ganz, std::string_view bruch,
+                  std::string_view expZiffern, bool expNegativ,
                   const juce::String& lit, juce::String& fehler,
-                  bool schemaGanzzahlSichern)
+                  bool schemaGanzzahlSichern, std::uint64_t ganzzahlGrenze)
 {
-    if (bruch.isEmpty() && expZiffern.isEmpty())
+    const auto grenzeText = ganzzahlGrenze == static_cast<std::uint64_t> (sichereGanzzahl)
+                              ? juce::String ("2^53-1")
+                              : juce::String (static_cast<juce::uint64> (ganzzahlGrenze));
+    nakama::wire::Ganzzahlbetrag betrag;
+    if (bruch.empty() && expZiffern.empty())
     {
-        const bool zuGross = ganz.length() > 16
-            || (ganz.length() == 16 && ganz.getLargeIntValue() > sichereGanzzahl);
-        if (zuGross)
+        nakama::wire::ganzzahlBetrag (ganz, {}, 0, betrag);
+        if (nakama::wire::betragUeberGrenze (betrag, ganzzahlGrenze))
         {
-            fehler = "Ganzzahl ausserhalb 2^53-1: " + lit;
+            fehler = "Ganzzahl ausserhalb " + grenzeText + ": " + lit;
             return false;
         }
         return true;
@@ -340,28 +353,35 @@ bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
     // Der Exponent selbst: mehr als drei Ziffern liegen schon ausserhalb, und
     // so wird er auch nie gross genug, um irgendwo ueberzulaufen.
     auto ohneNull = expZiffern;
-    while (ohneNull.startsWithChar ('0'))
-        ohneNull = ohneNull.substring (1);
-    if (ohneNull.length() > 3)
+    while (! ohneNull.empty() && ohneNull.front() == '0')
+        ohneNull.remove_prefix (1);
+    if (ohneNull.size() > 3)
     {
         fehler = "Exponent ausserhalb +/-" + juce::String (dezGrenze) + ": " + lit.substring (0, 40);
         return false;
     }
-    auto exp = static_cast<int> (ohneNull.getLargeIntValue());
+    int exp = 0;
+    for (const char c : ohneNull)
+        exp = exp * 10 + (c - '0');
     if (expNegativ)
         exp = -exp;
 
-    const auto alle = ganz + bruch;
+    const auto alle = static_cast<int> (ganz.size() + bruch.size());
+    const auto ziffer = [ganz, bruch] (int i)
+    {
+        const auto k = static_cast<size_t> (i);
+        return k < ganz.size() ? ganz[k] : bruch[k - ganz.size()];
+    };
     int fuehrende = 0;
-    while (fuehrende < alle.length() && alle[fuehrende] == '0')
+    while (fuehrende < alle && ziffer (fuehrende) == '0')
         ++fuehrende;
-    if (fuehrende == alle.length())
+    if (fuehrende == alle)
         return true;                      // der Wert ist exakt 0
 
     // Die Endlichkeitsgrenze hat Vorrang vor der engeren Ganzzahlregel: so
     // bleibt ein 1e308-Ueberlauf in allen drei Beinen als Zahlenbereichsfehler
     // klassifiziert, statt zufaellig als Praezisionsfehler.
-    const auto dez = (ganz.length() - fuehrende - 1) + exp;
+    const auto dez = (static_cast<int> (ganz.size()) - fuehrende - 1) + exp;
     if (dez >= dezGrenze || dez <= -dezGrenze)
     {
         fehler = "Zahl ausserhalb +/-1e" + juce::String (dezGrenze) + ": " + lit.substring (0, 40);
@@ -370,59 +390,22 @@ bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
 
     // JSON Schema meint mit `integer` den mathematischen Wert, nicht nur ein
     // Literal ohne Punkt: auch 5.0 und 5e0 sind ganze Zahlen. Deshalb muss
-    // die 2^53-Regel alle exakt ganzzahligen Schreibweisen erfassen, bevor
+    // die Ganzzahlregel alle exakt ganzzahligen Schreibweisen erfassen, bevor
     // ein binary64-Parser z. B. 9007199254740992.0 still rundet.
-    const auto skala = exp - bruch.length(); // alle * 10^skala
-    bool istGanzzahl = false;
-    bool ganzzahlZuGross = false;
-    if (skala >= 0)
+    const bool istGanzzahl = nakama::wire::ganzzahlBetrag (ganz, bruch, exp, betrag);
+    if (istGanzzahl && nakama::wire::betragUeberGrenze (betrag, ganzzahlGrenze))
     {
-        istGanzzahl = true;
-        const auto signifikant = alle.substring (fuehrende);
-        const auto stellen = signifikant.length() + skala;
-        if (stellen > 16)
-        {
-            ganzzahlZuGross = true;
-        }
-        else if (stellen == 16)
-        {
-            auto normalisiert = signifikant;
-            for (int i = 0; i < skala; ++i)
-                normalisiert += '0';
-            ganzzahlZuGross = normalisiert.compare ("9007199254740991") > 0;
-        }
-    }
-    else
-    {
-        const auto abzuschneiden = -skala;
-        istGanzzahl = abzuschneiden <= alle.length();
-        for (int i = alle.length() - abzuschneiden;
-             istGanzzahl && i < alle.length(); ++i)
-            istGanzzahl = alle[i] == '0';
-
-        if (istGanzzahl)
-        {
-            auto normalisiert = alle.substring (0, alle.length() - abzuschneiden);
-            while (normalisiert.startsWithChar ('0'))
-                normalisiert = normalisiert.substring (1);
-            ganzzahlZuGross = normalisiert.length() > 16
-                || (normalisiert.length() == 16
-                    && normalisiert.compare ("9007199254740991") > 0);
-        }
-    }
-    if (ganzzahlZuGross)
-    {
-        fehler = "Ganzzahl ausserhalb 2^53-1: " + lit;
+        fehler = "Ganzzahl ausserhalb " + grenzeText + ": " + lit;
         return false;
     }
 
     // Nichtganzzahlige Dezimalwerte mit mehr als 15 signifikanten Ziffern
     // koennen schon beim binary64-Lesen auf eine Ganzzahl kippen. Dann wuerde
     // `type: integer` einen im Rohtext gebrochenen Wert akzeptieren. Exakte
-    // Ganzzahlen haben oben ihre eigene, weitere 2^53-Grenze.
-    auto signifikanteStellen = alle.length() - fuehrende;
+    // Ganzzahlen haben oben ihre eigene, weitere Grenze.
+    auto signifikanteStellen = alle - fuehrende;
     while (signifikanteStellen > 0
-           && alle[fuehrende + signifikanteStellen - 1] == '0')
+           && ziffer (fuehrende + signifikanteStellen - 1) == '0')
         --signifikanteStellen;
     if (schemaGanzzahlSichern && ! istGanzzahl && signifikanteStellen > 15)
     {
@@ -431,6 +414,13 @@ bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
     }
 
     return true;
+}
+
+/// Die Ziffern eines juce::String als Sicht - die Ziffern sind ASCII, ihr
+/// UTF-8 ist der Text selbst.
+std::string_view ziffernSicht (const juce::String& s)
+{
+    return { s.toRawUTF8(), s.getNumBytesAsUTF8() };
 }
 
 } // namespace
@@ -668,8 +658,9 @@ bool textriegel (const juce::String& text, juce::String& fehler,
                 }
             }
 
-            if (! zahlPruefen (ganz, bruch, expZiffern, expNegativ, teil (i, j), fehler,
-                               schemaGanzzahlSichern))
+            if (! zahlPruefen (ziffernSicht (ganz), ziffernSicht (bruch), ziffernSicht (expZiffern),
+                               expNegativ, teil (i, j), fehler, schemaGanzzahlSichern,
+                               static_cast<std::uint64_t> (sichereGanzzahl)))
                 return false;
             i = j;
             continue;
@@ -680,6 +671,151 @@ bool textriegel (const juce::String& text, juce::String& fehler,
 
     fehler.clear();
     return true;
+}
+
+bool zahlriegelBytes (const void* daten, size_t laenge, std::uint64_t ganzzahlGrenze,
+                      juce::String& fehler)
+{
+    fehler.clear();
+    if (daten == nullptr)
+    {
+        fehler = "kein Puffer";
+        return false;
+    }
+    const auto* z = static_cast<const char*> (daten);
+    const auto istZiffer = [] (char c) { return c >= '0' && c <= '9'; };
+    const auto istBuchstabe = [] (char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); };
+    const auto literal = [z] (size_t von, size_t bis)
+    {
+        return juce::String::fromUTF8 (z + von, static_cast<int> (bis - von));
+    };
+    const auto an = [] (size_t i) { return " an Byte " + juce::String (static_cast<juce::int64> (i)); };
+
+    size_t i = 0;
+    while (i < laenge)
+    {
+        const char c = z[i];
+        if (c == '"')
+        {
+            // Zeichenketten tragen keine Zahl; ein Backslash nimmt das
+            // naechste Byte mit, damit `\"` die Kette nicht beendet.
+            ++i;
+            while (i < laenge && z[i] != '"')
+                i += z[i] == '\\' ? 2 : 1;
+            ++i;
+            continue;
+        }
+        if (istBuchstabe (c) || (c == '-' && i + 1 < laenge && istBuchstabe (z[i + 1])))
+        {
+            // Literale, auch `-Infinity`, sind keine Zahl: sie prueft der
+            // strenge Lauf dahinter (M-96).
+            ++i;
+            while (i < laenge && istBuchstabe (z[i]))
+                ++i;
+            continue;
+        }
+        if (c == '-' || istZiffer (c))
+        {
+            size_t j = i + (c == '-' ? 1u : 0u);
+            const auto anfang = j;
+            while (j < laenge && istZiffer (z[j]))
+                ++j;
+            const std::string_view ganz (z + anfang, j - anfang);
+            if (ganz.empty())
+            {
+                fehler = "Zahl ohne Ziffern" + an (i);
+                return false;
+            }
+            if (ganz.size() > 1 && ganz[0] == '0')
+            {
+                fehler = "fuehrende Null in \"" + literal (i, j).substring (0, 20) + "\"" + an (i);
+                return false;
+            }
+            std::string_view bruch, expZiffern;
+            bool expNegativ = false;
+            if (j < laenge && z[j] == '.')
+            {
+                const auto a = ++j;
+                while (j < laenge && istZiffer (z[j]))
+                    ++j;
+                bruch = std::string_view (z + a, j - a);
+                if (bruch.empty())
+                {
+                    fehler = "Dezimalpunkt ohne Nachkommaziffern" + an (i);
+                    return false;
+                }
+            }
+            if (j < laenge && (z[j] == 'e' || z[j] == 'E'))
+            {
+                ++j;
+                if (j < laenge && (z[j] == '+' || z[j] == '-'))
+                {
+                    expNegativ = z[j] == '-';
+                    ++j;
+                }
+                const auto a = j;
+                while (j < laenge && istZiffer (z[j]))
+                    ++j;
+                expZiffern = std::string_view (z + a, j - a);
+                if (expZiffern.empty())
+                {
+                    fehler = "Exponent ohne Ziffern" + an (i);
+                    return false;
+                }
+            }
+            if (! zahlPruefen (ganz, bruch, expZiffern, expNegativ, literal (i, j), fehler,
+                               true, ganzzahlGrenze))
+                return false;
+            i = j;
+            continue;
+        }
+        ++i;
+    }
+    return true;
+}
+
+juce::var wertAlsVar (const nakama::kanon::Wert& wert)
+{
+    using Art = nakama::kanon::Wert::Art;
+    switch (wert.art)
+    {
+        case Art::null:
+            return {};
+        case Art::boolean:
+            return juce::var (wert.b);
+        case Art::zahl:
+        {
+            // Ganzzahlig im Bereich: `int64`, wie JUCE ein Literal ohne Punkt
+            // liest - dann nimmt ein Ganzzahlleser `1500.0` wie `1500`. Der
+            // strenge Lauf liefert nie NaN oder Inf (`Zahl nicht darstellbar`).
+            const double d = wert.zahl;
+            if (std::isfinite (d) && std::trunc (d) == d
+                && std::fabs (d) <= static_cast<double> (sichereGanzzahl))
+                return juce::var (static_cast<juce::int64> (d));
+            return juce::var (d);
+        }
+        case Art::text:
+            return juce::var (wert.text);
+        case Art::liste:
+        {
+            juce::Array<juce::var> liste;
+            liste.ensureStorageAllocated (static_cast<int> (wert.liste.size()));
+            for (const auto& element : wert.liste)
+                liste.add (wertAlsVar (element));
+            return juce::var (liste);
+        }
+        case Art::objekt:
+        {
+            // Leere Schluessel haelt der Textriegel vorher ab (Regel 7).
+            auto* objekt = new juce::DynamicObject();
+            const juce::var ergebnis (objekt);
+            for (size_t k = 0; k < wert.objektSchluessel.size() && k < wert.objektWerte.size(); ++k)
+                objekt->setProperty (juce::Identifier (wert.objektSchluessel[k]),
+                                     wertAlsVar (wert.objektWerte[k]));
+            return ergebnis;
+        }
+    }
+    return {};
 }
 
 // ------------------------------------------------------------------ Ladelauf

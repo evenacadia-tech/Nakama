@@ -206,8 +206,13 @@ bool welcomeHaeltVertrag (const std::vector<JsonFeld>& felder,
     std::string typ, protokoll;
     if (! jsonText (felder, "type", typ) || typ != "welcome")
         return false;
-    // `protocol` ist im Schema eine ZAHL mit dem Wert 3, kein String "3".
-    if (! jsonLiteral (felder, "protocol", protokoll) || protokoll != "3")
+    // `protocol` ist im Schema eine ZAHL mit dem Wert 3, kein String "3" -
+    // und seit NAK-313 R-313-5 (M-60) in jeder Schreibweise dieses Werts
+    // (`3`, `3.0`, `3e0`): gelesen wird der WERT im Bereich 3 bis 3, nicht der
+    // Text.
+    std::int64_t protokollWert = 0;
+    if (! jsonLiteral (felder, "protocol", protokoll)
+        || ! nakama::wire::ganzzahlAusLiteral (protokoll, 3, 3, protokollWert))
         return false;
     if (! jsonText (felder, "broker_version", brokerVersion)
         || brokerVersion.empty() || brokerVersion.size() > 64)

@@ -78,18 +78,6 @@ inline bool istHex64 (const std::string& s) noexcept
     return true;
 }
 
-inline bool nichtnegativeJsonGanzzahl (const std::string& s) noexcept
-{
-    if (s == "0")
-        return true;
-    if (s.empty() || s.front() < '1' || s.front() > '9')
-        return false;
-    for (char c : s)
-        if (c < '0' || c > '9')
-            return false;
-    return true;
-}
-
 /// Die achtzehn Fehlercodes des Vertrags — `$defs/fehlercode` in
 /// `eq-copilot/schemas/v3/eq-ipc-v3.schema.json` (Enum Zeilen 817-834):
 /// zwoelf der Fassung 1 und sechs der Fassung 2 (SONDE-013 Nacharbeit 1
@@ -208,12 +196,18 @@ inline CommandAckArt commandAckArtLesen (const std::string& text, std::string& c
 {
     std::vector<JsonFeld> felder;
     std::string typ, ergebnis, revision;
+    // 🔑 NAK-313 R-313-4, R-313-5 (M-56 bis M-58): `state_revision` ist eine
+    // Ganzzahl von 0 bis 2^53-1 in jeder Schreibweise (`7`, `7.0`, `7e0`,
+    // `-0`). Ein Wert darueber oder ein Literal, das keine solche Zahl ist,
+    // macht die Antwort zu `keinAck` - nie Revision 0, nie ein freigegebener
+    // Auftrag.
+    std::int64_t revisionWert = 0;
     if (! flachesJsonObjekt (text, felder)
         || ! jsonText (felder, "type", typ) || typ != "command_ack"
         || ! jsonText (felder, "command_id", commandId) || ! istHex32 (commandId)
         || ! jsonText (felder, "ergebnis", ergebnis)
         || ! jsonLiteral (felder, "state_revision", revision)
-        || ! nichtnegativeJsonGanzzahl (revision))
+        || ! nakama::wire::ganzzahlAusLiteral (revision, 0, nakama::wire::kGanzzahlMax, revisionWert))
         return CommandAckArt::keinAck;
 
     // `event_uuid` ist intern. Auch ein ansonsten plausibles ACK darf das
@@ -238,16 +232,7 @@ inline CommandAckArt commandAckArtLesen (const std::string& text, std::string& c
     // Genau sie traegt der frische Kopf einer Wiederholung - keine geratene
     // und keine lokal hochgezaehlte.
     if (revisionAus != nullptr)
-    {
-        try
-        {
-            *revisionAus = std::stoull (revision);
-        }
-        catch (...)
-        {
-            *revisionAus = 0;
-        }
-    }
+        *revisionAus = static_cast<std::uint64_t> (revisionWert);
 
     CommandAckArt art = CommandAckArt::keinAck;
     if (ergebnis == "angewandt")                  art = CommandAckArt::angewandt;

@@ -23,6 +23,7 @@
 #include "analysis/FeatureEngine.h"
 
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <iomanip>
@@ -420,12 +421,120 @@ bool sichtUnveraendert (const Model::Sicht& a, const Model::Sicht& b, juce::Stri
     return f.isEmpty();
 }
 
+/// Die Einspeisung des Registers: ein Modell mit abonnierter Sitzung und
+/// uebernommenem Basis-Snapshot.
+struct Einspeisung
+{
+    std::string binding, session, mainId, basis;
+};
+
+bool eingespeist (Model& m, const Einspeisung& e, Zeitpunkt t0, juce::String& grund)
+{
+    m.beginneSubscription (e.binding, e.session, e.mainId);
+    return m.uebernehmeSessionSnapshot (e.basis, t0, grund) == Model::SnapshotErgebnis::uebernommen;
+}
+
+/// Ersetzt das Zahlliteral hinter `schluessel` (bis Komma, Zeilenende oder
+/// Klammer) - nur fuer die Wertproben der Ruecknahme unten.
+std::string literalErsetzen (const std::string& text, const std::string& schluessel,
+                             const std::string& neu)
+{
+    const auto a = text.find (schluessel);
+    if (a == std::string::npos)
+        return {};
+    const auto von = a + schluessel.size();
+    const auto bis = text.find_first_of (",\n}", von);
+    return text.substr (0, von) + neu + text.substr (bis);
+}
+
+/// NAK-313 Etappe 5 (M-61, §7.2): der Wert, den das Quellenmodell aus dem
+/// strengen Lauf liest. Der Snapshot haelt ihn in der Zeile; die Ruecknahme
+/// speichert ihren Bereich nicht, sie ORDNET ihn nur - ihr Wert zeigt sich
+/// deshalb an ihrer Ordnungsregel: mit der Gegengrenze gleich dem Wert nimmt
+/// sie an, eine Stelle daneben lehnt sie ab. Beide Proben aendern allein das
+/// Literal der Gegengrenze, nie das gemessene.
+bool wertGelesen (const juce::var& fall, const std::string& bytes, bool snapshot,
+                  const Model::Sicht& nachher, const Einspeisung& ein, Zeitpunkt t0,
+                  juce::String& was)
+{
+    std::int64_t soll = -1;
+    const auto wertText = fall.getProperty ("wert", {}).toString().toStdString();
+    const auto r = std::from_chars (wertText.data(), wertText.data() + wertText.size(), soll);
+    if (r.ec != std::errc() || r.ptr != wertText.data() + wertText.size())
+    {
+        was = "wert ist kein Dezimaltext";
+        return false;
+    }
+    const auto feld = fall.getProperty ("feld", {}).toString();
+    if (snapshot)
+    {
+        if (nachher.quellen.size() != 1)
+        {
+            was = juce::String ((int) nachher.quellen.size()) + " Zeilen statt einer";
+            return false;
+        }
+        const auto& z = nachher.quellen.front();
+        if (feld == "/mitglieder/0/frische/letzter_kontakt_ms")
+        {
+            was = "controlAlterMs " + juce::String ((juce::int64) z.controlAlterMs);
+            return z.controlAlterMs == static_cast<std::uint64_t> (soll);
+        }
+        if (feld == "/mitglieder/0/probe_descriptor/host_mixer_index")
+        {
+            was = "hostMixerIndex " + juce::String ((juce::int64) z.hostMixerIndex)
+                + (z.hostMixerIndexVorhanden ? "" : " (nicht vorhanden)");
+            return z.hostMixerIndexVorhanden && z.hostMixerIndex == static_cast<std::uint64_t> (soll);
+        }
+        was = "dieses Bein beobachtet " + feld + " nicht";
+        return false;
+    }
+    const bool start = feld == "/umfang/sample_start";
+    if (! start && feld != "/umfang/sample_end")
+    {
+        was = "dieses Bein beobachtet " + feld + " nicht";
+        return false;
+    }
+    const std::string gegen = start ? "\"sample_end\": " : "\"sample_start\": ";
+    const auto probe = [&] (std::int64_t grenze)
+    {
+        Model m;
+        juce::String g;
+        if (! eingespeist (m, ein, t0, g))
+            return Model::RuecknahmeErgebnis::ignoriert;
+        const auto text = literalErsetzen (bytes, gegen, std::to_string (grenze));
+        return text.empty() ? Model::RuecknahmeErgebnis::ignoriert
+                            : m.uebernehmeEvidenzruecknahme (text, g);
+    };
+    const auto gleich = probe (soll);
+    const auto daneben = probe (start ? soll - 1 : soll + 1);
+    was = juce::String ("Gegengrenze ") + (start ? "sample_end " : "sample_start ")
+        + juce::String (soll) + ": " + (gleich == Model::RuecknahmeErgebnis::uebernommen ? "an" : "ab")
+        + ", " + juce::String (start ? soll - 1 : soll + 1) + ": "
+        + (daneben == Model::RuecknahmeErgebnis::uebernommen ? "an" : "ab");
+    return gleich == Model::RuecknahmeErgebnis::uebernommen
+        && daneben == Model::RuecknahmeErgebnis::ungueltig;
+}
+
+juce::String pruefname313 (const juce::String& matrix, bool snapshot, const juce::String& id)
+{
+    juce::String name;
+    if (matrix == "M-41")      name = "gleicher_schluessel_zwei_objekte_gueltig";
+    else if (matrix == "M-39") name = "snapshot_parser_lehnt_ab";
+    else if (matrix == "M-40") name = "ruecknahme_parser_lehnt_ab";
+    else if (matrix == "M-61") name = "ganzzahl_in_1punkt0_form";
+    else if (matrix == "M-96") name = snapshot ? "nicht_endlich_snapshot" : "nicht_endlich_ruecknahme";
+    else                       name = snapshot ? "snapshot_wertstufe" : "ruecknahme_wertstufe";
+    return "313/" + matrix + " " + name + " " + id;
+}
+
 /// M-39, M-40, M-41 und die Zaehlpruefung aus M-49: jeder Eintrag von
 /// `cpp_sources_snapshot` und `cpp_sources_ruecknahme` als eigener Fall
 /// gegen `produkt` - direkt am Leser mit der aktiven Fassung, in einer
 /// abonnierten Sitzung mit uebernommenem Basis-Snapshot (Einspeisung aus dem
 /// Register der Tabelle). Je Eintrag zwei Pruefungen: Urteil und Stufe, dann
 /// die Wirkung (keine Teilmutation heisst: dieselbe Sicht davor und danach).
+/// Seit Etappe 5 (M-61, M-73, M-96) bei eigenem Urteil `gueltig` dazu der
+/// Wert aus `wert`.
 void nak313Produkteingaenge (Zeitpunkt t0)
 {
     bool ok = false;
@@ -433,12 +542,13 @@ void nak313Produkteingaenge (Zeitpunkt t0)
     pruefe (ok, "313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus");
     if (! ok)
         return;
-    const auto ein = kopf.getProperty ("eingaenge", {}).getProperty ("cpp_sources_snapshot", {})
-                         .getProperty ("einspeisung", {});
-    const auto binding = ein.getProperty ("project_binding_id", {}).toString().toStdString();
-    const auto session = ein.getProperty ("session_epoch", {}).toString().toStdString();
-    const auto mainId = ein.getProperty ("eigenes_main", {}).toString().toStdString();
-    const auto basis = fixture (ein.getProperty ("basis_fixture", {}).toString().toRawUTF8());
+    const auto registerEin = kopf.getProperty ("eingaenge", {}).getProperty ("cpp_sources_snapshot", {})
+                                 .getProperty ("einspeisung", {});
+    const Einspeisung ein {
+        registerEin.getProperty ("project_binding_id", {}).toString().toStdString(),
+        registerEin.getProperty ("session_epoch", {}).toString().toStdString(),
+        registerEin.getProperty ("eigenes_main", {}).toString().toStdString(),
+        fixture (registerEin.getProperty ("basis_fixture", {}).toString().toRawUTF8()) };
 
     int snapshots = 0, ruecknahmen = 0;
     for (const auto& fall : *kopf.getProperty ("faelle", {}).getArray())
@@ -449,22 +559,11 @@ void nak313Produkteingaenge (Zeitpunkt t0)
             continue;
         ++(snapshot ? snapshots : ruecknahmen);
         const auto matrix = fall.getProperty ("matrix", {}).toString();
-        const auto name = "313/" + matrix + " "
-            + (matrix == "M-41" ? juce::String ("gleicher_schluessel_zwei_objekte_gueltig")
-               : snapshot       ? juce::String ("snapshot_parser_lehnt_ab")
-                                : juce::String ("ruecknahme_parser_lehnt_ab"))
-            + " " + fall.getProperty ("id", {}).toString();
-        if (! fall.getProperty ("wert", {}).isVoid())
-        {
-            pruefe (false, (name + " (Wert)").toRawUTF8(), "dieses Bein vergleicht noch keine Werte");
-            continue;
-        }
+        const auto name = pruefname313 (matrix, snapshot, fall.getProperty ("id", {}).toString());
 
         Model m;
-        m.beginneSubscription (binding, session, mainId);
         juce::String basisGrund;
-        const bool basisDa = m.uebernehmeSessionSnapshot (basis, t0, basisGrund)
-                          == Model::SnapshotErgebnis::uebernommen;
+        const bool basisDa = eingespeist (m, ein, t0, basisGrund);
         const auto vorher = m.sicht();
         const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
         juce::String lesegrund;
@@ -514,6 +613,15 @@ void nak313Produkteingaenge (Zeitpunkt t0)
         pruefe (gehalten, (name + " (Wirkung)").toRawUTF8(),
                 worte.joinIntoString (", ") + " - Sicht: " + abweichung + ", Zeilen "
                     + juce::String ((int) nachher.quellen.size()));
+
+        // Etappe 5 (§7.2): bei eigenem Urteil `gueltig` der Wert.
+        if (urteil == "gueltig" && ! fall.getProperty ("wert", {}).isVoid())
+        {
+            juce::String was;
+            const bool wertOk = wertGelesen (fall, bytes, snapshot, nachher, ein, t0, was);
+            pruefe (wertOk, (name + " (Wert)").toRawUTF8(),
+                    was + ", soll " + fall.getProperty ("wert", {}).toString());
+        }
     }
     const auto anzahl = kopf.getProperty ("anzahl_je_eingang", {});
     const int sollSnapshots = anzahl.getProperty ("cpp_sources_snapshot", {});
@@ -524,6 +632,51 @@ void nak313Produkteingaenge (Zeitpunkt t0)
     pruefe (ruecknahmen == sollRuecknahmen && ruecknahmen > 0,
             "313/M-49 Zaehlpruefung B13: cpp_sources_ruecknahme",
             juce::String (ruecknahmen) + " gefahren, Kopf " + juce::String (sollRuecknahmen));
+}
+
+/// NAK-313 M-61 (Etappe 5): die Ruecknahme mit BEIDEN Grenzen in
+/// Nicht-Zifferntext-Form und ihre Gegenprobe der Ordnung. Der Leser ordnet
+/// den Bereich nur; eine vertauschte Ordnung in derselben Schreibweise muss er
+/// ablehnen - sonst laese er die Werte nicht, sondern etwas anderes.
+void nak313M61Ruecknahme (Zeitpunkt t0)
+{
+    bool ok = false;
+    const auto kopf = produkteingaenge (ok);
+    if (! ok)
+        return;
+    const auto r = kopf.getProperty ("eingaenge", {}).getProperty ("cpp_sources_ruecknahme", {})
+                       .getProperty ("einspeisung", {});
+    const Einspeisung ein {
+        r.getProperty ("project_binding_id", {}).toString().toStdString(),
+        r.getProperty ("session_epoch", {}).toString().toStdString(),
+        r.getProperty ("eigenes_main", {}).toString().toStdString(),
+        fixture (r.getProperty ("basis_fixture", {}).toString().toRawUTF8()) };
+    const auto bereich = [] (const char* von, const char* bis)
+    {
+        return std::string (R"({"type":"evidence_invalidate","grund":"sequenzluecke","umfang":)"
+                            R"({"art":"sample_range","sample_start":)") + von
+             + R"(,"sample_end":)" + bis + "}}";
+    };
+    {
+        Model m;
+        juce::String g;
+        const bool da = eingespeist (m, ein, t0, g);
+        const auto vorher = m.sicht().evidenzRuecknahmen;
+        const auto e = m.uebernehmeEvidenzruecknahme (bereich ("1024.0", "2048e0"), g);
+        const auto s = m.sicht();
+        pruefe (da && e == Model::RuecknahmeErgebnis::uebernommen
+                    && s.evidenzRuecknahmen == vorher + 1 && s.ruecknahmeUmfang == "sample_range",
+                "313/M-61 ruecknahme_1024punkt0_bis_2048e0_wie_zifferntext", g);
+    }
+    {
+        Model m;
+        juce::String g;
+        const bool da = eingespeist (m, ein, t0, g);
+        const auto e = m.uebernehmeEvidenzruecknahme (bereich ("2048.0", "1024e0"), g);
+        pruefe (da && e == Model::RuecknahmeErgebnis::ungueltig
+                    && g == "evidence_invalidate sample range is not ordered",
+                "313/M-61 ruecknahme_vertauschte_ordnung_ungueltig", g);
+    }
 }
 
 } // namespace
@@ -540,6 +693,7 @@ int main()
     // Snapshot ablehnt (Rotbeweis M-41), laesst sie abstuerzen, und die
     // gepufferte Ausgabe der Tabellenfaelle ginge dabei verloren.
     nak313Produkteingaenge (t0);
+    nak313M61Ruecknahme (t0);
     std::cout << std::flush;
 
     const auto pair = p2Fixture ("loudness-i-pair");

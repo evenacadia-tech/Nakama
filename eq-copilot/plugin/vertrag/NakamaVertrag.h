@@ -19,6 +19,12 @@
 #include <juce_core/juce_core.h>
 
 #include <cstddef>
+#include <cstdint>
+
+namespace nakama::kanon
+{
+struct Wert;
+}
 
 namespace nakama::vertrag
 {
@@ -119,6 +125,38 @@ bool textriegel (const juce::String& text, juce::String& fehler,
 */
 bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler,
                       bool schemaGanzzahlSichern = true);
+
+/** Die Ganzzahlgrenze des v2-Vertrags: `INT64_MAX` (NAK-313 R-313-5, M-91). */
+inline constexpr std::uint64_t v2Ganzzahlgrenze = 9223372036854775807ULL;
+
+/** Der Zahlriegel des v2-Clients (NAK-313 R-313-5, T3-03-08; M-91, M-93,
+    M-94, M-96).
+
+    Prueft jede Zahl ausserhalb von Zeichenketten nach den Regeln 1 bis 3 des
+    Textriegels, mit `ganzzahlGrenze` statt 2^53-1 in Regel 2: keine
+    fuehrende Null, eine mathematische Ganzzahl hoechstens so gross wie die
+    Grenze, ein echter Bruch mit hoechstens 15 signifikanten Ziffern, Betrag
+    unter 1e308, ein Exponent mit Ziffern und hoechstens drei davon. Gerechnet
+    wird nur mit Ziffern (`core/ipc/WireZahl.h`); JUCEs Zahlenleser sieht den
+    Text erst danach - er akkumuliert `9223372036854775808` und
+    `2e4294967296` ohne Schranke. Alles andere (Literale, Escapes, Grammatik)
+    prueft der strenge Lauf dahinter; ein `-` vor einem Buchstaben ist hier
+    keine Zahl.
+
+    @returns true, wenn jede Zahl haelt; sonst false mit dem Grund in `fehler`.
+*/
+bool zahlriegelBytes (const void* daten, size_t laenge, std::uint64_t ganzzahlGrenze,
+                      juce::String& fehler);
+
+/** Der Wert aus dem strengen Lauf als `juce::var` (NAK-313 R-313-5; M-61, M-62).
+
+    Objekte und Listen werden uebertragen, `null` wird `juce::var()`. Eine
+    Zahl wird `juce::int64`, wenn sie endlich und ganzzahlig ist und ihr Betrag
+    hoechstens 2^53-1 betraegt - so liest ein Ganzzahlfeld `1500.0` als 1500 -,
+    sonst `double`. Ein Lauf statt zwei: das Quellenmodell und B3c lesen damit
+    dieselben Werte, die `kanon::lies` geprueft hat, statt `juce::JSON::parse`
+    ein zweites Mal zu fragen. */
+juce::var wertAlsVar (const nakama::kanon::Wert& wert);
 
 class Schema
 {

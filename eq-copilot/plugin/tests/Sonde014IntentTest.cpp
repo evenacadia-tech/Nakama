@@ -1875,6 +1875,46 @@ void m81()
 {
     abschnitt ("NAK-313 M-81  eintragsrevision_haelt_an_der_grenze");
 
+    // Schritt auf 2^53-1 (Nachtrag zu M-81, Manifest §32): ein Eintrag eine
+    // Stufe unter dem Rand, der Bestand bei 1. Bestand 1 trennt die
+    // Eintragsschranke von der Bestandsschranke - den Schritt kann nur die
+    // Eintragsschranke verweigern. Dirty zaehlt ab dem Stand nach dem Laden.
+    {
+        const auto knapp = baumMitEigenschaft ("source_intents_v1",
+            juce::var (liste ({ kQuelleA, juce::String(), "fuehrt", juce::var (kRand - 1), "user",
+                                juce::var (1.0) })));
+        auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+        p->setStateInformation (knapp.getData(), (int) knapp.getSize());
+        DirtyZaehler dirty;
+        p->addListener (&dirty);
+        const auto vor = p->sourceIntents();
+        const bool vorbedingung = ! p->stateNurLesen() && vor.size() == 1 && vor[0].revision == kRand - 1
+                               && p->intentBestandRevision() == 1;
+        const bool ok = p->setzeQuellenrolle (kQuelleA, {}, state::Rolle::traegt,
+                                              state::IntentHerkunft::user, 1.0);
+        const auto nach = p->sourceIntents();
+        const auto bestand = p->intentBestandRevision();
+        const int dirtyNach = dirty.nonParam;
+        const bool schritt = nach.size() == 1 && nach[0].revision == kRand
+                          && nach[0].rolle == state::Rolle::traegt;
+        juce::MemoryBlock nachSchritt;
+        p->getStateInformation (nachSchritt);
+        auto neu = std::make_unique<EqCopilotProcessor>();
+        neu->setStateInformation (nachSchritt.getData(), (int) nachSchritt.getSize());
+        const auto neuIntents = neu->sourceIntents();
+        const bool reloadSchreibbar = ! neu->stateNurLesen() && neuIntents.size() == 1
+                                   && neuIntents[0].revision == kRand
+                                   && neuIntents[0].rolle == state::Rolle::traegt;
+        pruefe (vorbedingung && ok && schritt && bestand == 2 && dirtyNach == 1 && reloadSchreibbar,
+                "313/M-81 eintragsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1 "
+                "mit der neuen Rolle, Bestand 1 auf 2, 1 Host-Dirty, Reload schreibbar",
+                juce::String (ok ? "angenommen" : "abgewiesen") + ", Eintrag "
+                    + (nach.empty() ? juce::String ("-") : juce::String (nach[0].revision)) + ", Bestand "
+                    + juce::String (bestand) + ", " + juce::String (dirtyNach) + " Dirty, Reload "
+                    + (neu->stateNurLesen() ? "read-only: " + neu->holeStateGrund() : juce::String ("schreibbar")));
+        p->removeListener (&dirty);
+    }
+
     // Ein Eintrag am Rand, der Bestand darunter (intent_revision_v1 = 1).
     const auto amRand = baumMitEigenschaft ("source_intents_v1",
         juce::var (liste ({ kQuelleA, juce::String(), "fuehrt", juce::var (kRand), "user", juce::var (1.0) })));

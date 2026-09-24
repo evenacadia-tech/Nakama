@@ -25,6 +25,12 @@ Strukturell kaputte Puffer (falsche Dateikennung, abgeschnitten, zerstoerter
 Offset) kann flatc nicht erzeugen — die entstehen als BYTE-MUTATION eines
 gueltigen Puffers und stehen unten in ROHE_MUTATIONEN.
 
+Seit NAK-313 (R-313-8, geschlossene Zieladresse) zwei weitere Wege: ein
+GUELTIGER Puffer als erklaerte Bytemutation (gueltige_mutationen, eine
+verlaengerte Adress-VTable mit leerem Slot 5) und ein Puffer aus einer
+SCHEMAVARIANTE im Temporaerordner (schema_mit_zusatzfeld, Adresse plus
+Feld-ID 5), uebersetzt mit demselben gepinnten flatc.
+
 Aufruf:
     py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py
     py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py --pruefen
@@ -1177,6 +1183,88 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
     ]
 
 
+# ----------------------------- NAK-313 R-313-8: die geschlossene Zieladresse
+
+# Die Adresse ist nicht additiv (Entwurf §33.1): ein belegter Slot jenseits
+# von Feld-ID 4 ist eine unbekannte Zieladresse, und beide Leser melden ihn
+# als adresse_zusatzfeld (NAK-313 E-313-13). Zwei Fixtures halten die Regel
+# fest - ein Puffer MIT belegtem Slot 5 und einer mit einem laengeren
+# VTable-Eintrag, dessen Slot 5 leer ist (fehlt heisst 0, und 0 ist zulaessig).
+
+ADRESSE_LETZTES_FELD = "  runtime_nonce:string (id: 4, required);\n"
+ZUSATZ_ZEILE = "  zusatz:string (id: 5);\n"
+
+
+def schema_mit_zusatzfeld(tmp: pathlib.Path) -> pathlib.Path:
+    """Eine Kopie des .fbs im Temporaerordner, in table Adresse um die Zeile
+    zusatz:string (id: 5) ergaenzt - uebersetzt mit DEMSELBEN gepinnten flatc.
+    Nur so entsteht ein Puffer, den ein Sender mit erweiterter Adresse
+    schriebe; ins Repo kommt nur der Puffer, nie die Variante."""
+    text = SCHEMA.read_text(encoding="utf-8")
+    if text.count(ADRESSE_LETZTES_FELD) != 1:
+        raise SystemExit("Schemavariante: das letzte Adressfeld steht nicht genau einmal im .fbs")
+    variante = tmp / "nakama_telemetry_v1_zusatzfeld.fbs"
+    variante.write_text(text.replace(ADRESSE_LETZTES_FELD, ADRESSE_LETZTES_FELD + ZUSATZ_ZEILE),
+                        encoding="utf-8", newline="")
+    return variante
+
+
+def zusatzfeld_faelle() -> list[tuple[str, dict, list[dict], str]]:
+    """(name, daten, verstoesse, warum) - uebersetzt mit der Schemavariante."""
+    e = eintrag()
+    e["quelle"]["zusatz"] = "unbekannte Zieladresse"
+    return [
+        ("adresse-zusatzfeld-id5", batch(e), [v("/eintraege/0/quelle", "adresse_zusatzfeld")],
+         "der Grundbatch live-64-band mit gesetztem Feld-ID 5 in der Adresse (Schemavariante "
+         "zusatz:string (id: 5)). Der Verifier kennt Slot 5 nicht und laesst ihn stehen; erst "
+         "der Slotriegel beider Leser lehnt ab, und der Broker reicht den Batch nicht weiter"),
+    ]
+
+
+def adresse_vtable_slot5_leer(roh: bytes) -> bytes:
+    """Haengt eine Kopie der Adress-VTable des Eintrags 0 mit Laenge 16 an den
+    Puffer an und setzt den soffset_t der Adresstabelle auf sie.
+
+    Die Kopie traegt dieselbe Objektgroesse und dieselben fuenf Slots, Slot 14
+    (Feld-ID 5) ist 0. Die alte VTable bleibt stehen; die Tabelle zeigt nur
+    woandershin. Ein Leser, der die VTable-Laenge statt des Eintrags fragte,
+    hielte diesen gueltigen Puffer fuer eine erweiterte Adresse.
+    """
+    wurzel = _tabelle(roh, 0)
+    z = _feldzelle(roh, wurzel, 4)              # FeatureBatch.eintraege, id 0
+    assert z is not None, "eintraege fehlt"
+    vektor = _tabelle(roh, z)
+    eintrag_ = _tabelle(roh, vektor + 4)        # erstes Element
+    z = _feldzelle(roh, eintrag_, 4)            # QuellenEintrag.quelle, id 0
+    assert z is not None, "quelle fehlt"
+    adresse_ = _tabelle(roh, z)
+    vtable = adresse_ - _i32(roh, adresse_)
+    laenge = _u16(roh, vtable)
+    if laenge != 14:
+        raise SystemExit(f"Adress-VTable hat {laenge} statt 14 Bytes - die Mutation passt nicht")
+    if len(roh) % 2:
+        raise SystemExit("Pufferlaenge ungerade - eine angehaengte VTable waere nicht ausgerichtet")
+    kopie = bytearray(roh[vtable:vtable + laenge])
+    kopie[0:2] = (16).to_bytes(2, "little")
+    kopie += bytes(2)                           # Slot 14: Feld-ID 5 fehlt
+    d = bytearray(roh)
+    neu = len(d)
+    d += kopie
+    d[adresse_:adresse_ + 4] = (adresse_ - neu).to_bytes(4, "little", signed=True)
+    return bytes(d)
+
+
+def gueltige_mutationen() -> list[tuple[str, str, object, str]]:
+    """(name, quelle, mutation, warum) - gueltige Puffer, die flatc so nicht
+    schreibt. Neben rohe_mutationen(), das nur nach ungueltig/ schreibt."""
+    return [
+        ("adresse-vtable-slot5-leer", "live-64-band", adresse_vtable_slot5_leer,
+         "die Adress-VTable des Eintrags 0 ist 16 statt 14 Bytes lang und Slot 14 (Feld-ID 5) "
+         "traegt 0: ein fehlendes Feld, keine unbekannte Zieladresse. Der Slotriegel fragt je "
+         "Slot den VTable-Eintrag, nie die VTable-Laenge und nie den Feldinhalt"),
+    ]
+
+
 # ------------------------------------------------------------------- Erzeugung
 
 def finde_flatc() -> pathlib.Path | None:
@@ -1186,17 +1274,18 @@ def finde_flatc() -> pathlib.Path | None:
     return kandidat if kandidat.exists() else None
 
 
-def nach_binaer(flatc: pathlib.Path, tmp: pathlib.Path, name: str, daten: dict) -> bytes:
+def nach_binaer(flatc: pathlib.Path, tmp: pathlib.Path, name: str, daten: dict,
+                schema: pathlib.Path = SCHEMA) -> bytes:
     quelle = tmp / f"{name}.json"
     quelle.write_text(json.dumps(daten, indent=2, ensure_ascii=False, allow_nan=True),
                       encoding="utf-8", newline="")
     lauf = subprocess.run(
-        [str(flatc), "-b", "--strict-json", "-o", str(tmp), str(SCHEMA), str(quelle)],
+        [str(flatc), "-b", "--strict-json", "-o", str(tmp), str(schema), str(quelle)],
         capture_output=True, text=True)
     if lauf.returncode != 0:
         # `--strict-json` verbietet `nan`; fuer genau diese Faelle noch einmal ohne.
         lauf = subprocess.run(
-            [str(flatc), "-b", "-o", str(tmp), str(SCHEMA), str(quelle)],
+            [str(flatc), "-b", "-o", str(tmp), str(schema), str(quelle)],
             capture_output=True, text=True)
     if lauf.returncode != 0:
         raise SystemExit(f"flatc scheiterte an {name}: {(lauf.stdout + lauf.stderr).strip()}")
@@ -1222,6 +1311,20 @@ def baue(flatc: pathlib.Path) -> tuple[dict, dict[str, bytes]]:
             eintraege.append({"datei": pfad, "urteil": "gueltig", "warum": warum,
                               "verstoesse": []})
 
+        # NAK-313 E-313-13: gueltige Puffer als erklaerte Bytemutation.
+        for name, quelle, mutiere, warum in gueltige_mutationen():
+            if quelle not in gueltige_puffer:
+                raise SystemExit(f"Mutationsquelle {quelle} gibt es nicht")
+            roh = mutiere(gueltige_puffer[quelle])
+            if roh == gueltige_puffer[quelle]:
+                raise SystemExit(f"Mutation {name} hat nichts geaendert")
+            pfad = f"gueltig/{name}.bin"
+            if pfad in dateien:
+                raise SystemExit(f"doppelter Fixturename: {pfad}")
+            dateien[pfad] = roh
+            eintraege.append({"datei": pfad, "urteil": "gueltig", "warum": warum,
+                              "verstoesse": [], "byte_mutation_von": f"gueltig/{quelle}.bin"})
+
         for name, daten, verstoesse, warum in ungueltige():
             roh = nach_binaer(flatc, tmp, name, daten)
             pfad = f"ungueltig/{name}.bin"
@@ -1231,6 +1334,19 @@ def baue(flatc: pathlib.Path) -> tuple[dict, dict[str, bytes]]:
             eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
                               "verstoesse": sorted(verstoesse,
                                                    key=lambda x: (x["pfad"], x["regel"]))})
+
+        # NAK-313 R-313-8: Puffer, die nur eine Schemavariante erzeugen kann.
+        variante = schema_mit_zusatzfeld(tmp)
+        for name, daten, verstoesse, warum in zusatzfeld_faelle():
+            roh = nach_binaer(flatc, tmp, name, daten, variante)
+            pfad = f"ungueltig/{name}.bin"
+            if pfad in dateien:
+                raise SystemExit(f"doppelter Fixturename: {pfad}")
+            dateien[pfad] = roh
+            eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
+                              "verstoesse": sorted(verstoesse,
+                                                   key=lambda x: (x["pfad"], x["regel"])),
+                              "schemavariante": ZUSATZ_ZEILE.strip()})
 
         for name, quelle, mutiere, verstoesse, warum in rohe_mutationen():
             if quelle not in gueltige_puffer:
@@ -1261,8 +1377,13 @@ def baue(flatc: pathlib.Path) -> tuple[dict, dict[str, bytes]]:
                       "dritte Implementierung des Formats, die niemand prueft."),
         "byte_mutation_von": ("Markiert einen Puffer, den flatc nicht erzeugen KANN "
                               "(falsche Dateikennung, abgeschnitten, zerstoerter "
-                              "Wurzeloffset). Er entsteht als Byte-Mutation des "
+                              "Wurzeloffset; gueltig: eine verlaengerte Adress-VTable mit "
+                              "leerem Slot 5). Er entsteht als Byte-Mutation des "
                               "genannten gueltigen Puffers."),
+        "schemavariante": ("Markiert einen Puffer, den derselbe gepinnte flatc aus einer "
+                           "Kopie des .fbs im Temporaerordner uebersetzt, ergaenzt um die "
+                           "genannte Zeile in table Adresse (NAK-313 R-313-8). Ins Repo "
+                           "kommt nur der Puffer, nie die Variante."),
         "regeln": ("Die geschlossene Liste der Regelnamen steht in "
                    "eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist "
                    "(pfad, regel); die Menge wird kanonisch nach (pfad, regel) "

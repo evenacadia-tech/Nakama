@@ -4,11 +4,19 @@
   "schema": "../../../schemas/v3/flatbuffers/nakama_telemetry_v1.fbs",
   "zweck": "Die dritte Partei zwischen C++ und Rust fuer den BINAEREN Teil des v3-Vertrags. Beide Leser messen gegen DIESES Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht aus einem Leser erzeugt — sonst waere der Vergleich zirkulaer.",
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
-  "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
+  "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset; gueltig: eine verlaengerte Adress-VTable mit leerem Slot 5). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
+  "schemavariante": "Markiert einen Puffer, den derselbe gepinnte flatc aus einer Kopie des .fbs im Temporaerordner uebersetzt, ergaenzt um die genannte Zeile in table Adresse (NAK-313 R-313-8). Ins Repo kommt nur der Puffer, nie die Variante.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 26,
-  "anzahl_ungueltig": 102,
+  "anzahl_gueltig": 27,
+  "anzahl_ungueltig": 103,
   "fixtures": [
+    {
+      "datei": "gueltig/adresse-vtable-slot5-leer.bin",
+      "urteil": "gueltig",
+      "warum": "die Adress-VTable des Eintrags 0 ist 16 statt 14 Bytes lang und Slot 14 (Feld-ID 5) traegt 0: ein fehlendes Feld, keine unbekannte Zieladresse. Der Slotriegel fragt je Slot den VTable-Eintrag, nie die VTable-Laenge und nie den Feldinhalt",
+      "verstoesse": [],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
     {
       "datei": "gueltig/alle-validity-bits.bin",
       "urteil": "gueltig",
@@ -176,6 +184,18 @@
         }
       ],
       "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/adresse-zusatzfeld-id5.bin",
+      "urteil": "ungueltig",
+      "warum": "der Grundbatch live-64-band mit gesetztem Feld-ID 5 in der Adresse (Schemavariante zusatz:string (id: 5)). Der Verifier kennt Slot 5 nicht und laesst ihn stehen; erst der Slotriegel beider Leser lehnt ab, und der Broker reicht den Batch nicht weiter",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/quelle",
+          "regel": "adresse_zusatzfeld"
+        }
+      ],
+      "schemavariante": "zusatz:string (id: 5);"
     },
     {
       "datei": "ungueltig/aktivitaet-nicht-endlich.bin",

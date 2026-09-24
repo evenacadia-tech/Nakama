@@ -584,6 +584,19 @@ TEXTRIEGEL_FAELLE: list[tuple[str, bool, str]] = [
     ('{"w": true}', False, "true ist ein erlaubtes JSON-Literal"),
     ('{"w": false}', False, "false ist ein erlaubtes JSON-Literal"),
     ('{"w": null}', False, "null ist ein erlaubtes JSON-Literal"),
+
+    # --- Untergrenze des Betrags (NAK-313 M-121, R-313-7) -------------------
+    # Regel 3 misst am Literal: die fuehrende signifikante Ziffer steht bei
+    # einem Dezimalexponenten zwischen -308 und 308 (ausschliesslich). Die drei
+    # Riegel rechnen die Untergrenze seit jeher; die Tabelle trug bis Etappe 6
+    # nur die Obergrenze (1e307, 1e308). Angehaengt, damit die Nummern der
+    # bestehenden Textfaelle bleiben.
+    ('{"w": 1e-307}', False, "die Untergrenze selbst: Dezimalexponent -307 liegt im Bereich"),
+    ('{"w": 1e-308}', True, "Dezimalexponent -308 liegt ausserhalb - die Kante der Untergrenze"),
+    ('{"w": 2e-308}', True,
+     "dieselbe Kante mit anderer fuehrender Ziffer: es entscheidet der Exponent"),
+    ('{"w": 9.9e-308}', True,
+     "knapp unter 1e-307 und ausserhalb: gemessen am Literal, nicht am double"),
 ]
 
 # Faelle, die sich nur auf BYTE-Ebene ausdruecken lassen - sie stehen als
@@ -3505,7 +3518,11 @@ MATRIX_ETAPPEN = [(1, 16, 2), (17, 38, 3), (39, 54, 4), (55, 97, 5),
 # je Leser"). Referenzbeine messen `vertrag`, Produktleser `produkt`. Etappe 5
 # aendert keine Kette, nur den Inhalt zweier Stufen: `textriegel` des
 # v2-Clients traegt ab jetzt den Zahlriegel, `feldregel` der flachen Leser den
-# Bereich des Ganzzahllesers (Manifest §7.1, „Die Stufen").
+# Bereich des Ganzzahllesers (Manifest §7.1, „Die Stufen"). Etappe 6 gibt dem
+# Bootstrap die Stufe schema (das Tor, Manifest §8.6: Textriegel, strenger
+# Lauf, Hello-Pruefung des Schemas, Uebernahme); die flachen Leser behalten
+# ihre Kette, ihr parser traegt ab Etappe 6 UTF-8, Escapes und den
+# Grund-Ausgang.
 _KETTEN_ETAPPE_4 = {
     "A5":  ["textriegel", "parser", "duplikat", "schema"],
     "A11": ["parser", "duplikat", "schema"],
@@ -3520,7 +3537,9 @@ _KETTEN_ETAPPE_4 = {
     "rust_p0": ["textriegel", "parser", "duplikat", "schema", "feldregel"],
     "rust_p1": ["textriegel", "parser", "duplikat", "schema", "feldregel"],
 }
-LESERKETTEN = {leser: {"4": list(kette), "5": list(kette)}
+_KETTEN_ETAPPE_6 = {**_KETTEN_ETAPPE_4,
+                    "rust_bootstrap": ["textriegel", "parser", "duplikat", "schema", "feldregel"]}
+LESERKETTEN = {leser: {"4": list(kette), "5": list(kette), "6": list(_KETTEN_ETAPPE_6[leser])}
                for leser, kette in _KETTEN_ETAPPE_4.items()}
 
 
@@ -4134,12 +4153,14 @@ ZWEI_HOCH_53 = "9007199254740992"
 NICHT_ENDLICH = ("NaN", "Infinity", "-Infinity", "1e999")
 V2_GANZZAHL_MAX = "9223372036854775807"
 
-# Der Stand der Spezifikation nach Etappe 5 (Manifest §7.1): genau eine
+# Der Stand der Spezifikation nach Etappe 6 (Manifest §7.1, §8.6): genau eine
 # Abweichung der Art `urteil` (M-93 c); die Art `stufe` tragen die Eintraege
-# der Leser ohne Schema oder ohne Textriegel - ACK 6, Handshake Control 8 und
-# Telemetrie 8, Quellenmodell 2 und 2, v2-Client 11. Von Hand gezaehlt; die
+# der Leser ohne Schema oder ohne Textriegel - nach Etappe 5 ACK 6, Handshake
+# Control 8 und Telemetrie 8, Quellenmodell 2 und 2, v2-Client 11 (37); dazu in
+# Etappe 6 das Tor 5 (protocol 3.5, NaN, Infinity, -Infinity, 1e999), Handshake
+# Control 10, Telemetrie 5 und ACK 1 (21). Von Hand gezaehlt; die
 # Selbstpruefung haelt die Tabelle dagegen.
-ABWEICHUNGEN_SPEZIFIZIERT = {"stufe": 37, "urteil": 1}
+ABWEICHUNGEN_SPEZIFIZIERT = {"stufe": 58, "urteil": 1}
 
 # Die Gruende der Abweichungen der Art `stufe` - je Produktregel ein Satz mit
 # ihrer Stelle, damit ein Leser des Eintrags weiss, warum Vertrag und Produkt
@@ -4482,6 +4503,243 @@ def _faelle_rust_werte() -> list[dict]:
     return faelle
 
 
+# ════════════════════════════════════════════════════════════════════════
+# NAK-313 Etappe 6 · Tor, Handshake, Zieladresse (R-313-7; Manifest §7.3,
+# „Etappe 6", §8.6)
+# ════════════════════════════════════════════════════════════════════════
+#
+# Das Tor (bootstrap_lesen) prueft ein v3-Hello in der Reihenfolge
+# Textriegel -> ein strenger Lauf -> Protokollwahl -> Hello-Schema ->
+# Uebernahme; ein v2-Hello verlaesst es nach dem strengen Lauf als V2. Die
+# flachen C++-Leser (Welcome, Reject, ACK) pruefen UTF-8 am Anfang, dekodieren
+# Escapes, vergleichen dekodierte Namen und zaehlen Codepunkte. Wo ein Leser
+# weder Textriegel noch Schema hat, steht die Abweichung der Art stufe mit
+# Grund im Eintrag.
+#
+# Die Bootstrap-Negativen aus Etappe 5 (block_size 1.5 und 2^53, protocol 3.5,
+# NaN, Infinity, -Infinity, 1e999) entstehen hier mit dem Tor (E-313-11); sie
+# behalten ihre Matrixzeile (M-72, M-73, M-96) und tragen die anlegende Etappe
+# im Erzeuger (Schluessel _etappe, nicht in der Datei), damit die
+# Selbstpruefung sie gegen die Kette der Etappe 6 haelt.
+
+GRUND_TOR_PROTOKOLL = ("die Protokollwahl des Tors liest protocol ueber den Ganzzahlhelfer und "
+                       "lehnt einen Wert, der nicht 3 ist, vor Textriegel und Schema ab "
+                       "(broker/src/transport/bootstrap.rs, bootstrap_lesen; R-313-16, E-313-16)")
+GRUND_TOR_PARSER = ("am Tor laeuft der strenge Lauf vor dem gehaltenen Textriegelurteil: ohne Wert "
+                    "ist das Protokoll nicht bestimmbar, und serde_json lehnt NaN, Infinity und "
+                    "1e999 selbst ab (bootstrap_lesen, KeinJson; Manifest §8.6)")
+GRUND_FLACH_LAENGE = ("der flache Leser hat kein Schema: welcomeHaeltVertrag und rejectHaeltVertrag "
+                      "pruefen die Laenge nach dem Lesen in Codepunkten (utf8CodepointsBis, "
+                      "core/ipc/controlclient/Vertrag.cpp)")
+GRUND_FLACH_LESEN = ("der flache Leser hat keinen Textriegel: flachesJsonObjekt lehnt kaputtes "
+                     "UTF-8, NUL-Escape, einsame Surrogate und kurze u-Escapes beim Lesen ab "
+                     "(core/ipc/IpcVerbindung.cpp, Grund-Ausgang)")
+
+V2_HELLO = ('{"type":"hello","protocol_version":2,"plugin_version":"0.4.0","host_pid":4711,'
+            '"sensor":{"sensor_id":"sensor-1","role":"sensor","label":"Klavier"},'
+            '"audio":{"samplerate":48000,"block_size":512,"channels":2}}')
+
+
+def _mit_bytes(text: str, platzhalter: str, ersatz: bytes) -> bytes:
+    """Der Text als UTF-8, der Platzhalter genau einmal durch rohe Bytes ersetzt
+    - so stehen kaputtes UTF-8 und einzelne Bytes wie FF im Eintrag."""
+    roh = text.encode("utf-8")
+    marke = platzhalter.encode("utf-8")
+    if roh.count(marke) != 1:
+        raise SystemExit(f"Produkteingaenge: {platzhalter!r} steht nicht genau einmal im Text")
+    return roh.replace(marke, ersatz)
+
+
+def _welcome_text(broker_version: str) -> str:
+    """welcome in der Form des Testservers; broker_version als JSON-Text."""
+    k = ACK_KOPPLUNG
+    return ('{"type":"welcome","protocol":3,"broker_version":' + broker_version
+            + ',"broker_epoch":"' + k["broker_epoch"] + '","link_id":"' + k["link_id"]
+            + '","challenge":"' + k["challenge"] + '"}')
+
+
+def _reject_text(reason: str, code: str = '"protocol_mismatch"') -> str:
+    """reject mit code und reason als JSON-Text."""
+    return '{"type":"reject","code":' + code + ',"reason":' + reason + '}'
+
+
+def _faelle_tor() -> list[dict]:
+    """M-98 bis M-102, M-104 und die verschobenen Negativen (`rust_bootstrap`)."""
+    faelle = []
+    hello = _grundtext(GRUND["hello_control"])
+    host = ('  "host": {\n    "pid": 4711,\n    "name": "FL64",\n'
+            '    "version": "21.2"\n  },\n')
+    nul = '"plugin_version": "a' + BS + 'u0000b",'
+    version = '"plugin_version": "0.4.0",'
+    tor = [
+        ("M-98", "Control-Hello ohne host", _ersetze(hello, host, ""), None, None,
+         "host ist nicht Pflicht: das Tor nimmt das Hello ohne host an"),
+        ("M-99", "Control-Hello mit host null", _ersetze(hello, host, '  "host": null,\n'),
+         "schema", "schema", "null ist ein eigener Typ, nicht fehlt: /host verletzt type"),
+        ("M-99", "Control-Hello mit host.name null",
+         _ersetze(hello, host, '  "host": {\n    "pid": 1,\n    "name": null\n  },\n'),
+         "schema", "schema", "/host/name verletzt type string"),
+        ("M-99", "Control-Hello mit host.version null",
+         _ersetze(hello, host, '  "host": {\n    "pid": 1,\n    "version": null\n  },\n'),
+         "schema", "schema", "/host/version verletzt type string"),
+        ("M-100", "Control-Hello mit NUL-Escape in plugin_version", _ersetze(hello, version, nul),
+         "textriegel", "textriegel", "Regel 5: kein NUL-Escape in einer Zeichenkette"),
+        ("M-101", "Control-Hello, samplerate 1e-308",
+         _ersetze(hello, '"samplerate": 48000,', '"samplerate": 1e-308,'),
+         "textriegel", "textriegel", "Regel 3, Untergrenze: Dezimalexponent -308"),
+        ("M-101", "Control-Hello, samplerate 1e-307",
+         _ersetze(hello, '"samplerate": 48000,', '"samplerate": 1e-307,'),
+         None, None, "1e-307 haelt Regel 3 und exclusiveMinimum 0"),
+        ("M-101", "Control-Hello, samplerate 1e-300",
+         _ersetze(hello, '"samplerate": 48000,', '"samplerate": 1e-300,'),
+         None, None, "1e-300 passiert beide Grenzen (NAK-387 Beobachtung 1, nur benannt)"),
+        ("M-101", "Control-Hello, samplerate 48000", hello, None, None,
+         "die gewoehnliche Samplerate"),
+        ("M-101", "Control-Hello, samplerate 768000.5",
+         _ersetze(hello, '"samplerate": 48000,', '"samplerate": 768000.5,'),
+         "schema", "schema", "768000.5 verletzt maximum 768000"),
+        ("M-102", "Control-Hello mit NUL-Escape in plugin_version und host null",
+         _ersetze(_ersetze(hello, version, nul), host, '  "host": null,\n'),
+         "textriegel", "textriegel", "der Textriegel geht dem Schema vor"),
+    ]
+    for matrix, zeige, roh, vertrag, produkt, warum in tor:
+        faelle.append(_pe5("rust_bootstrap", "v3", "hello_control", roh, zeige, vertrag, produkt,
+                           ["annahme"] if produkt is None else ["ablehnung"], matrix, warum))
+
+    block = '"block_size": 512,'
+    verschoben = [
+        ("M-73", "block_size 1.5", _ersetze(hello, block, '"block_size": 1.5,'), "schema",
+         "schema", "/audio/block_size", None, "1.5 ist keine Ganzzahl"),
+        ("M-73", f"block_size {ZWEI_HOCH_53}",
+         _ersetze(hello, block, f'"block_size": {ZWEI_HOCH_53},'), "textriegel", "textriegel",
+         "/audio/block_size", None, "2^53 liegt ueber der Textriegel-Grenze"),
+        ("M-72", "protocol 3.5", _ersetze(hello, '"protocol": 3,', '"protocol": 3.5,'), "schema",
+         "feldregel", "/protocol", _stufe(GRUND_TOR_PROTOKOLL),
+         "3.5 ist keine Ganzzahl: die Protokollwahl liest es nicht als 3"),
+    ]
+    for literal in NICHT_ENDLICH:
+        verschoben.append(("M-96", f"block_size {literal}",
+                           _ersetze(hello, block, f'"block_size": {literal},'), "textriegel",
+                           "parser", "/audio/block_size", _stufe(GRUND_TOR_PARSER),
+                           f"{literal} ist kein JSON-Wert einer Ganzzahl"))
+    for matrix, zeige, roh, vertrag, produkt, feld, abweichung, warum in verschoben:
+        eintrag = _pe5("rust_bootstrap", "v3", "hello_control", roh, f"Control-Hello, {zeige}",
+                       vertrag, produkt, ["ablehnung"], matrix, warum, feld=feld,
+                       abweichung=abweichung)
+        eintrag["_etappe"] = "6"
+        faelle.append(eintrag)
+
+    for zeige, roh, warum in (
+            ("v2-Hello, samplerate 48000.0000000000001",
+             V2_HELLO.replace('"samplerate":48000', '"samplerate":48000.0000000000001'),
+             "v2-gueltig (number bis 768000); v3-Regel 2 (mehr als 15 Stellen) gilt nicht"),
+            ("v2-Hello mit NUL-Escape in sensor.label",
+             V2_HELLO.replace('"label":"Klavier"', '"label":"Kla' + BS + 'u0000vier"'),
+             "v2-gueltig (string bis 120); v3-Regel 5 (NUL-Escape) gilt nicht")):
+        faelle.append(_pe5("rust_bootstrap", "v2", "hello", roh, zeige, None, None, ["annahme"],
+                           "M-104", warum))
+    return faelle
+
+
+def _faelle_handshake() -> list[dict]:
+    """M-106 bis M-113 (`cpp_control_handshake`, `cpp_telemetrie_handshake`) und
+    die ACK-Faelle aus M-108, M-111, M-112 (`cpp_control_ack`)."""
+    ein = ["annahme"]
+    aus = ["ablehnung"]
+    paar = BS + "ud83d" + BS + "ude00"
+    escapes = '"' + BS + "n" + BS + BS + BS + '"' + BS + "/" + BS + "u00e9" + paar + '"'
+    # Schluessel -> (Nachricht, Bytes, vertrag, produkt, Abweichung, Wirkung, Zeile,
+    # Zeigetext, warum); die Telemetriefaelle aus M-113 nehmen dieselben Bytes.
+    control = {
+        "106a": ("welcome", _welcome_text('"' + "é" * 64 + '"'), None, None, None, ein,
+                 "M-106", "welcome, broker_version 64 x e-Akut (128 Bytes)",
+                 "64 Codepunkte halten maxLength 64"),
+        "106b": ("welcome", _welcome_text('"' + "é" * 65 + '"'), "schema", "feldregel",
+                 _stufe(GRUND_FLACH_LAENGE), aus, "M-106",
+                 "welcome, broker_version 65 x e-Akut", "65 Codepunkte verletzen maxLength 64"),
+        "106c": ("welcome", _welcome_text('"' + "v" * 64 + '"'), None, None, None, ein,
+                 "M-106", "welcome, broker_version 64 ASCII", "die Grenze selbst"),
+        "107a": ("reject", _reject_text('"' + "é" * 500 + '"'), None, None, None, ein,
+                 "M-107", "reject, reason 500 x e-Akut (1000 Bytes)",
+                 "500 Codepunkte halten maxLength 500"),
+        "107b": ("reject", _reject_text('"' + "é" * 501 + '"'), "schema", "feldregel",
+                 _stufe(GRUND_FLACH_LAENGE), aus, "M-107", "reject, reason 501 x e-Akut",
+                 "501 Codepunkte verletzen maxLength 500"),
+        "108": ("reject", _reject_text(escapes), None, None, None, ein, "M-108",
+                "reject, reason mit n, Backslash, Anfuehrungszeichen, Schraegstrich, "
+                "u00e9 und Surrogatpaar",
+                "RFC-8259-Escapes sind vertragsgueltig; das Paar ist ein Codepunkt"),
+        "108r500": ("reject", _reject_text('"' + "a" * 499 + paar + '"'), None, None, None, ein,
+                    "M-108", "reject, reason 499 x a plus Surrogatpaar",
+                    "500 Codepunkte: das Paar zaehlt als einer"),
+        "108r501": ("reject", _reject_text('"' + "a" * 500 + paar + '"'), "schema", "feldregel",
+                    _stufe(GRUND_FLACH_LAENGE), aus, "M-108",
+                    "reject, reason 500 x a plus Surrogatpaar",
+                    "501 Codepunkte verletzen maxLength 500"),
+        "109a": ("reject", _reject_text('"' + BS + 'u0000"'), "textriegel", "parser",
+                 _stufe(GRUND_FLACH_LESEN), aus, "M-109", "reject, reason mit NUL-Escape",
+                 "Regel 5: NUL-Escape"),
+        "109b": ("reject", _reject_text('"' + BS + 'ud800"'), "textriegel", "parser",
+                 _stufe(GRUND_FLACH_LESEN), aus, "M-109", "reject, reason mit einsamem ud800",
+                 "Regel 6: einsames Surrogat"),
+        "109c": ("reject", _reject_text('"' + BS + 'q"'), "parser", "parser", None, aus,
+                 "M-109", "reject, reason mit unbekanntem Escape q",
+                 "RFC 8259 kennt kein q-Escape"),
+        "109d": ("reject", _reject_text('"' + BS + 'u00"'), "textriegel", "parser",
+                 _stufe(GRUND_FLACH_LESEN), aus, "M-109", "reject, reason mit kurzem u00",
+                 "Regel 4: genau vier Hexziffern"),
+        "110r": ("reject", _reject_text('""'), None, None, None, ein, "M-110",
+                 "reject, leerer reason", "reason hat kein minLength"),
+        "110w": ("welcome", _welcome_text('""'), "schema", "feldregel",
+                 _stufe(GRUND_FLACH_LAENGE), aus, "M-110", "welcome, leere broker_version",
+                 "broker_version verlangt minLength 1"),
+        "111a": ("welcome", _mit_bytes(_welcome_text('"@@"'), "@@", b"\xc3("), "textriegel",
+                 "parser", _stufe(GRUND_FLACH_LESEN), aus, "M-111",
+                 "welcome, broker_version mit den Bytes C3 28", "Regel 9: kein gueltiges UTF-8"),
+        "111b": ("reject", _mit_bytes(_reject_text('"ab@@cd"'), "@@", b"\xff"), "textriegel",
+                 "parser", _stufe(GRUND_FLACH_LESEN), aus, "M-111",
+                 "reject, reason mit dem Byte FF", "Regel 9: kein gueltiges UTF-8"),
+        "111c": ("reject", _mit_bytes(_reject_text('"inkompatibel"', '"protocol@@mismatch"'),
+                                      "@@", b"\xff"), "textriegel", "parser",
+                 _stufe(GRUND_FLACH_LESEN), aus, "M-111", "reject, code mit dem Byte FF",
+                 "Regel 9: kein gueltiges UTF-8"),
+        "112a": ("welcome", '{"typ' + BS + 'u0065":"reject",' + _welcome_text('"test"')[1:],
+                 "duplikat", "duplikat", None, aus, "M-112",
+                 "welcome mit typ-u0065-Alias neben type",
+                 "der dekodierte Name type steht zweimal"),
+        "112b": ("welcome", _welcome_text('"test"')[:-1] + ',"link_id":"' + "a" * 32 + '"}',
+                 "duplikat", "duplikat", None, aus, "M-112", "welcome mit link_id zweimal",
+                 "derselbe rohe Name zweimal"),
+    }
+    faelle = [_pe5("cpp_control_handshake", "v3", n, roh, zeige, v, p, w, m, warum,
+                   abweichung=a)
+              for n, roh, v, p, a, w, m, zeige, warum in control.values()]
+    for schluessel in ("106a", "106b", "107a", "108", "109a", "111a", "111b", "111c"):
+        n, roh, v, p, a, w, _m, zeige, warum = control[schluessel]
+        faelle.append(_pe5("cpp_telemetrie_handshake", "v3", n, roh, zeige, v, p, w, "M-113",
+                           warum, abweichung=a))
+
+    kein_ack = ["kein_ack", "kein_freigegebener_auftrag"]
+    kopf = '{"type":"command_ack","command_id":"' + ACK_COMMAND_ID + '",'
+    faelle.append(_pe5("cpp_control_ack", "v3", "command_ack",
+                       kopf + '"ergebnis":"konflikt","state_revision":7,"code":"revision'
+                       + BS + 'u005fconflict"}',
+                       "command_ack konflikt, code mit u005f-Escape", None, None, ["annahme"],
+                       "M-108", "das Escape dekodiert zum bekannten Code revision_conflict"))
+    faelle.append(_pe5("cpp_control_ack", "v3", "command_ack",
+                       _mit_bytes(kopf + '"ergebnis":"abgelehnt","state_revision":7,'
+                                  '"code":"schema_violation@@"}', "@@", b"\xff"),
+                       "command_ack abgelehnt, code mit dem Byte FF", "textriegel", "parser",
+                       kein_ack, "M-111", "Regel 9: kein gueltiges UTF-8",
+                       abweichung=_stufe(GRUND_FLACH_LESEN)))
+    faelle.append(_pe5("cpp_control_ack", "v3", "command_ack",
+                       kopf + '"ergeb' + BS + 'u006eis":"abgelehnt","ergebnis":"angewandt",'
+                       '"state_revision":7,"state_hash":"' + "d" * 64 + '"}',
+                       "command_ack mit ergebnis als Escape-Alias und roh", "duplikat",
+                       "duplikat", kein_ack, "M-112", "der dekodierte Name ergebnis steht zweimal"))
+    return faelle
+
+
 def _etappe_von(matrix: str) -> str:
     nummer = int(matrix.removeprefix("M-").rstrip("b"))
     for von, bis, etappe in MATRIX_ETAPPEN:
@@ -4490,11 +4748,13 @@ def _etappe_von(matrix: str) -> str:
     raise SystemExit(f"Produkteingaenge: {matrix} gehoert zu keiner Etappe")
 
 
-def _tabelle_selbstpruefung(kopf: dict) -> None:
+def _tabelle_selbstpruefung(kopf: dict, anlegend: dict[str, str]) -> None:
     """Die Selbstpruefung des Erzeugers (Manifest §7.1, R-313-13).
 
     Sie prueft die HANDSCHRIFT auf Widerspruchsfreiheit, nicht auf Wahrheit;
-    die Wahrheit messen die Beine gegen die echten Leser.
+    die Wahrheit messen die Beine gegen die echten Leser. `anlegend` nennt je
+    Kennung die Etappe, die den Eintrag anlegt - die der Matrixzeile, ausser
+    bei den mit dem Tor verschobenen Bootstrap-Negativen (Etappe 6).
     """
     faelle = kopf["faelle"]
     fehler: list[str] = []
@@ -4508,7 +4768,7 @@ def _tabelle_selbstpruefung(kopf: dict) -> None:
             fehler.append(f"{kennung}: Fassung {f['fassung']}")
         if not set(f["wirkung"]) <= set(WIRKUNGEN) or not f["wirkung"]:
             fehler.append(f"{kennung}: Wirkung ausserhalb der geschlossenen Menge")
-        etappe = _etappe_von(f["matrix"])
+        etappe = anlegend[kennung]
         referenz = "A5" if f["fassung"] == "v3" else "A11"
         for objekt, leser in (("vertrag", referenz), ("produkt", f["eingang"])):
             u = f[objekt]
@@ -4593,9 +4853,12 @@ def produkteingaenge_tabelle() -> dict:
     """
     faelle = (_faelle_quellenmodell() + _faelle_v2_client() + _faelle_rust()
               + _faelle_flacher_leser() + _faelle_quellenmodell_werte()
-              + _faelle_v2_zahlen() + _faelle_rust_werte())
+              + _faelle_v2_zahlen() + _faelle_rust_werte()
+              + _faelle_tor() + _faelle_handshake())
+    anlegend: dict[str, str] = {}
     for i, f in enumerate(faelle, start=1):
         f["id"] = f"PE-{i:03d}"
+        anlegend[f["id"]] = f.pop("_etappe", None) or _etappe_von(f["matrix"])
     faelle = [{"id": f["id"], **{k: w for k, w in f.items() if k != "id"}} for f in faelle]
     register = _einspeisung_register()
     kopf = {
@@ -4637,7 +4900,7 @@ def produkteingaenge_tabelle() -> dict:
                                 for art in ("stufe", "urteil")},
         "faelle": faelle,
     }
-    _tabelle_selbstpruefung(kopf)
+    _tabelle_selbstpruefung(kopf, anlegend)
     return kopf
 
 def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:

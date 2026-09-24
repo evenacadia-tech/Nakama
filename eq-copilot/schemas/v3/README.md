@@ -159,6 +159,19 @@ Fixtures, die an dieser Stufe fallen, tragen im Manifest
 Schema nie, und eine erfundene Menge waere eine Luege ueber den Ort der
 Ablehnung.
 
+## Der strenge Parselauf — die Stufe NACH dem Textriegel
+
+Jeder Leser liest ein v3-Dokument genau einmal streng nach RFC 8259: kein
+Nachspann und kein zweites Dokument, kein Schlusskomma, nur die Escapes aus
+RFC 8259 §7, und in keinem Objekt zweimal derselbe dekodierte Name — auch
+nicht als Escape-Alias wie `typ\u0065` neben `type`, auch nicht für
+Discriminator und Adressfelder. Ein Verstoß ist ungültig, bevor das Schema
+ihn sieht; ebenso eine Verschachtelung tiefer als 64 Ebenen (Objekte und
+Listen zusammen gezählt), dieselbe Grenze in allen drei Sprachen. Das
+Manifest kennzeichnet solche Fixtures mit `parser_lehnt_ab: true` und ohne
+Verletzungsmenge. Derselbe Name in zwei verschiedenen Objekten ist gültig.
+(NAK-313 R-313-6, 24.09.2026.)
+
 ## Die Engine-Teilmenge
 
 Beide eigenen Engines implementieren **genau** diese Schluesselwoerter:

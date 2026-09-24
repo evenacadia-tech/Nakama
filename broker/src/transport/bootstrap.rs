@@ -217,8 +217,12 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
         return Err(BootstrapFehler::Unvollstaendig);
     }
     let roh = std::str::from_utf8(&daten[4..ende]).map_err(|_| BootstrapFehler::KeinUtf8)?;
-    let wert: serde_json::Value = serde_json::from_str(roh)
-        .map_err(|e| BootstrapFehler::KeinJson(e.to_string()))?;
+    // 🔑 NAK-313 R-313-6 (M-45): EIN strenger Lauf ueber die Hello-Bytes.
+    // Protokollwahl und typisierte Uebernahme lesen danach denselben Wert —
+    // nie mehr einen zweiten Parselauf ueber den Rohtext. Ein doppelter
+    // dekodierter Name endet hier als `KeinJson` mit der Marke
+    // `nakama:doppelter-schluessel` (NAK-310 M-77, Alternative „abgelehnt").
+    let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
     let obj = wert
         .as_object()
         .ok_or_else(|| BootstrapFehler::KeinJson("Wurzel ist kein Objekt".into()))?;
@@ -251,7 +255,7 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
 
     match obj.get("connection_kind").and_then(|v| v.as_str()) {
         Some("control") => {
-            let h: HelloControl = serde_json::from_str(roh)
+            let h: HelloControl = serde_json::from_value(wert.clone())
                 .map_err(|e| BootstrapFehler::KeinHello(e.to_string()))?;
             plugin_version_pruefen(&h.plugin_version).map_err(BootstrapFehler::KeinHello)?;
             if !PLUGIN_KIND_ERLAUBT.contains(&h.plugin_kind.as_str()) {
@@ -273,7 +277,7 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
             Ok((Bootstrap::V3Control(Box::new(h)), ende))
         }
         Some("telemetry") => {
-            let h: HelloTelemetry = serde_json::from_str(roh)
+            let h: HelloTelemetry = serde_json::from_value(wert.clone())
                 .map_err(|e| BootstrapFehler::KeinHello(e.to_string()))?;
             plugin_version_pruefen(&h.plugin_version).map_err(BootstrapFehler::KeinHello)?;
             adresse_pruefen(&h.adresse).map_err(BootstrapFehler::KeinHello)?;
@@ -690,6 +694,63 @@ mod tests {
         assert!(k.control_anmelden("1", neue_kennung(), neue_kennung()).is_ok());
         assert!(k.control_anmelden("2", neue_kennung(), neue_kennung()).is_ok());
         assert!(k.control_anmelden("3", neue_kennung(), neue_kennung()).is_err());
+    }
+
+    /// NAK-313 M-45 (R-313-6, R-313-13): jeder Eintrag von `rust_bootstrap`
+    /// als eigener Fall durch `bootstrap_lesen`. Die Stufe steht am
+    /// `BootstrapFehler` (Manifest §7.2): `KeinJson` mit der Marke des
+    /// doppelten Schluessels heisst `duplikat`, jeder andere `KeinJson`
+    /// `parser`. Kein Eintrag wird ein `V3Control`; zuletzt die Zaehlpruefung.
+    #[test]
+    fn nak313_m45_doppelter_schluessel_im_hello() {
+        use crate::vertrag::produkteingaenge as tabelle;
+        let kopf = tabelle::kopf();
+        let mut rot: Vec<String> = Vec::new();
+        let mut gefahren = 0usize;
+        for fall in tabelle::faelle(&kopf, "rust_bootstrap") {
+            gefahren += 1;
+            let id = fall["id"].as_str().unwrap_or("?").to_owned();
+            let bytes = tabelle::bytes(&fall);
+            let mut daten = (bytes.len() as u32).to_le_bytes().to_vec();
+            daten.extend_from_slice(&bytes);
+            let ergebnis = bootstrap_lesen(&daten);
+            let ist = match &ergebnis {
+                Ok(_) => ("gueltig".to_owned(), None),
+                Err(BootstrapFehler::KeinUtf8) => ("ungueltig".to_owned(), Some("textriegel")),
+                Err(BootstrapFehler::KeinJson(g)) if g.contains(crate::vertrag::MARKE_DOPPELT) => {
+                    ("ungueltig".to_owned(), Some("duplikat"))
+                }
+                Err(BootstrapFehler::KeinJson(_)) => ("ungueltig".to_owned(), Some("parser")),
+                Err(BootstrapFehler::KeinHello(g)) if g.starts_with("textriegel: ") => {
+                    ("ungueltig".to_owned(), Some("textriegel"))
+                }
+                Err(BootstrapFehler::KeinHello(g)) if g.starts_with("schema: ") => {
+                    ("ungueltig".to_owned(), Some("schema"))
+                }
+                Err(_) => ("ungueltig".to_owned(), Some("feldregel")),
+            };
+            let ist = (ist.0, ist.1.map(str::to_owned));
+            let soll = tabelle::urteil(&fall, "produkt");
+            if ist != soll {
+                rot.push(format!("{id}: Urteil/Stufe {ist:?}, soll {soll:?} ({ergebnis:?})"));
+            }
+            for wirkung in tabelle::wirkung(&fall) {
+                let gehalten = match wirkung.as_str() {
+                    "annahme" => ergebnis.is_ok(),
+                    "ablehnung" => ergebnis.is_err(),
+                    _ => false,
+                };
+                if !gehalten {
+                    rot.push(format!("{id}: Wirkung {wirkung} nicht gehalten ({ergebnis:?})"));
+                }
+            }
+        }
+        let soll_anzahl = kopf["anzahl_je_eingang"]["rust_bootstrap"].as_u64().unwrap_or(0) as usize;
+        assert!(
+            gefahren == soll_anzahl && gefahren > 0,
+            "M-49 Zaehlpruefung rust_bootstrap: {gefahren} Eintraege gefahren, der Kopf nennt {soll_anzahl}"
+        );
+        assert!(rot.is_empty(), "rust_bootstrap weicht von `produkt` ab:\n{}", rot.join("\n"));
     }
 
     #[test]

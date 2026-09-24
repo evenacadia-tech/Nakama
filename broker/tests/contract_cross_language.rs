@@ -79,10 +79,23 @@ fn korpus_klassifiziert_wie_das_manifest() {
             continue;
         }
 
+        // NAK-313 R-313-6 (M-47, M-48): derselbe strenge Lauf wie im Produkt.
+        // Die Klasse „Parser lehnt ab" MUSS hier fallen — nach dem Textriegel,
+        // vor dem Schema; jedes andere Fixture muss ihn passieren.
+        let parser_soll = eintrag["parser_lehnt_ab"].as_bool().unwrap_or(false);
+        let streng = eqcop_broker::vertrag::json_streng(&roh_bytes);
+        if parser_soll {
+            if streng.is_ok() {
+                abweichungen.push(format!("{name}: parser_lehnt_ab, aber der strenge Lauf nimmt es an"));
+            }
+            geprueft += 1;
+            continue;
+        }
+
         // T2-Runde 1: hier stand ein `panic!`. Ein nicht lesbares Fixture brach
         // damit den GANZEN Lauf ab, statt eine benannte Abweichung zu werden —
         // das Gegenstueck zum `wurzel_skalar`-Zweig der C++-Seite fehlte.
-        let daten: Value = match serde_json::from_slice(&roh_bytes) {
+        let daten: Value = match streng {
             Ok(v) => v,
             Err(e) => {
                 let skalar = eintrag["wurzel_skalar"].as_bool().unwrap_or(false);

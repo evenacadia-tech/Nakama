@@ -550,6 +550,16 @@ impl Coordinator {
         let Some(wert) = v3_nachricht_lesen_mit_minor(payload, "state_report", schema_minor) else {
             return false;
         };
+        self.state_report_json_mit_minor_wert(link_id, wert)
+    }
+
+    /// Die Wertvariante fuer die P1-Weiche (NAK-313 R-313-6, M-44): `wert` hat
+    /// Textriegel, strengen Lauf und Schema schon hinter sich und wird hier
+    /// nicht noch einmal gelesen.
+    pub(super) fn state_report_json_mit_minor_wert(&self, link_id: &str, wert: Value) -> bool {
+        if wert.get("type").and_then(Value::as_str) != Some("state_report") {
+            return false;
+        }
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
             return false;
         };

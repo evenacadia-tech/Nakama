@@ -415,14 +415,76 @@ pub(super) fn v3_nachricht_lesen_mit_minor(
     erwarteter_typ: &str,
     schema_minor: u8,
 ) -> Option<Value> {
-    let wert = v3_nachricht_lesen_beliebig_mit_minor(payload, schema_minor)?;
+    let wert = v3_nachricht_lesen_beliebig_mit_minor(payload, schema_minor).ok()?;
     (wert.get("type").and_then(Value::as_str) == Some(erwarteter_typ)).then_some(wert)
 }
 
-pub(super) fn v3_nachricht_lesen_beliebig_mit_minor(payload: &[u8], schema_minor: u8) -> Option<Value> {
-    crate::vertrag::textriegel_bytes(payload).ok()?;
-    let wert: Value = serde_json::from_slice(payload).ok()?;
-    v3_schema(schema_minor)?.gueltig(&wert).then_some(wert)
+/// Die Stufe, an der die gemeinsame Lesefunktion eine Nachricht ablehnt
+/// (NAK-313 R-313-13, Manifest §7.2). Ohne sie waere die Stufe des
+/// Rust-Produktlesers von aussen nicht messbar: `p0_json_mit_minor` liefert
+/// nur `None`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Stufe {
+    Textriegel,
+    Parser,
+    Duplikat,
+    Schema,
+}
+
+#[cfg(test)]
+impl Stufe {
+    /// Das Wort aus `stufen` der Tabelle `PRODUKTEINGAENGE-FAELLE.json`.
+    pub(super) fn wort(self) -> &'static str {
+        match self {
+            Stufe::Textriegel => "textriegel",
+            Stufe::Parser => "parser",
+            Stufe::Duplikat => "duplikat",
+            Stufe::Schema => "schema",
+        }
+    }
+}
+
+/// Eine abgelehnte v3-Nachricht: an welcher Stufe und warum.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Ablehnung {
+    pub(super) stufe: Stufe,
+    pub(super) grund: String,
+}
+
+/// Textriegel → EIN strenger Lauf → Schema der Fassung `schema_minor`.
+///
+/// 🔑 NAK-313 R-313-6: hier stand `serde_json::from_slice` in einen `Value` —
+/// ein doppelter Name blieb mit seinem LETZTEN Wert stehen, auch der
+/// Discriminator und die Adressfelder, und das Schema pruefte danach nur noch
+/// diesen einen Wert. Der strenge Lauf lehnt Duplikat, Nachspann, zweites
+/// Dokument, Schlusskomma, unbekannte Escapes und Tiefe ueber 64 ab, bevor das
+/// Schema die Nachricht sieht. Die Aufrufer ohne Stufenbedarf nehmen `.ok()`.
+pub(super) fn v3_nachricht_lesen_beliebig_mit_minor(
+    payload: &[u8],
+    schema_minor: u8,
+) -> Result<Value, Ablehnung> {
+    let ablehnung = |stufe, grund| Ablehnung { stufe, grund };
+    crate::vertrag::textriegel_bytes(payload).map_err(|g| ablehnung(Stufe::Textriegel, g))?;
+    let wert = crate::vertrag::json_streng(payload).map_err(|g| {
+        let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+    })?;
+    let Some(schema) = v3_schema(schema_minor) else {
+        return Err(ablehnung(Stufe::Schema, format!("keine Fassung {schema_minor}")));
+    };
+    if !schema.gueltig(&wert) {
+        return Err(ablehnung(Stufe::Schema, "Vertragsverletzung".into()));
+    }
+    Ok(wert)
+}
+
+/// Nur im Testbau: die Stufe am Ausgang der Lesefunktion mit der aktiven
+/// Fassung, `None` heisst gelesen (NAK-313 M-43, M-44, M-49).
+#[cfg(test)]
+pub(super) fn lesestufe(bytes: &[u8]) -> Option<&'static str> {
+    v3_nachricht_lesen_beliebig_mit_minor(bytes, JSON_SCHEMA_MINOR_AKTIV)
+        .err()
+        .map(|a| a.stufe.wort())
 }
 
 pub(super) fn v3_nachricht_lesen(payload: &[u8], erwarteter_typ: &str) -> Option<Value> {
@@ -852,5 +914,119 @@ mod fassungsleiter_tests {
     fn unbekannte_fassung_hat_keinen_leser() {
         assert!(v3_schema(JSON_SCHEMA_MINOR_AKTIV + 1).is_none());
         assert!(v3_schema(200).is_none());
+    }
+}
+
+/// NAK-313 Etappe 4 (R-313-6, R-313-13): der Rust-Produktleser P0 an der
+/// Tabelle der Produkteingaenge und die Raender des strengen Laufs.
+/// `p0_json_mit_minor` ist `pub(super)` und nur hier im Modul erreichbar.
+#[cfg(test)]
+mod nak313_tests {
+    use super::*;
+    use crate::vertrag::produkteingaenge as tabelle;
+    use crate::vertrag::{json_streng, MARKE_DOPPELT, MAX_TIEFE};
+
+    /// M-43, M-49: jeder Eintrag von `rust_p0` als eigener Fall — Urteil und
+    /// Stufe ueber die Lesefunktion und `p0_json_mit_minor`, die Wirkung am
+    /// Link (`erster_heartbeat_gesehen`), zuletzt die Zaehlpruefung.
+    #[test]
+    fn nak313_m43_p0_parser_lehnt_ab() {
+        let kopf = tabelle::kopf();
+        let adresse: Adresse = serde_json::from_value(
+            kopf["eingaenge"]["rust_p0"]["einspeisung"]["adresse"].clone(),
+        )
+        .expect("die Einspeisung von rust_p0 traegt eine Adresse");
+        let mut rot: Vec<String> = Vec::new();
+        let mut gefahren = 0usize;
+        for fall in tabelle::faelle(&kopf, "rust_p0") {
+            gefahren += 1;
+            let id = fall["id"].as_str().unwrap_or("?").to_owned();
+            let bytes = tabelle::bytes(&fall);
+            let c = Coordinator::default();
+            c.control_registrieren("link-p0", adresse.clone());
+            let antwort = c.p0_json_mit_minor("link-p0", &bytes, JSON_SCHEMA_MINOR_AKTIV);
+            let erster = c
+                .stand
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .links
+                .get("link-p0")
+                .map(|l| l.erster_heartbeat_gesehen);
+            let ist = match (&antwort, lesestufe(&bytes)) {
+                (Some(_), _) => ("gueltig".to_owned(), None),
+                (None, Some(stufe)) => ("ungueltig".to_owned(), Some(stufe.to_owned())),
+                // Gelesen, aber vom Coordinator abgewiesen (Manifest §7.2).
+                (None, None) => ("ungueltig".to_owned(), Some("feldregel".to_owned())),
+            };
+            let soll = tabelle::urteil(&fall, "produkt");
+            if ist != soll {
+                rot.push(format!("{id}: Urteil/Stufe {ist:?}, soll {soll:?}"));
+            }
+            for wirkung in tabelle::wirkung(&fall) {
+                let gehalten = match wirkung.as_str() {
+                    "annahme" => antwort.is_some(),
+                    "ablehnung" | "kein_ack" => antwort.is_none(),
+                    "keine_teilmutation" => erster == Some(false),
+                    _ => false,
+                };
+                if !gehalten {
+                    rot.push(format!(
+                        "{id}: Wirkung {wirkung} nicht gehalten (ACK {}, erster Heartbeat {erster:?})",
+                        antwort.is_some()
+                    ));
+                }
+            }
+        }
+        let soll_anzahl = kopf["anzahl_je_eingang"]["rust_p0"].as_u64().unwrap_or(0) as usize;
+        assert!(
+            gefahren == soll_anzahl && gefahren > 0,
+            "M-49 Zaehlpruefung rust_p0: {gefahren} Eintraege gefahren, der Kopf nennt {soll_anzahl}"
+        );
+        assert!(rot.is_empty(), "rust_p0 weicht von `produkt` ab:\n{}", rot.join("\n"));
+    }
+
+    /// Die Raender des strengen Laufs (Manifest §8.4, Selbstaudit): Tiefe 64
+    /// und 65 fuer Objekte, Listen und beide gemischt, leere Container,
+    /// Nachspann aus Leerraum gegen Nachspann aus Zeichen, zweites Dokument,
+    /// Schlusskomma in Objekt und Liste, unbekanntes und kurzes Escape, Alias,
+    /// Duplikat im verschachtelten Objekt und derselbe Name in zwei Objekten.
+    #[test]
+    fn nak313_strenger_lauf_raender() {
+        let listen = |n: usize| "[".repeat(n) + &"]".repeat(n);
+        let objekte = |n: usize| "{\"a\":".repeat(n - 1) + "{}" + &"}".repeat(n - 1);
+        let gemischt = |n: usize| "{\"a\":[".repeat(n / 2) + "0" + &"]}".repeat(n / 2);
+        for (text, tiefe) in [
+            (listen(MAX_TIEFE), MAX_TIEFE),
+            (objekte(MAX_TIEFE), MAX_TIEFE),
+            (gemischt(MAX_TIEFE), MAX_TIEFE),
+        ] {
+            assert!(json_streng(text.as_bytes()).is_ok(), "Tiefe {tiefe} ist die Grenze selbst");
+        }
+        for text in [listen(MAX_TIEFE + 1), objekte(MAX_TIEFE + 1), "[".to_owned() + &gemischt(MAX_TIEFE) + "]"] {
+            let grund = json_streng(text.as_bytes()).expect_err("Tiefe 65 faellt");
+            assert!(grund.contains("zu tief verschachtelt"), "{grund}");
+        }
+        assert!(json_streng(b"{}").is_ok() && json_streng(b"[]").is_ok());
+        assert!(json_streng(b"{\"a\":1} \r\n\t").is_ok(), "Nachspann aus Leerraum ist kein Nachspann");
+        for text in [
+            &b"{\"a\":1} x"[..],
+            b"{\"a\":1}[]",
+            b"{\"a\":1}{\"a\":1}",
+            b"{\"a\":1,}",
+            b"[1,]",
+            b"{\"a\":\"\\q\"}",
+            b"{\"a\":\"\\u00e\"}",
+        ] {
+            let grund = json_streng(text).expect_err("RFC 8259 laesst es nicht zu");
+            assert!(!grund.contains(MARKE_DOPPELT), "Syntax ist kein Duplikat: {grund}");
+        }
+        for text in [&b"{\"typ\\u0065\":1,\"type\":1}"[..], b"{\"a\":{\"k\":1,\"k\":2}}"] {
+            let grund = json_streng(text).expect_err("derselbe dekodierte Name zweimal");
+            assert!(grund.contains(MARKE_DOPPELT), "{grund}");
+        }
+        assert!(
+            json_streng(b"{\"a\":{\"k\":1},\"b\":{\"k\":2}}").is_ok(),
+            "derselbe Name in zwei verschiedenen Objekten ist gueltig (M-41)"
+        );
     }
 }

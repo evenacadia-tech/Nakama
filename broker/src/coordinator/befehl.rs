@@ -668,7 +668,7 @@ impl Coordinator {
         payload: &[u8],
         schema_minor: u8,
     ) -> Option<Vec<u8>> {
-        let wert = v3_nachricht_lesen_beliebig_mit_minor(payload, schema_minor)?;
+        let wert = v3_nachricht_lesen_beliebig_mit_minor(payload, schema_minor).ok()?;
         match wert.get("type")?.as_str()? {
             "heartbeat" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;

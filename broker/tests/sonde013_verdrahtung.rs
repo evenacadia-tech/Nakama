@@ -474,6 +474,47 @@ fn evidenz_historie_haelt_ihren_deckel() {
     );
 }
 
+/// NAK-313 M-52 (R-313-7, schreiben<->lesen): der ECHTE Rust-Empfaenger nimmt
+/// den lokalen Snapshot OHNE `project_sample_start` an, den der C++-Writer
+/// seit Etappe 4 schreibt. Die Eingabe ist `wire_snapshot` der Byteinstanz
+/// `evidenz-lokal-wire-v1.json` — derselbe Transportblock, den B16 bytegleich
+/// gegen den Writer haelt — und sie laeuft durch die P1-Weiche wie im Produkt.
+#[cfg(windows)]
+#[test]
+fn nak313_m52_lokale_evidenz_ohne_startwert() {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/evidenz-lokal-wire-v1.json");
+    let instanz: Value = serde_json::from_slice(&std::fs::read(&pfad).expect("Byteinstanz liegt im Korpus"))
+        .expect("Byteinstanz ist JSON");
+    let snapshot = instanz["wire_snapshot"]
+        .as_str()
+        .expect("wire_snapshot ist ein Text")
+        .as_bytes()
+        .to_vec();
+    let wert: Value = serde_json::from_slice(&snapshot).expect("wire_snapshot ist JSON");
+    let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).expect("Adresse");
+    let (c, _) = coordinator();
+    let mut h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    h.adresse = adresse.clone();
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+
+    Senke::p1(&c, "a", &snapshot);
+
+    let sicht = c
+        .evidenz_sicht(&adresse.instance_id)
+        .expect("M-52: der lokale Snapshot ohne Startwert wird angenommen");
+    assert_eq!(
+        sicht.evidence_id,
+        wert["evidence_id"].as_str().unwrap(),
+        "M-52: und zwar genau dieser Snapshot"
+    );
+    assert_eq!(
+        sicht.project_sample_start, None,
+        "M-52: ohne Projektzeit traegt der Stand keinen Startwert"
+    );
+}
+
 /// B14 (Luecke, entschieden) — `beeinflusst=true` schliesst aus und zaehlt.
 #[test]
 fn beeinflusste_evidenz_wird_ausgeschlossen_und_gezaehlt() {

@@ -46,8 +46,9 @@
 
 use std::sync::OnceLock;
 
-use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
-use serde_json::{Map, Value};
+use serde_json::Value;
+
+use crate::vertrag::{json_streng, MARKE_DOPPELT};
 
 /// Der Vertrag selbst — mitkompiliert, damit der Broker keine Datei zur
 /// Laufzeit braucht und keine zweite Wahrheit entsteht.
@@ -230,79 +231,13 @@ pub fn bestand() -> &'static Bestand {
 }
 
 // ------------------------------------------------------- Doppelte Schluessel
-
-/// Marke, an der die Doppelschluessel-Ablehnung aus dem Serde-Fehler wieder
-/// herausgelesen wird.
-///
-/// 🔑 `serde_json::Value` kann das nicht: seine `Map` ist eine Map, sie
-/// UEBERSCHREIBT den ersten Wert still — genau wie Pythons `json.loads` ohne
-/// `object_pairs_hook`. Der C++-Leser (`kanon::lies`) meldet den doppelten
-/// Schluessel als eigenen Fehler. Ohne den Umweg hier waere das Rust-Bein an
-/// dieser Stelle SCHWAECHER als die anderen beiden und `doppelter-schluessel.json`
-/// wuerde als gueltig durchgehen.
-const MARKE_DOPPELT: &str = "nakama:doppelter-schluessel";
-
-/// `serde_json::Value`, aber mit Ablehnung doppelter Objektschluessel.
-#[derive(Debug)]
-struct StrengerWert(Value);
-
-struct WertBesucher;
-
-impl<'de> Visitor<'de> for WertBesucher {
-    type Value = StrengerWert;
-
-    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str("ein JSON-Wert ohne doppelte Objektschluessel")
-    }
-
-    fn visit_bool<E: de::Error>(self, v: bool) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::Bool(v)))
-    }
-    fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::from(v)))
-    }
-    fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::from(v)))
-    }
-    fn visit_f64<E: de::Error>(self, v: f64) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::from(v)))
-    }
-    fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::String(v.to_string())))
-    }
-    fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::Null))
-    }
-    fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
-        Ok(StrengerWert(Value::Null))
-    }
-
-    fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
-        let mut aus = Vec::new();
-        while let Some(StrengerWert(w)) = a.next_element()? {
-            aus.push(w);
-        }
-        Ok(StrengerWert(Value::Array(aus)))
-    }
-
-    fn visit_map<A: MapAccess<'de>>(self, mut m: A) -> Result<Self::Value, A::Error> {
-        let mut obj = Map::new();
-        while let Some(k) = m.next_key::<String>()? {
-            let StrengerWert(w) = m.next_value()?;
-            if obj.contains_key(&k) {
-                return Err(de::Error::custom(MARKE_DOPPELT));
-            }
-            obj.insert(k, w);
-        }
-        Ok(StrengerWert(Value::Object(obj)))
-    }
-}
-
-impl<'de> Deserialize<'de> for StrengerWert {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        d.deserialize_any(WertBesucher)
-    }
-}
+//
+// 🔑 NAK-313 R-313-6: der strenge Leser mit der Ablehnung doppelter
+// Schluessel stand bis Etappe 4 nur hier. Er ist nach `crate::vertrag`
+// umgezogen (`json_streng`, Marke `MARKE_DOPPELT`) und liest dort JEDEN
+// JSON-Produkteingang des Brokers; die DTO-Kante ruft dieselbe Funktion.
+// Ohne ihn waere das Rust-Bein SCHWAECHER als die anderen beiden, und
+// `doppelter-schluessel.json` ginge als gueltig durch.
 
 // ------------------------------------------------------------------- Leiter
 
@@ -323,11 +258,11 @@ pub fn pruefe(roh: &[u8]) -> Result<(), Grund> {
         return Err(Grund::KeinJson);
     }
 
-    // 2. Parser mit Ablehnung doppelter Schluessel.
-    let wurzel: Value = match serde_json::from_slice::<StrengerWert>(roh) {
-        Ok(StrengerWert(w)) => w,
+    // 2. Parser mit Ablehnung doppelter Schluessel — der eine strenge Lauf.
+    let wurzel: Value = match json_streng(roh) {
+        Ok(w) => w,
         Err(e) => {
-            return Err(if e.to_string().contains(MARKE_DOPPELT) {
+            return Err(if e.contains(MARKE_DOPPELT) {
                 Grund::DoppelterSchluessel
             } else {
                 Grund::KeinJson
@@ -553,13 +488,13 @@ mod tests {
 
     #[test]
     fn doppelter_schluessel_wird_nicht_still_ueberschrieben() {
-        // Die Gegenprobe zum Umweg ueber StrengerWert: mit `serde_json::Value`
-        // gaebe es hier KEINEN Fehler, der zweite Wert gewaenne still.
+        // Die Gegenprobe zum strengen Lauf: mit `serde_json::Value` gaebe es
+        // hier KEINEN Fehler, der zweite Wert gewaenne still.
         let roh = br#"{"a":1,"a":2}"#;
         assert!(serde_json::from_slice::<Value>(roh).is_ok(), "Value ueberschreibt still");
-        let hart = serde_json::from_slice::<StrengerWert>(roh);
-        assert!(hart.is_err(), "StrengerWert muss ablehnen");
-        assert!(hart.unwrap_err().to_string().contains(MARKE_DOPPELT));
+        let hart = json_streng(roh);
+        assert!(hart.is_err(), "der strenge Lauf muss ablehnen");
+        assert!(hart.unwrap_err().contains(MARKE_DOPPELT));
     }
 
     #[test]
@@ -585,7 +520,7 @@ mod tests {
         // Der Besucher muss REKURSIV greifen — sonst deckt er nur die Wurzel,
         // und `parameters` ist genau die Ebene, auf der die Parameter liegen.
         let roh = br#"{"x":{"b":1,"b":2}}"#;
-        let hart = serde_json::from_slice::<StrengerWert>(roh);
+        let hart = json_streng(roh);
         assert!(hart.is_err(), "auch geschachtelt muss es fallen");
     }
 }

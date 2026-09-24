@@ -20,6 +20,16 @@ impl Coordinator {
         else {
             return false;
         };
+        self.subscribe_json_mit_minor_wert(link_id, wert)
+    }
+
+    /// Die Wertvariante fuer die P1-Weiche (NAK-313 R-313-6, M-44): `wert` hat
+    /// Textriegel, strengen Lauf und Schema schon hinter sich und wird hier
+    /// nicht noch einmal gelesen.
+    pub(super) fn subscribe_json_mit_minor_wert(&self, link_id: &str, wert: Value) -> bool {
+        if wert.get("type").and_then(Value::as_str) != Some("subscribe_session") {
+            return false;
+        }
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
             let mut stand = self.stand.lock().unwrap_or_else(|e| e.into_inner());
             Self::subscription_abweisen(&mut stand, "subscribe: Adresse ungueltig");

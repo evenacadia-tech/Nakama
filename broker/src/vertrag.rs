@@ -15,7 +15,8 @@
 //! Die C++-Gegenseite ist `eq-copilot/plugin/vertrag/NakamaVertrag.*`. Beide
 //! messen gegen `eq-copilot/fixtures/v3/MANIFEST.json`.
 
-use serde_json::Value;
+use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde_json::{Map, Value};
 use std::collections::BTreeSet;
 
 /// Gemeinsame Obergrenze des C++-/Rust-/Python-Textriegels. Der Pipe-Framer
@@ -545,6 +546,210 @@ fn textriegel_mit_zahlenpolitik(
         i += 1;
     }
     Ok(())
+}
+
+// ------------------------------------------------------ strenger Parselauf
+
+/// Marke, an der die Ablehnung eines doppelten Schluessels aus dem Serde-Fehler
+/// wieder herausgelesen wird (NAK-313 R-313-6; bis Etappe 4 in `dto.rs`).
+///
+/// 🔑 `serde_json::Value` kann das nicht: seine `Map` UEBERSCHREIBT den ersten
+/// Wert still — genau wie Pythons `json.loads` ohne `object_pairs_hook`. Der
+/// C++-Leser (`kanon::lies`) meldet den doppelten Schluessel als eigenen
+/// Fehler; ohne den Besucher unten waere das Rust-Bein an dieser Stelle
+/// SCHWAECHER als die anderen beiden.
+pub const MARKE_DOPPELT: &str = "nakama:doppelter-schluessel";
+
+/// Hoechstens so viele verschachtelte Objekte und Listen, zusammen gezaehlt —
+/// dieselbe Grenze wie `kanon::lies` (`NakamaKanon.cpp`) und
+/// `json_laden_strikt` (`pruefe_v3_vertrag.py`). `serde_json` allein braeche
+/// erst bei 128 ab, und ein additives Objekt (`zaehler`, `konfidenz`) liesse
+/// solche Tiefe schemagueltig zu: die Beine faellten sonst ueber dieselben
+/// Bytes verschiedene Urteile.
+pub const MAX_TIEFE: usize = 64;
+
+/// Der EINE strenge RFC-8259-Parselauf der Rust-Seite (NAK-313 R-313-6).
+///
+/// Nachspann und zweites Dokument lehnt `Deserializer::end()` ab, Schlusskomma
+/// und unbekannte Escapes `serde_json` selbst; einen doppelten dekodierten
+/// Namen im selben Objekt (auch als Escape-Alias) meldet der Besucher mit
+/// `MARKE_DOPPELT`, eine Verschachtelung ueber `MAX_TIEFE` mit „zu tief
+/// verschachtelt". Hierueber lesen die Lesefunktion des Coordinators (P0,
+/// P1-Weiche), der Bootstrap und die DTO-Kante ihre Bytes, jeweils genau
+/// einmal.
+pub fn json_streng(bytes: &[u8]) -> Result<Value, String> {
+    #[cfg(test)]
+    laeufe::merken(bytes);
+    let mut de = serde_json::Deserializer::from_slice(bytes);
+    let wert = TiefenSaat { tiefe: 0 }
+        .deserialize(&mut de)
+        .map_err(|e| e.to_string())?;
+    de.end().map_err(|e| e.to_string())?;
+    Ok(wert)
+}
+
+/// Traegt die Tiefe des umschliessenden Knotens in den naechsten Wert.
+struct TiefenSaat {
+    tiefe: usize,
+}
+
+impl<'de> DeserializeSeed<'de> for TiefenSaat {
+    type Value = Value;
+
+    fn deserialize<D: Deserializer<'de>>(self, d: D) -> Result<Value, D::Error> {
+        d.deserialize_any(StrengerBesucher { tiefe: self.tiefe })
+    }
+}
+
+/// `serde_json::Value`, aber ohne doppelte Objektschluessel und mit Tiefengrenze.
+struct StrengerBesucher {
+    tiefe: usize,
+}
+
+impl StrengerBesucher {
+    /// Die Tiefe eines Objekts oder einer Liste, die in diesem Knoten beginnt —
+    /// oder die Ablehnung, wenn sie die Grenze ueberschreitet.
+    fn tiefe_darin<E: de::Error>(&self) -> Result<usize, E> {
+        let tiefe = self.tiefe + 1;
+        if tiefe > MAX_TIEFE {
+            return Err(E::custom("zu tief verschachtelt"));
+        }
+        Ok(tiefe)
+    }
+}
+
+impl<'de> Visitor<'de> for StrengerBesucher {
+    type Value = Value;
+
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("ein JSON-Wert ohne doppelte Objektschluessel")
+    }
+
+    fn visit_bool<E: de::Error>(self, v: bool) -> Result<Value, E> {
+        Ok(Value::Bool(v))
+    }
+    fn visit_i64<E: de::Error>(self, v: i64) -> Result<Value, E> {
+        Ok(Value::from(v))
+    }
+    fn visit_u64<E: de::Error>(self, v: u64) -> Result<Value, E> {
+        Ok(Value::from(v))
+    }
+    fn visit_f64<E: de::Error>(self, v: f64) -> Result<Value, E> {
+        Ok(Value::from(v))
+    }
+    fn visit_str<E: de::Error>(self, v: &str) -> Result<Value, E> {
+        Ok(Value::String(v.to_string()))
+    }
+    fn visit_none<E: de::Error>(self) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+    fn visit_unit<E: de::Error>(self) -> Result<Value, E> {
+        Ok(Value::Null)
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> Result<Value, A::Error> {
+        let tiefe = self.tiefe_darin()?;
+        let mut aus = Vec::new();
+        while let Some(w) = a.next_element_seed(TiefenSaat { tiefe })? {
+            aus.push(w);
+        }
+        Ok(Value::Array(aus))
+    }
+
+    fn visit_map<A: MapAccess<'de>>(self, mut m: A) -> Result<Value, A::Error> {
+        let tiefe = self.tiefe_darin()?;
+        let mut obj = Map::new();
+        while let Some(k) = m.next_key::<String>()? {
+            let w = m.next_value_seed(TiefenSaat { tiefe })?;
+            if obj.contains_key(&k) {
+                return Err(de::Error::custom(MARKE_DOPPELT));
+            }
+            obj.insert(k, w);
+        }
+        Ok(Value::Object(obj))
+    }
+}
+
+/// Nur im Testbau: welche Bytes `json_streng` auf diesem Thread gelesen hat,
+/// als Adresse und Laenge (NAK-313 M-44; das Muster fuer M-103). So misst ein
+/// Test „genau ein strenger Lauf je Nachricht" an DERSELBEN Nachricht — ein
+/// Lauf ueber andere Bytes desselben Threads, etwa die Selbstpruefung eines
+/// ausgehenden Snapshots, zaehlt nicht mit.
+#[cfg(test)]
+pub(crate) mod laeufe {
+    use std::cell::RefCell;
+
+    thread_local! {
+        static GELESEN: RefCell<Vec<(usize, usize)>> = const { RefCell::new(Vec::new()) };
+    }
+
+    pub(crate) fn merken(bytes: &[u8]) {
+        GELESEN.with(|g| g.borrow_mut().push((bytes.as_ptr() as usize, bytes.len())));
+    }
+
+    /// Vergisst alle bisher gemerkten Laeufe dieses Threads.
+    pub(crate) fn vergessen() {
+        GELESEN.with(|g| g.borrow_mut().clear());
+    }
+
+    /// Wie oft seit `vergessen` genau diese Bytes streng gelesen wurden.
+    pub(crate) fn ueber(bytes: &[u8]) -> usize {
+        let stelle = (bytes.as_ptr() as usize, bytes.len());
+        GELESEN.with(|g| g.borrow().iter().filter(|&&lauf| lauf == stelle).count())
+    }
+}
+
+/// Nur im Testbau: die Tabelle der Produkteingaenge
+/// (`eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json`, Manifest NAK-313 §7)
+/// fuer die Modultests der Rust-Produktleser.
+#[cfg(test)]
+pub(crate) mod produkteingaenge {
+    use serde_json::Value;
+
+    pub(crate) fn kopf() -> Value {
+        let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json");
+        let roh = std::fs::read(&pfad).unwrap_or_else(|e| panic!("{}: {e}", pfad.display()));
+        serde_json::from_slice(&roh).unwrap_or_else(|e| panic!("{}: {e}", pfad.display()))
+    }
+
+    /// Die Eintraege eines Eingangs, in Tabellenreihenfolge.
+    pub(crate) fn faelle(kopf: &Value, eingang: &str) -> Vec<Value> {
+        kopf["faelle"]
+            .as_array()
+            .expect("die Tabelle traegt faelle")
+            .iter()
+            .filter(|f| f["eingang"] == eingang)
+            .cloned()
+            .collect()
+    }
+
+    /// Die Payloadbytes eines Eintrags (ohne Laengenpraefix und Envelope).
+    pub(crate) fn bytes(fall: &Value) -> Vec<u8> {
+        let hex = fall["bytes_hex"].as_str().expect("bytes_hex");
+        (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).expect("bytes_hex ist hex"))
+            .collect()
+    }
+
+    /// (urteil, stufe) des Objekts `vertrag` oder `produkt`.
+    pub(crate) fn urteil(fall: &Value, objekt: &str) -> (String, Option<String>) {
+        (
+            fall[objekt]["urteil"].as_str().expect("urteil").to_owned(),
+            fall[objekt]["stufe"].as_str().map(str::to_owned),
+        )
+    }
+
+    /// Die Wirkungen des Eintrags am Produktleser.
+    pub(crate) fn wirkung(fall: &Value) -> Vec<String> {
+        fall["wirkung"]
+            .as_array()
+            .expect("wirkung")
+            .iter()
+            .map(|w| w.as_str().expect("Wirkung ist ein Wort").to_owned())
+            .collect()
+    }
 }
 
 #[derive(Debug)]

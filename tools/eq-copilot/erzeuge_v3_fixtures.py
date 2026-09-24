@@ -3482,6 +3482,14 @@ FREMDE_SID = "S-1-5-21-9"
 FREMDE_EPOCHE = "55555555555555555555555555555555"
 V2_WELCOME = '{"type":"welcome","protocol_version":2,"broker_version":"test","session_token":"tok"}'
 
+# NAK-313 Etappe 5 (Manifest §8.5, „Testserver fuer Tabelleneintraege"): die
+# Werte, die der v3-Testserver (`eq-copilot/plugin/tests/V3TestServer.h`) selbst
+# traegt. Die Welcome-Eintraege nennen seine Kopplungswerte, damit der
+# Kopplungsvergleich des Telemetrie-Clients nicht am Eintrag haengt; die
+# ACK-Eintraege tragen die `command_id` des P0, den das Bein einreiht.
+ACK_KOPPLUNG = {"link_id": "a" * 32, "challenge": "b" * 32, "broker_epoch": "c" * 32}
+ACK_COMMAND_ID = "5" * 32
+
 # Die geschlossenen Mengen der Tabelle (§7.1).
 STUFEN = ["textriegel", "parser", "duplikat", "schema", "feldregel"]
 WIRKUNGEN = ["annahme", "ablehnung", "keine_teilmutation", "kein_ack",
@@ -3494,21 +3502,26 @@ MATRIX_ETAPPEN = [(1, 16, 2), (17, 38, 3), (39, 54, 4), (55, 97, 5),
                   (98, 122, 6), (123, 145, 7)]
 
 # Die Stufenketten je Leser und Etappe (Manifest §7.2, Tabelle „Stufenketten
-# je Leser"). Referenzbeine messen `vertrag`, Produktleser `produkt`.
-LESERKETTEN = {
-    "A5":  {"4": ["textriegel", "parser", "duplikat", "schema"]},
-    "A11": {"4": ["parser", "duplikat", "schema"]},
-    "B16": {"4": ["textriegel", "parser", "duplikat", "schema"]},
-    "cpp_control_handshake":    {"4": ["parser", "duplikat", "feldregel"]},
-    "cpp_telemetrie_handshake": {"4": ["parser", "duplikat", "feldregel"]},
-    "cpp_control_ack":          {"4": ["parser", "duplikat", "feldregel"]},
-    "cpp_sources_snapshot":   {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
-    "cpp_sources_ruecknahme": {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
-    "cpp_v2_client":          {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
-    "rust_bootstrap": {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
-    "rust_p0": {"4": ["textriegel", "parser", "duplikat", "schema", "feldregel"]},
-    "rust_p1": {"4": ["textriegel", "parser", "duplikat", "schema", "feldregel"]},
+# je Leser"). Referenzbeine messen `vertrag`, Produktleser `produkt`. Etappe 5
+# aendert keine Kette, nur den Inhalt zweier Stufen: `textriegel` des
+# v2-Clients traegt ab jetzt den Zahlriegel, `feldregel` der flachen Leser den
+# Bereich des Ganzzahllesers (Manifest §7.1, „Die Stufen").
+_KETTEN_ETAPPE_4 = {
+    "A5":  ["textriegel", "parser", "duplikat", "schema"],
+    "A11": ["parser", "duplikat", "schema"],
+    "B16": ["textriegel", "parser", "duplikat", "schema"],
+    "cpp_control_handshake":    ["parser", "duplikat", "feldregel"],
+    "cpp_telemetrie_handshake": ["parser", "duplikat", "feldregel"],
+    "cpp_control_ack":          ["parser", "duplikat", "feldregel"],
+    "cpp_sources_snapshot":   ["textriegel", "parser", "duplikat", "feldregel"],
+    "cpp_sources_ruecknahme": ["textriegel", "parser", "duplikat", "feldregel"],
+    "cpp_v2_client":          ["textriegel", "parser", "duplikat", "feldregel"],
+    "rust_bootstrap": ["textriegel", "parser", "duplikat", "feldregel"],
+    "rust_p0": ["textriegel", "parser", "duplikat", "schema", "feldregel"],
+    "rust_p1": ["textriegel", "parser", "duplikat", "schema", "feldregel"],
 }
+LESERKETTEN = {leser: {"4": list(kette), "5": list(kette)}
+               for leser, kette in _KETTEN_ETAPPE_4.items()}
 
 
 def _einspeisung_register() -> dict:
@@ -3530,15 +3543,21 @@ def _einspeisung_register() -> dict:
         "cpp_control_handshake": {
             "produktleser": "flacher Leser Control, erste Antwort welcome oder reject",
             "bein": "B10", "einspeisung": {
-                "text": "der Testserver sendet die Bytes als erste P0-Antwort"}},
+                "text": ("der Testserver sendet die Bytes als erste P0-Antwort (Schalter fuer "
+                         "rohe Antwortbytes auf das Control-Hello)")}},
         "cpp_telemetrie_handshake": {
             "produktleser": "flacher Leser Telemetrie",
             "bein": "B10", "einspeisung": {
-                "text": "der Testserver sendet die Bytes auf das Telemetrie-Hello"}},
+                "text": ("der Testserver sendet die Bytes auf das Telemetrie-Hello (Schalter fuer "
+                         "rohe Antwortbytes auf das Telemetrie-Hello); link_id und challenge "
+                         "der Bytes sind die Kopplungswerte des Testservers"),
+                "link_id": ACK_KOPPLUNG["link_id"], "challenge": ACK_KOPPLUNG["challenge"]}},
         "cpp_control_ack": {
             "produktleser": "commandAckArtLesen ueber inFlightAck und commandAckHaeltVertrag",
             "bein": "B10", "einspeisung": {
-                "text": "P0 mit der command_id des Eintrags, der Testserver antwortet mit den Bytes"}},
+                "text": ("ein persistenzpflichtiger P0 (user_verdict) mit command_id, der "
+                         "Testserver antwortet mit den Bytes (Schalter fuer rohe ACK-Bytes)"),
+                "command_id": ACK_COMMAND_ID}},
         "cpp_sources_snapshot": {
             "produktleser": "SourcesModel::uebernehmeSessionSnapshot",
             "bein": "B13", "einspeisung": {
@@ -3554,8 +3573,10 @@ def _einspeisung_register() -> dict:
             "produktleser": "PipeClient (welcome, reject, heartbeat_ack)",
             "bein": "A4b", "einspeisung": {
                 "text": ("ein v2-Peer auf einem Probenamen sendet die Bytes als Antwort auf "
-                         "hello; fuer heartbeat_ack zuerst welcome_vor_ack, dann die Bytes "
-                         "als Antwort auf den ersten Heartbeat (seq 0)"),
+                         "hello; fuer heartbeat_ack zuerst welcome_vor_ack, dann so viele "
+                         "gueltige ACKs (seq = Nummer des Heartbeats), wie "
+                         "einspeisung.gueltige_acks_davor des Eintrags nennt (fehlt es: 0), "
+                         "dann die Bytes als Antwort auf den naechsten Heartbeat"),
                 "welcome_vor_ack": V2_WELCOME}},
         "rust_bootstrap": {
             "produktleser": "bootstrap_lesen",
@@ -3574,6 +3595,7 @@ def _einspeisung_register() -> dict:
                 "links": {
                     "evidence_snapshot": {"link_art": "passive_probe", "adresse": ADRESSE},
                     "intent_update": {"link_art": "main", "adresse": ADRESSE},
+                    "state_report": {"link_art": "passive_probe", "adresse": ADRESSE},
                 }}},
     }
 
@@ -3807,6 +3829,7 @@ def _pe(eingang: str, fassung: str, nachricht: str, roh: str | bytes, zeige: str
         "wirkung": wirkung,
         "matrix": matrix,
         "ub_bei_juce": False,
+        "einspeisung": None,
         "warum": warum,
     }
 
@@ -4004,6 +4027,371 @@ def _faelle_rust() -> list[dict]:
     return faelle
 
 
+# ════════════════════════════════════════════════════════════════════════
+# NAK-313 Etappe 5a · die Wertregel am Wire (R-313-5; Manifest §7.3, „Etappe 5")
+# ════════════════════════════════════════════════════════════════════════
+#
+# Ganzzahlfelder in der `.0`- und der `e`-Form mit ihrem erwarteten Wert, die
+# Negativen `1.5` und 2^53 fuer die v3-Eingaenge, NaN, +/-Infinity und 1e999 in
+# einem Ganzzahlfeld und die v2-Zahleintraege des Zahlriegels. Ab hier urteilen
+# Vertrag und Produkt nicht mehr ueberall an derselben Stufe: wo ein Leser weder
+# Textriegel noch Schema hat (flacher Leser, Quellenmodell ohne Schema,
+# v2-Client mit Zahlriegel statt Vertrag), steht die Abweichung mit Grund im
+# Eintrag und im Kopf gezaehlt (R-313-13). Die Bootstrap-Negativen entstehen
+# erst mit dem Tor in Etappe 6 (E-313-11); hier stehen nur gueltige Hellos.
+
+ZWEI_HOCH_53 = "9007199254740992"
+NICHT_ENDLICH = ("NaN", "Infinity", "-Infinity", "1e999")
+V2_GANZZAHL_MAX = "9223372036854775807"
+
+# Der Stand der Spezifikation nach Etappe 5 (Manifest §7.1): genau eine
+# Abweichung der Art `urteil` (M-93 c); die Art `stufe` tragen die Eintraege
+# der Leser ohne Schema oder ohne Textriegel - ACK 6, Handshake Control 8 und
+# Telemetrie 8, Quellenmodell 2 und 2, v2-Client 11. Von Hand gezaehlt; die
+# Selbstpruefung haelt die Tabelle dagegen.
+ABWEICHUNGEN_SPEZIFIZIERT = {"stufe": 37, "urteil": 1}
+
+# Die Gruende der Abweichungen der Art `stufe` - je Produktregel ein Satz mit
+# ihrer Stelle, damit ein Leser des Eintrags weiss, warum Vertrag und Produkt
+# an verschiedenen Stufen fallen.
+GRUND_FLACH_ACK = ("der flache Leser hat weder Textriegel noch Schema: commandAckArtLesen "
+                   "liest state_revision mit ganzzahlAusLiteral im Bereich 0 bis 2^53-1 "
+                   "(core/ipc/controlclient/Intern.h), ein Fehlschlag ist keinAck")
+GRUND_FLACH_WELCOME = ("der flache Leser hat weder Textriegel noch Schema: welcomeHaeltVertrag "
+                       "liest protocol mit ganzzahlAusLiteral im Bereich 3 bis 3 "
+                       "(core/ipc/controlclient/Vertrag.cpp)")
+GRUND_QUELLENMODELL = ("das Quellenmodell prueft kein Schema: der Feldleser "
+                       "nichtnegativeGanzzahl (src/SourcesModel.cpp) nimmt nur ganzzahlige Werte "
+                       "ab 0 aus dem strengen Lauf (wertAlsVar)")
+GRUND_ZAHLRIEGEL = ("der v2-Client prueft keinen Vertrag: der Zahlriegel (zahlriegelBytes, "
+                    "Regeln 1 bis 3 mit der Grenze INT64_MAX) lehnt vor dem strengen Lauf und "
+                    "vor JUCE ab (src/PipeClient.cpp, empfange)")
+GRUND_V2_FELD = ("der v2-Client prueft keinen Vertrag: die Zahl passiert den Zahlriegel, und "
+                 "die Feldregel nach dem Lesen (protocol_version == 2, src/PipeClient.cpp) "
+                 "lehnt ab")
+
+
+def _stufe(grund: str) -> dict:
+    return {"art": "stufe", "grund": grund}
+
+
+def _pe5(eingang: str, fassung: str, nachricht: str, roh: str, zeige: str,
+         vertrag: str | None, produkt: str | None, wirkung: list[str], matrix: str,
+         warum: str, feld: str | None = None, wert: str | None = None,
+         abweichung: dict | None = None, ub: bool = False,
+         einspeisung: dict | None = None) -> dict:
+    """Ein Tabelleneintrag der Etappe 5: Vertrag und Produkt getrennt (Form A)."""
+    eintrag = _pe(eingang, fassung, nachricht, roh, zeige, vertrag, wirkung, matrix, warum)
+    eintrag["produkt"] = {"urteil": "gueltig" if produkt is None else "ungueltig",
+                          "stufe": produkt}
+    eintrag.update(feld=feld, wert=wert, abweichung=abweichung, ub_bei_juce=ub,
+                   einspeisung=einspeisung)
+    return eintrag
+
+
+def _ersetze_alle(text: str, alt: str, neu: str, anzahl: int) -> str:
+    if text.count(alt) != anzahl:
+        raise SystemExit(f"Produkteingaenge: {alt!r} steht nicht {anzahl}-mal im Grundtext")
+    return text.replace(alt, neu)
+
+
+def _ack_v3(literal: str) -> str:
+    """Das ACK in der Form des Testservers, `state_revision` als Literal."""
+    return ('{"type":"command_ack","command_id":"' + ACK_COMMAND_ID
+            + '","ergebnis":"angewandt","state_revision":' + literal
+            + ',"state_hash":"' + "d" * 64 + '"}')
+
+
+def _welcome_v3(literal: str) -> str:
+    """Das welcome in der Form des Testservers, `protocol` als Literal."""
+    k = ACK_KOPPLUNG
+    return ('{"type":"welcome","protocol":' + literal + ',"broker_version":"test",'
+            '"broker_epoch":"' + k["broker_epoch"] + '","link_id":"' + k["link_id"]
+            + '","challenge":"' + k["challenge"] + '"}')
+
+
+def _faelle_flacher_leser() -> list[dict]:
+    """M-56, M-57, M-60, M-73, M-96: ACK und welcome am flachen C++-Leser."""
+    kein_ack = ["kein_ack", "kein_freigegebener_auftrag"]
+    faelle = []
+    for literal, wert, warum in (
+            ("7.0", "7", "7.0 ist die mathematische Ganzzahl 7 (README Regel 2, draft 2020-12)"),
+            ("7e0", "7", "7e0 ist die Ganzzahl 7"),
+            ("0", "0", "die Untergrenze des Revisionsbereichs"),
+            ("-0", "0", "-0 ist 0 und liegt im Bereich ab 0")):
+        faelle.append(_pe5("cpp_control_ack", "v3", "command_ack", _ack_v3(literal),
+                           f"command_ack angewandt, state_revision {literal}", None, None,
+                           ["annahme"], "M-56", warum, feld="/state_revision", wert=wert))
+    faelle.append(_pe5("cpp_control_ack", "v3", "command_ack", _ack_v3(ZWEI_HOCH_53),
+                       "command_ack angewandt, state_revision 2^53", "textriegel", "feldregel",
+                       kein_ack, "M-57",
+                       "2^53 liegt ueber dem Revisionsbereich: keinAck, nie eine Revision",
+                       feld="/state_revision", abweichung=_stufe(GRUND_FLACH_ACK)))
+    faelle.append(_pe5("cpp_control_ack", "v3", "command_ack", _ack_v3("1.5"),
+                       "command_ack angewandt, state_revision 1.5", "schema", "feldregel",
+                       kein_ack, "M-73", "1.5 ist keine Ganzzahl", feld="/state_revision",
+                       abweichung=_stufe(GRUND_FLACH_ACK)))
+    for literal in NICHT_ENDLICH:
+        faelle.append(_pe5("cpp_control_ack", "v3", "command_ack", _ack_v3(literal),
+                           f"command_ack angewandt, state_revision {literal}", "textriegel",
+                           "feldregel", kein_ack, "M-96",
+                           f"{literal} ist kein Wert einer Ganzzahl: kein Leser liefert einen",
+                           feld="/state_revision", abweichung=_stufe(GRUND_FLACH_ACK)))
+
+    for eingang in ("cpp_control_handshake", "cpp_telemetrie_handshake"):
+        for literal, warum in (("3.0", "3.0 ist die Ganzzahl 3 und haelt const 3"),
+                               ("3e0", "3e0 ist die Ganzzahl 3"),
+                               ("3", "die kanonische Form")):
+            faelle.append(_pe5(eingang, "v3", "welcome", _welcome_v3(literal),
+                               f"welcome, protocol {literal}", None, None, ["annahme"],
+                               "M-60", warum, feld="/protocol", wert="3"))
+        for literal, vertrag, matrix, warum in (
+                ("4", "schema", "M-60", "4 verletzt const 3"),
+                ("3.5", "schema", "M-60", "3.5 ist keine Ganzzahl"),
+                ("1.5", "schema", "M-73", "1.5 ist keine Ganzzahl"),
+                (ZWEI_HOCH_53, "textriegel", "M-73", "2^53 liegt ueber der Textriegel-Grenze")):
+            faelle.append(_pe5(eingang, "v3", "welcome", _welcome_v3(literal),
+                               f"welcome, protocol {literal}", vertrag, "feldregel",
+                               ["ablehnung"], matrix, warum, feld="/protocol",
+                               abweichung=_stufe(GRUND_FLACH_WELCOME)))
+        for literal in NICHT_ENDLICH:
+            faelle.append(_pe5(eingang, "v3", "welcome", _welcome_v3(literal),
+                               f"welcome, protocol {literal}", "textriegel", "feldregel",
+                               ["ablehnung"], "M-96",
+                               f"{literal} ist kein Wert einer Ganzzahl: das welcome verbindet nicht",
+                               feld="/protocol", abweichung=_stufe(GRUND_FLACH_WELCOME)))
+    return faelle
+
+
+def _faelle_quellenmodell_werte() -> list[dict]:
+    """M-61, M-73, M-96: Werte aus dem strengen Lauf im Quellenmodell."""
+    snapshot = _grundtext(GRUND["session_snapshot"])
+    kontakt = '"letzter_kontakt_ms": 120'
+    faelle = []
+    feld = "/mitglieder/0/frische/letzter_kontakt_ms"
+    for literal, wert in (("1500.0", "1500"), ("1.5e3", "1500")):
+        faelle.append(_pe5("cpp_sources_snapshot", "v3", "session_snapshot",
+                           _ersetze_alle(snapshot, kontakt, f'"letzter_kontakt_ms": {literal}', 2),
+                           f"session_snapshot, letzter_kontakt_ms {literal} in Mitglied und Deskriptor",
+                           None, None, ["annahme"], "M-61",
+                           f"{literal} ist die Ganzzahl {wert}", feld=feld, wert=wert))
+    faelle.append(_pe5("cpp_sources_snapshot", "v3", "session_snapshot",
+                       _ersetze(snapshot, '"label": "Klavier-Bus",',
+                                '"label": "Klavier-Bus",\n        "host_mixer_index": 3.0,'),
+                       "session_snapshot, probe_descriptor.host_mixer_index 3.0", None, None,
+                       ["annahme"], "M-61",
+                       "E-313-9: der Mixerindex 3.0 ist die Ganzzahl 3, die Zeile traegt ihn",
+                       feld="/mitglieder/0/probe_descriptor/host_mixer_index", wert="3"))
+    for literal, vertrag, produkt, matrix, abw, warum in (
+            ("1.5", "schema", "feldregel", "M-61", True, "1.5 ist keine Ganzzahl"),
+            ("-1", "schema", "feldregel", "M-61", True, "-1 liegt unter der Untergrenze 0"),
+            (ZWEI_HOCH_53, "textriegel", "textriegel", "M-73", False,
+             "2^53 liegt ueber der Textriegel-Grenze")):
+        faelle.append(_pe5("cpp_sources_snapshot", "v3", "session_snapshot",
+                           _ersetze_alle(snapshot, kontakt, f'"letzter_kontakt_ms": {literal}', 2),
+                           f"session_snapshot, letzter_kontakt_ms {literal}", vertrag, produkt,
+                           ABGELEHNT, matrix, warum, feld=feld,
+                           abweichung=_stufe(GRUND_QUELLENMODELL) if abw else None))
+    for literal in NICHT_ENDLICH:
+        faelle.append(_pe5("cpp_sources_snapshot", "v3", "session_snapshot",
+                           _ersetze_alle(snapshot, kontakt, f'"letzter_kontakt_ms": {literal}', 2),
+                           f"session_snapshot, letzter_kontakt_ms {literal}", "textriegel",
+                           "textriegel", ABGELEHNT, "M-96",
+                           f"{literal} faellt am Textriegel des Quellenmodells", feld=feld))
+
+    def ruecknahme(start: str, ende: str) -> str:
+        return als_text({"type": "evidence_invalidate", "grund": "sequenzluecke",
+                         "umfang": {"art": "sample_range", "sample_start": "@START@",
+                                    "sample_end": "@ENDE@"}}).decode("utf-8") \
+            .replace('"@START@"', start).replace('"@ENDE@"', ende)
+
+    faelle.append(_pe5("cpp_sources_ruecknahme", "v3", "evidence_invalidate",
+                       ruecknahme("1024.0", "2048"), "sample_range 1024.0 bis 2048", None, None,
+                       ["annahme"], "M-61", "1024.0 ist die Ganzzahl 1024",
+                       feld="/umfang/sample_start", wert="1024"))
+    faelle.append(_pe5("cpp_sources_ruecknahme", "v3", "evidence_invalidate",
+                       ruecknahme("1024", "2048e0"), "sample_range 1024 bis 2048e0", None, None,
+                       ["annahme"], "M-61", "2048e0 ist die Ganzzahl 2048",
+                       feld="/umfang/sample_end", wert="2048"))
+    for literal, vertrag, produkt, matrix, abw, warum in (
+            ("1.5", "schema", "feldregel", "M-61", True, "1.5 ist keine Ganzzahl"),
+            ("-1", "schema", "feldregel", "M-61", True, "-1 liegt unter der Untergrenze 0"),
+            (ZWEI_HOCH_53, "textriegel", "textriegel", "M-73", False,
+             "2^53 liegt ueber der Textriegel-Grenze")):
+        faelle.append(_pe5("cpp_sources_ruecknahme", "v3", "evidence_invalidate",
+                           ruecknahme(literal, "2048"), f"sample_range {literal} bis 2048",
+                           vertrag, produkt, ABGELEHNT, matrix, warum,
+                           feld="/umfang/sample_start",
+                           abweichung=_stufe(GRUND_QUELLENMODELL) if abw else None))
+    for literal in NICHT_ENDLICH:
+        faelle.append(_pe5("cpp_sources_ruecknahme", "v3", "evidence_invalidate",
+                           ruecknahme(literal, "2048"), f"sample_range {literal} bis 2048",
+                           "textriegel", "textriegel", ABGELEHNT, "M-96",
+                           f"{literal} faellt am Textriegel des Quellenmodells",
+                           feld="/umfang/sample_start"))
+    return faelle
+
+
+def _faelle_v2_zahlen() -> list[dict]:
+    """M-91, M-93, M-94, M-96 (`cpp_v2_client`, Fassung v2): der Zahlriegel."""
+    w = V2_WELCOME
+    faelle = []
+    for literal, vertrag, produkt, ub, warum in (
+            (V2_GANZZAHL_MAX, "schema", "feldregel", False,
+             "INT64_MAX passiert den Riegel und ist keine Protokollversion (enum [1, 2])"),
+            ("9223372036854775808", "schema", "textriegel", True,
+             "INT64_MAX + 1: JUCEs int64-Akkumulator liefe ueber, der Riegel faengt ihn"),
+            ("18446744073709551618", "schema", "textriegel", True,
+             "2^64 + 2 klappte in JUCE auf 2 und gaelte als Version 2"),
+            ("2e4294967296", "schema", "textriegel", True,
+             "der Exponent liefe in JUCE ueber und laese 2.0"),
+            ("2.0000000000000001", "schema", "textriegel", False,
+             "17 signifikante Stellen: JUCE liest 2.0 (Regel 2, UB-frei)"),
+            ("2.0", None, None, False, "2.0 ist die Ganzzahl 2 und haelt enum [1, 2]")):
+        abw = None
+        if produkt == "textriegel":
+            abw = _stufe(GRUND_ZAHLRIEGEL)
+        elif produkt == "feldregel":
+            abw = _stufe(GRUND_V2_FELD)
+        faelle.append(_pe5("cpp_v2_client", "v2", "welcome",
+                           w.replace('"protocol_version":2', f'"protocol_version":{literal}'),
+                           f"welcome, protocol_version {literal}", vertrag, produkt,
+                           ["annahme"] if produkt is None else ABGELEHNT, "M-91", warum,
+                           feld="/protocol_version", wert="2" if produkt is None else None,
+                           abweichung=abw, ub=ub))
+
+    def ack(literal: str) -> str:
+        return '{"type":"heartbeat_ack","seq":' + literal + ',"konflikt":false}'
+    faelle.append(_pe5("cpp_v2_client", "v2", "heartbeat_ack", ack("18446744073709551616"),
+                       "heartbeat_ack seq 2^64 auf den ersten Heartbeat (seq 0)", "schema",
+                       "textriegel", ["ablehnung", "kein_ack"], "M-93",
+                       "0 + 2^64 klappte in JUCE auf 0 und bestaetigte den ersten Heartbeat",
+                       feld="/seq", abweichung=_stufe(GRUND_ZAHLRIEGEL), ub=True))
+    faelle.append(_pe5("cpp_v2_client", "v2", "heartbeat_ack", ack("1.0000000000000001"),
+                       "heartbeat_ack seq 1.0000000000000001 auf den zweiten Heartbeat",
+                       "schema", "textriegel", ["ablehnung", "kein_ack"], "M-93",
+                       "17 signifikante Stellen: JUCE liest 1.0 und bestaetigte Heartbeat 1",
+                       feld="/seq", abweichung=_stufe(GRUND_ZAHLRIEGEL),
+                       einspeisung={"gueltige_acks_davor": 1}))
+    faelle.append(_pe5("cpp_v2_client", "v2", "heartbeat_ack", ack(V2_GANZZAHL_MAX),
+                       "heartbeat_ack seq INT64_MAX auf den ersten Heartbeat (seq 0)", None,
+                       "feldregel", ["ablehnung", "kein_ack"], "M-93",
+                       "INT64_MAX ist vertragsgueltig, beantwortet aber nicht Heartbeat 0",
+                       feld="/seq", wert=V2_GANZZAHL_MAX,
+                       abweichung={"art": "urteil", "grund": (
+                           "zustandsabhaengige Feldregel des v2-Clients: die Sequenz des ACK "
+                           "muss die des beantworteten Heartbeats sein (ackSeq != aktuelleSeq, "
+                           "src/PipeClient.cpp); das Schema kennt den Heartbeat nicht (E-313-10)")}))
+
+    reject = '{"type":"reject","reason":"inkompatibel","min_protocol":1,"max_protocol":2}'
+    for feld, literal, ub, warum in (
+            ("min_protocol", "9223372036854775808", True, "INT64_MAX + 1 in min_protocol"),
+            ("max_protocol", "2e4294967296", True, "Exponent ueber drei Ziffern in max_protocol"),
+            ("min_protocol", "2.0000000000000001", False,
+             "der UB-freie Geschwistervektor: JUCE liest 2.0")):
+        alt = f'"{feld}":{"1" if feld == "min_protocol" else "2"}'
+        faelle.append(_pe5("cpp_v2_client", "v2", "reject",
+                           _ersetze(reject, alt, f'"{feld}":{literal}'),
+                           f"reject, {feld} {literal}", "schema", "textriegel", ABGELEHNT,
+                           "M-94", warum, feld=f"/{feld}", abweichung=_stufe(GRUND_ZAHLRIEGEL),
+                           ub=ub))
+
+    for literal in NICHT_ENDLICH:
+        riegel = literal == "1e999"
+        faelle.append(_pe5("cpp_v2_client", "v2", "welcome",
+                           w.replace('"protocol_version":2', f'"protocol_version":{literal}'),
+                           f"welcome, protocol_version {literal}",
+                           "schema" if riegel else "parser", "textriegel" if riegel else "parser",
+                           ABGELEHNT, "M-96",
+                           ("1e999 faellt am Zahlriegel (Regel 3), der v2-Vertrag erst am Schema"
+                            if riegel else
+                            f"{literal} ist keine JSON-Zahl: der strenge Lauf lehnt ab"),
+                           feld="/protocol_version",
+                           abweichung=_stufe(GRUND_ZAHLRIEGEL) if riegel else None))
+    return faelle
+
+
+def _faelle_rust_werte() -> list[dict]:
+    """M-64, M-65, M-66, M-72, M-73, M-90, M-96: die Rust-Produktleser."""
+    faelle = []
+    kein = ["ablehnung", "kein_ack", "keine_teilmutation"]
+    hb = _grundtext(GRUND["heartbeat"])
+    seq = '"sequence": 91,'
+    for literal in ("91.0", "9.1e1"):
+        faelle.append(_pe5("rust_p0", "v3", "heartbeat", _ersetze(hb, seq, f'"sequence": {literal},'),
+                           f"heartbeat, sequence {literal}", None, None, ["annahme"], "M-64",
+                           f"{literal} ist die Ganzzahl 91: das ACK zitiert 91",
+                           feld="/sequence", wert="91"))
+    mit_runtime = _ersetze(hb, '"intervention_state_unknown": false\n}\n',
+                           '"intervention_state_unknown": false,\n  "runtime": {\n'
+                           '    "messpunkt": "insert",\n    "betrieb": "active",\n'
+                           '    "host_mixer_index": 3.0\n  }\n}\n')
+    faelle.append(_pe5("rust_p0", "v3", "heartbeat", mit_runtime,
+                       "heartbeat, runtime.host_mixer_index 3.0", None, None, ["annahme"],
+                       "M-65", "E-313-9: der Deskriptor traegt den Mixerindex als Ganzzahl 3",
+                       feld="/runtime/host_mixer_index", wert="3"))
+    for literal, stufe, matrix, warum in (
+            ("1.5", "schema", "M-73", "1.5 ist keine Ganzzahl"),
+            (ZWEI_HOCH_53, "textriegel", "M-73", "2^53 liegt ueber der Textriegel-Grenze")):
+        faelle.append(_pe5("rust_p0", "v3", "heartbeat", _ersetze(hb, seq, f'"sequence": {literal},'),
+                           f"heartbeat, sequence {literal}", stufe, stufe, kein, matrix, warum,
+                           feld="/sequence"))
+    faelle.append(_pe5("rust_p0", "v3", "heartbeat",
+                       _ersetze(hb, '"state_revision": 12,', f'"state_revision": {ZWEI_HOCH_53},'),
+                       "heartbeat, state_revision 2^53", "textriegel", "textriegel", kein, "M-90",
+                       "eine Revision ueber dem Bereich ist ein Vertragsbruch",
+                       feld="/state_revision"))
+    for literal in NICHT_ENDLICH:
+        faelle.append(_pe5("rust_p0", "v3", "heartbeat", _ersetze(hb, seq, f'"sequence": {literal},'),
+                           f"heartbeat, sequence {literal}", "textriegel", "textriegel", kein,
+                           "M-96", f"{literal} faellt am Textriegel", feld="/sequence"))
+
+    ev = _grundtext(GRUND["evidence_snapshot"])
+    ev_seq = '"sequence": 8241,'
+    for literal in ("8241.0", "8.241e3"):
+        faelle.append(_pe5("rust_p1", "v3", "evidence_snapshot",
+                           _ersetze(ev, ev_seq, f'"sequence": {literal},'),
+                           f"evidence_snapshot, transport.sequence {literal}", None, None,
+                           ["annahme"], "M-66",
+                           f"{literal} ist die Ganzzahl 8241: der Evidenzstand traegt 8241",
+                           feld="/transport/sequence", wert="8241"))
+    for literal, stufe, warum in (("1.5", "schema", "1.5 ist keine Ganzzahl"),
+                                  (ZWEI_HOCH_53, "textriegel",
+                                   "2^53 liegt ueber der Textriegel-Grenze")):
+        faelle.append(_pe5("rust_p1", "v3", "evidence_snapshot",
+                           _ersetze(ev, ev_seq, f'"sequence": {literal},'),
+                           f"evidence_snapshot, transport.sequence {literal}", stufe, stufe,
+                           ABGELEHNT, "M-73", warum, feld="/transport/sequence"))
+    bericht = _grundtext(GRUND["state_report"])
+    faelle.append(_pe5("rust_p1", "v3", "state_report",
+                       _ersetze(bericht, '"state_revision": 13,',
+                                f'"state_revision": {ZWEI_HOCH_53},'),
+                       "state_report, state_revision 2^53", "textriegel", "textriegel",
+                       ABGELEHNT, "M-90",
+                       "eine Revision ueber dem Bereich ist ein Vertragsbruch",
+                       feld="/state_revision"))
+    for literal in NICHT_ENDLICH:
+        faelle.append(_pe5("rust_p1", "v3", "evidence_snapshot",
+                           _ersetze(ev, ev_seq, f'"sequence": {literal},'),
+                           f"evidence_snapshot, transport.sequence {literal}", "textriegel",
+                           "textriegel", ABGELEHNT, "M-96", f"{literal} faellt am Textriegel",
+                           feld="/transport/sequence"))
+
+    hello = _grundtext(GRUND["hello_control"])
+    for alt, neu, feld, wert in (
+            ('"protocol": 3,', '"protocol": 3.0,', "/protocol", "3"),
+            ('"protocol": 3,', '"protocol": 3e0,', "/protocol", "3"),
+            ('"block_size": 512,', '"block_size": 256.0,', "/audio/block_size", "256"),
+            ('"channels": 2\n', '"channels": 2.0\n', "/audio/channels", "2"),
+            ('"pid": 4711,', '"pid": 1234.0,', "/host/pid", "1234")):
+        literal = neu.split(": ", 1)[1].rstrip(",\n")
+        faelle.append(_pe5("rust_bootstrap", "v3", "hello_control", _ersetze(hello, alt, neu),
+                           f"Control-Hello, {feld[1:]} {literal}", None, None, ["annahme"],
+                           "M-72", f"{literal} ist die Ganzzahl {wert}: die typisierte "
+                           "Uebernahme liest sie", feld=feld, wert=wert))
+    return faelle
+
+
 def _etappe_von(matrix: str) -> str:
     nummer = int(matrix.removeprefix("M-").rstrip("b"))
     for von, bis, etappe in MATRIX_ETAPPEN:
@@ -4058,6 +4446,30 @@ def _tabelle_selbstpruefung(kopf: dict) -> None:
             fehler.append(f"{kennung}: Abweichung stufe ohne Stufenunterschied")
         if a is not None and a.get("art") not in ("urteil", "stufe"):
             fehler.append(f"{kennung}: Abweichung ohne Art")
+        if a is not None and not a.get("grund"):
+            fehler.append(f"{kennung}: Abweichung ohne Grund")
+        # Etappe 5 (§7.1, `feld` und `wert`): ein Ganzzahlfall, der in einem der
+        # beiden Objekte gueltig ist, traegt seinen Wert als Dezimaltext; einer,
+        # den beide ablehnen, traegt keinen.
+        irgendwo_gueltig = "gueltig" in (f["vertrag"]["urteil"], f["produkt"]["urteil"])
+        if f["wert"] is not None:
+            if f["feld"] is None or not f["feld"].startswith("/"):
+                fehler.append(f"{kennung}: wert ohne JSON-Pointer in feld")
+            if not isinstance(f["wert"], str) or not f["wert"].lstrip("-").isdigit():
+                fehler.append(f"{kennung}: wert ist kein Dezimaltext")
+            if not irgendwo_gueltig:
+                fehler.append(f"{kennung}: wert, obwohl beide Objekte ablehnen")
+        elif f["feld"] is not None and irgendwo_gueltig:
+            fehler.append(f"{kennung}: gueltiger Ganzzahlfall ohne wert")
+        # Kein Lauf fuehrt einen Ueberlaufvektor JUCE zu (§8.1): er muss am
+        # Zahlriegel des v2-Clients fallen, also vor jedem JUCE-Leser.
+        if not isinstance(f["ub_bei_juce"], bool):
+            fehler.append(f"{kennung}: ub_bei_juce ist kein Wahrheitswert")
+        elif f["ub_bei_juce"] and (f["fassung"] != "v2"
+                                   or f["produkt"]["stufe"] != "textriegel"):
+            fehler.append(f"{kennung}: Ueberlaufvektor, den kein Zahlriegel vor JUCE faengt")
+        if f["einspeisung"] is not None and not isinstance(f["einspeisung"], dict):
+            fehler.append(f"{kennung}: einspeisung ist weder null noch ein Objekt")
     zaehle = lambda feld: {k: sum(1 for f in faelle if f[feld] == k)
                            for k in sorted({f[feld] for f in faelle})}
     je_eingang = {k: sum(1 for f in faelle if f["eingang"] == k) for k in kopf["eingaenge"]}
@@ -4073,6 +4485,9 @@ def _tabelle_selbstpruefung(kopf: dict) -> None:
            "urteil": sum(1 for f in faelle if f["abweichung"] and f["abweichung"]["art"] == "urteil")}
     if kopf["anzahl_abweichungen"] != abw:
         fehler.append("anzahl_abweichungen passt nicht zu faelle")
+    if abw != ABWEICHUNGEN_SPEZIFIZIERT:
+        fehler.append(f"anzahl_abweichungen {abw} weicht vom Stand der Spezifikation "
+                      f"{ABWEICHUNGEN_SPEZIFIZIERT} ab (Manifest §7.1, §7.3)")
     if fehler:
         raise SystemExit("PRODUKTEINGAENGE-FAELLE widerspricht sich:\n  " + "\n  ".join(fehler))
 
@@ -4086,7 +4501,9 @@ def produkteingaenge_tabelle() -> dict:
     Referenzbeine (A5 fuer v3, A11 fuer v2, B16 fuer evidence_snapshot)
     `vertrag`; jedes Bein zaehlt seine Eintraege gegen den Kopf.
     """
-    faelle = _faelle_quellenmodell() + _faelle_v2_client() + _faelle_rust()
+    faelle = (_faelle_quellenmodell() + _faelle_v2_client() + _faelle_rust()
+              + _faelle_flacher_leser() + _faelle_quellenmodell_werte()
+              + _faelle_v2_zahlen() + _faelle_rust_werte())
     for i, f in enumerate(faelle, start=1):
         f["id"] = f"PE-{i:03d}"
     faelle = [{"id": f["id"], **{k: w for k, w in f.items() if k != "id"}} for f in faelle]
@@ -4103,6 +4520,18 @@ def produkteingaenge_tabelle() -> dict:
         "warum_hex": ("Die Eintraege tragen Nachspann, doppelte Namen und Escape-Aliase; "
                       "als Text waeren sie von keinem JSON-Leser unveraendert "
                       "transportierbar. `zeigetext` ist nur fuer Menschen."),
+        "wert_regel": ("`feld` ist bei Ganzzahlfaellen der JSON-Pointer des Feldes; `wert` "
+                       "der erwartete Wert als Dezimaltext, wenn `vertrag` oder `produkt` "
+                       "gueltig ist. Ein Bein vergleicht ihn, wenn SEIN Urteil gueltig ist "
+                       "(C++ std::from_chars, Rust str::parse, Python int)."),
+        "ub_bei_juce": ("true: der Vektor liesse JUCEs Zahlenleser ueberlaufen (int64-"
+                        "Akkumulator oder Exponentzaehler). Kein Lauf fuehrt ihn JUCE zu; "
+                        "der Rotlauf am Aufruf des Zahlriegels laesst ihn aus "
+                        "(--ohne-ueberlaufvektoren, Manifest §8.1)."),
+        "einspeisung_je_eintrag": ("Was ein Eintrag ueber die Einspeisung seines Eingangs "
+                                   "hinaus braucht, sonst null: gueltige_acks_davor (v2-"
+                                   "heartbeat_ack) nennt die gueltig bestaetigten Heartbeats "
+                                   "vor den Bytes."),
         "eingaenge": register,
         "leser": LESERKETTEN,
         "stufen": STUFEN,
@@ -4113,7 +4542,9 @@ def produkteingaenge_tabelle() -> dict:
                               for k in sorted({f["fassung"] for f in faelle})},
         "anzahl_je_nachricht": {k: sum(1 for f in faelle if f["nachricht"] == k)
                                 for k in sorted({f["nachricht"] for f in faelle})},
-        "anzahl_abweichungen": {"stufe": 0, "urteil": 0},
+        "anzahl_abweichungen": {art: sum(1 for f in faelle
+                                         if f["abweichung"] and f["abweichung"]["art"] == art)
+                                for art in ("stufe", "urteil")},
         "faelle": faelle,
     }
     _tabelle_selbstpruefung(kopf)

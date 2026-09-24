@@ -6,8 +6,9 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
+  "parser_lehnt_ab": "Markiert ein Fixture, das den Textriegel passiert und am STRENGEN PARSELAUF faellt, bevor das Schema es sieht: Nachspann, zweites Dokument, Schlusskomma, unbekanntes Escape, Verschachtelung tiefer als 64 Ebenen oder derselbe dekodierte Name zweimal im selben Objekt (auch als Escape-Alias). Keine Verletzungsmenge, aus demselben Grund wie bei textriegel_lehnt_ab (NAK-313 R-313-6; schemas/v3/README.md, Abschnitt zum strengen Parselauf).",
   "anzahl_gueltig": 112,
-  "anzahl_ungueltig": 290,
+  "anzahl_ungueltig": 302,
   "fixtures": [
     {
       "datei": "gueltig/assistant-step-ohne-bezug.json",
@@ -1632,6 +1633,18 @@
       ]
     },
     {
+      "datei": "ungueltig/evidence-local-monotonic-project-sample-start-null.json",
+      "urteil": "ungueltig",
+      "warum": "NAK-313 R-313-7: ohne Projektzeit wird project_sample_start weggelassen, nie null - die gemeinsame Eigenschaft verlangt integer",
+      "verletzungen": [
+        {
+          "instanz": "/transport/project_sample_start",
+          "schema": "#/$defs/transportstempel/properties/project_sample_start/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/evidence-ohne-verteilung.json",
       "urteil": "ungueltig",
       "warum": "P10/P50/P95 sind Inhalt des Snapshots (§33.2), keine Zugabe",
@@ -3045,6 +3058,83 @@
           "schluessel": "minLength"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json",
+      "urteil": "ungueltig",
+      "warum": "Adressfeld doppelt in einer Mitgliedsadresse, ein fremder Wert zuletzt",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json",
+      "urteil": "ungueltig",
+      "warum": "Adressfeld doppelt in einer Mitgliedsadresse, der kanonische Wert zuletzt",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-nachspann.json",
+      "urteil": "ungueltig",
+      "warum": "Nachspann: hinter dem Dokument steht ein zweiter Wert; JUCE las ihn nicht, serde_json und Python lehnen ab",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-schlusskomma.json",
+      "urteil": "ungueltig",
+      "warum": "Schlusskomma im Wurzelobjekt: RFC 8259 kennt es nicht, JUCE nahm es an",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json",
+      "urteil": "ungueltig",
+      "warum": "Sitzung doppelt, eine fremde zuletzt",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json",
+      "urteil": "ungueltig",
+      "warum": "Sitzung doppelt, die erwartete zuletzt: der Sitzungsvergleich sah nur den letzten Wert",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-type-doppelt-fremd-zuletzt.json",
+      "urteil": "ungueltig",
+      "warum": "Discriminator doppelt, ein fremder Wert zuletzt",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-type-doppelt-passend-zuletzt.json",
+      "urteil": "ungueltig",
+      "warum": "Discriminator doppelt, der passende Wert zuletzt: letzter gewinnt las ihn als gueltig",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-type-escape-alias.json",
+      "urteil": "ungueltig",
+      "warum": "Escape-Alias: typ mit escaptem e dekodiert zu type - derselbe Name zweimal",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-unbekanntes-escape.json",
+      "urteil": "ungueltig",
+      "warum": "unbekanntes Escape im Label: RFC 8259 §7 kennt nur acht Zwei-Zeichen-Escapes, JUCE machte aus dem Backslash-q ein q",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/parser-zweites-dokument.json",
+      "urteil": "ungueltig",
+      "warum": "zwei vollstaendige Dokumente hintereinander sind kein Dokument",
+      "verletzungen": [],
+      "parser_lehnt_ab": true
     },
     {
       "datei": "ungueltig/playing-als-zahl.json",

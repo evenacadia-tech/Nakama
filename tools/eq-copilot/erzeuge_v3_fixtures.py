@@ -3451,6 +3451,674 @@ def textriegel_tabelle() -> dict:
         "faelle": faelle,
     }
 
+
+# ════════════════════════════════════════════════════════════════════════
+# NAK-313 Etappe 4 · der strenge Parselauf (R-313-6) und die Tabelle der
+# Produkteingaenge (Manifest docs/beweise/NAK-313.md §7)
+# ════════════════════════════════════════════════════════════════════════
+#
+# Der Textriegel ist ein Tokenpruefer, kein Parser: Nachspann, zweites
+# Dokument, Schlusskomma, unbekannte Escapes und doppelte Namen passieren ihn.
+# Danach entschieden bis NAK-313 die Parser der Beine, und die waren sich nicht
+# einig - JUCE nahm alle fuenf Formen an, serde_json und Pythons json lehnten
+# die Syntax ab und behielten beim Duplikat still den letzten Wert. Seit
+# Etappe 4 liest jeder Eingang genau einmal streng: C++ `nakama::kanon::lies`,
+# Rust `json_streng`, Python `json_laden_strikt` mit Duplikat-Hook, alle drei
+# mit derselben Tiefengrenze.
+#
+# Zwei Erzeugnisse gehoeren dazu:
+#   · die MANIFEST-Klasse `parser_lehnt_ab` (`ungueltig/parser-*.json`): ROHBYTES
+#     von Hand, nie ueber `als_text` - ein Serialisierer schriebe kein Duplikat,
+#     keinen Nachspann und kein `\q`, der Defekt waere weg;
+#   · `PRODUKTEINGAENGE-FAELLE.json`: dieselben Bytes und die Vektoren der
+#     uebrigen Produkteingaenge, hex-kodiert, je Eintrag mit dem Urteil des
+#     Vertrags und dem des Produktlesers (Form A, R-313-13). Beide Urteile
+#     stehen VON HAND hier; kein Leser erzeugt sie, sonst waere der Vergleich
+#     zirkulaer.
+
+MAX_TIEFE = 64   # dieselbe Grenze in kanon::lies, json_streng und json_laden_strikt
+
+FREMDE_SID = "S-1-5-21-9"
+FREMDE_EPOCHE = "55555555555555555555555555555555"
+V2_WELCOME = '{"type":"welcome","protocol_version":2,"broker_version":"test","session_token":"tok"}'
+
+# Die geschlossenen Mengen der Tabelle (§7.1).
+STUFEN = ["textriegel", "parser", "duplikat", "schema", "feldregel"]
+WIRKUNGEN = ["annahme", "ablehnung", "keine_teilmutation", "kein_ack",
+             "kein_freigegebener_auftrag"]
+
+# Welche Matrixzeilen zu welcher Bauetappe gehoeren (Manifest §6.7). Ein
+# Eintrag legt seine Etappe ueber `matrix` fest; die Stufe, die er verlangt,
+# muss die Kette seines Lesers zum Ende GENAU DIESER Etappe schon haben.
+MATRIX_ETAPPEN = [(1, 16, 2), (17, 38, 3), (39, 54, 4), (55, 97, 5),
+                  (98, 122, 6), (123, 145, 7)]
+
+# Die Stufenketten je Leser und Etappe (Manifest §7.2, Tabelle „Stufenketten
+# je Leser"). Referenzbeine messen `vertrag`, Produktleser `produkt`.
+LESERKETTEN = {
+    "A5":  {"4": ["textriegel", "parser", "duplikat", "schema"]},
+    "A11": {"4": ["parser", "duplikat", "schema"]},
+    "B16": {"4": ["textriegel", "parser", "duplikat", "schema"]},
+    "cpp_control_handshake":    {"4": ["parser", "duplikat", "feldregel"]},
+    "cpp_telemetrie_handshake": {"4": ["parser", "duplikat", "feldregel"]},
+    "cpp_control_ack":          {"4": ["parser", "duplikat", "feldregel"]},
+    "cpp_sources_snapshot":   {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
+    "cpp_sources_ruecknahme": {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
+    "cpp_v2_client":          {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
+    "rust_bootstrap": {"4": ["textriegel", "parser", "duplikat", "feldregel"]},
+    "rust_p0": {"4": ["textriegel", "parser", "duplikat", "schema", "feldregel"]},
+    "rust_p1": {"4": ["textriegel", "parser", "duplikat", "schema", "feldregel"]},
+}
+
+
+def _einspeisung_register() -> dict:
+    """Das Register der Produkteingaenge (Manifest §7.2) samt Einspeisung.
+
+    Die Einspeisewerte stehen maschinenlesbar hier und nicht im Eintrag: ein
+    Eintrag mit Nachspann oder Schlusskomma traegt keine lesbare Adresse, und
+    ein Bein, das sie trotzdem aus ihm zoege, laese ihn mit einem zweiten,
+    nachsichtigen Parser. Alle Eintraege eines Eingangs sind Varianten
+    derselben Grundform, deshalb gilt ein Satz Werte je Eingang.
+    """
+    sitzung = {
+        "project_binding_id": ADRESSE["project_binding_id"],
+        "session_epoch": GRUND["session_snapshot"]["session_epoch"],
+        "eigenes_main": GRUND["session_snapshot"]["fuehrendes_main"],
+        "basis_fixture": "gueltig/session_snapshot.json",
+    }
+    return {
+        "cpp_control_handshake": {
+            "produktleser": "flacher Leser Control, erste Antwort welcome oder reject",
+            "bein": "B10", "einspeisung": {
+                "text": "der Testserver sendet die Bytes als erste P0-Antwort"}},
+        "cpp_telemetrie_handshake": {
+            "produktleser": "flacher Leser Telemetrie",
+            "bein": "B10", "einspeisung": {
+                "text": "der Testserver sendet die Bytes auf das Telemetrie-Hello"}},
+        "cpp_control_ack": {
+            "produktleser": "commandAckArtLesen ueber inFlightAck und commandAckHaeltVertrag",
+            "bein": "B10", "einspeisung": {
+                "text": "P0 mit der command_id des Eintrags, der Testserver antwortet mit den Bytes"}},
+        "cpp_sources_snapshot": {
+            "produktleser": "SourcesModel::uebernehmeSessionSnapshot",
+            "bein": "B13", "einspeisung": {
+                "text": ("direkter Aufruf mit der aktiven Fassung; vorher beginneSubscription "
+                         "mit Bindung, Sitzung und eigenem Main und die Uebernahme von "
+                         "basis_fixture"), **sitzung}},
+        "cpp_sources_ruecknahme": {
+            "produktleser": "SourcesModel::uebernehmeEvidenzruecknahme",
+            "bein": "B13", "einspeisung": {
+                "text": "direkter Aufruf, dieselbe abonnierte Sitzung wie cpp_sources_snapshot",
+                **sitzung}},
+        "cpp_v2_client": {
+            "produktleser": "PipeClient (welcome, reject, heartbeat_ack)",
+            "bein": "A4b", "einspeisung": {
+                "text": ("ein v2-Peer auf einem Probenamen sendet die Bytes als Antwort auf "
+                         "hello; fuer heartbeat_ack zuerst welcome_vor_ack, dann die Bytes "
+                         "als Antwort auf den ersten Heartbeat (seq 0)"),
+                "welcome_vor_ack": V2_WELCOME}},
+        "rust_bootstrap": {
+            "produktleser": "bootstrap_lesen",
+            "bein": "A4", "einspeisung": {
+                "text": "der Test setzt das Laengenpraefix davor"}},
+        "rust_p0": {
+            "produktleser": "Coordinator::p0_json_mit_minor",
+            "bein": "A4", "einspeisung": {
+                "text": "ein Link mit dieser Adresse (control_registrieren), dann die Bytes",
+                "link_art": "active_probe", "adresse": ADRESSE}},
+        "rust_p1": {
+            "produktleser": "P1-Weiche p1_mit_minor und die Leser dahinter",
+            "bein": "A4", "einspeisung": {
+                "text": ("je Nachricht ein Link dieser Art und Adresse, angemeldet und mit "
+                         "einem Heartbeatkontakt, dann die Bytes"),
+                "links": {
+                    "evidence_snapshot": {"link_art": "passive_probe", "adresse": ADRESSE},
+                    "intent_update": {"link_art": "main", "adresse": ADRESSE},
+                }}},
+    }
+
+
+def _grundtext(daten: dict) -> str:
+    """Die Grundform als Text, genau wie der Korpus sie unter `gueltig/` schreibt."""
+    return als_text(minor_1_sessionform(copy.deepcopy(daten))).decode("utf-8")
+
+
+def _ersetze(text: str, alt: str, neu: str) -> str:
+    if alt not in text:
+        raise SystemExit(f"Produkteingaenge: {alt!r} steht nicht im Grundtext")
+    return text.replace(alt, neu, 1)
+
+
+def _kompakt(daten) -> str:
+    return json.dumps(daten, ensure_ascii=False, separators=(",", ":"))
+
+
+def _listenkette(ebenen: int) -> list:
+    """Eine Liste, die `ebenen` Listen tief verschachtelt ist (innen leer)."""
+    wert: list = []
+    for _ in range(ebenen - 1):
+        wert = [wert]
+    return wert
+
+
+def _doppelt(text: str, zeile: str, schluessel: str, fremd: str,
+             einzug: str) -> tuple[str, str]:
+    """Die zwei Duplikatvarianten der ersten Zeile `zeile` im Text.
+
+    (passender Wert zuletzt, fremder Wert zuletzt) - ein Parser mit „letzter
+    gewinnt" liest im ersten Fall den gueltigen Wert, im zweiten den fremden.
+    `einzug` ist die Einrueckung der Zeile, damit die Variante lesbar bleibt.
+    """
+    fremd_zeile = f'"{schluessel}": {fremd},'
+    return (_ersetze(text, zeile, fremd_zeile + "\n" + einzug + zeile),
+            _ersetze(text, zeile, zeile + "\n" + einzug + fremd_zeile))
+
+
+def parser_faelle() -> list[tuple[str, bytes, str, str]]:
+    """(name, rohbytes, stufe, warum) - die MANIFEST-Klasse `parser_lehnt_ab`.
+
+    Die Varianten des gueltigen `session_snapshot` aus Manifest §8.4: Nachspann,
+    zweites Dokument, Schlusskomma, unbekanntes Escape (Stufe `parser`),
+    `type`, `session_epoch` und `logon_sid` doppelt in beiden Reihenfolgen und
+    der Escape-Alias fuer `type` (Stufe `duplikat`). Dieselben Bytes fahren die
+    Produktleser als Eintraege von `cpp_sources_snapshot` (M-39, M-48).
+    """
+    text = _grundtext(GRUND["session_snapshot"])
+    typ = '"type": "session_snapshot",'
+    epoche = GRUND["session_snapshot"]["session_epoch"]
+    sid = f'"logon_sid": "{ADRESSE["logon_sid"]}",'
+    typ_p, typ_f = _doppelt(text, typ, "type", '"x"', "  ")
+    # Die ERSTE Fundstelle ist die Wurzel: ihre Schluessel stehen vor `mitglieder`.
+    ep_p, ep_f = _doppelt(text, f'"session_epoch": "{epoche}",', "session_epoch",
+                          f'"{FREMDE_EPOCHE}"', "  ")
+    # Die ERSTE Fundstelle ist die Adresse der Mitgliedshuelle.
+    sid_p, sid_f = _doppelt(text, sid, "logon_sid", f'"{FREMDE_SID}"', "        ")
+    faelle = [
+        ("nachspann", text + "[]\n", "parser",
+         "Nachspann: hinter dem Dokument steht ein zweiter Wert; JUCE las ihn nicht, "
+         "serde_json und Python lehnen ab"),
+        ("zweites-dokument", text + text, "parser",
+         "zwei vollstaendige Dokumente hintereinander sind kein Dokument"),
+        ("schlusskomma", _ersetze(text, "\n  ]\n}\n", "\n  ],\n}\n"), "parser",
+         "Schlusskomma im Wurzelobjekt: RFC 8259 kennt es nicht, JUCE nahm es an"),
+        ("unbekanntes-escape",
+         _ersetze(text, '"label": "Klavier-Bus"', '"label": "Klavier' + BS + 'q-Bus"'),
+         "parser",
+         "unbekanntes Escape im Label: RFC 8259 §7 kennt nur acht Zwei-Zeichen-Escapes, "
+         "JUCE machte aus dem Backslash-q ein q"),
+        ("type-doppelt-passend-zuletzt", typ_p, "duplikat",
+         "Discriminator doppelt, der passende Wert zuletzt: letzter gewinnt las ihn als gueltig"),
+        ("type-doppelt-fremd-zuletzt", typ_f, "duplikat",
+         "Discriminator doppelt, ein fremder Wert zuletzt"),
+        ("session-epoch-doppelt-passend-zuletzt", ep_p, "duplikat",
+         "Sitzung doppelt, die erwartete zuletzt: der Sitzungsvergleich sah nur den letzten Wert"),
+        ("session-epoch-doppelt-fremd-zuletzt", ep_f, "duplikat",
+         "Sitzung doppelt, eine fremde zuletzt"),
+        ("logon-sid-doppelt-passend-zuletzt", sid_p, "duplikat",
+         "Adressfeld doppelt in einer Mitgliedsadresse, der kanonische Wert zuletzt"),
+        ("logon-sid-doppelt-fremd-zuletzt", sid_f, "duplikat",
+         "Adressfeld doppelt in einer Mitgliedsadresse, ein fremder Wert zuletzt"),
+        ("type-escape-alias",
+         _ersetze(text, typ, '"typ' + BS + 'u0065": "session_snapshot",\n  ' + typ),
+         "duplikat",
+         "Escape-Alias: typ mit escaptem e dekodiert zu type - derselbe Name zweimal"),
+    ]
+    return [(name, t.encode("utf-8"), stufe, warum) for name, t, stufe, warum in faelle]
+
+
+def _evidenz_ohne_projektzeit() -> dict:
+    """DASSELBE gueltige Fixture wie `gueltig/evidence-ohne-projektzeit.json`.
+
+    Aus `zusatz_gueltig()` gelesen statt nachgebaut: Byteinstanz und
+    Negativfixture sollen aus genau diesem Dokument entstehen, nicht aus einer
+    zweiten Kopie, die von ihm weglaufen koennte.
+    """
+    for name, daten, _warum in zusatz_gueltig():
+        if name == "evidence-ohne-projektzeit":
+            return copy.deepcopy(daten)
+    raise SystemExit("evidence-ohne-projektzeit fehlt in zusatz_gueltig()")
+
+
+# Der Transportblock, den `transportJson` (NakamaEvidenz.cpp) fuer einen Frame
+# OHNE Projektzeit schreibt: Kontext anwesend, Spielzustand gueltig und
+# spielend, keine Aufnahme-, Zyklus-, Continuous- oder Latenzangabe - genau die
+# Flags des Speisers in B16 ohne `kFlagZeitGueltig`. Die Reihenfolge der
+# Schluessel ist die des Writers; `project_sample_start` fehlt (R-313-7).
+LOKAL_VALIDITY = {
+    "project_time": False,
+    "play_state": True,
+    "record_state": False,
+    "cycle_bounds": False,
+    "continuous_time": False,
+    "input_presentation_latency": False,
+    "output_presentation_latency": False,
+}
+
+
+def _lokaler_transportblock(eingabe: dict) -> str:
+    """Der Transportblock in Schluesselreihenfolge und Zahlform des Writers."""
+    def wahr(w: bool) -> str:
+        return "true" if w else "false"
+
+    teile = [
+        f'"transport_epoch":{eingabe["transport_epoch"]}',
+        f'"continuity_segment":{eingabe["continuity_segment"]}',
+        f'"sequence":{eingabe["sequence"]}',
+        '"process_context_present":true',
+        '"time_basis":"local_monotonic"',
+        f'"sample_count":{eingabe["sample_count"]}',
+        f'"sample_rate":{wire_zahl(float(eingabe["sample_rate"]))}',
+        '"playing":true',
+        '"recording":false',
+        '"validity":{' + ",".join(f'"{k}":{wahr(v)}' for k, v in LOKAL_VALIDITY.items()) + "}",
+    ]
+    return "{" + ",".join(teile) + "}"
+
+
+def _lokale_byteinstanz() -> tuple[dict, str, str]:
+    """(eingabe, wire_transport, wire_snapshot) der lokalen Evidenz."""
+    basis = _evidenz_ohne_projektzeit()
+    t = basis["transport"]
+    eingabe = {k: t[k] for k in ("transport_epoch", "continuity_segment", "sequence",
+                                 "sample_count", "sample_rate")}
+    wire_transport = _lokaler_transportblock(eingabe)
+    basis["transport"] = json.loads(wire_transport)
+    wire_snapshot = _kompakt(basis)
+    # Selbstpruefung: der Block steht BYTEGLEICH im Snapshot, sonst verglichen
+    # B16 und A4 zwei verschiedene Texte.
+    if '"transport":' + wire_transport + "," not in wire_snapshot:
+        raise SystemExit("Byteinstanz: der Transportblock steht nicht bytegleich im Snapshot")
+    return eingabe, wire_transport, wire_snapshot
+
+
+def evidenz_lokal_wire() -> bytes:
+    """`evidenz-lokal-wire-v1.json` - die Byteinstanz des lokalen Evidenzwriters.
+
+    NAK-313 R-313-7 (T3-03-01): ohne gueltige Projektzeit schrieb
+    `transportJson` `"project_sample_start":null`, der Vertrag laesst aber nur
+    das Weglassen zu (Zweig `local_monotonic` verlangt `null`, die gemeinsame
+    Eigenschaft `integer` - beide gelten). Diese Instanz ist die dritte Partei
+    zwischen dem echten C++-Writer (B16 vergleicht seinen Transportblock
+    bytegleich mit `wire_transport`) und dem echten Rust-Empfaenger (A4 speist
+    `wire_snapshot` in die P1-Weiche). Keiner der beiden erzeugt sie.
+    """
+    eingabe, wire_transport, wire_snapshot = _lokale_byteinstanz()
+    return als_text({
+        "_kommentar": [
+            "NAK-313 R-313-7 - die BYTEINSTANZ des lokalen Evidenzwriters.",
+            "",
+            "`eingabe` traegt die Transportzahlen, die B16 in den Stempel eines",
+            "echten Frames ohne Projektzeit setzt; `wire_transport` ist der Block,",
+            "den transportJson daraus schreiben muss - Schluesselreihenfolge und",
+            "Zahlform des Writers, OHNE project_sample_start; `wire_snapshot` ist",
+            "gueltig/evidence-ohne-projektzeit.json mit genau diesem Block, den A4",
+            "durch die P1-Weiche in den Evidenzempfaenger speist.",
+        ],
+        "eingabe": eingabe,
+        "wire_transport": wire_transport,
+        "wire_snapshot": wire_snapshot,
+    })
+
+
+def lokale_evidenz_negativ() -> list[tuple[str, dict, list[dict], str]]:
+    """Das Negativfixture mit `project_sample_start: null` (M-53).
+
+    Dasselbe gueltige Fixture wie oben, `null` direkt hinter `time_basis` -
+    dort, wo der Writer es vor NAK-313 schrieb. Der Zweig `local_monotonic`
+    nimmt `null` an; die GEMEINSAME Eigenschaft (`integer`) nicht. Die
+    Verletzung liegt deshalb an ihr, nicht am Zweig - anders als beim
+    Negativfixture mit Zahl (`transport-local-monotonic-mit-project-sample-start`).
+    """
+    daten = _evidenz_ohne_projektzeit()
+    neu: dict = {}
+    for feld, wert in daten["transport"].items():
+        neu[feld] = wert
+        if feld == "time_basis":
+            neu["project_sample_start"] = None
+    daten["transport"] = neu
+    return [("evidence-local-monotonic-project-sample-start-null", daten,
+             [v("/transport/project_sample_start",
+                f"{S}/transportstempel/properties/project_sample_start/type", "type")],
+             "NAK-313 R-313-7: ohne Projektzeit wird project_sample_start weggelassen, "
+             "nie null - die gemeinsame Eigenschaft verlangt integer")]
+
+
+def _pe(eingang: str, fassung: str, nachricht: str, roh: str | bytes, zeige: str,
+        stufe: str | None, wirkung: list[str], matrix: str, warum: str) -> dict:
+    """Ein Tabelleneintrag der Etappe 4: Vertrag und Produkt urteilen gleich.
+
+    Etappe 4 hat keine Abweichung: jeder ihrer Eintraege passiert die
+    Textstufen jeder Kette, und jeder ihrer Leser hat den strengen Lauf
+    (Manifest §7.3). Ein Eintrag mit Abweichung setzt `abweichung` selbst.
+    """
+    roh_bytes = roh if isinstance(roh, bytes) else roh.encode("utf-8")
+    urteil = {"urteil": "gueltig" if stufe is None else "ungueltig", "stufe": stufe}
+    return {
+        "eingang": eingang,
+        "fassung": fassung,
+        "nachricht": nachricht,
+        "bytes_hex": roh_bytes.hex(),
+        "zeigetext": zeige,
+        "vertrag": dict(urteil),
+        "produkt": dict(urteil),
+        "abweichung": None,
+        "feld": None,
+        "wert": None,
+        "wirkung": wirkung,
+        "matrix": matrix,
+        "ub_bei_juce": False,
+        "warum": warum,
+    }
+
+
+ABGELEHNT = ["ablehnung", "keine_teilmutation"]
+
+
+def _faelle_quellenmodell() -> list[dict]:
+    """M-39 und M-41 (`cpp_sources_snapshot`), M-40 (`cpp_sources_ruecknahme`)."""
+    faelle = []
+    for name, roh, stufe, warum in parser_faelle():
+        faelle.append(_pe("cpp_sources_snapshot", "v3", "session_snapshot", roh,
+                          f"session_snapshot, Variante {name}", stufe, ABGELEHNT,
+                          "M-39", warum))
+    zwei = copy.deepcopy(GRUND["session_snapshot"])
+    zweites = copy.deepcopy(PROBE)
+    zweites["adresse"] = {**ADRESSE, "instance_id": "c" * 32, "runtime_nonce": "d" * 32}
+    zweites["label"] = "Bass-Bus"
+    zwei["mitglieder"] = [copy.deepcopy(PROBE), zweites]
+    faelle.append(_pe("cpp_sources_snapshot", "v3", "session_snapshot",
+                      als_text(minor_1_sessionform(zwei)),
+                      "session_snapshot mit zwei Mitgliedern, beide Adressen tragen logon_sid",
+                      None, ["annahme"], "M-41",
+                      "Gegenfall: derselbe Name in zwei verschiedenen Objekten ist gueltig"))
+
+    ruecknahme = {"type": "evidence_invalidate", "grund": "sequenzluecke",
+                  "umfang": {"art": "evidence_ids",
+                             "evidence_ids": ["99999999999999999999999999999999"]}}
+    text = als_text(ruecknahme).decode("utf-8")
+    typ = '"type": "evidence_invalidate",'
+    typ_p, typ_f = _doppelt(text, typ, "type", '"x"', "  ")
+    grund_p, grund_f = _doppelt(text, '"grund": "sequenzluecke",', "grund",
+                                '"gibt_es_nicht"', "  ")
+    art_p, art_f = _doppelt(text, '"art": "evidence_ids",', "art", '"sample_range"', "    ")
+    varianten = [
+        ("nachspann", text + "[]\n", "parser", "Nachspann hinter der Ruecknahme"),
+        ("zweites-dokument", text + text, "parser", "zwei Dokumente hintereinander"),
+        ("schlusskomma", _ersetze(text, "\n  }\n}\n", "\n  },\n}\n"), "parser",
+         "Schlusskomma im Wurzelobjekt"),
+        ("unbekanntes-escape",
+         _ersetze(text, '"sequenzluecke"', '"se' + BS + 'quenzluecke"'), "parser",
+         "unbekanntes Escape: JUCE las daraus den bekannten Grund sequenzluecke"),
+        ("type-doppelt-passend-zuletzt", typ_p, "duplikat", "Discriminator doppelt, passend zuletzt"),
+        ("type-doppelt-fremd-zuletzt", typ_f, "duplikat", "Discriminator doppelt, fremd zuletzt"),
+        ("grund-doppelt-passend-zuletzt", grund_p, "duplikat",
+         "Grund doppelt, der bekannte zuletzt"),
+        ("grund-doppelt-fremd-zuletzt", grund_f, "duplikat",
+         "Grund doppelt, ein unbekannter zuletzt"),
+        ("art-doppelt-passend-zuletzt", art_p, "duplikat",
+         "Umfangsart doppelt, die zu den Feldern passende zuletzt"),
+        ("art-doppelt-fremd-zuletzt", art_f, "duplikat",
+         "Umfangsart doppelt, eine Art mit fehlenden Bereichsfeldern zuletzt"),
+        ("type-escape-alias",
+         _ersetze(text, typ, '"typ' + BS + 'u0065": "evidence_invalidate",\n  ' + typ),
+         "duplikat", "Escape-Alias fuer type"),
+    ]
+    for name, roh, stufe, warum in varianten:
+        faelle.append(_pe("cpp_sources_ruecknahme", "v3", "evidence_invalidate", roh,
+                          f"evidence_invalidate, Variante {name}", stufe, ABGELEHNT,
+                          "M-40", warum))
+    return faelle
+
+
+def _faelle_v2_client() -> list[dict]:
+    """M-42 (`cpp_v2_client`): Welcome und das ACK auf den ersten Heartbeat."""
+    w = V2_WELCOME
+    welcome = [
+        ("nachspann", w + "[]", "parser", "Nachspann hinter dem Welcome"),
+        ("schlusskomma", w[:-1] + ",}", "parser", "Schlusskomma im Welcome"),
+        ("unbekanntes-escape", w.replace('"test"', '"te' + BS + 'qst"'), "parser",
+         "unbekanntes Escape in broker_version"),
+        ("type-doppelt-passend-zuletzt", w.replace('"type":"welcome"', '"type":"x","type":"welcome"'),
+         "duplikat", "Discriminator doppelt, welcome zuletzt"),
+        ("type-doppelt-fremd-zuletzt", w.replace('"type":"welcome"', '"type":"welcome","type":"x"'),
+         "duplikat", "Discriminator doppelt, fremd zuletzt"),
+        ("protocol-version-doppelt-passend-zuletzt",
+         w.replace('"protocol_version":2', '"protocol_version":1,"protocol_version":2'),
+         "duplikat", "Protokollversion doppelt, 2 zuletzt"),
+        ("protocol-version-doppelt-fremd-zuletzt",
+         w.replace('"protocol_version":2', '"protocol_version":2,"protocol_version":1'),
+         "duplikat", "Protokollversion doppelt, 1 zuletzt"),
+    ]
+    faelle = [_pe("cpp_v2_client", "v2", "welcome", roh, roh, stufe, ABGELEHNT, "M-42", warum)
+              for _name, roh, stufe, warum in welcome]
+    ack = [
+        ('{"type":"heartbeat_ack","seq":7,"seq":0,"konflikt":false}',
+         "Sequenz doppelt, die passende 0 zuletzt"),
+        ('{"type":"heartbeat_ack","seq":0,"seq":7,"konflikt":false}',
+         "Sequenz doppelt, eine fremde zuletzt"),
+    ]
+    faelle += [_pe("cpp_v2_client", "v2", "heartbeat_ack", roh, roh, "duplikat",
+                   ["ablehnung", "kein_ack"], "M-42", warum) for roh, warum in ack]
+    return faelle
+
+
+def _faelle_rust() -> list[dict]:
+    """M-43 und M-49 (`rust_p0`), M-44, M-49 und M-51 bis M-53 (`rust_p1`),
+    M-45 (`rust_bootstrap`)."""
+    faelle = []
+    sid = f'"logon_sid": "{ADRESSE["logon_sid"]}",'
+    fremd_sid = f'"{FREMDE_SID}"'
+
+    hb = _grundtext(GRUND["heartbeat"])
+    typ = '"type": "heartbeat",'
+    typ_p, typ_f = _doppelt(hb, typ, "type", '"x"', "  ")
+    sid_p, sid_f = _doppelt(hb, sid, "logon_sid", fremd_sid, "    ")
+    p0 = [
+        ("type doppelt, heartbeat zuletzt", typ_p, "duplikat"),
+        ("type doppelt, fremd zuletzt", typ_f, "duplikat"),
+        ("logon_sid doppelt in adresse, kanonisch zuletzt", sid_p, "duplikat"),
+        ("logon_sid doppelt in adresse, fremd zuletzt", sid_f, "duplikat"),
+        ("Escape-Alias fuer type",
+         _ersetze(hb, typ, '"typ' + BS + 'u0065": "heartbeat",\n  ' + typ), "duplikat"),
+        ("Nachspann", hb + "[]\n", "parser"),
+        ("zweites Dokument", hb + hb, "parser"),
+        ("Schlusskomma im Wurzelobjekt",
+         _ersetze(hb, '"intervention_state_unknown": false\n}\n',
+                  '"intervention_state_unknown": false,\n}\n'), "parser"),
+        ("unbekanntes Escape im Schluessel sequence",
+         _ersetze(hb, '"sequence": 91,', '"se' + BS + 'quence": 91,'), "parser"),
+    ]
+    for zeige, roh, stufe in p0:
+        faelle.append(_pe("rust_p0", "v3", "heartbeat", roh, f"heartbeat, {zeige}", stufe,
+                          ["ablehnung", "kein_ack", "keine_teilmutation"], "M-43",
+                          f"Heartbeat mit {zeige}: der strenge Lauf lehnt vor dem Schema ab"))
+    # M-49: Gesamttiefe 64 und 65 - Wurzel, `zaehler` (additiv) und darin
+    # 62 beziehungsweise 63 Listen. Objekte und Listen zaehlen zusammen.
+    for tiefe in (MAX_TIEFE, MAX_TIEFE + 1):
+        daten = copy.deepcopy(GRUND["heartbeat"])
+        daten["zaehler"]["verschachtelt"] = _listenkette(tiefe - 2)
+        gueltig = tiefe <= MAX_TIEFE
+        faelle.append(_pe("rust_p0", "v3", "heartbeat", _kompakt(daten),
+                          f"heartbeat, Gesamttiefe {tiefe} (Listen im additiven zaehler)",
+                          None if gueltig else "parser",
+                          ["annahme"] if gueltig else ["ablehnung", "kein_ack", "keine_teilmutation"],
+                          "M-49",
+                          f"Tiefe {tiefe}: " + ("die Grenze selbst ist gueltig" if gueltig
+                                                else "eine Ebene ueber der Grenze von 64")))
+
+    ev = _grundtext(GRUND["evidence_snapshot"])
+    ev_typ = '"type": "evidence_snapshot",'
+    ev_p, ev_f = _doppelt(ev, ev_typ, "type", '"x"', "  ")
+    intent = _grundtext(GRUND["intent_update"])
+    epoche = GRUND["intent_update"]["session_epoch"]
+    # Die ERSTE Fundstelle ist die Adresse: sie steht vor der Wurzelepoche.
+    in_p, in_f = _doppelt(intent, f'"session_epoch": "{epoche}",', "session_epoch",
+                          f'"{FREMDE_EPOCHE}"', "    ")
+    p1 = [
+        ("evidence_snapshot", "type doppelt, evidence_snapshot zuletzt", ev_p),
+        ("evidence_snapshot", "type doppelt, fremd zuletzt", ev_f),
+        ("intent_update", "session_epoch doppelt in adresse, passend zuletzt", in_p),
+        ("intent_update", "session_epoch doppelt in adresse, fremd zuletzt", in_f),
+    ]
+    for nachricht, zeige, roh in p1:
+        faelle.append(_pe("rust_p1", "v3", nachricht, roh, f"{nachricht}, {zeige}", "duplikat",
+                          ABGELEHNT, "M-44",
+                          f"{nachricht} mit {zeige}: abgelehnt vor Weiche und Schema"))
+    for tiefe in (MAX_TIEFE, MAX_TIEFE + 1):
+        daten = copy.deepcopy(GRUND["evidence_snapshot"])
+        daten["konfidenz"]["verschachtelt"] = _listenkette(tiefe - 2)
+        gueltig = tiefe <= MAX_TIEFE
+        faelle.append(_pe("rust_p1", "v3", "evidence_snapshot", _kompakt(daten),
+                          f"evidence_snapshot, Gesamttiefe {tiefe} (Listen in der additiven konfidenz)",
+                          None if gueltig else "parser",
+                          ["annahme"] if gueltig else ABGELEHNT, "M-49",
+                          f"Tiefe {tiefe}: " + ("die Grenze selbst ist gueltig" if gueltig
+                                                else "eine Ebene ueber der Grenze von 64")))
+    _eingabe, _block, snapshot = _lokale_byteinstanz()
+    faelle.append(_pe("rust_p1", "v3", "evidence_snapshot", snapshot,
+                      "wire_snapshot der Byteinstanz: local_monotonic ohne project_sample_start",
+                      None, ["annahme"], "M-52",
+                      "lokale Evidenz ohne Startwert ist vertragsgueltig und wird angenommen"))
+    mit_null = _ersetze(snapshot, '"time_basis":"local_monotonic",',
+                        '"time_basis":"local_monotonic","project_sample_start":null,')
+    faelle.append(_pe("rust_p1", "v3", "evidence_snapshot", mit_null,
+                      "local_monotonic mit project_sample_start null", "schema", ABGELEHNT,
+                      "M-53", "null verletzt die gemeinsame Eigenschaft integer"))
+
+    hello = _grundtext(GRUND["hello_control"])
+    h_typ = '"type": "hello",'
+    h_typ_p, h_typ_f = _doppelt(hello, h_typ, "type", '"x"', "  ")
+    h_sid_p, h_sid_f = _doppelt(hello, sid, "logon_sid", fremd_sid, "    ")
+    bootstrap = [
+        ("logon_sid doppelt in adresse, erst fremd, dann kanonisch", h_sid_p),
+        ("logon_sid doppelt in adresse, erst kanonisch, dann fremd", h_sid_f),
+        ("type doppelt, hello zuletzt", h_typ_p),
+        ("type doppelt, fremd zuletzt", h_typ_f),
+        ("Escape-Alias fuer protocol",
+         _ersetze(hello, '"protocol": 3,', '"protoco' + BS + 'u006c": 3,\n  "protocol": 3,')),
+    ]
+    for zeige, roh in bootstrap:
+        faelle.append(_pe("rust_bootstrap", "v3", "hello_control", roh,
+                          f"Control-Hello, {zeige}", "duplikat", ["ablehnung"], "M-45",
+                          f"Hello mit {zeige}: KeinJson mit der Marke des doppelten Schluessels"))
+    return faelle
+
+
+def _etappe_von(matrix: str) -> str:
+    nummer = int(matrix.removeprefix("M-").rstrip("b"))
+    for von, bis, etappe in MATRIX_ETAPPEN:
+        if von <= nummer <= bis:
+            return str(etappe)
+    raise SystemExit(f"Produkteingaenge: {matrix} gehoert zu keiner Etappe")
+
+
+def _tabelle_selbstpruefung(kopf: dict) -> None:
+    """Die Selbstpruefung des Erzeugers (Manifest §7.1, R-313-13).
+
+    Sie prueft die HANDSCHRIFT auf Widerspruchsfreiheit, nicht auf Wahrheit;
+    die Wahrheit messen die Beine gegen die echten Leser.
+    """
+    faelle = kopf["faelle"]
+    fehler: list[str] = []
+    for i, f in enumerate(faelle, start=1):
+        kennung = f["id"]
+        if kennung != f"PE-{i:03d}":
+            fehler.append(f"{kennung}: nicht fortlaufend")
+        if f["eingang"] not in kopf["eingaenge"]:
+            fehler.append(f"{kennung}: Eingang {f['eingang']} fehlt im Register")
+        if f["fassung"] not in ("v3", "v2"):
+            fehler.append(f"{kennung}: Fassung {f['fassung']}")
+        if not set(f["wirkung"]) <= set(WIRKUNGEN) or not f["wirkung"]:
+            fehler.append(f"{kennung}: Wirkung ausserhalb der geschlossenen Menge")
+        etappe = _etappe_von(f["matrix"])
+        referenz = "A5" if f["fassung"] == "v3" else "A11"
+        for objekt, leser in (("vertrag", referenz), ("produkt", f["eingang"])):
+            u = f[objekt]
+            if u["urteil"] not in ("gueltig", "ungueltig"):
+                fehler.append(f"{kennung}: {objekt}.urteil {u['urteil']}")
+            if (u["urteil"] == "gueltig") != (u["stufe"] is None):
+                fehler.append(f"{kennung}: {objekt} - gueltig ohne Stufe, ungueltig mit Stufe")
+            kette = LESERKETTEN.get(leser, {}).get(etappe)
+            if kette is None:
+                fehler.append(f"{kennung}: {leser} hat in Etappe {etappe} keine Kette")
+            elif u["stufe"] is not None and u["stufe"] not in kette:
+                fehler.append(f"{kennung}: Stufe {u['stufe']} liegt nicht in der Kette von {leser}")
+        if f["nachricht"] == "evidence_snapshot":
+            kette = LESERKETTEN["B16"].get(etappe, [])
+            if f["vertrag"]["stufe"] is not None and f["vertrag"]["stufe"] not in kette:
+                fehler.append(f"{kennung}: Stufe nicht in der Kette von B16")
+        a = f["abweichung"]
+        gleich_urteil = f["vertrag"]["urteil"] == f["produkt"]["urteil"]
+        gleich_stufe = f["vertrag"]["stufe"] == f["produkt"]["stufe"]
+        if a is None and not (gleich_urteil and gleich_stufe):
+            fehler.append(f"{kennung}: verschiedene Objekte ohne abweichung")
+        if a is not None and a.get("art") == "urteil" and gleich_urteil:
+            fehler.append(f"{kennung}: Abweichung urteil bei gleichen Urteilen")
+        if a is not None and a.get("art") == "stufe" and (not gleich_urteil or gleich_stufe):
+            fehler.append(f"{kennung}: Abweichung stufe ohne Stufenunterschied")
+        if a is not None and a.get("art") not in ("urteil", "stufe"):
+            fehler.append(f"{kennung}: Abweichung ohne Art")
+    zaehle = lambda feld: {k: sum(1 for f in faelle if f[feld] == k)
+                           for k in sorted({f[feld] for f in faelle})}
+    je_eingang = {k: sum(1 for f in faelle if f["eingang"] == k) for k in kopf["eingaenge"]}
+    if kopf["anzahl"] != len(faelle):
+        fehler.append("anzahl passt nicht zu faelle")
+    if kopf["anzahl_je_eingang"] != je_eingang:
+        fehler.append("anzahl_je_eingang passt nicht zu faelle")
+    if kopf["anzahl_je_fassung"] != zaehle("fassung"):
+        fehler.append("anzahl_je_fassung passt nicht zu faelle")
+    if kopf["anzahl_je_nachricht"] != zaehle("nachricht"):
+        fehler.append("anzahl_je_nachricht passt nicht zu faelle")
+    abw = {"stufe": sum(1 for f in faelle if f["abweichung"] and f["abweichung"]["art"] == "stufe"),
+           "urteil": sum(1 for f in faelle if f["abweichung"] and f["abweichung"]["art"] == "urteil")}
+    if kopf["anzahl_abweichungen"] != abw:
+        fehler.append("anzahl_abweichungen passt nicht zu faelle")
+    if fehler:
+        raise SystemExit("PRODUKTEINGAENGE-FAELLE widerspricht sich:\n  " + "\n  ".join(fehler))
+
+
+def produkteingaenge_tabelle() -> dict:
+    """`PRODUKTEINGAENGE-FAELLE.json` - dieselben Bytes durch die ECHTEN Leser.
+
+    Hex-kodiert nach dem Muster der Textriegel-Falltabelle: Nachspann, doppelte
+    Namen und Escape-Aliase stuenden sonst nicht unveraendert in einer
+    JSON-Datei. Produktbeine (B13, A4b, A4) vergleichen `produkt`,
+    Referenzbeine (A5 fuer v3, A11 fuer v2, B16 fuer evidence_snapshot)
+    `vertrag`; jedes Bein zaehlt seine Eintraege gegen den Kopf.
+    """
+    faelle = _faelle_quellenmodell() + _faelle_v2_client() + _faelle_rust()
+    for i, f in enumerate(faelle, start=1):
+        f["id"] = f"PE-{i:03d}"
+    faelle = [{"id": f["id"], **{k: w for k, w in f.items() if k != "id"}} for f in faelle]
+    register = _einspeisung_register()
+    kopf = {
+        "$id": "evenacadia.nakama.produkteingaenge.faelle.v1",
+        "titel": "Gemeinsame Vektortabelle der Produkteingaenge",
+        "zweck": ("Der Vertragsleser jeder Sprache war laengst gemessen; die PRODUKTLESER "
+                  "daneben nicht (Tiefenaudit 3, NAK-313 §1). Diese Tabelle bindet sie an "
+                  "dieselben Bytes: je Eintrag das Urteil des Vertrags (Textriegel, "
+                  "strenger Parselauf, Schema) und das des Produktlesers am Ende der "
+                  "Etappe, die den Eintrag anlegt, jeweils mit der Stufe, an der er "
+                  "faellt. Beide Urteile stehen von Hand im Erzeuger."),
+        "warum_hex": ("Die Eintraege tragen Nachspann, doppelte Namen und Escape-Aliase; "
+                      "als Text waeren sie von keinem JSON-Leser unveraendert "
+                      "transportierbar. `zeigetext` ist nur fuer Menschen."),
+        "eingaenge": register,
+        "leser": LESERKETTEN,
+        "stufen": STUFEN,
+        "wirkungen": WIRKUNGEN,
+        "anzahl": len(faelle),
+        "anzahl_je_eingang": {k: sum(1 for f in faelle if f["eingang"] == k) for k in register},
+        "anzahl_je_fassung": {k: sum(1 for f in faelle if f["fassung"] == k)
+                              for k in sorted({f["fassung"] for f in faelle})},
+        "anzahl_je_nachricht": {k: sum(1 for f in faelle if f["nachricht"] == k)
+                                for k in sorted({f["nachricht"] for f in faelle})},
+        "anzahl_abweichungen": {"stufe": 0, "urteil": 0},
+        "faelle": faelle,
+    }
+    _tabelle_selbstpruefung(kopf)
+    return kopf
+
 def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
     dateien: dict[str, dict] = {}
     rohdateien: dict[str, bytes] = {}
@@ -3505,6 +4173,26 @@ def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
             "textriegel_lehnt_ab": True,
         })
 
+    # NAK-313 Etappe 4 (R-313-6): die Klasse „Parser lehnt ab". Rohbytes wie
+    # die Textriegel-Faelle; sie passieren den Textriegel und fallen am
+    # strengen Parselauf, bevor das Schema sie sieht.
+    for name, roh, _stufe, warum in parser_faelle():
+        pfad = f"ungueltig/parser-{name}.json"
+        if pfad in dateien or pfad in rohdateien:
+            raise SystemExit(f"doppelter Fixturename: {pfad}")
+        rohdateien[pfad] = roh
+        eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
+                          "verletzungen": [], "parser_lehnt_ab": True})
+
+    # NAK-313 Etappe 4 (R-313-7, M-53): lokale Evidenz mit `null`.
+    for name, daten, verletzungen, warum in lokale_evidenz_negativ():
+        pfad = f"ungueltig/{name}.json"
+        if pfad in dateien or pfad in rohdateien:
+            raise SystemExit(f"doppelter Fixturename: {pfad}")
+        dateien[pfad] = daten
+        eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
+                          "verletzungen": kanonisch(verletzungen)})
+
     eintraege.sort(key=lambda e: e["datei"])
 
     manifest = {
@@ -3529,6 +4217,14 @@ def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
                                 "Verletzungsmenge, weil sie das Schema nie erreichen — "
                                 "eine erfundene waere eine Luege ueber den Ort der "
                                 "Ablehnung. Regeln und Begruendung: schemas/v3/README.md."),
+        "parser_lehnt_ab": ("Markiert ein Fixture, das den Textriegel passiert und am "
+                            "STRENGEN PARSELAUF faellt, bevor das Schema es sieht: "
+                            "Nachspann, zweites Dokument, Schlusskomma, unbekanntes "
+                            "Escape, Verschachtelung tiefer als 64 Ebenen oder derselbe "
+                            "dekodierte Name zweimal im selben Objekt (auch als "
+                            "Escape-Alias). Keine Verletzungsmenge, aus demselben Grund "
+                            "wie bei textriegel_lehnt_ab (NAK-313 R-313-6; "
+                            "schemas/v3/README.md, Abschnitt zum strengen Parselauf)."),
         "anzahl_gueltig": sum(1 for e in eintraege if e["urteil"] == "gueltig"),
         "anzahl_ungueltig": sum(1 for e in eintraege if e["urteil"] == "ungueltig"),
         "fixtures": eintraege,
@@ -3885,6 +4581,12 @@ def main(argv: list[str]) -> int:
         # wie die Zahlklassentabelle - sie ist keine einzelne
         # v3-Nachricht, sondern eine Tabelle ueber Pegel und Aufloesung.
         (ZIEL / "evidenz-0p01-paar-wire-v1.json", evidenz_0p01_paar_wire()),
+        # NAK-313 Etappe 4 (R-313-6, R-313-13): die Tabelle der
+        # Produkteingaenge und die Byteinstanz des lokalen Evidenzwriters
+        # (R-313-7). Beide liegen NEBEN `gueltig/`: Tabellen, keine einzelne
+        # v3-Nachricht.
+        (ZIEL / "PRODUKTEINGAENGE-FAELLE.json", als_text(produkteingaenge_tabelle())),
+        (ZIEL / "evidenz-lokal-wire-v1.json", evidenz_lokal_wire()),
     ]
     alle += [(ZIEL / p, als_text(d)) for p, d in sorted(dateien.items())]
     alle += [(ZIEL / p, b) for p, b in sorted(rohdateien.items())]

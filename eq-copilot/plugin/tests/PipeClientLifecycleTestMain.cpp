@@ -4,6 +4,7 @@
 #include "EqCopilotIds.h"
 #include "ProbePipeRegel.h"
 #include "../vertrag/NakamaUtf8.h"
+#include "../vertrag/NakamaVertrag.h"
 
 #include <atomic>
 #include <chrono>
@@ -461,22 +462,43 @@ juce::var produkteingaenge (bool& ok)
 /// Die Stufe am Ausgang des v2-Clients, an `letzterFehler` (Manifest §7.2):
 /// „eingehender Pipe-Frame: " + Grund des strengen Laufs ist `parser`, mit
 /// „doppelter Schluessel" `duplikat`; die Byteprüfungen von `empfange`
-/// (Grenze, NUL, BOM, UTF-8) sind `textriegel`; alles danach `feldregel`.
+/// (Grenze, NUL, BOM, UTF-8) und seit Etappe 5 der Zahlriegel („Zahlriegel: ")
+/// sind `textriegel`; alles danach `feldregel`.
 juce::String stufeDesV2Clients (const juce::String& meldung)
 {
     if (meldung.startsWith ("eingehender Pipe-Frame: "))
         return meldung.contains ("doppelter Schluessel") ? "duplikat" : "parser";
-    if (meldung.startsWith ("eingehender Pipe-Frame "))
+    if (meldung.startsWith ("eingehender Pipe-Frame ") || meldung.startsWith ("Zahlriegel: "))
         return "textriegel";
     return "feldregel";
 }
 
-/// M-42 und die Zaehlpruefung aus M-49: jeder Eintrag von `cpp_v2_client` als
-/// eigener Fall. Ein Peer auf einem Probenamen antwortet auf das Hello mit den
-/// Bytes des Eintrags - bei `heartbeat_ack` zuerst mit dem Welcome der
-/// Einspeisung und dann auf den ersten Heartbeat (seq 0). Gelesen wird im
-/// Wartefenster nach dem Fehlschlag (Status getrennt, Rueckzug ab 500 ms).
-void nak313V2ParserLehntAb()
+/// NAK-313 §8.1: der Schalter `--ohne-ueberlaufvektoren` laesst genau die
+/// Eintraege mit `ub_bei_juce` aus - fuer den Rotlauf am Aufruf des
+/// Zahlriegels, in dem sie JUCE erreichen koennten. Der Kanon faehrt A4b ohne
+/// Argumente, also mit allen Eintraegen.
+bool ohneUeberlaufvektoren = false;
+
+juce::String v2Pruefname (const juce::var& fall)
+{
+    const auto matrix = fall.getProperty ("matrix", {}).toString();
+    const auto nachricht = fall.getProperty ("nachricht", {}).toString();
+    juce::String name = "v2_parser_lehnt_ab";
+    if (matrix == "M-91")      name = "v2_zahlriegel_welcome";
+    else if (matrix == "M-93") name = "v2_zahlriegel_heartbeat_ack";
+    else if (matrix == "M-94") name = "v2_zahlriegel_reject";
+    else if (matrix == "M-96") name = "nicht_endlich_v2";
+    return "313/" + matrix + " " + name + " " + fall.getProperty ("id", {}).toString();
+}
+
+/// M-42, M-91, M-93, M-94, M-96 und die Zaehlpruefung: jeder Eintrag von
+/// `cpp_v2_client` als eigener Fall. Ein Peer auf einem Probenamen antwortet
+/// auf das Hello mit den Bytes des Eintrags - bei `heartbeat_ack` zuerst mit
+/// dem Welcome der Einspeisung, dann mit so vielen gueltigen ACKs, wie der
+/// Eintrag in `einspeisung.gueltige_acks_davor` nennt, und dann mit den Bytes.
+/// Gelesen wird im Wartefenster nach dem Fehlschlag (Status getrennt) oder,
+/// fuer ein gueltiges welcome, sobald der Client mit Version 2 verbunden ist.
+void nak313V2Tabelle()
 {
     bool ok = false;
     const auto kopf = produkteingaenge (ok);
@@ -486,21 +508,25 @@ void nak313V2ParserLehntAb()
     const auto welcomeVorAck = kopf.getProperty ("eingaenge", {}).getProperty ("cpp_v2_client", {})
                                    .getProperty ("einspeisung", {})
                                    .getProperty ("welcome_vor_ack", {}).toString().toStdString();
-    int gefahren = 0;
+    int gefahren = 0, ausgelassen = 0;
     for (const auto& fall : *kopf.getProperty ("faelle", {}).getArray())
     {
         if (fall.getProperty ("eingang", {}).toString() != "cpp_v2_client")
             continue;
-        ++gefahren;
-        const auto fallName = "313/M-42 v2_parser_lehnt_ab " + fall.getProperty ("id", {}).toString();
-        if (! fall.getProperty ("wert", {}).isVoid())
+        if (ohneUeberlaufvektoren && static_cast<bool> (fall.getProperty ("ub_bei_juce", false)))
         {
-            pruefe (false, (fallName + " (Wert)").toRawUTF8(), "dieses Bein vergleicht noch keine Werte");
+            ++ausgelassen;
             continue;
         }
+        ++gefahren;
+        const auto fallName = v2Pruefname (fall);
         juce::MemoryBlock roh;
         roh.loadFromHexString (fall.getProperty ("bytes_hex", {}).toString());
-        const bool ack = fall.getProperty ("nachricht", {}).toString() == "heartbeat_ack";
+        const auto nachricht = fall.getProperty ("nachricht", {}).toString();
+        const bool ack = nachricht == "heartbeat_ack";
+        const bool welcome = nachricht == "welcome";
+        const int vorlauf = (int) fall.getProperty ("einspeisung", {})
+                                      .getProperty ("gueltige_acks_davor", 0);
 
         const auto name = testName ("nak313-v2");
         const auto server = pipeAnlegen (name);
@@ -515,8 +541,14 @@ void nak313V2ParserLehntAb()
             std::string frame;
             if (verbinden (server) && liesFrame (server, frame))
             {
-                const bool bereit = ! ack || (schreibeFrame (server, welcomeVorAck)
-                                              && liesFrame (server, frame));
+                bool bereit = ! ack || (schreibeFrame (server, welcomeVorAck)
+                                        && liesFrame (server, frame));
+                // Die gueltigen ACKs davor: jedes zitiert die Nummer seines
+                // Heartbeats, der naechste Heartbeat ist dann schon gelesen.
+                for (int i = 0; bereit && i < vorlauf; ++i)
+                    bereit = schreibeFrame (server, R"({"type":"heartbeat_ack","seq":)"
+                                                        + std::to_string (i) + R"(,"konflikt":false})")
+                          && liesFrame (server, frame);
                 if (bereit && schreibeRohframe (server, static_cast<const unsigned char*> (roh.getData()),
                                                 static_cast<DWORD> (roh.getSize())))
                     gesendet.store (true);
@@ -529,25 +561,32 @@ void nak313V2ParserLehntAb()
         auto c = client (name, [] { return hello ("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"); });
         c->start();
         eqcop::PipeClient::Snapshot s;
-        warteAuf (1500, [&]
+        bool verbundenMitZwei = false;
+        warteAuf (1500 + 1500 * vorlauf, [&]
         {
             s = c->snapshot();
-            return gesendet.load() && s.status == eqcop::PipeClient::Status::getrennt
-                && s.letzterFehler.isNotEmpty();
+            verbundenMitZwei = verbundenMitZwei
+                || (s.status == eqcop::PipeClient::Status::verbunden && s.protokollVersion == 2);
+            return gesendet.load()
+                && ((s.status == eqcop::PipeClient::Status::getrennt && s.letzterFehler.isNotEmpty())
+                    || (welcome && verbundenMitZwei));
         });
         c->stop();
         freigeben.store (true);
         peer.join();
 
         const bool getrennt = s.status == eqcop::PipeClient::Status::getrennt;
-        const juce::String urteil = ack ? (s.heartbeatsBestaetigt == 0 && ! s.konflikt ? "ungueltig" : "gueltig")
-                                        : (getrennt && s.heartbeatsGesendet == 0 ? "ungueltig" : "gueltig");
+        const juce::String urteil = ack
+            ? (s.heartbeatsBestaetigt == (juce::int64) vorlauf && ! s.konflikt ? "ungueltig" : "gueltig")
+            : welcome ? (verbundenMitZwei ? "gueltig" : "ungueltig")
+                      : (getrennt && s.heartbeatsGesendet == 0 ? "ungueltig" : "gueltig");
         const auto stufe = urteil == "ungueltig" ? stufeDesV2Clients (s.letzterFehler) : juce::String();
         const auto soll = fall.getProperty ("produkt", {});
         const auto sollUrteil = soll.getProperty ("urteil", {}).toString();
         const auto sollStufe = soll.getProperty ("stufe", {}).isString()
                                  ? soll.getProperty ("stufe", {}).toString() : juce::String();
         const auto zustand = "Status " + juce::String (getrennt ? "getrennt" : "nicht getrennt")
+                           + ", Version " + juce::String (s.protokollVersion)
                            + ", Heartbeats " + juce::String ((juce::int64) s.heartbeatsGesendet)
                            + "/" + juce::String ((juce::int64) s.heartbeatsBestaetigt)
                            + ", letzterFehler '" + s.letzterFehler + "'";
@@ -561,21 +600,57 @@ void nak313V2ParserLehntAb()
         {
             const auto wort = w.toString();
             worte.add (wort);
-            if (wort == "ablehnung")
+            if (wort == "annahme")
+                gehalten = gehalten && urteil == "gueltig";
+            else if (wort == "ablehnung")
                 gehalten = gehalten && urteil == "ungueltig" && getrennt;
             else if (wort == "keine_teilmutation")
                 gehalten = gehalten && s.heartbeatsGesendet == 0 && s.sessionToken.isEmpty()
                         && s.protokollVersion == 0;
             else if (wort == "kein_ack")
-                gehalten = gehalten && s.heartbeatsBestaetigt == 0 && ! s.konflikt;
+                gehalten = gehalten && s.heartbeatsBestaetigt == (juce::int64) vorlauf && ! s.konflikt;
             else
                 gehalten = false;   // fremde Wirkung: rot
         }
         pruefe (gehalten, (fallName + " (Wirkung)").toRawUTF8(), worte.joinIntoString (", ") + " - " + zustand);
+
+        // Etappe 5 (§7.2): bei eigenem Urteil `gueltig` der Wert - die
+        // ausgehandelte Version, die der Client nach dem welcome fuehrt.
+        if (urteil == "gueltig" && ! fall.getProperty ("wert", {}).isVoid())
+            pruefe (welcome && verbundenMitZwei
+                        && fall.getProperty ("wert", {}).toString() == juce::String (2),
+                    (fallName + " (Wert)").toRawUTF8(),
+                    "Version " + juce::String (s.protokollVersion) + ", soll "
+                        + fall.getProperty ("wert", {}).toString());
     }
     const int soll = kopf.getProperty ("anzahl_je_eingang", {}).getProperty ("cpp_v2_client", {});
-    pruefe (gefahren == soll && gefahren > 0, "313/M-49 Zaehlpruefung A4b: cpp_v2_client",
-            juce::String (gefahren) + " gefahren, Kopf " + juce::String (soll));
+    pruefe (gefahren + ausgelassen == soll && gefahren > 0, "313/M-49 Zaehlpruefung A4b: cpp_v2_client",
+            juce::String (gefahren) + " gefahren, " + juce::String (ausgelassen)
+                + " ausgelassen (--ohne-ueberlaufvektoren), Kopf " + juce::String (soll));
+}
+
+/// M-91, M-93, M-94: die Riegeleinheit - `zahlriegelBytes` direkt, ohne JUCE
+/// und ohne Pipe, je Vektor ein Fall, mit der Grenze des Produkts.
+void nak313ZahlriegelEinheit()
+{
+    struct Fall { const char* matrix; const char* literal; bool angenommen; };
+    const Fall faelle[] = {
+        { "M-91", "9223372036854775807", true },  { "M-91", "2.0", true },
+        { "M-91", "9223372036854775808", false }, { "M-93", "18446744073709551616", false },
+        { "M-91", "18446744073709551618", false }, { "M-91", "2e4294967296", false },
+        { "M-91", "2.0000000000000001", false },  { "M-93", "1.0000000000000001", false },
+    };
+    for (const auto& f : faelle)
+    {
+        const std::string text = std::string (R"({"type":"welcome","protocol_version":)") + f.literal
+                               + R"(,"broker_version":"test","session_token":"tok"})";
+        juce::String grund;
+        const bool sauber = nakama::vertrag::zahlriegelBytes (text.data(), text.size(),
+                                                               nakama::vertrag::v2Ganzzahlgrenze, grund);
+        pruefe (sauber == f.angenommen && (sauber ? grund.isEmpty() : grund.isNotEmpty()),
+                (juce::String ("313/") + f.matrix + " zahlriegel_int64_rand " + f.literal).toRawUTF8(),
+                sauber ? juce::String ("angenommen") : "abgewiesen: " + grund);
+    }
 }
 
 void schemafremdesZusatzfeld (bool imWelcome)
@@ -1965,9 +2040,22 @@ void utf8ZweiByteRiegel()
 }
 } // namespace
 
-int main()
+int main (int argc, char** argv)
 {
-    std::cout << "PIPECLIENT-LIFECYCLE-TEST" << std::endl;
+    // NAK-313 §8.1: nur der Rotlauf am Aufruf des Zahlriegels setzt den
+    // Schalter; ein unbekanntes Argument ist ein Bedienfehler, kein Lauf.
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::string (argv[i]) == "--ohne-ueberlaufvektoren")
+            ohneUeberlaufvektoren = true;
+        else
+        {
+            std::cout << "unbekanntes Argument: " << argv[i] << std::endl;
+            return 2;
+        }
+    }
+    std::cout << "PIPECLIENT-LIFECYCLE-TEST"
+              << (ohneUeberlaufvektoren ? " (--ohne-ueberlaufvektoren)" : "") << std::endl;
     // NAK-289 Etappe 1 - UTF-8-Riegel, Zwei-Byte-Zweig.
     utf8ZweiByteRiegel();
     stoppFall (false);
@@ -1977,8 +2065,10 @@ int main()
     ungueltigePeerBytes (false);
     ungueltigePeerBytes (true);
     falschesAck();
-    // NAK-313 Etappe 4 (R-313-6) - der strenge Lauf vor jedem JSON-Parse.
-    nak313V2ParserLehntAb();
+    // NAK-313 Etappe 4 (R-313-6) - der strenge Lauf vor jedem JSON-Parse;
+    // seit Etappe 5 (R-313-5) der Zahlriegel davor und seine Riegeleinheit.
+    nak313V2Tabelle();
+    nak313ZahlriegelEinheit();
     schemafremdesZusatzfeld (true);
     schemafremdesZusatzfeld (false);
     eineDeadlineFuerDenGanzenFrame();

@@ -2,6 +2,7 @@
 #include "EqCopilotIds.h"
 #include "../state/NakamaKanon.h"
 #include "../vertrag/NakamaUtf8.h"
+#include "../vertrag/NakamaVertrag.h"
 
 #include <cmath>
 #include <cstring>
@@ -705,6 +706,17 @@ bool PipeClient::empfange (void* handle, juce::String& jsonOut,
         return false;
     }
     puffer[len] = 0;
+    // 🔑 NAK-313 R-313-5 (M-91, M-93, M-94, M-96): der Zahlriegel vor jedem
+    // Zahlenleser. JUCE akkumuliert `9223372036854775808` und `2e4294967296`
+    // ohne Schranke und liest `2.0000000000000001` als 2.0; der Riegel prueft
+    // jede Zahl lexikalisch gegen die v2-Grenze `INT64_MAX`.
+    juce::String zahlGrund;
+    if (! nakama::vertrag::zahlriegelBytes (puffer.getData(), len,
+                                            nakama::vertrag::v2Ganzzahlgrenze, zahlGrund))
+    {
+        fehler = "Zahlriegel: " + zahlGrund;
+        return false;
+    }
     // 🔑 NAK-313 R-313-6 (M-42): genau EIN strenger RFC-8259-Lauf nach der
     // Byteprüfung und vor jedem `juce::JSON::parse` der Aufrufer. JUCE nahm
     // Nachspann, Schlusskomma und unbekannte Escapes an und las bei einem

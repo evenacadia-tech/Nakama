@@ -130,15 +130,71 @@ def json_konstante_ablehnen(name: str):
     raise ValueError(f"nicht-endliches JSON-Literal: {name}")
 
 
+# NAK-313 R-313-6: dieselbe Tiefengrenze wie `kanon::lies` (NakamaKanon.cpp)
+# und `json_streng` (broker/src/vertrag.rs) - Objekte und Listen zusammen.
+MAX_TIEFE = 64
+
+
+class DoppelterSchluessel(ValueError):
+    """Die Ausnahme des Duplikat-Hooks (NAK-313 R-313-6).
+
+    Eine EIGENE Klasse, weil die Stufe an ihr haengt: `duplikat` fuer sie,
+    `parser` fuer jede andere Ausnahme des strengen Laufs. `json.JSONDecodeError`
+    ist selbst eine Unterklasse von `ValueError` - wer nur `ValueError` faengt,
+    kann die beiden Stufen nicht unterscheiden.
+    """
+
+
+def objekt_ohne_duplikat(paare):
+    """`object_pairs_hook`: derselbe dekodierte Name zweimal im selben Objekt
+    ist ein Fehler. Ohne ihn behielte `json.loads` still den letzten Wert."""
+    objekt = {}
+    for schluessel, wert in paare:
+        if schluessel in objekt:
+            raise DoppelterSchluessel(f"doppelter Schluessel: {schluessel}")
+        objekt[schluessel] = wert
+    return objekt
+
+
+def tiefe_pruefen(wert) -> None:
+    """Hoechstens MAX_TIEFE verschachtelte Objekte und Listen - ohne Rekursion,
+    damit die Pruefung nicht selbst an der Tiefe scheitert, die sie begrenzt."""
+    stapel = [(wert, 1)]
+    while stapel:
+        knoten, tiefe = stapel.pop()
+        if isinstance(knoten, dict):
+            kinder = knoten.values()
+        elif isinstance(knoten, list):
+            kinder = knoten
+        else:
+            continue
+        if tiefe > MAX_TIEFE:
+            raise ValueError(f"zu tief verschachtelt (mehr als {MAX_TIEFE} Ebenen)")
+        stapel.extend((kind, tiefe + 1) for kind in kinder)
+
+
+def stufe_des_strengen_laufs(fehler: Exception) -> str:
+    """Die Stufe, an der `json_laden_strikt` abgelehnt hat (Manifest §7.2)."""
+    return "duplikat" if isinstance(fehler, DoppelterSchluessel) else "parser"
+
+
 def json_laden_strikt(quelle):
-    """JSON ohne Pythons nicht-standardisierte NaN-/Infinity-Erweiterungen.
+    """Der EINE strenge Parselauf des Python-Referenzbeins (NAK-313 R-313-6).
+
+    RFC 8259 ohne Pythons nicht-standardisierte NaN-/Infinity-Erweiterungen,
+    ohne doppelten dekodierten Namen im selben Objekt (auch nicht als
+    Escape-Alias) und hoechstens MAX_TIEFE Ebenen tief. Nachspann, zweites
+    Dokument, Schlusskomma und unbekannte Escapes lehnt `json.loads` selbst ab.
 
     Der Textriegel bleibt fuer dieselbe Klassifikation samt Position in allen
     drei Sprachen noetig. `parse_constant` ist der unabhaengige zweite Riegel:
     selbst bei einer kuenftigen Scannerluecke erzeugt `json.loads` aus den
     Python-Erweiterungen niemals einen nicht-endlichen Wert.
     """
-    return json.loads(quelle, parse_constant=json_konstante_ablehnen)
+    wert = json.loads(quelle, parse_constant=json_konstante_ablehnen,
+                      object_pairs_hook=objekt_ohne_duplikat)
+    tiefe_pruefen(wert)
+    return wert
 
 
 def ist_ascii_ziffer(c: str) -> bool:
@@ -1854,10 +1910,19 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
         try:
             daten = json_laden_strikt(roh_bytes.decode("utf-8"))
         except (json.JSONDecodeError, ValueError) as e:
+            # NAK-313 R-313-6: die Klasse „Parser lehnt ab" MUSS hier fallen -
+            # nach dem Textriegel, vor dem Schema.
+            if eintrag.get("parser_lehnt_ab"):
+                lauf.wahr(f"Parser lehnt ab: {eintrag['datei']}", True)
+                continue
             # Ein nicht lesbares Fixture ist eine benannte Abweichung, kein
             # Abbruch des Laufs - dasselbe Prinzip wie der wurzel_skalar-Zweig
             # der C++-Seite.
             lauf.fehler.append(f"{eintrag['datei']}: nicht lesbar: {e}")
+            continue
+        if eintrag.get("parser_lehnt_ab"):
+            lauf.fehler.append(f"{eintrag['datei']}: parser_lehnt_ab, aber der strenge "
+                               "Parselauf nimmt es an")
             continue
         gueltig = pruefer.is_valid(daten)
         soll = eintrag["urteil"] == "gueltig"
@@ -1879,15 +1944,19 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
               all(e.get("warum") for e in manifest["fixtures"]))
     lauf.wahr("gueltige Fixtures tragen keine Verletzungen",
               all(not e["verletzungen"] for e in manifest["fixtures"] if e["urteil"] == "gueltig"))
-    # Ausgenommen sind die Textriegel-Fixtures: sie erreichen das Schema nie,
-    # also gibt es dort nichts zu verletzen. Eine erfundene Verletzungsmenge
-    # waere eine Luege ueber den ORT der Ablehnung.
+    # Ausgenommen sind die Textriegel- und Parser-Fixtures: sie erreichen das
+    # Schema nie, also gibt es dort nichts zu verletzen. Eine erfundene
+    # Verletzungsmenge waere eine Luege ueber den ORT der Ablehnung.
     lauf.wahr("ungueltige Fixtures tragen mindestens eine Verletzung",
               all(e["verletzungen"] for e in manifest["fixtures"]
-                  if e["urteil"] == "ungueltig" and not e.get("textriegel_lehnt_ab")))
+                  if e["urteil"] == "ungueltig" and not e.get("textriegel_lehnt_ab")
+                  and not e.get("parser_lehnt_ab")))
     lauf.wahr("Textriegel-Fixtures tragen KEINE Verletzungsmenge",
               all(not e["verletzungen"] for e in manifest["fixtures"]
                   if e.get("textriegel_lehnt_ab")))
+    lauf.wahr("Parser-Fixtures tragen KEINE Verletzungsmenge",
+              all(not e["verletzungen"] for e in manifest["fixtures"]
+                  if e.get("parser_lehnt_ab")))
 
     # T2-Runde 1: acht deklarierte Eigenschaften kamen in KEINEM Fixture vor.
     # Der Abdeckungsriegel unten sah das nicht - er zaehlt Definitionen mit
@@ -1919,7 +1988,8 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
 
     for eintrag in manifest["fixtures"]:
         pfad = FIXTURES / eintrag["datei"]
-        if not pfad.exists() or eintrag.get("textriegel_lehnt_ab"):
+        if not pfad.exists() or eintrag.get("textriegel_lehnt_ab") \
+                or eintrag.get("parser_lehnt_ab"):
             continue
         try:
             sammle_benutzt(json_laden_strikt(pfad.read_text(encoding="utf-8")))
@@ -1929,6 +1999,55 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
     unberuehrt = sorted(deklariert - benutzt)
     lauf.wahr(f"jede der {len(deklariert)} deklarierten Eigenschaften steht in "
               "mindestens einem Fixture", not unberuehrt, ", ".join(unberuehrt))
+
+
+PRODUKTEINGAENGE = FIXTURES / "PRODUKTEINGAENGE-FAELLE.json"
+
+
+def vertragsurteil_v3(pruefer, roh: bytes) -> tuple[str, str | None]:
+    """(urteil, stufe) des v3-Vertrags: Textriegel, strenger Lauf, Schema."""
+    if textriegel_bytes(roh) is not None:
+        return "ungueltig", "textriegel"
+    try:
+        daten = json_laden_strikt(roh.decode("utf-8"))
+    except (json.JSONDecodeError, ValueError) as e:
+        return "ungueltig", stufe_des_strengen_laufs(e)
+    return ("gueltig", None) if pruefer.is_valid(daten) else ("ungueltig", "schema")
+
+
+def pruefe_produkteingaenge(lauf: Lauf, schema: dict) -> None:
+    """NAK-313 Etappe 4 (R-313-6, R-313-13): das Referenzbein der Tabelle.
+
+    Jeder Eintrag mit `fassung` v3 ist ein eigener Fall mit seiner Kennung im
+    Namen und wird gegen `vertrag` verglichen (Urteil und Stufe), nie gegen
+    `produkt`. Am Ende zaehlt das Bein, ob es genau so viele Eintraege gefahren
+    hat, wie der Kopf nennt - ein uebersprungener Eintrag ist rot.
+    """
+    if not PRODUKTEINGAENGE.exists():
+        lauf.wahr("Produkteingangstabelle vorhanden", False, str(PRODUKTEINGAENGE))
+        return
+    tabelle = json_laden_strikt(PRODUKTEINGAENGE.read_text(encoding="utf-8"))
+    pruefer = jsonschema.Draft202012Validator(schema)
+    gefahren = 0
+    for fall in tabelle["faelle"]:
+        if fall["fassung"] != "v3":
+            continue
+        gefahren += 1
+        name = f"{fall['id']} {fall['eingang']} {fall['matrix']}"
+        if fall.get("wert") is not None:
+            # Fail-closed: ein Wertvergleich ist in diesem Bein noch nicht gebaut.
+            lauf.wahr(f"{name}: Wert verglichen", False, "Bein vergleicht noch keine Werte")
+            continue
+        urteil, stufe = vertragsurteil_v3(pruefer, bytes.fromhex(fall["bytes_hex"]))
+        soll = fall["vertrag"]
+        lauf.wahr(f"{name}: Vertragsurteil und Stufe",
+                  (urteil, stufe) == (soll["urteil"], soll["stufe"]),
+                  f"ist {urteil}/{stufe}, soll {soll['urteil']}/{soll['stufe']}")
+    soll_anzahl = tabelle["anzahl_je_fassung"].get("v3", 0)
+    lauf.wahr(f"Produkteingaenge: {gefahren} v3-Eintraege gefahren, der Kopf nennt {soll_anzahl}",
+              gefahren == soll_anzahl and gefahren > 0)
+    print(f"Produkteingaenge: {gefahren} v3-Eintraege gegen `vertrag` gefahren "
+          f"(Kopf: {soll_anzahl})")
 
 
 # ------------------------------------------------------------------ Abdeckung
@@ -2233,6 +2352,7 @@ def main(argv: list[str]) -> int:
     pruefe_bandkodierung(lauf, schema, quantisierung)
     pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)
+    pruefe_produkteingaenge(lauf, schema)
     pruefe_metrikregister(lauf)
     pruefe_comparability_schwellen(lauf)
     pruefe_experiment_belegung(lauf, schema, reserviert)

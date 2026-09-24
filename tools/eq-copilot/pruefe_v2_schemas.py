@@ -26,6 +26,13 @@ WAS GEPRUEFT WIRD
    v2-Vertrag. Verglichen wird das VERTRAGSurteil samt Stufe (`vertrag`), je
    Eintrag ein Fall mit seiner Kennung; am Ende die Zaehlpruefung gegen
    `anzahl_je_fassung["v2"]`.
+5. Seit NAK-313 Etappe 5 (R-313-5, A-4, E-313-11; M-95) liest dieser Lauf
+   Zahlen mit Nachkommateil oder Exponent als `decimal.Decimal`: ein binary64
+   machte aus `2.0000000000000001` die 2 und liesse den Vertrag ein
+   `protocol_version` annehmen, das er nicht traegt. Der Typpruefer nimmt
+   `integer` als `int` oder ganzzahligen `Decimal`, `number` samt `Decimal`
+   (draft 2020-12). Bei eigenem Urteil `gueltig` vergleicht das Bein den Wert
+   am Zeiger `feld` mit `wert` - als exakte Ganzzahl.
 
 EXITCODES (wie tools/beweise.ps1 sie liest)
 -------------------------------------------
@@ -34,6 +41,7 @@ EXITCODES (wie tools/beweise.ps1 sie liest)
 
 from __future__ import annotations
 
+import decimal
 import json
 import sys
 from pathlib import Path
@@ -53,18 +61,48 @@ ERWARTET = {
 }
 
 
+def ist_ganzzahl(_pruefer, instanz) -> bool:
+    """draft 2020-12: `integer` ist jede Zahl ohne Nachkommateil - hier auch
+    ein ganzzahliger `Decimal`. Ein positiver Exponent ist ohne Rechnung
+    ganzzahlig (`2e4294967296` wird nie ausgeschrieben)."""
+    if isinstance(instanz, bool):
+        return False
+    if isinstance(instanz, int):
+        return True
+    if isinstance(instanz, decimal.Decimal):
+        return instanz.is_finite() and (instanz.as_tuple().exponent >= 0
+                                        or instanz == instanz.to_integral_value())
+    return isinstance(instanz, float) and instanz.is_integer()
+
+
+def ist_zahl(_pruefer, instanz) -> bool:
+    """draft 2020-12: `number` schliesst `integer` ein - hier samt `Decimal`."""
+    return not isinstance(instanz, bool) and isinstance(instanz, (int, float, decimal.Decimal))
+
+
+def ganzzahl_gleich(wert, soll: str) -> bool:
+    """Ist `wert` genau die Ganzzahl `soll`? Exakt, nie ueber binary64."""
+    if isinstance(wert, bool) or not ist_ganzzahl(None, wert):
+        return False
+    return int(wert) == int(soll)
+
+
 def pruefe_produkteingaenge(fehler: list[str]) -> None:
-    """Die v2-Eintraege der Produkteingangstabelle gegen `vertrag` (Punkt 4)."""
+    """Die v2-Eintraege der Produkteingangstabelle gegen `vertrag` (Punkte 4, 5)."""
     import jsonschema
+    from jsonschema import validators
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     # Der EINE strenge Lauf der Python-Seite - keine zweite Fassung hier.
-    from pruefe_v3_vertrag import json_laden_strikt, stufe_des_strengen_laufs
+    from pruefe_v3_vertrag import json_laden_strikt, stufe_des_strengen_laufs, wert_am_zeiger
 
     if not PRODUKTEINGAENGE.exists():
         fehler.append(f"{PRODUKTEINGAENGE.name}: Datei fehlt")
         return
     tabelle = json_laden_strikt(PRODUKTEINGAENGE.read_text(encoding="utf-8"))
     vertrag = json_laden_strikt((SCHEMA_VERZEICHNIS / "eq-ipc.schema.json").read_text(encoding="utf-8"))
+    typen = jsonschema.Draft202012Validator.TYPE_CHECKER.redefine_many(
+        {"integer": ist_ganzzahl, "number": ist_zahl})
+    Pruefer = validators.extend(jsonschema.Draft202012Validator, type_checker=typen)
     print()
     gefahren = 0
     for fall in tabelle["faelle"]:
@@ -72,17 +110,15 @@ def pruefe_produkteingaenge(fehler: list[str]) -> None:
             continue
         gefahren += 1
         name = f"{fall['id']} {fall['eingang']} {fall['nachricht']} {fall['matrix']}"
-        if fall.get("wert") is not None:
-            # Fail-closed: Werte liest dieses Bein erst ab Etappe 5 (Decimal).
-            fehler.append(f"{name}: traegt einen Wert, dieses Bein vergleicht noch keine")
-            continue
         definition = vertrag["$defs"].get(fall["nachricht"])
         if definition is None:
             fehler.append(f"{name}: der v2-Vertrag hat keine Definition {fall['nachricht']}")
             continue
+        daten = None
         try:
-            daten = json_laden_strikt(bytes.fromhex(fall["bytes_hex"]).decode("utf-8"))
-            ist = ("gueltig", None) if jsonschema.Draft202012Validator(
+            daten = json_laden_strikt(bytes.fromhex(fall["bytes_hex"]).decode("utf-8"),
+                                      parse_float=decimal.Decimal)
+            ist = ("gueltig", None) if Pruefer(
                 {"$defs": vertrag["$defs"], "$ref": f"#/$defs/{fall['nachricht']}"}
             ).is_valid(daten) else ("ungueltig", "schema")
         except (json.JSONDecodeError, ValueError) as e:
@@ -92,6 +128,15 @@ def pruefe_produkteingaenge(fehler: list[str]) -> None:
               f"soll {soll[0]}/{soll[1]}")
         if ist != soll:
             fehler.append(f"{name}: Vertragsurteil {ist}, erwartet {soll}")
+        if ist[0] == "gueltig" and fall.get("wert") is not None:
+            try:
+                gelesen = wert_am_zeiger(daten, fall["feld"])
+            except (KeyError, IndexError, TypeError) as e:
+                gelesen = f"nicht lesbar: {e}"
+            gleich = ganzzahl_gleich(gelesen, fall["wert"])
+            print(f"{'ok  ' if gleich else 'ROT '} {name}: Wert {gelesen!r}, soll {fall['wert']}")
+            if not gleich:
+                fehler.append(f"{name}: Wert {gelesen!r}, erwartet {fall['wert']}")
     soll_anzahl = tabelle["anzahl_je_fassung"].get("v2", 0)
     print(f"Produkteingaenge: {gefahren} v2-Eintraege gefahren, der Kopf nennt {soll_anzahl}")
     if gefahren != soll_anzahl or gefahren == 0:
@@ -161,7 +206,8 @@ def main() -> int:
         return 2
 
     print(f"GRUEN — {len(vorhanden)} v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren; "
-          "v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert und gezaehlt.")
+          "v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert (Zahlen als "
+          "Decimal), Werte exakt verglichen und gezaehlt.")
     return 0
 
 

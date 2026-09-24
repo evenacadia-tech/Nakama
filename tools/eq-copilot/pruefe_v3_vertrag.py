@@ -178,7 +178,7 @@ def stufe_des_strengen_laufs(fehler: Exception) -> str:
     return "duplikat" if isinstance(fehler, DoppelterSchluessel) else "parser"
 
 
-def json_laden_strikt(quelle):
+def json_laden_strikt(quelle, parse_float=None):
     """Der EINE strenge Parselauf des Python-Referenzbeins (NAK-313 R-313-6).
 
     RFC 8259 ohne Pythons nicht-standardisierte NaN-/Infinity-Erweiterungen,
@@ -190,9 +190,14 @@ def json_laden_strikt(quelle):
     drei Sprachen noetig. `parse_constant` ist der unabhaengige zweite Riegel:
     selbst bei einer kuenftigen Scannerluecke erzeugt `json.loads` aus den
     Python-Erweiterungen niemals einen nicht-endlichen Wert.
+
+    `parse_float` bleibt fuer dieses Bein `float` (R-313-5: „Python
+    unveraendert"); nur das v2-Referenzbein A11 reicht seit NAK-313 Etappe 5
+    `decimal.Decimal` durch, damit `2.0000000000000001` dort nicht als 2 gilt
+    (A-4, E-313-4).
     """
     wert = json.loads(quelle, parse_constant=json_konstante_ablehnen,
-                      object_pairs_hook=objekt_ohne_duplikat)
+                      object_pairs_hook=objekt_ohne_duplikat, parse_float=parse_float)
     tiefe_pruefen(wert)
     return wert
 
@@ -2015,13 +2020,36 @@ def vertragsurteil_v3(pruefer, roh: bytes) -> tuple[str, str | None]:
     return ("gueltig", None) if pruefer.is_valid(daten) else ("ungueltig", "schema")
 
 
+def wert_am_zeiger(daten, zeiger: str):
+    """Der Wert am JSON-Pointer (RFC 6901 ohne Escapes - die Tabelle nennt nur
+    einfache Namen und Indizes); `KeyError`/`IndexError`, wenn er fehlt."""
+    knoten = daten
+    for teil in zeiger.split("/")[1:]:
+        knoten = knoten[int(teil)] if isinstance(knoten, list) else knoten[teil]
+    return knoten
+
+
+def ganzzahl_gleich(wert, soll: str) -> bool:
+    """Ist `wert` genau die Ganzzahl `soll`? Ein `float` zaehlt nur ganzzahlig
+    und binary64-exakt (Betrag bis 2^53 - 1) - so liest A5 seit jeher, R-313-5."""
+    if isinstance(wert, bool):
+        return False
+    if isinstance(wert, int):
+        return wert == int(soll)
+    if isinstance(wert, float):
+        return wert.is_integer() and abs(wert) <= SICHERE_GANZZAHL and int(wert) == int(soll)
+    return False
+
+
 def pruefe_produkteingaenge(lauf: Lauf, schema: dict) -> None:
     """NAK-313 Etappe 4 (R-313-6, R-313-13): das Referenzbein der Tabelle.
 
     Jeder Eintrag mit `fassung` v3 ist ein eigener Fall mit seiner Kennung im
     Namen und wird gegen `vertrag` verglichen (Urteil und Stufe), nie gegen
-    `produkt`. Am Ende zaehlt das Bein, ob es genau so viele Eintraege gefahren
-    hat, wie der Kopf nennt - ein uebersprungener Eintrag ist rot.
+    `produkt`. Seit Etappe 5 (R-313-5, M-73) dazu bei eigenem Urteil
+    `gueltig` der Wert am Zeiger `feld`. Am Ende zaehlt das Bein, ob es genau
+    so viele Eintraege gefahren hat, wie der Kopf nennt - ein uebersprungener
+    Eintrag ist rot.
     """
     if not PRODUKTEINGAENGE.exists():
         lauf.wahr("Produkteingangstabelle vorhanden", False, str(PRODUKTEINGAENGE))
@@ -2034,15 +2062,19 @@ def pruefe_produkteingaenge(lauf: Lauf, schema: dict) -> None:
             continue
         gefahren += 1
         name = f"{fall['id']} {fall['eingang']} {fall['matrix']}"
-        if fall.get("wert") is not None:
-            # Fail-closed: ein Wertvergleich ist in diesem Bein noch nicht gebaut.
-            lauf.wahr(f"{name}: Wert verglichen", False, "Bein vergleicht noch keine Werte")
-            continue
-        urteil, stufe = vertragsurteil_v3(pruefer, bytes.fromhex(fall["bytes_hex"]))
+        roh = bytes.fromhex(fall["bytes_hex"])
+        urteil, stufe = vertragsurteil_v3(pruefer, roh)
         soll = fall["vertrag"]
         lauf.wahr(f"{name}: Vertragsurteil und Stufe",
                   (urteil, stufe) == (soll["urteil"], soll["stufe"]),
                   f"ist {urteil}/{stufe}, soll {soll['urteil']}/{soll['stufe']}")
+        if urteil == "gueltig" and fall.get("wert") is not None:
+            try:
+                gelesen = wert_am_zeiger(json_laden_strikt(roh.decode("utf-8")), fall["feld"])
+            except (KeyError, IndexError, ValueError, TypeError) as e:
+                gelesen = f"nicht lesbar: {e}"
+            lauf.wahr(f"{name}: Wert", ganzzahl_gleich(gelesen, fall["wert"]),
+                      f"gelesen {gelesen!r}, soll {fall['wert']}")
     soll_anzahl = tabelle["anzahl_je_fassung"].get("v3", 0)
     lauf.wahr(f"Produkteingaenge: {gefahren} v3-Eintraege gefahren, der Kopf nennt {soll_anzahl}",
               gefahren == soll_anzahl and gefahren > 0)

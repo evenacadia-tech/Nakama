@@ -359,6 +359,173 @@ nakama::analyse::FeatureFrame p2Frame (std::uint64_t sequence, std::uint32_t sam
     return f;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// NAK-313 Etappe 4 (R-313-6, R-313-13): die zwei Produkteingaenge des
+// Quellenmodells an der Tabelle `PRODUKTEINGAENGE-FAELLE.json`
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Die Tabelle - dieselben Bytes, die A5, A11, B16, A4b und A4 fahren. Sie ist
+/// Testeingabe, kein Produkteingang, und wird deshalb mit JUCE gelesen.
+juce::var produkteingaenge (bool& ok)
+{
+    juce::var kopf;
+    const auto datei = finde ("eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json");
+    ok = datei.existsAsFile()
+      && juce::JSON::parse (datei.loadFileAsString(), kopf).wasOk()
+      && kopf.getProperty ("faelle", {}).isArray();
+    return kopf;
+}
+
+std::string ausHex (const juce::String& hex)
+{
+    juce::MemoryBlock b;
+    b.loadFromHexString (hex);
+    return std::string (static_cast<const char*> (b.getData()), b.getSize());
+}
+
+/// Die Stufe am Ausgang des Lesers, am Praefix von `fehler` (Manifest §7.2,
+/// Stufenketten je Leser): Textriegel, strenger Lauf, sonst Feldregel.
+juce::String stufeDesQuellenmodells (const juce::String& grund, const juce::String& nachricht)
+{
+    if (grund.startsWith (nachricht + " text boundary: "))
+        return "textriegel";
+    if (grund.startsWith (nachricht + " parser: "))
+        return grund.contains ("doppelter Schluessel") ? "duplikat" : "parser";
+    return "feldregel";
+}
+
+/// Keine Teilmutation: dieselbe Sicht vor und nach der abgelehnten Nachricht.
+bool sichtUnveraendert (const Model::Sicht& a, const Model::Sicht& b, juce::String& was)
+{
+    juce::StringArray f;
+    if (a.revision != b.revision)
+        f.add ("revision " + juce::String ((juce::int64) a.revision) + " -> "
+               + juce::String ((juce::int64) b.revision));
+    if (a.quellen.size() != b.quellen.size())
+        f.add ("quellen " + juce::String ((int) a.quellen.size()) + " -> "
+               + juce::String ((int) b.quellen.size()));
+    else
+        for (size_t i = 0; i < a.quellen.size(); ++i)
+            if (a.quellen[i].instanceId != b.quellen[i].instanceId
+                || a.quellen[i].mitgliedschaft != b.quellen[i].mitgliedschaft
+                || a.quellen[i].sichtbarerName != b.quellen[i].sichtbarerName)
+                f.add ("quelle " + juce::String ((int) i));
+    if (a.subscriptionAktiv != b.subscriptionAktiv) f.add ("subscriptionAktiv");
+    if (a.fuehrendesMain != b.fuehrendesMain)       f.add ("fuehrendesMain");
+    if (a.diagnose != b.diagnose)                   f.add ("diagnose");
+    if (a.evidenzRuecknahmen != b.evidenzRuecknahmen) f.add ("evidenzRuecknahmen");
+    if (a.ruecknahmeGrund != b.ruecknahmeGrund)     f.add ("ruecknahmeGrund");
+    if (a.ruecknahmeUmfang != b.ruecknahmeUmfang)   f.add ("ruecknahmeUmfang");
+    was = f.isEmpty() ? juce::String ("keine") : f.joinIntoString (", ");
+    return f.isEmpty();
+}
+
+/// M-39, M-40, M-41 und die Zaehlpruefung aus M-49: jeder Eintrag von
+/// `cpp_sources_snapshot` und `cpp_sources_ruecknahme` als eigener Fall
+/// gegen `produkt` - direkt am Leser mit der aktiven Fassung, in einer
+/// abonnierten Sitzung mit uebernommenem Basis-Snapshot (Einspeisung aus dem
+/// Register der Tabelle). Je Eintrag zwei Pruefungen: Urteil und Stufe, dann
+/// die Wirkung (keine Teilmutation heisst: dieselbe Sicht davor und danach).
+void nak313Produkteingaenge (Zeitpunkt t0)
+{
+    bool ok = false;
+    const auto kopf = produkteingaenge (ok);
+    pruefe (ok, "313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus");
+    if (! ok)
+        return;
+    const auto ein = kopf.getProperty ("eingaenge", {}).getProperty ("cpp_sources_snapshot", {})
+                         .getProperty ("einspeisung", {});
+    const auto binding = ein.getProperty ("project_binding_id", {}).toString().toStdString();
+    const auto session = ein.getProperty ("session_epoch", {}).toString().toStdString();
+    const auto mainId = ein.getProperty ("eigenes_main", {}).toString().toStdString();
+    const auto basis = fixture (ein.getProperty ("basis_fixture", {}).toString().toRawUTF8());
+
+    int snapshots = 0, ruecknahmen = 0;
+    for (const auto& fall : *kopf.getProperty ("faelle", {}).getArray())
+    {
+        const auto eingang = fall.getProperty ("eingang", {}).toString();
+        const bool snapshot = eingang == "cpp_sources_snapshot";
+        if (! snapshot && eingang != "cpp_sources_ruecknahme")
+            continue;
+        ++(snapshot ? snapshots : ruecknahmen);
+        const auto matrix = fall.getProperty ("matrix", {}).toString();
+        const auto name = "313/" + matrix + " "
+            + (matrix == "M-41" ? juce::String ("gleicher_schluessel_zwei_objekte_gueltig")
+               : snapshot       ? juce::String ("snapshot_parser_lehnt_ab")
+                                : juce::String ("ruecknahme_parser_lehnt_ab"))
+            + " " + fall.getProperty ("id", {}).toString();
+        if (! fall.getProperty ("wert", {}).isVoid())
+        {
+            pruefe (false, (name + " (Wert)").toRawUTF8(), "dieses Bein vergleicht noch keine Werte");
+            continue;
+        }
+
+        Model m;
+        m.beginneSubscription (binding, session, mainId);
+        juce::String basisGrund;
+        const bool basisDa = m.uebernehmeSessionSnapshot (basis, t0, basisGrund)
+                          == Model::SnapshotErgebnis::uebernommen;
+        const auto vorher = m.sicht();
+        const auto bytes = ausHex (fall.getProperty ("bytes_hex", {}).toString());
+        juce::String lesegrund;
+        juce::String urteil;
+        if (snapshot)
+        {
+            const auto e = m.uebernehmeSessionSnapshot (bytes, t0 + std::chrono::milliseconds (1), lesegrund);
+            urteil = e == Model::SnapshotErgebnis::uebernommen ? "gueltig"
+                   : e == Model::SnapshotErgebnis::ungueltig   ? "ungueltig" : "ignoriert";
+        }
+        else
+        {
+            const auto e = m.uebernehmeEvidenzruecknahme (bytes, lesegrund);
+            urteil = e == Model::RuecknahmeErgebnis::uebernommen ? "gueltig"
+                   : e == Model::RuecknahmeErgebnis::ungueltig   ? "ungueltig" : "ignoriert";
+        }
+        const auto nachher = m.sicht();
+        const auto stufe = urteil == "ungueltig"
+            ? stufeDesQuellenmodells (lesegrund, snapshot ? "session_snapshot" : "evidence_invalidate")
+            : juce::String();
+        const auto soll = fall.getProperty ("produkt", {});
+        const auto sollUrteil = soll.getProperty ("urteil", {}).toString();
+        const auto sollStufe = soll.getProperty ("stufe", {}).isString()
+                                 ? soll.getProperty ("stufe", {}).toString() : juce::String();
+        pruefe (basisDa && urteil == sollUrteil && stufe == sollStufe,
+                (name + " (Urteil, Stufe)").toRawUTF8(),
+                "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe
+                    + (lesegrund.isEmpty() ? juce::String() : " - " + lesegrund)
+                    + (basisDa ? juce::String() : " - Basis nicht uebernommen: " + basisGrund));
+
+        juce::String abweichung;
+        const bool unveraendert = sichtUnveraendert (vorher, nachher, abweichung);
+        bool gehalten = true;
+        juce::StringArray worte;
+        for (const auto& w : *fall.getProperty ("wirkung", {}).getArray())
+        {
+            const auto wort = w.toString();
+            worte.add (wort);
+            if (wort == "annahme")                 gehalten = gehalten && urteil == "gueltig";
+            else if (wort == "ablehnung")          gehalten = gehalten && urteil == "ungueltig";
+            else if (wort == "keine_teilmutation") gehalten = gehalten && unveraendert;
+            else                                   gehalten = false;   // fremde Wirkung: rot
+        }
+        // M-41: beide Mitglieder stehen danach in der Sicht.
+        if (matrix == "M-41")
+            gehalten = gehalten && nachher.quellen.size() == 2;
+        pruefe (gehalten, (name + " (Wirkung)").toRawUTF8(),
+                worte.joinIntoString (", ") + " - Sicht: " + abweichung + ", Zeilen "
+                    + juce::String ((int) nachher.quellen.size()));
+    }
+    const auto anzahl = kopf.getProperty ("anzahl_je_eingang", {});
+    const int sollSnapshots = anzahl.getProperty ("cpp_sources_snapshot", {});
+    const int sollRuecknahmen = anzahl.getProperty ("cpp_sources_ruecknahme", {});
+    pruefe (snapshots == sollSnapshots && snapshots > 0,
+            "313/M-49 Zaehlpruefung B13: cpp_sources_snapshot",
+            juce::String (snapshots) + " gefahren, Kopf " + juce::String (sollSnapshots));
+    pruefe (ruecknahmen == sollRuecknahmen && ruecknahmen > 0,
+            "313/M-49 Zaehlpruefung B13: cpp_sources_ruecknahme",
+            juce::String (ruecknahmen) + " gefahren, Kopf " + juce::String (sollRuecknahmen));
+}
+
 } // namespace
 
 int main()
@@ -1504,6 +1671,10 @@ int main()
                     "trifft die geschlossenen Enums, nicht jedes `null`");
         }
     }
+
+    // NAK-313 Etappe 4 (R-313-6): der strenge Lauf an beiden Lesern des
+    // Quellenmodells, Eintrag fuer Eintrag aus der Produkteingangstabelle.
+    nak313Produkteingaenge (t0);
 
     // ═══════════════════════════════════════════════════════════════════
     // NAK-246 D6 · M-30 reload_und_subscription_leeren_dieselbe_sitzungsmenge

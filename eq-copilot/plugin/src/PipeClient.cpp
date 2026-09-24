@@ -1,5 +1,6 @@
 #include "PipeClient.h"
 #include "EqCopilotIds.h"
+#include "../state/NakamaKanon.h"
 #include "../vertrag/NakamaUtf8.h"
 
 #include <cmath>
@@ -704,7 +705,21 @@ bool PipeClient::empfange (void* handle, juce::String& jsonOut,
         return false;
     }
     puffer[len] = 0;
-    jsonOut = juce::String::fromUTF8 (puffer.getData(), (int) len);
+    // 🔑 NAK-313 R-313-6 (M-42): genau EIN strenger RFC-8259-Lauf nach der
+    // Byteprüfung und vor jedem `juce::JSON::parse` der Aufrufer. JUCE nahm
+    // Nachspann, Schlusskomma und unbekannte Escapes an und las bei einem
+    // doppelten Namen den letzten Wert - ein Welcome mit doppeltem `type`
+    // oder ein ACK mit doppeltem `seq` galt so, wie der LETZTE Wert es sagte.
+    // Der Grund geht über `fehler` nach `letzterFehler`.
+    const auto text = juce::String::fromUTF8 (puffer.getData(), (int) len);
+    nakama::kanon::Wert streng;
+    juce::String grund;
+    if (! nakama::kanon::lies (text, streng, grund))
+    {
+        fehler = "eingehender Pipe-Frame: " + grund;
+        return false;
+    }
+    jsonOut = text;
     return true;
 }
 

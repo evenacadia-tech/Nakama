@@ -24,6 +24,7 @@
 */
 
 #include "../vertrag/NakamaVertrag.h"
+#include "../state/NakamaKanon.h"
 #include "../state/NakamaParameter.h"
 #include "../state/NakamaTransaktion.h"
 #include "../dsp/DspKern.h"
@@ -554,6 +555,35 @@ void fahreKorpus (const nakama::vertrag::Schema& schema)
             std::cout << "[ROT]  " << name.toRawUTF8()
                       << ": Textriegel lehnt ein Fixture ab, das er passieren lassen muss: "
                       << riegelfehler.toRawUTF8() << std::endl;
+            ++abweichungen;
+            continue;
+        }
+
+        // 🔑 NAK-313 R-313-6 (M-47): derselbe EINE strenge Lauf wie im
+        // Produkt, als Tor vor dem Parser der Engine und ueber DIESELBEN
+        // Rohbytes. JUCE nahm Nachspann, Schlusskomma und unbekannte Escapes an
+        // und las bei doppelten Namen den letzten Wert - die Engine urteilte
+        // dann ueber ein anderes Dokument als Rust und Python. Die Klasse
+        // `parser_lehnt_ab` muss hier fallen, jedes andere Fixture passieren
+        // (auch das tiefste gueltige). Die Engine liest bis Etappe 5 weiter aus
+        // `juce::JSON::parse`.
+        nakama::kanon::Wert streng;
+        juce::String strengGrund;
+        const bool strengGelesen = nakama::kanon::lies (
+            juce::String::fromUTF8 (static_cast<const char*> (rohbytes.getData()),
+                                    static_cast<int> (rohbytes.getSize())),
+            streng, strengGrund);
+        if (static_cast<bool> (eintrag.getProperty ("parser_lehnt_ab", false)))
+        {
+            pruefe (! strengGelesen, "313/M-47 korpus_parser_lehnt_ab " + name, strengGrund);
+            ++geprueft;
+            continue;
+        }
+        if (! strengGelesen)
+        {
+            std::cout << "[ROT]  " << name.toRawUTF8()
+                      << ": der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: "
+                      << strengGrund.toRawUTF8() << std::endl;
             ++abweichungen;
             continue;
         }

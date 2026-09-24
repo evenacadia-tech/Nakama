@@ -22,6 +22,7 @@
 
 #include "../core/analysis/FeatureEngine.h"
 #include "../core/StampedAudioQueue.h"
+#include "../state/NakamaKanon.h"
 #include "../vertrag/NakamaEvidenz.h"
 #include "../vertrag/NakamaVertrag.h"
 #include "../core/ipc/IpcQueues.h"
@@ -91,6 +92,10 @@ struct Speiser
     std::uint64_t strom { 0 };
     std::int64_t  projekt { 0 };
     std::vector<float> audio;
+    /// NAK-313 M-51: ohne `kFlagZeitGueltig` entsteht ein Frame OHNE
+    /// Projektzeit (`local_monotonic`) - der Fall eines angehaltenen
+    /// Transports. Vorgabe wie bisher: mit Projektzeit.
+    bool zeitGueltig { true };
 
     explicit Speiser (FeatureEngine& e) : engine (e) {}
 
@@ -106,7 +111,8 @@ struct Speiser
         b.projectSampleStart = projekt;
         b.sampleRate = sr;
         b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
-                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt
+                | (zeitGueltig ? rt::kFlagZeitGueltig : 0u);
         return b;
     }
 
@@ -501,6 +507,156 @@ int main()
             o->setProperty ("abdeckung", 2.0);
         pruefe (geladen && ! schema.pruefe (verdorben).isEmpty(),
                 "Gegenprobe: eine Abdeckung ueber 1 faellt an derselben Engine");
+    }
+
+    // ── NAK-313 M-51 · der lokale Transport ohne Startwert ────────────────
+    //
+    // R-313-7 (T3-03-01): ohne gueltige Projektzeit schrieb `transportJson`
+    // `"project_sample_start":null`; der Vertrag laesst nur das Weglassen zu.
+    // Der Frame kommt aus einem ECHTEN Lauf ohne `kFlagZeitGueltig`, seine
+    // Transportzahlen aus `eingabe` der Byteinstanz; der Transportblock des
+    // Writers muss bytegleich `wire_transport` sein, und der ganze Snapshot
+    // passiert Textriegel und Engine.
+    abschnitt ("NAK-313 M-51  lokaler_transport_ohne_startwert");
+    {
+        bool da = false;
+        const auto instanz = liesFixture ("eq-copilot/fixtures/v3/evidenz-lokal-wire-v1.json", da);
+        pruefe (da, "313/M-51 lokaler_transport_ohne_startwert: die Byteinstanz liegt im Korpus");
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser s { e };
+        s.zeitGueltig = false;
+        FeatureFrame f {};
+        const bool kam = bisEvidenz (s, sinus (0.25, 1000.0, 48000.0), f);
+        pruefe (kam && f.transport.zeitbasis == nakama::analyse::Zeitbasis::local_monotonic
+                    && ! f.transport.project_sample_start_gesetzt,
+                "313/M-51 lokaler_transport_ohne_startwert: der echte Frame ist local_monotonic "
+                "ohne Startwert");
+
+        const auto eingabe = instanz.getProperty ("eingabe", {});
+        f.transport.transport_epoch    = (std::uint64_t) (juce::int64) eingabe.getProperty ("transport_epoch", {});
+        f.transport.continuity_segment = (std::uint64_t) (juce::int64) eingabe.getProperty ("continuity_segment", {});
+        f.transport.sequence           = (std::uint64_t) (juce::int64) eingabe.getProperty ("sequence", {});
+        f.transport.sample_count       = (std::uint32_t) (juce::int64) eingabe.getProperty ("sample_count", {});
+        f.transport.sample_rate        = (double) eingabe.getProperty ("sample_rate", {});
+
+        std::string json;
+        const bool gebaut = kam && da && nakama::evidenz::evidenceSnapshotAlsJson (
+            f, testkopf(), {}, {}, json);
+        pruefe (gebaut, "313/M-51 lokaler_transport_ohne_startwert: der Snapshot wird gebaut");
+
+        // Den Block `"transport":{…}` ausschneiden - er traegt nur das eine
+        // verschachtelte Objekt `validity`, und keine Zeichenkette darin
+        // enthaelt eine Klammer.
+        std::string block;
+        const auto anfang = json.find ("\"transport\":{");
+        if (anfang != std::string::npos)
+        {
+            const auto start = anfang + std::string ("\"transport\":").size();
+            int tiefe = 0;
+            for (auto i = start; i < json.size(); ++i)
+            {
+                if (json[i] == '{') ++tiefe;
+                if (json[i] == '}' && --tiefe == 0) { block = json.substr (start, i + 1 - start); break; }
+            }
+        }
+        const auto soll = instanz.getProperty ("wire_transport", {}).toString().toStdString();
+        pruefe (! block.empty() && block == soll,
+                "313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich "
+                "wire_transport der Byteinstanz",
+                juce::String (block));
+        pruefe (gebaut && block.find ("project_sample_start") == std::string::npos,
+                "313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block");
+
+        juce::String riegelfehler;
+        pruefe (gebaut && nakama::vertrag::textriegel (json, riegelfehler),
+                "313/M-51 lokaler_transport_ohne_startwert: der Snapshot passiert den Textriegel",
+                riegelfehler);
+        nakama::vertrag::Schema schema;
+        juce::String ladefehler;
+        const bool geladen = nakama::vertrag::Schema::laden (
+            juce::JSON::parse (finde ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json")),
+            schema, ladefehler);
+        const auto verstoesse = geladen && gebaut
+                                  ? schema.pruefe (juce::JSON::parse (juce::String (json)))
+                                  : juce::Array<nakama::vertrag::Verletzung> {};
+        juce::String erste;
+        if (! verstoesse.isEmpty())
+            erste = verstoesse[0].instanz + " | " + verstoesse[0].schema + " | "
+                  + verstoesse[0].schluessel;
+        pruefe (gebaut && geladen && verstoesse.isEmpty(),
+                "313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an",
+                erste);
+    }
+
+    // ── NAK-313 M-49 · der C++-Vertragsweg an der Produkteingangstabelle ──
+    //
+    // R-313-13: B16 ist das Referenzbein fuer `evidence_snapshot` und
+    // vergleicht `vertrag` - Textriegel, EIN strenger Lauf (`kanon::lies`,
+    // Tiefengrenze 64) und dieselbe Engine wie B3c. Je Eintrag ein Fall, am
+    // Ende die Zaehlpruefung gegen `anzahl_je_nachricht`.
+    abschnitt ("NAK-313 M-49  produkteingaenge_evidence_snapshot_vertragsweg");
+    {
+        bool da = false;
+        const auto kopf = liesFixture ("eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json", da);
+        pruefe (da && kopf.getProperty ("faelle", {}).isArray(),
+                "313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus");
+        nakama::vertrag::Schema schema;
+        juce::String ladefehler;
+        const bool geladen = nakama::vertrag::Schema::laden (
+            juce::JSON::parse (finde ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json")),
+            schema, ladefehler);
+        pruefe (geladen, "313/M-49 v3-Schema laedt", ladefehler);
+        int gefahren = 0;
+        if (da && geladen && kopf.getProperty ("faelle", {}).isArray())
+            for (const auto& fall : *kopf.getProperty ("faelle", {}).getArray())
+            {
+                if (fall.getProperty ("nachricht", {}).toString() != "evidence_snapshot")
+                    continue;
+                ++gefahren;
+                const auto name = "313/M-49 evidence_snapshot_vertragsweg "
+                                + fall.getProperty ("id", {}).toString();
+                if (! fall.getProperty ("wert", {}).isVoid())
+                {
+                    pruefe (false, name + " (Wert)", "dieses Bein vergleicht noch keine Werte");
+                    continue;
+                }
+                juce::MemoryBlock roh;
+                roh.loadFromHexString (fall.getProperty ("bytes_hex", {}).toString());
+                juce::String urteil = "gueltig", stufe, grund;
+                if (! nakama::vertrag::textriegelBytes (roh.getData(), roh.getSize(), grund))
+                {
+                    urteil = "ungueltig";
+                    stufe = "textriegel";
+                }
+                else
+                {
+                    const auto text = juce::String::fromUTF8 (static_cast<const char*> (roh.getData()),
+                                                              (int) roh.getSize());
+                    nakama::kanon::Wert streng;
+                    if (! nakama::kanon::lies (text, streng, grund))
+                    {
+                        urteil = "ungueltig";
+                        stufe = grund.contains ("doppelter Schluessel") ? "duplikat" : "parser";
+                    }
+                    else if (! schema.pruefe (juce::JSON::parse (text)).isEmpty())
+                    {
+                        urteil = "ungueltig";
+                        stufe = "schema";
+                    }
+                }
+                const auto soll = fall.getProperty ("vertrag", {});
+                const auto sollUrteil = soll.getProperty ("urteil", {}).toString();
+                const auto sollStufe = soll.getProperty ("stufe", {}).isString()
+                                         ? soll.getProperty ("stufe", {}).toString() : juce::String();
+                pruefe (urteil == sollUrteil && stufe == sollStufe, name + " (Urteil, Stufe)",
+                        "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe
+                            + (grund.isEmpty() ? juce::String() : " - " + grund));
+            }
+        const int soll = kopf.getProperty ("anzahl_je_nachricht", {}).getProperty ("evidence_snapshot", {});
+        pruefe (gefahren == soll && gefahren > 0, "313/M-49 Zaehlpruefung B16: evidence_snapshot",
+                juce::String (gefahren) + " gefahren, Kopf " + juce::String (soll));
     }
 
     // ── A2 · Der Snapshot MIT Stereoevidenz haelt denselben Vertrag ───────

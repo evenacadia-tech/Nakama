@@ -435,6 +435,149 @@ void falschesAck()
     peer.join();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// NAK-313 Etappe 4 (R-313-6, M-42): der strenge Lauf im v2-Client an der
+// Tabelle `PRODUKTEINGAENGE-FAELLE.json`
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Die Tabelle - Testeingabe, kein Produkteingang, deshalb mit JUCE gelesen.
+juce::var produkteingaenge (bool& ok)
+{
+    const juce::String relativ ("eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json");
+    auto datei = juce::File::getCurrentWorkingDirectory().getChildFile (relativ);
+    auto ordner = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+    for (int i = 0; i < 10 && ! datei.existsAsFile() && ordner.exists(); ++i)
+    {
+        datei = ordner.getChildFile (relativ);
+        ordner = ordner.getParentDirectory();
+    }
+    juce::var kopf;
+    ok = datei.existsAsFile()
+      && juce::JSON::parse (datei.loadFileAsString(), kopf).wasOk()
+      && kopf.getProperty ("faelle", {}).isArray();
+    return kopf;
+}
+
+/// Die Stufe am Ausgang des v2-Clients, an `letzterFehler` (Manifest §7.2):
+/// „eingehender Pipe-Frame: " + Grund des strengen Laufs ist `parser`, mit
+/// „doppelter Schluessel" `duplikat`; die Byteprüfungen von `empfange`
+/// (Grenze, NUL, BOM, UTF-8) sind `textriegel`; alles danach `feldregel`.
+juce::String stufeDesV2Clients (const juce::String& meldung)
+{
+    if (meldung.startsWith ("eingehender Pipe-Frame: "))
+        return meldung.contains ("doppelter Schluessel") ? "duplikat" : "parser";
+    if (meldung.startsWith ("eingehender Pipe-Frame "))
+        return "textriegel";
+    return "feldregel";
+}
+
+/// M-42 und die Zaehlpruefung aus M-49: jeder Eintrag von `cpp_v2_client` als
+/// eigener Fall. Ein Peer auf einem Probenamen antwortet auf das Hello mit den
+/// Bytes des Eintrags - bei `heartbeat_ack` zuerst mit dem Welcome der
+/// Einspeisung und dann auf den ersten Heartbeat (seq 0). Gelesen wird im
+/// Wartefenster nach dem Fehlschlag (Status getrennt, Rueckzug ab 500 ms).
+void nak313V2ParserLehntAb()
+{
+    bool ok = false;
+    const auto kopf = produkteingaenge (ok);
+    pruefe (ok, "313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus");
+    if (! ok)
+        return;
+    const auto welcomeVorAck = kopf.getProperty ("eingaenge", {}).getProperty ("cpp_v2_client", {})
+                                   .getProperty ("einspeisung", {})
+                                   .getProperty ("welcome_vor_ack", {}).toString().toStdString();
+    int gefahren = 0;
+    for (const auto& fall : *kopf.getProperty ("faelle", {}).getArray())
+    {
+        if (fall.getProperty ("eingang", {}).toString() != "cpp_v2_client")
+            continue;
+        ++gefahren;
+        const auto fallName = "313/M-42 v2_parser_lehnt_ab " + fall.getProperty ("id", {}).toString();
+        if (! fall.getProperty ("wert", {}).isVoid())
+        {
+            pruefe (false, (fallName + " (Wert)").toRawUTF8(), "dieses Bein vergleicht noch keine Werte");
+            continue;
+        }
+        juce::MemoryBlock roh;
+        roh.loadFromHexString (fall.getProperty ("bytes_hex", {}).toString());
+        const bool ack = fall.getProperty ("nachricht", {}).toString() == "heartbeat_ack";
+
+        const auto name = testName ("nak313-v2");
+        const auto server = pipeAnlegen (name);
+        if (server == INVALID_HANDLE_VALUE)
+        {
+            pruefe (false, (fallName + " (Fake-Pipe angelegt)").toRawUTF8());
+            continue;
+        }
+        std::atomic<bool> gesendet { false }, freigeben { false };
+        std::thread peer ([&]
+        {
+            std::string frame;
+            if (verbinden (server) && liesFrame (server, frame))
+            {
+                const bool bereit = ! ack || (schreibeFrame (server, welcomeVorAck)
+                                              && liesFrame (server, frame));
+                if (bereit && schreibeRohframe (server, static_cast<const unsigned char*> (roh.getData()),
+                                                static_cast<DWORD> (roh.getSize())))
+                    gesendet.store (true);
+                while (! freigeben.load())
+                    std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            }
+            pipeSchliessen (server);
+        });
+
+        auto c = client (name, [] { return hello ("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"); });
+        c->start();
+        eqcop::PipeClient::Snapshot s;
+        warteAuf (1500, [&]
+        {
+            s = c->snapshot();
+            return gesendet.load() && s.status == eqcop::PipeClient::Status::getrennt
+                && s.letzterFehler.isNotEmpty();
+        });
+        c->stop();
+        freigeben.store (true);
+        peer.join();
+
+        const bool getrennt = s.status == eqcop::PipeClient::Status::getrennt;
+        const juce::String urteil = ack ? (s.heartbeatsBestaetigt == 0 && ! s.konflikt ? "ungueltig" : "gueltig")
+                                        : (getrennt && s.heartbeatsGesendet == 0 ? "ungueltig" : "gueltig");
+        const auto stufe = urteil == "ungueltig" ? stufeDesV2Clients (s.letzterFehler) : juce::String();
+        const auto soll = fall.getProperty ("produkt", {});
+        const auto sollUrteil = soll.getProperty ("urteil", {}).toString();
+        const auto sollStufe = soll.getProperty ("stufe", {}).isString()
+                                 ? soll.getProperty ("stufe", {}).toString() : juce::String();
+        const auto zustand = "Status " + juce::String (getrennt ? "getrennt" : "nicht getrennt")
+                           + ", Heartbeats " + juce::String ((juce::int64) s.heartbeatsGesendet)
+                           + "/" + juce::String ((juce::int64) s.heartbeatsBestaetigt)
+                           + ", letzterFehler '" + s.letzterFehler + "'";
+        pruefe (gesendet.load() && urteil == sollUrteil && stufe == sollStufe,
+                (fallName + " (Urteil, Stufe)").toRawUTF8(),
+                "ist " + urteil + "/" + stufe + ", soll " + sollUrteil + "/" + sollStufe + " - " + zustand);
+
+        bool gehalten = true;
+        juce::StringArray worte;
+        for (const auto& w : *fall.getProperty ("wirkung", {}).getArray())
+        {
+            const auto wort = w.toString();
+            worte.add (wort);
+            if (wort == "ablehnung")
+                gehalten = gehalten && urteil == "ungueltig" && getrennt;
+            else if (wort == "keine_teilmutation")
+                gehalten = gehalten && s.heartbeatsGesendet == 0 && s.sessionToken.isEmpty()
+                        && s.protokollVersion == 0;
+            else if (wort == "kein_ack")
+                gehalten = gehalten && s.heartbeatsBestaetigt == 0 && ! s.konflikt;
+            else
+                gehalten = false;   // fremde Wirkung: rot
+        }
+        pruefe (gehalten, (fallName + " (Wirkung)").toRawUTF8(), worte.joinIntoString (", ") + " - " + zustand);
+    }
+    const int soll = kopf.getProperty ("anzahl_je_eingang", {}).getProperty ("cpp_v2_client", {});
+    pruefe (gefahren == soll && gefahren > 0, "313/M-49 Zaehlpruefung A4b: cpp_v2_client",
+            juce::String (gefahren) + " gefahren, Kopf " + juce::String (soll));
+}
+
 void schemafremdesZusatzfeld (bool imWelcome)
 {
     const auto name = testName (imWelcome ? "welcome-extra" : "ack-extra");
@@ -1834,6 +1977,8 @@ int main()
     ungueltigePeerBytes (false);
     ungueltigePeerBytes (true);
     falschesAck();
+    // NAK-313 Etappe 4 (R-313-6) - der strenge Lauf vor jedem JSON-Parse.
+    nak313V2ParserLehntAb();
     schemafremdesZusatzfeld (true);
     schemafremdesZusatzfeld (false);
     eineDeadlineFuerDenGanzenFrame();

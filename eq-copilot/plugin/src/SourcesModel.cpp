@@ -1,5 +1,6 @@
 #include "SourcesModel.h"
 
+#include "NakamaKanon.h"
 #include "NakamaTelemetrie.h"
 #include "NakamaVertrag.h"
 #include "TelemetryClient.h"
@@ -730,9 +731,22 @@ SourcesModel::SnapshotErgebnis SourcesModel::uebernehmeSessionSnapshot (
         fehler = "session_snapshot text boundary: " + riegel;
         return SnapshotErgebnis::ungueltig;
     }
+    // 🔑 NAK-313 R-313-6 (M-39): genau EIN strenger RFC-8259-Lauf vor der
+    // Feldauswertung. Der Textriegel prueft Token, keine Grammatik; JUCE nahm
+    // Nachspann, Schlusskomma und unbekannte Escapes an und las bei einem
+    // doppelten Namen still den letzten Wert - auch beim Discriminator und bei
+    // `session_epoch`. `kanon::lies` lehnt all das ab, dazu mehr als 64
+    // Ebenen. Die Felder liest der JUCE-Leser dahinter bis Etappe 5 weiter.
+    const auto text = juce::String::fromUTF8 (json.data(), static_cast<int> (json.size()));
+    nakama::kanon::Wert streng;
+    juce::String strengGrund;
+    if (! nakama::kanon::lies (text, streng, strengGrund))
+    {
+        fehler = "session_snapshot parser: " + strengGrund;
+        return SnapshotErgebnis::ungueltig;
+    }
     juce::var root;
-    const auto parse = juce::JSON::parse (juce::String::fromUTF8 (json.data(),
-                                                                  static_cast<int> (json.size())), root);
+    const auto parse = juce::JSON::parse (text, root);
     const auto* o = objekt (root);
     if (parse.failed() || o == nullptr)
         return SnapshotErgebnis::ignoriert;
@@ -1480,9 +1494,18 @@ SourcesModel::RuecknahmeErgebnis SourcesModel::uebernehmeEvidenzruecknahme (
         fehler = "evidence_invalidate text boundary: " + riegel;
         return RuecknahmeErgebnis::ungueltig;
     }
+    // 🔑 NAK-313 R-313-6 (M-40): derselbe eine strenge Lauf wie am Snapshot.
+    // Scheitert er, nimmt die Nachricht keine Evidenz zurueck.
+    const auto text = juce::String::fromUTF8 (json.data(), static_cast<int> (json.size()));
+    nakama::kanon::Wert streng;
+    juce::String strengGrund;
+    if (! nakama::kanon::lies (text, streng, strengGrund))
+    {
+        fehler = "evidence_invalidate parser: " + strengGrund;
+        return RuecknahmeErgebnis::ungueltig;
+    }
     juce::var root;
-    const auto parse = juce::JSON::parse (juce::String::fromUTF8 (json.data(),
-                                                                  static_cast<int> (json.size())), root);
+    const auto parse = juce::JSON::parse (text, root);
     const auto* o = objekt (root);
     if (parse.failed() || o == nullptr)
         return RuecknahmeErgebnis::ignoriert;

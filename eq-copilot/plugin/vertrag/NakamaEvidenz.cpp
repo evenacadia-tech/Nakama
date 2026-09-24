@@ -201,11 +201,17 @@ bool transportJson (const Transportstempel& t, std::string& aus)
     aus += boolJson (t.process_context_present_gesetzt && t.process_context_present);
     aus += ",\"time_basis\":\"";
     aus += basis;
-    aus += "\",\"project_sample_start\":";
-    // `null` heisst hier nicht "fehlt", sondern "diese Zeitbasis kennt keinen
-    // Projektstart" — der Zweig `local_monotonic` verlangt genau das.
-    aus += t.project_sample_start_gesetzt
-         ? std::to_string (t.project_sample_start) : std::string ("null");
+    aus += '"';
+    // 🔑 NAK-313 R-313-7 (T3-03-01): ohne Startwert entfaellt das Feld, nie
+    // `null`. Der Zweig `local_monotonic` nimmt zwar `null` an, die
+    // GEMEINSAME Eigenschaft des Stempels verlangt aber `integer` - beide
+    // gelten, gueltig ist allein das Weglassen. Bis Etappe 4 stand hier
+    // `null`, und der Broker verwarf jeden lokalen Snapshot still.
+    if (t.project_sample_start_gesetzt)
+    {
+        aus += ",\"project_sample_start\":";
+        aus += std::to_string (t.project_sample_start);
+    }
     aus += ",\"sample_count\":";
     aus += std::to_string (t.sample_count);
     aus += ",\"sample_rate\":";

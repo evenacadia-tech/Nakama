@@ -1,0 +1,47 @@
+NAK-313 Etappe 3 - Rotbeweis M-25 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-25 - T3-02-02 - R-313-1 - Tiefe der Variantenarrays
+Zustand: variantenArray (63): 63 geschachtelte Arrays plus Blatt in Common.future_value.
+Ereignis: lade, speichere, lade, zweiter Save.
+Zusage: Jeder Load geladen, zweiter Save bytegleich; variantenArray (64) bleibt ignoriert.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G9, bestehend "63 verschachtelte Arrays plus Blatt passieren und laden", ergaenzt um 313/M-25 variantenrand_rueckschreibbar.
+
+--- Haelfte 1: geladen, zweiter Save bytegleich - Etikett: Regressionswache ---
+Pruefung: 313/M-25 variantenrand_rueckschreibbar; 63 verschachtelte Arrays plus Blatt passieren und laden
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [geladen / geladen, erster Save = Eingang, zweiter Save = erster]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation R2 (eq-copilot/plugin/state/NakamaState.cpp - variante: Variantentiefe um eins verringert (tiefe >= kMaxVariantenTiefe - 1)), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\R2-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 214 (Stand vor der Mutation):
+      vorher:
+        |         if (tiefe >= kMaxVariantenTiefe)
+      nachher:
+        |         if (tiefe >= kMaxVariantenTiefe - 1)   // MUTATION R2
+    Mutiert 24.09.2026 07:02:03, SHA-256 mutiert faadf9027499f2adcb3ccc3bb79959878fd853a845e647d8fb5dec04c67600eb
+    Kette (R-313-11): Mit tiefe >= kMaxVariantenTiefe - 1 faellt die innerste Ebene des Randes (tiefe 63) -> variante false -> ungueltig -> ignoriert.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:02:07.664, Quelle 07:02:03.719, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-R2-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler
+    Zusagepruefung: 313/M-25 variantenrand_rueckschreibbar
+      gefallen: FEHLER  313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [ignoriert / nurLesen, erster Save anders, zweiter Save = erster]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 63 verschachtelte Arrays plus Blatt passieren und laden (Zusagepruefung von M-25)
+    mitgefallen (mit Grund):
+      - B2: == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck - Grund: Abschnittszeile: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e3-mutation-R2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:02:25: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:02:29.854, Quelle 07:02:25.830, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

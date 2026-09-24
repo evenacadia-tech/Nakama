@@ -1,0 +1,38 @@
+NAK-313 Etappe 3 - Mutationslauf G1: eq-copilot/fixtures/state/schema2/doppelte-eigenschaft-v1.bin - Negativ-Golden: das letzte Byte der Datei gekippt (XOR 0x01)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf G1 - 24.09.2026 07:09:57 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/fixtures/state/schema2/doppelte-eigenschaft-v1.bin (binaer)
+SHA-256 vorher bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\G1-doppelte-eigenschaft-v1.bin (SHA-256 bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd)
+Mutation (binaer): Byte 201 = 0x00 -> Byte 201 = 0x01
+Mutiert 24.09.2026 07:09:57, SHA-256 mutiert 0dc9beb0095ed38b10e5f500bc5b0c88aa094948e922cd4c6d537de5d8fb6180
+Lauf unter der Mutation:
+  Bau (kein Bau: das Bein liest die Datei zur Laufzeit): Exit 0
+  A12: Exit 2, gefallene Pruefungen 1, Rohausgabe rot-G1-mutiert-A12.txt
+    Summe: STATE-FIXTURES ABWEICHEND (1)
+  gefallen in A12:
+    - ABWEICHUNG: MANIFEST.json
+  B2: Exit 1, gefallene Pruefungen 4, Rohausgabe rot-G1-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 367 Pruefungen ok, 4 Fehler
+  gefallen in B2:
+    - FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)  [Rohfassung = Writer-Bytes, Mutant 202 Bytes, Datei 202 Bytes]
+    - FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+    - FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = Originalbytes  [ignoriert (0 ms), Grund '', Label '', instance_id '', Save neu (Common 0 Eintraege)]
+    - FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:10:16: SHA-256 bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd - gleich dem Stand vor der Mutation
+  Bau (kein Bau): Exit 0
+  A12: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-G1-zurueck-A12.txt
+    Summe: STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-G1-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

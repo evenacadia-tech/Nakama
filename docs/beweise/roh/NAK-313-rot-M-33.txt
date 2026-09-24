@@ -1,0 +1,82 @@
+NAK-313 Etappe 3 - Rotbeweis M-33 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-33 - T3-02-05 - R-313-2 - eindeutige Namen, speichern<->laden
+Zustand: alle Writer-Goldens unter eq-copilot/fixtures/state/schema2/ ausser dem Negativ-Golden.
+Ereignis: lade, speichere.
+Zusage: Alle laden wie bisher und kommen bytegleich zurueck (layout-v1 migriert wie bisher nach Layout v2); keiner wird durch die Duplikatregel read-only.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, 313/M-33 eindeutige_namen_laden_wie_bisher (je Golden ein Pruefeintrag); A12 haelt die Dateien.
+
+--- Haelfte 1: alle Goldens laden wie bisher - Etikett: Regressionswache ---
+Pruefung: 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin nurLesen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 3 is unknown to this version (it reads schema 2)', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin geladen  [geladen, Grund '', Save anders]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation D4 (eq-copilot/plugin/state/NakamaState.cpp - namenZusammengelegt: die Nachzaehlung um eins verringert), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D4-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 381 (Stand vor der Mutation):
+      vorher:
+        | gelesen < eigenschaftenImRiegel;
+      nachher:
+        | gelesen - 1 < eigenschaftenImRiegel;   // MUTATION D4
+    Mutiert 24.09.2026 07:06:33, SHA-256 mutiert 4c663ef6cb3158dc8950010e005d8ee57734137aa29cd1f4aeec2b9cec360c03
+    Kette (R-313-11): Mit der um eins verringerten Nachzaehlung zaehlt jeder bekannte Stand nach dem JUCE-Leser weniger als im Riegel -> nurLesen mit Duplikatgrund -> alle zehn Goldens (fremdes-major-3 am Grund, der nicht mehr der Schemagrund ist).
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:06:37.716, Quelle 07:06:33.540, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 169, Rohausgabe rot-D4-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 206 Pruefungen ok, 169 Fehler
+    Zusagepruefung: 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin; 313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin nurLesen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin geladen  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      gefallen: FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 4 Rollen bytegleich zum Schema-2-Golden  [0] (Zusagepruefung von M-38)
+      - B2: 313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Zusagepruefung von M-35)
+      - B2: 63 verschachtelte Arrays plus Blatt passieren und laden (Zusagepruefung von M-25)
+      - B2: 313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [nurLesen / nurLesen, erster Sa (Zusagepruefung von M-25)
+      - B2: 65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (540 ms),  (Zusagepruefung von M-37)
+      - B2: 262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (2 (Zusagepruefung von M-37)
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 nurLesen (522 ms, Grund 'duplicate proper (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65 (Zusagepruefung von M-20)
+      - B2: 313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  (Zusagepruefung von M-21, M-28)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.53 (Zusagepruefung von M-18)
+      - B2: 313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nur (Zusagepruefung von M-19)
+      - B2: 313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibba (Zusagepruefung von M-22, M-38)
+      - B2: 313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + p (Zusagepruefung von M-22, M-38)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 n (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 25841 (Zusagepruefung von M-24)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 nu (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 (Zusagepruefung von M-24)
+      - B2: 313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt   (Zusagepruefung von M-26)
+      - B2: 313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt (Zusagepruefung von M-27)
+    mitgefallen (mit Grund):
+      - 140 weitere Pruefungen (Einzelzeilen in NAK-313-e3-mutation-D4.txt) - Grund: jede Pruefung, die einen bekannten Stand (NakamaState oder EqCopilotState) laedt, sieht ihn read-only mit Duplikatgrund - die Nachzaehlung liegt bei jedem Stand um eins unter der Vorzaehlung; Migration, Roundtrip, Goldens, Prozessor-Handgriffe und Host-Dirty-Folgen fallen deshalb mit
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 206 Pruefungen ok, 169 Fehler; Einzelzeilen in NAK-313-e3-mutation-D4.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:06:53: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:06:57.509, Quelle 07:06:53.716, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

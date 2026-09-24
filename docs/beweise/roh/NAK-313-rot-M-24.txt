@@ -1,0 +1,102 @@
+NAK-313 Etappe 3 - Rotbeweis M-24 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-24 - T3-02-02 - R-313-1 - R-313-11 - Gesamtgrenze
+Zustand: legacy/insert-Stand ohne Bestandskind, Eintraege als Elemente von fuenf unbekannten Arrays in Common; G nachgerechnet = 262.144 - 3.729 - fehlende Common-Felder = 258.412 ohne und 258.413 mit label.
+Ereignis: lade bei G und G + 1; bei G im Prozessor setStateInformation, getStateInformation, setStateInformation, pre, hub, getStateInformation, setStateInformation.
+Zusage: Bei G jeder Load geladen, jeder Folgezustand laedt schreibbar (nach hub G + 5 ohne beziehungsweise G + 4 mit label, Kandidat jeweils genau 262.144); bei G + 1 nurLesen bytegleich (Kandidat 262.145).
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1, G, 262.144 ohne label).
+
+--- Haelfte 1: G + 1 nurLesen bytegleich; dazu 262.144 ohne label nurLesen bytegleich - Etikett: heute rot ---
+Pruefung: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label); 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label); 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (262.144 ohne label)
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 geladen (17 ms, Grund ''), Save neu (Common 10 Eintraege), Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 geladen (16 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (262.144 ohne label): nurLesen bytegleich, nie ignoriert  [Load 1 geladen (18 ms, Grund ''), Save neu (Common 10 Eintraege), Load 2 ignoriert, zweiter Save anders]
+  -> am Basisstand rot: heute rot
+
+  Mutation H1 (eq-copilot/plugin/state/NakamaState.cpp - passt: den Riegelaufruf entfernt - der Kandidat zaehlt wieder nur nach seiner Groesse (Zeile vor der Etappe)), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\H1-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 1294 (Stand vor der Mutation):
+      vorher:
+        |             return pruefeValueTreeBytes (bytes.getData(), bytes.getSize()) == BytePruefung::verlustfrei;
+      nachher:
+        |             return bytes.getSize() <= kMaxStateBytes;   // MUTATION H1: nur Groesse
+    Mutiert 24.09.2026 06:57:19, SHA-256 mutiert e3de3d72601c213aebbb0f9f9c12bfb5ed1c25523074481b00c04d0275bd3a25
+    Kette (R-313-11): Nur Groesse -> der Kandidat mit 262.145 Eintraegen (G + 1 + 3.732 ohne, G + 1 + 3.731 mit label; rund 0,3 MB) passt -> geladen; der Stand mit 262.144 ohne label laedt, speichere ergaenzt label -> 262.145 -> Load 2 ignoriert.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:57:23.354, Quelle 06:57:19.568, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 15, Rohausgabe rot-H1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 356 Pruefungen ok, 15 Fehler
+    Zusagepruefung: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label); 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label); 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (262.144 ohne label)
+      gefallen: FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 geladen (16 ms, Grund ''), Save neu (Common 10 Eintraege), Load 2 geladen, zweiter Save = erster]
+      gefallen: FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 geladen (15 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+      gefallen: FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (262.144 ohne label): nurLesen bytegleich, nie ignoriert  [Load 1 geladen (16 ms, Grund ''), Save neu (Common 10 Eintraege), Load 2 ignoriert, zweiter Save anders]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 geladen (543 ms, Grund ''), Save neu (Com (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (b): speichere liefert die Originalbytes  [Load 1 geladen (543 ms, Grund ''), Save neu (Common  (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (c): zweiter Load wieder nurLesen bytegleich, nie ignoriert  [Load 1 geladen (543 ms, Grund '') (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65 (Zusagepruefung von M-20)
+      - B2: 313/M-20 (Teilfall von 313/M-17) Paarname ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [Proz (Zusagepruefung von M-20)
+      - B2: 313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  (Zusagepruefung von M-21, M-28)
+      - B2: 313/M-21 (Teilfall von 313/M-17) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-21)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.53 (Zusagepruefung von M-18)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustan (Zusagepruefung von M-18)
+      - B2: 313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 gel (Zusagepruefung von M-19)
+      - B2: 313/M-19 (Teilfall von 313/M-18) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-19)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 356 Pruefungen ok, 15 Fehler; Einzelzeilen in NAK-313-e3-mutation-H1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 06:57:42: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:57:47.049, Quelle 06:57:42.902, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: G: jeder Load geladen, jeder Folgezustand schreibbar - Etikett: Regressionswache ---
+Pruefung: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label); 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label)
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258412, Load geladen (16 ms, Grund ''), Prozessor schreibbar/schreibbar, pre true, hub true, nach hub 258417 Eintraege, Reload schreibbar (Grund ''), Save bytegleich]
+  ok      313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258413, Load geladen (16 ms, Grund ''), Prozessor schreibbar/schreibbar, pre true, hub true, nach hub 258417 Eintraege, Reload schreibbar (Grund ''), Save bytegleich]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation H4 (eq-copilot/plugin/state/NakamaState.cpp - passt: im Kandidaten eine zusaetzliche Eigenschaft in Common gesetzt), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\H4-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 1292 (Stand vor der Mutation):
+      vorher:
+        |             synchronisiert (kandidat).writeToStream (strom);
+      nachher:
+        |             auto mutationsBaum = synchronisiert (kandidat);   // MUTATION H4
+        |             mutationsBaum.getChildWithName (kCommon).setProperty ("mutation_zusatz", 1, nullptr);
+        |             mutationsBaum.writeToStream (strom);
+    Mutiert 24.09.2026 06:59:47, SHA-256 mutiert 32cf8c67a8b7186469aa250829a983251a61ef59727ce4af93b99c3377876734
+    Kette (R-313-11): Mit der Zusatzeigenschaft traegt der Kandidat bei G 262.144 + 1 = 262.145 Eintraege -> der Riegel verwirft ihn an der Gesamtgrenze (eintraegeGesamt) -> G laedt nurLesen.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:59:51.665, Quelle 06:59:47.526, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 5, Rohausgabe rot-H4-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 366 Pruefungen ok, 5 Fehler
+    Zusagepruefung: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label); 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label)
+      gefallen: FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258412, Load nurLesen (10 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Prozessor read-only/read-only, pre false, hub false, nach hub 258412 Eintraege, Reload read-only (Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save bytegleich]
+      gefallen: FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258413, Load nurLesen (11 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Prozessor read-only/read-only, pre false, hub false, nach hub 258413 Eintraege, Reload read-only (Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save bytegleich]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibba (Zusagepruefung von M-22, M-38)
+      - B2: 313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + p (Zusagepruefung von M-22, M-38)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 366 Pruefungen ok, 5 Fehler; Einzelzeilen in NAK-313-e3-mutation-H4.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:00:09: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:00:13.094, Quelle 07:00:09.329, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

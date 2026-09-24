@@ -1,0 +1,43 @@
+NAK-313 Etappe 3 - Mutationslauf H4: eq-copilot/plugin/state/NakamaState.cpp - passt: im Kandidaten eine zusaetzliche Eigenschaft in Common gesetzt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf H4 - 24.09.2026 06:59:47 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\H4-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+Mutation ab Zeile 1292 (Stand vor der Mutation):
+  vorher:
+    |             synchronisiert (kandidat).writeToStream (strom);
+    | 
+  nachher:
+    |             auto mutationsBaum = synchronisiert (kandidat);   // MUTATION H4
+    |             mutationsBaum.getChildWithName (kCommon).setProperty ("mutation_zusatz", 1, nullptr);
+    |             mutationsBaum.writeToStream (strom);
+    | 
+Mutiert 24.09.2026 06:59:47, SHA-256 mutiert 32cf8c67a8b7186469aa250829a983251a61ef59727ce4af93b99c3377876734
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 06:59:51.665, Quelle 06:59:47.526, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 5, Rohausgabe rot-H4-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 366 Pruefungen ok, 5 Fehler
+  gefallen in B2:
+    - FEHLER  313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)  [Load 1 nurLesen (534 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A  [Load read-only, pre false, hub false, Common in Save A 65533, Load von Save A NICHT schreibbar (530 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save B = Save A]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258412, Load nurLesen (10 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Prozessor read-only/read-only, pre false, hub false, nach hub 258412 Eintraege, Reload read-only (Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save bytegleich]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258413, Load nurLesen (11 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Prozessor read-only/read-only, pre false, hub false, nach hub 258413 Eintraege, Reload read-only (Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save bytegleich]
+    - FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:00:09: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:00:13.094, Quelle 07:00:09.329, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-H4-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

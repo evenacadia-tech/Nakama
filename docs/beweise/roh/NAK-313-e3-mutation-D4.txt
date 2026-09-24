@@ -1,0 +1,205 @@
+NAK-313 Etappe 3 - Mutationslauf D4: eq-copilot/plugin/state/NakamaState.cpp - namenZusammengelegt: die Nachzaehlung um eins verringert
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf D4 - 24.09.2026 07:06:33 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D4-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+Mutation ab Zeile 381 (Stand vor der Mutation):
+  vorher:
+    | gelesen < eigenschaftenImRiegel;
+    | 
+  nachher:
+    | gelesen - 1 < eigenschaftenImRiegel;   // MUTATION D4
+    | 
+Mutiert 24.09.2026 07:06:33, SHA-256 mutiert 4c663ef6cb3158dc8950010e005d8ee57734137aa29cd1f4aeec2b9cec360c03
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:06:37.716, Quelle 07:06:33.540, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 169, Rohausgabe rot-D4-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 206 Pruefungen ok, 169 Fehler
+  gefallen in B2:
+    - FEHLER  Schema-1 'sensor' migriert
+    - FEHLER  'sensor': Herkunft schema1Migriert
+    - FEHLER  'sensor': sensor_id bytegleich als instance_id
+    - FEHLER  'sensor': label und pair_id bytegleich
+    - FEHLER  'sensor': Migration der Migration ist Identitaet
+    - FEHLER  Golden 'sensor' weicht ab  [128 Bytes]
+    - FEHLER  Schema-1 'hub' migriert
+    - FEHLER  'hub': Herkunft schema1Migriert
+    - FEHLER  'hub' -> main+insert  [legacy+insert]
+    - FEHLER  'hub': sensor_id bytegleich als instance_id
+    - FEHLER  'hub': label und pair_id bytegleich
+    - FEHLER  'hub': v2-Rolle rueckwaerts identisch  [sensor]
+    - FEHLER  'hub': MainProject genau fuer main
+    - FEHLER  'hub': Migration der Migration ist Identitaet
+    - FEHLER  Golden 'hub' weicht ab  [125 Bytes]
+    - FEHLER  Schema-1 'pre' migriert
+    - FEHLER  'pre': Herkunft schema1Migriert
+    - FEHLER  'pre' -> legacy+pre  [legacy+insert]
+    - FEHLER  'pre': sensor_id bytegleich als instance_id
+    - FEHLER  'pre': label und pair_id bytegleich
+    - FEHLER  'pre': v2-Rolle rueckwaerts identisch  [sensor]
+    - FEHLER  'pre': Migration der Migration ist Identitaet
+    - FEHLER  Golden 'pre' weicht ab  [133 Bytes]
+    - FEHLER  Schema-1 'post' migriert
+    - FEHLER  'post': Herkunft schema1Migriert
+    - FEHLER  'post' -> legacy+post  [legacy+insert]
+    - FEHLER  'post': sensor_id bytegleich als instance_id
+    - FEHLER  'post': label und pair_id bytegleich
+    - FEHLER  'post': v2-Rolle rueckwaerts identisch  [sensor]
+    - FEHLER  'post': Migration der Migration ist Identitaet
+    - FEHLER  Golden 'post' weicht ab  [135 Bytes]
+    - FEHLER  4 Rollen bytegleich zum Schema-2-Golden  [0]
+    - FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)  [Rohfassung = Writer-Bytes, Mutant 128 Bytes, Datei 202 Bytes]
+    - FEHLER  Intent-Golden laedt normal
+    - FEHLER  und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+    - FEHLER  M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert  [nurLesen, Bindung '']
+    - FEHLER  M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich
+    - FEHLER  legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)  [256 Bytes vom Writer, 2397 auf der Platte, Kinder Common,MainProject]
+    - FEHLER  legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich  [nurLesen, 0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Grund 'duplicate property name in the state tree']
+    - FEHLER  Dsp-Golden laedt normal  [duplicate property name in the state tree]
+    - FEHLER  und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+    - FEHLER  ein v1-Stand laedt verlustfrei und wird als migriert gemeldet  [duplicate property name in the state tree]
+    - FEHLER  occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+    - FEHLER  sechs nie beruehrte Slots bleiben frei  [8]
+    - FEHLER  minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)  [duplicate property name in the state tree]
+    - FEHLER  der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+    - FEHLER  die migrierte Belegung landet im Kind Dsp und ueberlebt
+    - FEHLER  unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only  [duplicate property name in the state tree]
+    - FEHLER  sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+    - FEHLER  ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar  [duplicate property name in the state tree]
+    - FEHLER  ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+    - FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+    - FEHLER  Schema 2 laedt
+    - FEHLER  Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+    - FEHLER  Stand mit unbekannter additiver Eigenschaft laedt
+    - FEHLER  unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+    - FEHLER  active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+    - FEHLER  120 Parameterwerte bit-exakt durch den Roundtrip  [42]
+    - FEHLER  Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+    - FEHLER  state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+    - FEHLER  Slot mit eingeschaltetem Dynamic laedt
+    - FEHLER  Slot mit ausgeschaltetem Dynamic laedt
+    - FEHLER  dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+    - FEHLER  Slot mit wieder eingeschaltetem Dynamic laedt
+    - FEHLER  beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+    - FEHLER  channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+    - FEHLER  voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+    - FEHLER  == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+    - FEHLER  Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='duplicate property name in the state tree', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [6]
+    - FEHLER  == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+    - FEHLER  instance_address_empty_uses_fresh_uuid
+    - FEHLER  legacy_instance_id_save_load_bytegleich
+    - FEHLER  == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+    - FEHLER  63 verschachtelte Arrays plus Blatt passieren und laden
+    - FEHLER  313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [nurLesen / nurLesen, erster Save = Eingang, zweiter Save = erster]
+    - FEHLER  65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (540 ms), Grund 'duplicate property name in the state tree']
+    - FEHLER  262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (2138 ms), Grund 'duplicate property name in the state tree']
+    - FEHLER  Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [1024]
+    - FEHLER  additive Binaer- und Array-Properties bleiben bytegleich lesbar
+    - FEHLER  312/M-115 read-only: main-intent-v1.bin + Bestandskind (in main neben MainProject)  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: dsp-v2-voll.bin + Bestandskind (in active_probe)  [nurLesen, Grund 'duplicate property name in the state tree']
+    - FEHLER  312/M-115 read-only: Golden mit plugin_kind passive_probe  [nurLesen, Grund 'duplicate property name in the state tree']
+    - FEHLER  312/M-115 read-only: Golden mit doppeltem Bestandskind  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit Bestandskind schema 2  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit ungerader confirmed_members_v1  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit doppelter instance_id im Bestandskind  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit 65 Paaren im Bestandskind  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit Intentinhalt ohne intent_revision_v1  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject)  [nurLesen, Grund 'duplicate property name in the state tree', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 kind_matrix_des_bestandskinds: 10 Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund  [0]
+    - FEHLER  gueltiger Stand hebt read-only wieder auf
+    - FEHLER  == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+    - FEHLER  neueSensorId loest auf
+    - FEHLER  neue instance_id: 32 Hex, verschieden von beiden
+    - FEHLER  Label und Rolle bleiben bei der Aufloesung
+    - FEHLER  Aufloesung meldet genau einmal Host-Dirty  [0]
+    - FEHLER  == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+    - FEHLER  Herkunft schema1Migriert
+    - FEHLER  setzeBindung mit Aenderung: genau eine Meldung  [0]
+    - FEHLER  Aenderung kam an
+    - FEHLER  Rollenwechsel zu hub: zweite Meldung
+    - FEHLER  hub speichert MainProject und kein pair_id
+    - FEHLER  getStateInformation meldet nichts
+    - FEHLER  unbekannte v2-Rolle wird verweigert, keine Meldung
+    - FEHLER  Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+    - FEHLER  313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, 0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60  [geladen read-only, Rueckgabe false, Host-Dirty nach dem Laden 0 (beim Laden 0), Reconnect-Anforderungen 0, Save bytegleich ja]
+    - FEHLER  313/M-04 api_rolle_mit_unveraendert_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (post, 121, 61) - Rueckgabe true, genau 1 Host-Dirty, Rolle post, Label und Paarname 121/61 unveraendert  [Rueckgabe false, Host-Dirty 0, Rolle 'sensor', Label 0 Zeichen, Paarname 0 Zeichen]
+    - FEHLER  read-only mit fremdem Major 9  [0]
+    - FEHLER  read-only verweigert setzeBindung und neueSensorId ohne Meldung
+    - FEHLER  312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau 2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes mit Bestandskind und Speichern melden 0  [Wechsel 0, nach dem Speichern 0, Laden des Goldens 0]
+    - FEHLER  == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+    - FEHLER  Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+    - FEHLER  == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+    - FEHLER  M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an (Vorbedingung der Zusage)  [0 / 0]
+    - FEHLER  M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt int64max - kein Ueberlauf auf einen negativen Wert  [0]
+    - FEHLER  M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+    - FEHLER  M-11: beide Revisionen kommen als int64max zurueck  [0 / 0]
+    - FEHLER  M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [0 Eintrag/Eintraege]
+    - FEHLER  == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+    - FEHLER  312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 0 Byte, VERSCHIEDEN]
+    - FEHLER  == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+    - FEHLER  312/M-110 rollenwechsel_erhaelt_den_bestand_live (Legacy): alle sieben unveraendert gehalten, das Quellenmodell zeigt 0 Zeilen, die Handgriffe am Bestand verweigern  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Zeilen in Legacy 3, Handgriffe verweigert]
+    - FEHLER  312/M-110 rollenwechsel_erhaelt_den_bestand_live (zurueck zu Main): alle sieben wertgleich zum Stand vor dem Wechsel, das Quellenmodell zeigt die Mitglieder wieder  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Zeilen 3]
+    - FEHLER  312/M-119 welche_bestaende (Teilfall von 312/M-110): sensor, pre, post und hub - der ruhende Bestand bleibt unveraendert und ist nach hub vollstaendig zurueck; Label, Paar-ID und Messposition folgen der Rollenwahl in Common, nach post ohne Paar traegt der Stand keine pair_id, die Projektbindung bleibt  [Paar nach pre '', nach post ohne pair_id, 0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -]
+    - FEHLER  312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern (Form, Weg Z-A): der Stand in Legacy traegt Common und das Bestandskind RetainedMainProject (schema 1) mit denselben Eigenschaften wie MainProject, kein MainProject; speichere (lade (x)) == x bytegleich  [Kinder Common,MainProject, Eigenschaften WEICHEN AB, Roundtrip bytegleich, nurLesen]
+    - FEHLER  312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern: nach Laden in eine frische Instanz und Rueckkehr zu hub sind alle sieben wertgleich - Live-Rueckweg und gespeicherter Rueckweg ergeben denselben Bestand; das Laden meldet kein Host-Dirty  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Host-Dirty beim Laden 0]
+    - FEHLER  312/M-112 unbekannte_felder_reisen_mit (Teilfall von 312/M-111): die unbekannte Eigenschaft wandert mit dem Bestand vom MainProject ins Bestandskind und zurueck, die in Common bleibt in Common - main, legacy, speichern, laden, main, speichern  [Kinder am Ende Common,MainProject]
+    - FEHLER  312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject  [legacy gespeichert bytegleich]
+    - FEHLER  312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - die Bytes wie heute  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 256 Bytes, Kinder Common,MainProject, Zeilen 0]
+    - FEHLER  312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 1971 Bytes, Kinder Common,MainProject, Zeilen 0]
+    - FEHLER  312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 138625 Bytes, Kinder Common,MainProject, Zeilen 0]
+    - FEHLER  312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 115701 Bytes, Kinder Common,MainProject, Zeilen 0]
+    - FEHLER  312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 116222 Bytes, Kinder Common,MainProject, Zeilen 0]
+    - FEHLER  312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 71694 Bytes, Kinder Common,MainProject, Zeilen 0, leer 0, gefuellt 0]
+    - FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+    - FEHLER  313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 nurLesen (522 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65.538)  [Load 1 nurLesen (515 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nurLesen (518 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nurLesen (526 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nurLesen (528 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)  [Load 1 nurLesen (538 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A  [Load read-only, pre false, hub false, Common in Save A 65533, Load von Save A NICHT schreibbar (527 ms, Grund 'duplicate property name in the state tree'), Save B = Save A]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 nurLesen (6 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258412, Load nurLesen (6 ms, Grund 'duplicate property name in the state tree'), Prozessor read-only/read-only, pre false, hub false, nach hub 258412 Eintraege, Reload read-only (Grund 'duplicate property name in the state tree'), Save bytegleich]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 nurLesen (8 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258413, Load nurLesen (7 ms, Grund 'duplicate property name in the state tree'), Prozessor read-only/read-only, pre false, hub false, nach hub 258413 Eintraege, Reload read-only (Grund 'duplicate property name in the state tree'), Save bytegleich]
+    - FEHLER  313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt  [Load 1 nurLesen (0 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl  [Load 1 nurLesen (0 ms, Grund 'duplicate property name in the state tree'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin nurLesen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin geladen  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'duplicate property name in the state tree', Save bytegleich]
+    - FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:06:53: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:06:57.509, Quelle 07:06:53.716, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-D4-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

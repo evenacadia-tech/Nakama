@@ -1,0 +1,65 @@
+NAK-313 Etappe 3 - Rotbeweis M-31 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-31 - T3-02-05 - R-313-2 - Schema-1-Wurzel
+Zustand: EqCopilotState (Schema 1) mit doppeltem sensor_id (1111... dann 6666...).
+Ereignis: lade.
+Zusage: nurLesen bytegleich, keine Migration.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, Teilfall von 313/M-29: 313/M-31 schema1_sensor_id_doppelt.
+
+--- Haelfte 1: nurLesen bytegleich, keine Migration - Etikett: heute rot ---
+Pruefung: 313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  FEHLER  313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt: nurLesen bytegleich, keine Migration  [migriert (4 ms), Grund '', Label '', instance_id '66666666-7777-8888-9999-000000000000', Save neu (Common 5 Eintraege)]
+  -> am Basisstand rot: heute rot
+
+  Mutation D2 (eq-copilot/plugin/state/NakamaState.cpp - lade: die Duplikaterkennung hinter den ganzen EqCopilotState-Zweig verschoben), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D2-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 2317 (Stand vor der Mutation):
+      vorher:
+        |     if (namenZusammengelegt (v, eigenschaften))
+        |         return nurLesen ("duplicate property name in the state tree", {});
+        | 
+        |     if (v.hasType (kAltRoot))
+      nachher:
+        |     // MUTATION D2: Erkennung von hier hinter den EqCopilotState-Zweig verschoben
+        | 
+        |     if (v.hasType (kAltRoot))
+    Mutation ab Zeile 2332 (Stand vor der Mutation):
+      vorher:
+        |         return LadeErgebnis::migriert;
+        |     }
+        | 
+        |     if (v.hasType (kRoot))
+      nachher:
+        |         return LadeErgebnis::migriert;
+        |     }
+        | 
+        |     if (namenZusammengelegt (v, eigenschaften))   // MUTATION D2: erst hier
+        |         return nurLesen ("duplicate property name in the state tree", {});
+        | 
+        |     if (v.hasType (kRoot))
+    Mutiert 24.09.2026 07:05:03, SHA-256 mutiert a6afb1ea743cbd75c8fb9d668edfed20baa0606a155dc80dc17a50c85fdb1a2a
+    Kette (R-313-11): Hinter dem ganzen EqCopilotState-Zweig erreicht die Erkennung Schema 1 nicht mehr: migriereSchema1 uebernimmt den letzten sensor_id (6666...) -> migriert.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:05:08.003, Quelle 07:05:03.977, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-D2-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 369 Pruefungen ok, 2 Fehler
+    Zusagepruefung: 313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt
+      gefallen: FEHLER  313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt: nurLesen bytegleich, keine Migration  [migriert (4 ms), Grund '', Label '', instance_id '66666666-7777-8888-9999-000000000000', Save neu (Common 5 Eintraege)]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 369 Pruefungen ok, 2 Fehler; Einzelzeilen in NAK-313-e3-mutation-D2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:05:26: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:05:30.570, Quelle 07:05:26.378, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

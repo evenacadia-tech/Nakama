@@ -1,0 +1,49 @@
+NAK-313 Etappe 3 - Rotbeweis M-32 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-32 - T3-02-05 - R-313-2 - fremde Wurzel
+Zustand: Wurzel IrgendeinAnderesPlugin mit doppeltem sensor_id; Zustand frisch ("aaaa...").
+Ereignis: lade.
+Zusage: ignoriert, Zustand unveraendert.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, Teilfall von 313/M-29: 313/M-32 fremde_wurzel_mit_doppeltem_namen; bestehend "fremder Baumtyp wird ignoriert, Zustand bleibt".
+
+--- Haelfte 1: ignoriert, Zustand unveraendert - Etikett: Regressionswache ---
+Pruefung: 313/M-32 (Teilfall von 313/M-29) fremde_wurzel_mit_doppeltem_namen
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      313/M-32 (Teilfall von 313/M-29) fremde_wurzel_mit_doppeltem_namen: ignoriert, Zustand unveraendert  [ignoriert]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation D3 (eq-copilot/plugin/state/NakamaState.cpp - namenZusammengelegt: die Duplikatregel auch fuer fremde Wurzeln), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D3-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 378 (Stand vor der Mutation):
+      vorher:
+        |     if (! v.hasType (kRoot) && ! v.hasType (kAltRoot))
+        |         return false;
+        |     int gelesen = 0;
+      nachher:
+        |     // MUTATION D3: auch fremde Wurzeln
+        |     int gelesen = 0;
+    Mutiert 24.09.2026 07:05:49, SHA-256 mutiert 1bead5016b3e16a2b3e3abe2cb47185a0b0e54b6642e23de3a2c8ef5edda1989
+    Kette (R-313-11): Ohne die Wurzelpruefung zaehlt auch die fremde Wurzel: 2 deklarierte gegen 1 gelesene Eigenschaft -> nurLesen, und lade ersetzt den Zustand.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:05:52.871, Quelle 07:05:49.008, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-D3-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 369 Pruefungen ok, 2 Fehler
+    Zusagepruefung: 313/M-32 (Teilfall von 313/M-29) fremde_wurzel_mit_doppeltem_namen
+      gefallen: FEHLER  313/M-32 (Teilfall von 313/M-29) fremde_wurzel_mit_doppeltem_namen: ignoriert, Zustand unveraendert  [nurLesen]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 369 Pruefungen ok, 2 Fehler; Einzelzeilen in NAK-313-e3-mutation-D3.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:06:11: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:06:15.208, Quelle 07:06:11.249, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

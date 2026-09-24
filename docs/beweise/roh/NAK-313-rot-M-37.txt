@@ -1,0 +1,69 @@
+NAK-313 Etappe 3 - Rotbeweis M-37 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-37 - T3-02-05 - Testhygiene
+Zustand: Helfer baumMitEigenschaftszahl und baumMitGesamteintraegen mit eindeutigen Namen (f000001 ...).
+Ereignis: Grenzfaelle 65.536, 65.537, 262.144, 262.145.
+Zusage: Die Faelle messen ihre Grenze, nicht die Duplikatregel; 65.536 und 262.144 pruefen zusaetzlich den Schemagrund.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G9, bestehende Faelle um die Grundpruefung ergaenzt (313/M-37).
+
+--- Haelfte 1: Grund = Schemagrund an 65.536 und 262.144 - Etikett: Regressionswache ---
+Pruefung: 65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37; 262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (537 ms), Grund 'NakamaState schema  is unknown to this version (it reads schema 2)']
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (2159 ms), Grund 'NakamaState schema  is unknown to this version (it reads schema 2)']
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation T1 (eq-copilot/plugin/tests/StateMigrationTestMain.cpp - Testhelfer: baumMitEigenschaftszahl und baumMitGesamteintraegen schreiben wieder lauter gleiche Namen x), Stand 097bb663:
+    Datei eq-copilot/plugin/tests/StateMigrationTestMain.cpp (LF)
+    SHA-256 vorher 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\T1-StateMigrationTestMain.cpp (SHA-256 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3)
+    Mutation ab Zeile 406 (Stand vor der Mutation):
+      vorher:
+        |         s.writeString (eindeutig (i + 1));
+        |         juce::var().writeToStream (s);
+        |     }
+        |     s.writeCompressedInt (0);
+        |     s.flush();
+        |     return b;
+        | }
+        | 
+        | juce::MemoryBlock baumMitGesamteintraegen
+      nachher:
+        |         s.writeString ("x");   // MUTATION T1: gleiche Namen
+        |         juce::var().writeToStream (s);
+        |     }
+        |     s.writeCompressedInt (0);
+        |     s.flush();
+        |     return b;
+        | }
+        | 
+        | juce::MemoryBlock baumMitGesamteintraegen
+    Mutation ab Zeile 432 (Stand vor der Mutation):
+      vorher:
+        |             s.writeString (eindeutig (i + 1));
+      nachher:
+        |             s.writeString ("x");   // MUTATION T1: gleiche Namen
+    Mutiert 24.09.2026 07:11:33, SHA-256 mutiert 3ac395309c9bc6d8a4bbd50e6b50daf7645bf147da8435997782e59ebec1e39a
+    Kette (R-313-11): Mit gleichen Namen x legt JUCE die Eigenschaften je Knoten zu einer zusammen -> die Nachzaehlung zaehlt weniger als der Riegel -> Duplikatgrund vor leseSchema2 -> Grund != Schemagrund; 65.537 und 262.145 fallen weiter am Riegel (ignoriert).
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:11:59.496, Quelle 07:11:33.304, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-T1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler
+    Zusagepruefung: 65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37; 262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37
+      gefallen: FEHLER  65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (9 ms), Grund 'duplicate property name in the state tree']
+      gefallen: FEHLER  262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (40 ms), Grund 'duplicate property name in the state tree']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B2: == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck - Grund: Abschnittszeile: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e3-mutation-T1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:12:15: SHA-256 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3 - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:12:41.236, Quelle 07:12:15.242, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-C1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

@@ -1,0 +1,55 @@
+NAK-313 Etappe 3 - Rotbeweis M-18 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-18 - T3-02-02 - R-313-1 - R-313-11 - mit label und Bindung, API-Ergaenzung
+Zustand: Common legacy/insert mit 65.536 Eintraegen, darunter label und project_binding_id (hex32).
+Ereignis: lade; im Prozessor setzeBindung ("pre", <Label>, "P"); speichern; laden.
+Zusage: Load nurLesen bytegleich; setzeBindung verweigert ohne Host-Dirty; kein Folgezustand, den der naechste Load ignoriert.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek), (Prozessor).
+
+--- Haelfte 1: nurLesen bytegleich, API verweigert, kein ignorierter Folgezustand - Etikett: heute rot ---
+Pruefung: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek); 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor)
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 geladen (561 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustand, den der naechste Load ignoriert  [Prozessor schreibbar, setzeBindung (pre true), Host-Dirty 1, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+  -> am Basisstand rot: heute rot
+
+  Mutation H2 (eq-copilot/plugin/state/NakamaState.cpp - hatWriterHeadroom: pair_id aus dem Kandidaten genommen), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\H2-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 1306 (Stand vor der Mutation):
+      vorher:
+        |     kandidat.common.pairId = laenger (eingang.common.pairId, maximalerText (60));
+      nachher:
+        |     // MUTATION H2: pair_id nicht im Kandidaten
+    Mutiert 24.09.2026 06:58:17, SHA-256 mutiert 8c1997e680ae4998eda23bc8f8b431ce291b6cd54029ef46a8c91d5d8ab2deb2
+    Kette (R-313-11): Ohne pair_id traegt der Kandidat Common 65.536 (label und Bindung stehen schon), gesamt 3 + 65.536 + 3.728 = 69.267 <= 262.144 -> er passiert den Riegel als verlustfrei -> geladen; im Prozessor ergaenzt setzeBindung (pre, Label, P) pair_id -> Common 65.537 -> der naechste Load ignoriert. Beobachtet: Load geladen, setzeBindung true, 1 Host-Dirty, Reload ignoriert.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:58:21.021, Quelle 06:58:17.156, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 11, Rohausgabe rot-H2-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 360 Pruefungen ok, 11 Fehler
+    Zusagepruefung: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek); 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor)
+      gefallen: FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 geladen (542 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+      gefallen: FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustand, den der naechste Load ignoriert  [Prozessor schreibbar, setzeBindung (pre true), Host-Dirty 1, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  (Zusagepruefung von M-21, M-28)
+      - B2: 313/M-21 (Teilfall von 313/M-17) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-21)
+      - B2: 313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 gel (Zusagepruefung von M-19)
+      - B2: 313/M-19 (Teilfall von 313/M-18) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-19)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 g (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 ge (Zusagepruefung von M-24, M-28)
+    mitgefallen (mit Grund):
+      - B2: Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672405] - Grund: die bestehende Bytegrenzen-Wache in G9: ohne pair_id ist der Kandidat um die 240 Bytes des maximalen Paarnamens kleiner, die Halbierungssuche verschiebt den schreibbaren Rand um diese Bytes nach oben, und der Writer mit maximalen Userfeldern (Paarname 60 x U+10FFFF) schreibt dort 16.672.405 Bytes, ueber 16 MiB - die Wache sieht dieselbe Luecke von der Byteseite
+      - B2: == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck - Grund: Abschnittszeile G9: folgt aus der gefallenen Bytegrenzen-Wache davor
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 360 Pruefungen ok, 11 Fehler; Einzelzeilen in NAK-313-e3-mutation-H2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 06:58:39: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:58:44.012, Quelle 06:58:39.894, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

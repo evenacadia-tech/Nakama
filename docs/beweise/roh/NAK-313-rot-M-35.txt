@@ -1,0 +1,87 @@
+NAK-313 Etappe 3 - Rotbeweis M-35 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-35 - T3-02-05 - R-313-2 - Negativ-Golden
+Zustand: eq-copilot/fixtures/state/schema2/doppelte-eigenschaft-v1.bin, erklaerter Mutant von aus-schema1-sensor.bin (Common + future A, future B).
+Ereignis: EqCopStateMigrationTest --schreibe-goldens, erzeuge_state_fixtures.py --pruefen; B2 laedt die Datei.
+Zusage: Die Datei entsteht ueber den Goldenschreiber, steht im MANIFEST mit Erwartung nurLesen, A12 bytegleich; B2 laedt sie nurLesen mit dem Duplikatgrund, speichere = Originalbytes.
+Bein: A12 (erzeuge_state_fixtures.py --pruefen); B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, G7 313/M-35 (Datei), G14 313/M-35 (Laden).
+
+--- Haelfte 1: Datei: bytegleich zum MANIFEST (A12) - Etikett: heute nicht messbar ---
+Pruefung: 313/M-35 negativgolden_doppelte_eigenschaft (Datei)
+Am Basisstand: nicht messbar - die Datei fehlte; B2 am Basisstand:
+  FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)  [Rohfassung = Writer-Bytes, Mutant 202 Bytes, Datei fehlt]
+
+  Mutation G1 (eq-copilot/fixtures/state/schema2/doppelte-eigenschaft-v1.bin - Negativ-Golden: das letzte Byte der Datei gekippt (XOR 0x01)), Stand 097bb663:
+    Datei eq-copilot/fixtures/state/schema2/doppelte-eigenschaft-v1.bin (binaer)
+    SHA-256 vorher bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\G1-doppelte-eigenschaft-v1.bin (SHA-256 bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd)
+    Mutation (binaer): Byte 201 = 0x00 -> Byte 201 = 0x01
+    Mutiert 24.09.2026 07:09:57, SHA-256 mutiert 0dc9beb0095ed38b10e5f500bc5b0c88aa094948e922cd4c6d537de5d8fb6180
+    Kette (R-313-11): Ein gekipptes Byte aendert den SHA-256 der Datei; der Erzeuger schreibt ihn ins MANIFEST, das von der committeten Fassung abweicht -> A12 ABWEICHUNG; B2 vergleicht die Datei mit dem erklaerten Mutanten -> 313/M-35 (Datei) rot.
+    Lauf unter der Mutation:
+      Bau (kein Bau: das Bein liest die Datei zur Laufzeit): Exit 0
+      A12: Exit 2, gefallene Pruefungen 1, Rohausgabe rot-G1-mutiert-A12.txt
+      Summe: STATE-FIXTURES ABWEICHEND (1)
+      B2: Exit 1, gefallene Pruefungen 4, Rohausgabe rot-G1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 367 Pruefungen ok, 4 Fehler
+    Zusagepruefung: ABWEICHUNG: MANIFEST.json; 313/M-35 negativgolden_doppelte_eigenschaft (Datei)
+      gefallen: ABWEICHUNG: MANIFEST.json
+      gefallen: FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)  [Rohfassung = Writer-Bytes, Mutant 202 Bytes, Datei 202 Bytes]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = Originalbytes  [ignoriert (0 ms), Grund '', Label (Zusagepruefung von M-35)
+    mitgefallen (mit Grund):
+      - B2: == Migration: 4 Rollen bytegleich zum Golden, idempotent - Grund: Abschnittszeile: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (A12: STATE-FIXTURES ABWEICHEND (1); B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 367 Pruefungen ok, 4 Fehler; Einzelzeilen in NAK-313-e3-mutation-G1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:10:16: SHA-256 bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd - gleich dem Stand vor der Mutation
+      Bau (kein Bau): Exit 0
+      A12 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei))
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: Laden: nurLesen mit Duplikatgrund - Etikett: heute nicht messbar ---
+Pruefung: 313/M-35 negativgolden_doppelte_eigenschaft (Laden)
+Am Basisstand: nicht messbar - die Datei fehlte; B2 am Basisstand:
+  FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = Originalbytes  [Datei fehlt: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state\schema2\doppelte-eigenschaft-v1.bin]
+
+  Mutation D1 (eq-copilot/plugin/state/NakamaState.cpp - lade: die Duplikaterkennung entfernt), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D1-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 2317 (Stand vor der Mutation):
+      vorher:
+        |     if (namenZusammengelegt (v, eigenschaften))
+        |         return nurLesen ("duplicate property name in the state tree", {});
+      nachher:
+        |     // MUTATION D1: Erkennung entfernt
+    Mutiert 24.09.2026 07:04:17, SHA-256 mutiert a0c5b6b15e48c5f6ea7bcd6919a5f94b91746f17d393d50f9c582bef15fac1ee
+    Kette (R-313-11): Ohne Erkennung behaelt JUCE future = B, das Golden laedt geladen -> 313/M-35 (Laden) rot.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:04:21.826, Quelle 07:04:17.852, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 9, Rohausgabe rot-D1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 362 Pruefungen ok, 9 Fehler
+    Zusagepruefung: 313/M-35 negativgolden_doppelte_eigenschaft (Laden)
+      gefallen: FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = Originalbytes  [geladen (5 ms), Grund '', Label 'Klavier A', instance_id '11111111-2222-3333-4444-555555555555', Save neu (Common 6 Eintraege)]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-29 doppelte_eigenschaft_bleibt_read_only (Bibliothek): Common.future = A, dann B - nurLesen mit Duplikatgrund, speichere = Originalbytes (Zusagepruefung von M-29, M-36)
+      - B2: 313/M-29 doppelte_eigenschaft_bleibt_read_only (Prozessor): setzeBindung verweigert, 0 Host-Dirty, getStateInformation bytegleich  [Prozessor  (Zusagepruefung von M-29, M-36)
+      - B2: 313/M-30 (a) (Teilfall von 313/M-29) label_doppelt: nurLesen bytegleich, weder A noch B als Label gelesen  [geladen (4 ms), Grund '', Label 'B (Zusagepruefung von M-30, M-36)
+      - B2: 313/M-30 (b) (Teilfall von 313/M-29) wurzel_schema_doppelt: nurLesen bytegleich  [geladen (4 ms), Grund '', Label 'Grenzlabel', instance_id 'c (Zusagepruefung von M-30, M-36)
+      - B2: 313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt: nurLesen bytegleich, keine Migration  [migriert (4 ms), Grund '', Label '', instan (Zusagepruefung von M-31, M-36)
+      - B2: 313/M-34 duplikat_tief_und_am_rand (a): Duplikat in einem Kind von Common (Ebene 2) - nurLesen bytegleich  [geladen (5 ms), Grund '', Label 'G (Zusagepruefung von M-34)
+      - B2: 313/M-34 duplikat_tief_und_am_rand (b): Common mit 65.536 Eintraegen, davon ein Name doppelt - nurLesen bytegleich  [nurLesen (562 ms), Grund  (Zusagepruefung von M-34)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 362 Pruefungen ok, 9 Fehler; Einzelzeilen in NAK-313-e3-mutation-D1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:04:40: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:04:45.173, Quelle 07:04:40.366, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

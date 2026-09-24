@@ -1,0 +1,48 @@
+NAK-313 Etappe 3 - Rotbeweis M-26 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-26 - T3-02-02 - R-313-1 - Tiefe der Knoten
+Zustand: legacy/insert-Stand, Common mit label und einer Kette von Kindknoten bis Ebene 63 (Wurzel = Ebene 0).
+Ereignis: lade, speichere, lade.
+Zusage: geladen, Save bytegleich, Reload geladen; eine Kette bis Ebene 64 bleibt ignoriert.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, 313/M-26 knotentiefe_rand_rueckschreibbar; bestehend "ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel".
+
+--- Haelfte 1: Rand geladen und rueckschreibbar - Etikett: Regressionswache ---
+Pruefung: 313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt  [Load 1 geladen (4 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation R3 (eq-copilot/plugin/state/NakamaState.cpp - baum: Knotentiefe um eins verringert (tiefe >= kMaxStateTiefe - 1)), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\R3-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 291 (Stand vor der Mutation):
+      vorher:
+        |         if (tiefe >= kMaxStateTiefe || ! utf8CString (false, tiefe == 0))
+      nachher:
+        |         if (tiefe >= kMaxStateTiefe - 1 || ! utf8CString (false, tiefe == 0))   // MUTATION R3
+    Mutiert 24.09.2026 07:02:48, SHA-256 mutiert 6fe2f4bac81017cbd4e6f459a140e11c751415a729faf2cd74436bac088e4f21
+    Kette (R-313-11): Mit tiefe >= kMaxStateTiefe - 1 faellt der Knoten auf Ebene 63 -> baum false -> ungueltig -> ignoriert.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:02:52.262, Quelle 07:02:48.467, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 4, Rohausgabe rot-R3-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 367 Pruefungen ok, 4 Fehler
+    Zusagepruefung: 313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63
+      gefallen: FEHLER  313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt  [Load 1 ignoriert (0 ms, Grund ''), Save neu (Common 5 Eintraege), Load 2 nurLesen, zweiter Save = erster]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B2: ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel - Grund: der bestehende Randfall derselben Tiefengrenze (G9), auf den 313/M-26 verweist
+      - B2: == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck - Grund: Abschnittszeile: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 367 Pruefungen ok, 4 Fehler; Einzelzeilen in NAK-313-e3-mutation-R3.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:03:10: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:03:14.611, Quelle 07:03:10.673, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

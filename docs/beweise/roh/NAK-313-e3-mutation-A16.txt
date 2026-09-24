@@ -1,0 +1,77 @@
+NAK-313 Etappe 3 - Mutationslauf A16: eq-copilot/plugin/sonde/SondeProcessor.cpp - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf A16 - 24.09.2026 07:11:04 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/sonde/SondeProcessor.cpp (CRLF)
+SHA-256 vorher 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\A16-SondeProcessor.cpp (SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b)
+Mutation ab Zeile 510 (Stand vor der Mutation):
+  vorher:
+    |     const nakama::dsp::RtWache::Bereich wache;
+    |     verarbeiteBlock (puffer, false);
+    | 
+  nachher:
+    |     const nakama::dsp::RtWache::Bereich wache;
+    |     verarbeiteBlock (puffer, false);
+    |     if (puffer.getNumSamples() > 0 && puffer.getNumChannels() > 0)   // MUTATION M-38 A16: 1 LSB
+    |         puffer.getWritePointer (0)[0] = std::nextafter (puffer.getSample (0, 0), 2.0f);
+    | 
+Mutiert 24.09.2026 07:11:04, SHA-256 mutiert 13a731e919b875a4aebbfe70b858d2477b0fdc5826bf7cbe0abe1bbcaeb42506
+Lauf unter der Mutation:
+  Bau EqCopProbeeqNullTest: Exit 0
+  A16: Binaer 07:11:10.247, Quelle 07:11:04.432, Binaer juenger: ja
+  A16: Exit 1, gefallene Pruefungen 37, Rohausgabe rot-A16-mutiert-A16.txt
+    Summe: SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler
+  gefallen in A16:
+    - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+    - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+    - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+    - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+    - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+    - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+    - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+    - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+    - FEHLER    im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 1000 abweichend, NaN/Inf roh nein]
+    - FEHLER  kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+    - FEHLER  passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+    - FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+    - FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+    - FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+    - FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+    - FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+    - FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 96000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+    - FEHLER  eq_an_bypass_an_ist_bitidentisch: +12-dB-Bell und Width 1,7 liegen hinter dem Hard-Bypass und schlagen nicht durch  [460000 Samples, 1000 abweichend]
+    - FEHLER  nach_dem_fade_wieder_bitidentisch: nach 256 Fade-Samples bitgleich, keine Bank faehrt mehr  [eingeschaltet 92000 abweichende Samples (das Band war hoerbar); danach 395 abweichend in 183744]
+    - FEHLER  311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 44100 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [995 von 13336 Musterstellen veraendert]
+    - FEHLER  311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 48000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [995 von 13336 Musterstellen veraendert]
+    - FEHLER  311/M-20 mix_null_laesst_bitmuster_und_wachmarke_bytegleich bei 96000 Hz, Bitmuster: Subnormals, +-0 und kleinste Normale kommen bei Mix 0 bytegleich heraus  [995 von 13336 Musterstellen veraendert]
+    - FEHLER  mono_und_stereo_bleiben_angenommen (M-28, Regressionswache): Stereo und Mono liefern ein Ja; im Monobus bleibt der Passthrough bitgleich, und das hoerbare Band rechnet auf dem einen Kanal endlich  [Stereo ja, Mono ja, Mono gesetzt ja, Passthrough bitgleich nein, Band rechnet ja]
+    - FEHLER  311/M-19 neutral_engagiert_schreibt_im_monobus_keinen_sample (Teilfall von 311/M-11), Bitmuster: Rauschen ab Sample 0 und das Bitmuster ab Sample 512 kommen auf Kanal 0 bytegleich heraus  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 6676 veraendert]
+    - FEHLER  311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 5 abweichend (ab Sample 512: 0), Muster 995 von 13352 veraendert]
+    - FEHLER  311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 5 abweichend (ab Sample 512: 0), Muster 995 von 13352 veraendert]
+    - FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 13352, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+    - FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 32000 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 6676, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 32000.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+    - FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 2-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 13352, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 22050.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+    - FEHLER  311/M-132 unter_44_1_khz_bleibt_der_eq_neutral bei 22050 Hz, 1-Kanal-Bus: Bell 14 kHz +12 dB Q 4 mit Auto-Gain an, 1000 Bloecke von 1 bis 2048 Samples - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf kommen bytegleich heraus, kein Zaehler steigt, der Kern ist unvorbereitet, meldet die abgelehnte Rate und exakt +0,0 dB Ausgleich, die Kanalzahl faellt auf 2  [460000 Samples, Rauschen 5 abweichend, Muster 995 von 6676, nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, Zaehler 0/0/0, abgelehnteSamplerateHz 22050.000000, Kern-Samplerate 0.000000, autoGainDb 0.000000000000 (Vorzeichenbit 0), busKanaele 2]
+    - FEHLER  311/M-139 frueher_rueckweg_bei_jeder_blockgroesse (Teilfall von 311/M-132) bei 32 kHz: Bloecke 1, 255, 256, 257, 2048 und 4096 (ueber maxBlock 2048) kommen mit Wachmarke bytegleich heraus, kein Tap gefuellt, kein Zaehler bewegt, 0 Samples Latenz, Tail 0,0 s  [Blockgroessen 6, bytegleich nein, Latenz 0, Tail 0, Taplaenge 0, Zaehler 0/0/0]
+    - FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 44100 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x3ee059b66fbaca4a gegen Basisstand 0xcb14d6eee50e7d7c (gleich nein), Kern-Samplerate 44100.0, autoGainDb -0.759373668958, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+    - FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 48000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xa453526d08dd0fab gegen Basisstand 0xbd787728731ba929 (gleich nein), Kern-Samplerate 48000.0, autoGainDb -0.853206521983, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+    - FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 96000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0x16d0988477a2b27 gegen Basisstand 0x5ece3bcf185baff5 (gleich nein), Kern-Samplerate 96000.0, autoGainDb -1.275649859551, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+    - FEHLER  311/M-133 genau_44_1_khz_bleibt_unterstuetzt bei 192000 Hz: der Kern bereitet sich vor, das Band ist hoerbar, abgelehnteSamplerateHz ist exakt +0,0, und der Fingerabdruck des Ausgangs ist gleich dem am Basisstand 5ee8318c erzeugten Golden  [Ausgang FNV-1a 0xa8edf428c96e1236 gegen Basisstand 0x33f35b42b6693e06 (gleich nein), Kern-Samplerate 192000.0, autoGainDb -1.390377442677, abgelehnteSamplerateHz 0.000000 (Vorzeichenbit 0)]
+    - FEHLER  312/M-99 hostbypass_bei_ruhendem_pfad_schreibt_nicht (Audio; CLAUDE.md Grundgesetz, [SONDE-015] M-05): mit eq_enabled aus, im Hard-Bypass und nach releaseResources() ohne neues prepareToPlay ist der Ausgang ueber 10 Bloecke processBlock, 20 processBlockBypassed und 10 processBlock bytegleich zum Eingang - Rauschen, Bitmuster, Wachmarke, NaN und +-Inf -, und die Zaehler fuer nicht endliche Eingaenge und geheilte Filterzustaende steigen nicht  [(a) Default: 20 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (b) Hard-Bypass: 20 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10; (c) unvorbereitet: 20 abweichende Samples, Zaehler still, Analysebloecke 10 normal +10, 20 Bypass +20, 10 normal +10]
+    - FEHLER  312/M-107 hostbypass_ueber_release (Audio; starten<->stoppen, NAK-283 R-283-3): ohne Vorbereitung laeuft jeder Block in beiden Eintritten unberuehrt durch - 10 Bypass, 10 normal, 10 Bypass mit Rauschen, Bitmuster, Wachmarke, NaN und +-Inf bytegleich, kein Zaehler steigt; nach prepareToPlay ist der erste Bypassblock ab Sample 0 bytegleich (M-106)  [ohne Vorbereitung 10 abweichend, Zaehler still; nach prepareToPlay 0 abweichend]
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:11:11: SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b - gleich dem Stand vor der Mutation
+  Bau EqCopProbeeqNullTest: Exit 0
+  A16: Binaer 07:11:16.912, Quelle 07:11:11.044, Binaer juenger: ja
+  A16: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-A16-zurueck-A16.txt
+    Summe: SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-C1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

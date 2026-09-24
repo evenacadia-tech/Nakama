@@ -1,0 +1,65 @@
+NAK-313 Etappe 3 - Rotbeweis M-27 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-27 - T3-02-02 - Vertragstext Byte-Riegel (Praezisierung, Abweichung A-1)
+Zustand: legacy/insert-Stand, Common mit label und 70 Kindknoten ohne Eigenschaften (Ebene 2), 72 Knoten.
+Ereignis: lade, speichere, lade; Lesen von nakama-state-v2.md §2 und §5.
+Zusage: geladen, Save bytegleich: der Riegel begrenzt Tiefe (64 Ebenen inklusive Wurzel) und Eintraege, keine Knotenzahl; §2 und §5 des State-Vertrags sagen es nach der Praezisierung ebenso.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, 313/M-27 knotenzahl_ist_keine_grenze (Verhalten); Text: gelesen.
+
+--- Haelfte 1: Verhalten: 72 Knoten laden, Save bytegleich - Etikett: Regressionswache ---
+Pruefung: 313/M-27 knotenzahl_ist_keine_grenze
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl  [Load 1 geladen (4 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation R4 (eq-copilot/plugin/state/NakamaState.cpp - baum: eine Knotenzahlgrenze 64 in den Riegel gesetzt), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\R4-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 291 (Stand vor der Mutation):
+      vorher:
+        |         if (tiefe >= kMaxStateTiefe || ! utf8CString (false, tiefe == 0))
+      nachher:
+        |         if (++mutationKnoten > 64)   // MUTATION R4: Knotenzahlgrenze
+        |             return false;
+        |         if (tiefe >= kMaxStateTiefe || ! utf8CString (false, tiefe == 0))
+    Mutation ab Zeile 317 (Stand vor der Mutation):
+      vorher:
+        |     int eigenschaftenGesamt = 0;
+      nachher:
+        |     int eigenschaftenGesamt = 0;
+        |     int mutationKnoten = 0;   // MUTATION R4
+    Mutiert 24.09.2026 07:03:33, SHA-256 mutiert 01a966a625542329f005a7cf2cb57a2dff2ecba2918b3f0033e90a190e0a6134
+    Kette (R-313-11): Mit einer Knotenzahlgrenze 64 faellt der Stand mit 72 Knoten beim 65. Knoten -> baum false -> ungueltig -> ignoriert. Mitgefallen ist M-26: die Kette bis Ebene 63 hat als Eingang genau 64 Knoten und passiert, ihr Headroom-Kandidat traegt aber das Bestandskind dazu (65 Knoten) und faellt unter derselben Grenze am Riegel -> nurLesen mit Headroom-Grund; der Kandidat laeuft durch denselben Riegel (R-313-1).
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:03:37.150, Quelle 07:03:33.303, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-R4-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler
+    Zusagepruefung: 313/M-27 knotenzahl_ist_keine_grenze
+      gefallen: FEHLER  313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl  [Load 1 ignoriert (0 ms, Grund ''), Save neu (Common 5 Eintraege), Load 2 nurLesen, zweiter Save = erster]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt   (Zusagepruefung von M-26)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e3-mutation-R4.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:03:55: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:03:59.441, Quelle 07:03:55.432, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: Text: §2 und §5 nennen Tiefe statt Knotenzahl - Etikett: heute rot ---
+Am Basisstand: nakama-state-v2.md:58-59 und :297 sagten "64 ValueTree-Knoten" (gelesen am Basisstand f77738a0).
+
+  Beleg: die gelesene Stelle im Diff des State-Vertrags (Commit 097bb663, eq-copilot/schemas/state/nakama-state-v2.md, CRLF, -text); kein Bein liest die Datei (Manifest §8.3).
+    Zeile 58-59 vorher:  **Flache Arrays, keine Kindknoten.** Der Byte-Riegel (§5) erlaubt höchstens 64 / `ValueTree`-Knoten im ganzen Baum. Acht Zonen und 32 Undo-Einträge als Knoten
+    Zeile 58-59 nachher: **Flache Arrays, keine Kindknoten.** Der Byte-Riegel (§5) begrenzt die Tiefe auf 64 / `ValueTree`-Ebenen und jede Sammlung auf 65.536 Einträge; Kindknoten zählen dort wie Eigenschaften gegen 262.144 Einträge im ganzen Baum. *(Präzisiert am 24.09.2026, NAK-313. Bis dahin stand hier „erlaubt höchstens 64 `ValueTree`-Knoten im ganzen Baum".)* Acht Zonen und 32 Undo-Einträge als Knoten
+    Zeile 297 vorher:  vollständigen `ValueTree`: höchstens 16 MiB, höchstens 64 `ValueTree`-Knoten
+    Zeile 297 nachher: vollständigen `ValueTree`: höchstens 16 MiB, höchstens 64 ineinander geschachtelte `ValueTree`-Ebenen
+    Zeile 300 vorher:  Sammlung sowie 262.144 Einträge im gesamten Baum. Abgeschnittene Streams,
+    Zeile 300 nachher: Sammlung sowie 262.144 Einträge im gesamten Baum (Eigenschaften, Kinder und Arrayelemente zählen je als Eintrag; eine Knotenzahl begrenzt er nicht). Abgeschnittene Streams,
+  Die Zusage ist im Text erfuellt: JA (gelesen)

@@ -1,0 +1,266 @@
+NAK-313 Etappe 3 - Rotbeweis M-38 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-38 - Etappe 3 - Grenze und Audio
+Zustand: Endstand der Etappe 3.
+Ereignis: voller Kanon; A1, A12, A16, B2, B7 einzeln.
+Zusage: Audio unberuehrt (lade und hatWriterHeadroom laufen in setStateInformation auf dem Host-Thread, nie im Callback); keine neue State-Version, keine neue Grenzkonstante; alle bestehenden Goldens bytegleich; A1 und A16 bitidentisch.
+Bein: B7, B2, A12, A1, A16 (einzeln und im Kanon).
+
+--- Haelfte 1: Callback: 0 Allokationen ab Callback-Eintritt der Sonde - Etikett: Regressionswache ---
+Am Basisstand: gruen - das Bein lief in der Gegenprobe nicht (sie faehrt nur B2); gruen im geerbten Kanon vorher (NAK-313 Etappe 2 Fortsetzung, 8299c7a1, Code gleich 8aeac2db und f77738a0: GRUEN 70/70, docs/beweise/roh/NAK-313-8299c7a-dirty.md) - Regressionswache.
+
+  Mutation C1 (eq-copilot/plugin/sonde/SondeProcessor.cpp - im Sonde-Callback einmal nakama::state::lade gerufen), Stand 097bb663:
+    Datei eq-copilot/plugin/sonde/SondeProcessor.cpp (CRLF)
+    SHA-256 vorher 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\C1-SondeProcessor.cpp (SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b)
+    Mutation ab Zeile 510 (Stand vor der Mutation):
+      vorher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+      nachher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     {   // MUTATION C1 (313/M-38): der State-Leser im Callback
+        |         nakama::state::Zustand z;
+        |         static const char roh[] = "NakamaState\0\0\0";
+        |         nakama::state::lade (roh, 14, nakama::state::Bundle::nkac(), z);
+        |     }
+        |     verarbeiteBlock (puffer, false);
+    Mutiert 24.09.2026 07:10:35, SHA-256 mutiert 035906b489422d7c53ce6009d372306d52aaafb49e1f4c5f96906d86fe6166cc
+    Kette (R-313-11): lade im Sonde-Callback liest einen Rohstand und legt Zustand, ValueTree und Originalbytes an -> die Echtzeitwache zaehlt Allokationen ab dem Callback-Eintritt -> B7 rot.
+    Lauf unter der Mutation:
+      Bau EqCopTransactionTest: Exit 0
+      B7: Binaer 07:10:41.447, Quelle 07:10:35.384, Binaer juenger: ja
+      B7: Exit 1, gefallene Pruefungen 7, Rohausgabe rot-C1-mutiert-B7.txt
+      Summe: TRANSAKTION FEHLGESCHLAGEN
+    Zusagepruefung: 312/M-26 blockbindung_ist_echtzeitfest; 312/M-38 besitzschleuse_liegt_nicht_im_audiopfad
+      gefallen: FEHLER  312/M-26 blockbindung_ist_echtzeitfest (R-312-10 Satz 3, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Hostautomation auf allen vier abgedeckten Parametern - RtWache::sperren() und RtWache::allokationen() bleiben ab Callback-Eintritt 0, der eigene Zaehler ebenso  [RtWache::sperren 0, RtWache::allokationen 24000, eigener Zaehler 24000]
+      gefallen: FEHLER  312/M-38 besitzschleuse_liegt_nicht_im_audiopfad (W09, Grundgesetz, E-312-11): mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients ueber die Probe-Pipe verbunden sind und ihre Provider durch die Besitzschleuse laufen - RtWache::sperren() und RtWache::allokationen() bleiben ab Callback-Eintritt 0, der eigene Zaehler ebenso  [4000 Bloecke, Schleuse betreten 4 -> 12 im Messfenster, Control verbunden ja, RtWache::sperren 0, RtWache::allokationen 24000, eigener Zaehler 24000]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B7: 311/M-139 der_neutrale_weg_kostet_nichts (Teilfall von 311/M-135, NAK-311 R-311-16): bei 32 kHz zaehlt der thread-lokale Zaehler ueber 200 Blo - Grund: derselbe Allokationszaehler im Callback: 1.200 Allokationen ueber 200 Bloecke (sechs je Leseaufruf) statt 0
+      - B7: 312/M-01 wache_beginnt_am_callback_eintritt (R-312-1, E-312-11): echter SondeProcessor 48 kHz Block 256 mit Testplayhead - ueber 200 Bloecke z - Grund: dieselbe Echtzeitwache ab dem Callback-Eintritt: die 200 gemeldeten Sperren stimmen, aber RtWache::allokationen zaehlt 1.200 (sechs je Leseaufruf) statt 0
+      - B7: 312/M-40 offlineflag_nimmt_keine_sperre (T3-01-03, R-312-3, R-312-22, [SONDE-015] M-47): echter SondeProcessor mit hoerbarer Vorschau (Hoerwun - Grund: dieselbe Echtzeitwache im Offline-Uebergang: RtWache::allokationen 1.200 statt 0
+      - B7: 312/M-53 parameteranbindung_ist_echtzeitfest (T3-01-02, R-312-4 letzter Satz, [SONDE-015] M-47, E-312-11): 4000 Bloecke wechselnder Groesse (1 - Grund: dieselbe Echtzeitwache unter Hostautomation: RtWache::allokationen 24.000 ueber 4.000 Bloecke statt 0
+      - B7: 312/M-101 (b) hostbypass_ist_echtzeitfest (R-312-1, [SONDE-015] M-47, M-51, E-312-11): 4000 Bloecke wechselnder Groesse (1 bis 512) mit Eintri - Grund: dieselbe Echtzeitwache ueber beide Eintritte: RtWache::allokationen 11.988 aus den 1.998 processBlock-Bloecken (der Bypasseintritt ist nicht mutiert) statt 0
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B7: TRANSAKTION FEHLGESCHLAGEN; Einzelzeilen in NAK-313-e3-mutation-C1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:10:44: SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b - gleich dem Stand vor der Mutation
+      Bau EqCopTransactionTest: Exit 0
+      B7: Binaer 07:10:50.113, Quelle 07:10:44.197, Binaer juenger: ja
+      B7 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (TRANSAKTION OK)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 2: keine neue State-Version - Etikett: Regressionswache ---
+Pruefung: 4 Rollen bytegleich zum Schema-2-Golden
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation SV (eq-copilot/plugin/state/NakamaState.cpp - kRootSchema auf 3), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\SV-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 72 (Stand vor der Mutation):
+      vorher:
+        | constexpr int kRootSchema   = 2;
+      nachher:
+        | constexpr int kRootSchema   = 3;   // MUTATION SV
+    Mutiert 24.09.2026 07:09:14, SHA-256 mutiert 6c6e6bafc2dd2f910203d454890daf906a8471c8473ea6b7f2c00012c1b031ab
+    Kette (R-313-11): kRootSchema 3: der Writer schreibt schema 3 -> die Rollen-Goldens weichen ab.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:09:18.803, Quelle 07:09:14.819, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 81, Rohausgabe rot-SV-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 295 Pruefungen ok, 81 Fehler
+    Zusagepruefung: 4 Rollen bytegleich zum Schema-2-Golden
+      gefallen: FEHLER  4 Rollen bytegleich zum Schema-2-Golden  [0]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Zusagepruefung von M-35)
+      - B2: 63 verschachtelte Arrays plus Blatt passieren und laden (Zusagepruefung von M-25)
+      - B2: 313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [nurLesen / nurLesen, erster Sa (Zusagepruefung von M-25)
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 nurLesen (528 ms, Grund 'NakamaState sche (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65 (Zusagepruefung von M-20)
+      - B2: 313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  (Zusagepruefung von M-21, M-28)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.53 (Zusagepruefung von M-18)
+      - B2: 313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nur (Zusagepruefung von M-19)
+      - B2: 313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibba (Zusagepruefung von M-22)
+      - B2: 313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + p (Zusagepruefung von M-22)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 n (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 25841 (Zusagepruefung von M-24)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 nu (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 (Zusagepruefung von M-24)
+      - B2: 313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt   (Zusagepruefung von M-26)
+      - B2: 313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt (Zusagepruefung von M-27)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown t (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin nurLesen, Save bytegleich  [geladen, Grund '', Save bytegleich] (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to  (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to thi (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin geladen  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to (Zusagepruefung von M-33)
+      - B2: 313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown (Zusagepruefung von M-33)
+    mitgefallen (mit Grund):
+      - 54 weitere Pruefungen (Einzelzeilen in NAK-313-e3-mutation-SV.txt) - Grund: der Writer schreibt schema 3, der Leser liest nur schema 3: jede Pruefung gegen Schema-2-Bytes (Goldens, Rohbaeume, gespeicherte Staende) oder gegen den Schema-2-Wortlaut faellt
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 295 Pruefungen ok, 81 Fehler; Einzelzeilen in NAK-313-e3-mutation-SV.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:09:35: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:09:38.987, Quelle 07:09:35.247, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 3: keine neue Grenzkonstante - Etikett: Regressionswache ---
+Pruefung: 313/M-22 common_rand_bleibt_schreibbar (Bibliothek); 313/M-22 common_rand_bleibt_schreibbar (Prozessor)
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)  [Load 1 geladen (547 ms, Grund ''), Save neu (Common 65534 Eintraege), Load 2 geladen, zweiter Save = erster]
+  ok      313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A  [Load schreibbar, pre true, hub true, Common in Save A 65536, Load von Save A schreibbar (593 ms, Grund ''), Save B = Save A]
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation H5 (eq-copilot/plugin/state/NakamaState.cpp - passt: eine eigene Kandidatengrenze kMaxEintraegeJeSammlung - 3 fuer Common), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\H5-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 1292 (Stand vor der Mutation):
+      vorher:
+        |             synchronisiert (kandidat).writeToStream (strom);
+      nachher:
+        |             if (synchronisiert (kandidat).getChildWithName (kCommon).getNumProperties()
+        |                 > kMaxEintraegeJeSammlung - 3)
+        |                 return false;   // MUTATION H5: eigene Kandidatengrenze
+        |             synchronisiert (kandidat).writeToStream (strom);
+    Mutiert 24.09.2026 07:00:31, SHA-256 mutiert d2142f0eb0bfb99280ca094ab0b17dc6e58c46b73972230425934c7e015915e8
+    Kette (R-313-11): Eine eigene Kandidatengrenze 65.533 fuer Common verwirft den Kandidaten des Randes (65.536) -> M-22 laedt nurLesen.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:00:35.199, Quelle 07:00:31.310, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-H5-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler
+    Zusagepruefung: 313/M-22 common_rand_bleibt_schreibbar (Bibliothek); 313/M-22 common_rand_bleibt_schreibbar (Prozessor)
+      gefallen: FEHLER  313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)  [Load 1 nurLesen (565 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+      gefallen: FEHLER  313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A  [Load read-only, pre false, hub false, Common in Save A 65533, Load von Save A NICHT schreibbar (525 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save B = Save A]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler; Einzelzeilen in NAK-313-e3-mutation-H5.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:00:53: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:00:56.979, Quelle 07:00:53.034, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 4: bestehende Goldens bytegleich - Etikett: Regressionswache ---
+Am Basisstand: gruen - das Bein lief in der Gegenprobe nicht (sie faehrt nur B2); gruen im geerbten Kanon vorher (NAK-313 Etappe 2 Fortsetzung, 8299c7a1, Code gleich 8aeac2db und f77738a0: GRUEN 70/70, docs/beweise/roh/NAK-313-8299c7a-dirty.md) - Regressionswache.
+
+  Mutation G2 (eq-copilot/fixtures/state/schema2/aus-schema1-sensor.bin - bestehendes Golden aus-schema1-sensor.bin: das letzte Byte gekippt (XOR 0x01)), Stand 097bb663:
+    Datei eq-copilot/fixtures/state/schema2/aus-schema1-sensor.bin (binaer)
+    SHA-256 vorher 7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\G2-aus-schema1-sensor.bin (SHA-256 7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59)
+    Mutation (binaer): Byte 177 = 0x00 -> Byte 177 = 0x01
+    Mutiert 24.09.2026 07:10:34, SHA-256 mutiert 911d59da91fd1e6dff86e09a447a99083046a885509b91c673553a51175c61e5
+    Kette (R-313-11): Ein gekipptes Byte in aus-schema1-sensor.bin aendert seinen SHA-256 -> das neu erzeugte MANIFEST weicht vom committeten ab -> A12 rot.
+    Lauf unter der Mutation:
+      Bau (kein Bau: das Bein liest die Datei zur Laufzeit): Exit 0
+      A12: Exit 2, gefallene Pruefungen 1, Rohausgabe rot-G2-mutiert-A12.txt
+      Summe: STATE-FIXTURES ABWEICHEND (1)
+    Zusagepruefung: ABWEICHUNG: MANIFEST.json
+      gefallen: ABWEICHUNG: MANIFEST.json
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      (keine)
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (A12: STATE-FIXTURES ABWEICHEND (1); Einzelzeilen in NAK-313-e3-mutation-G2.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:10:35: SHA-256 7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59 - gleich dem Stand vor der Mutation
+      Bau (kein Bau): Exit 0
+      A12 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei))
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 5: A1 bitidentisch (Gen) - Etikett: Regressionswache ---
+Am Basisstand: gruen - das Bein lief in der Gegenprobe nicht (sie faehrt nur B2); gruen im geerbten Kanon vorher (NAK-313 Etappe 2 Fortsetzung, 8299c7a1, Code gleich 8aeac2db und f77738a0: GRUEN 70/70, docs/beweise/roh/NAK-313-8299c7a-dirty.md) - Regressionswache.
+
+  Mutation A1 (eq-copilot/plugin/src/PluginProcessor.cpp - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)), Stand 097bb663:
+    Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+    SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+    Mutation ab Zeile 641 (Stand vor der Mutation):
+      vorher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+      nachher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        |     buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-38 A1: 1 LSB
+    Mutiert 24.09.2026 07:10:52, SHA-256 mutiert 06a7b741ee18f0aeeb4a55173d35c7516602cbe0c52b1d5cf341894fb6e4f3dd
+    Kette (R-313-11): Das erste Sample jedes Gen-Blocks um 1 LSB verschoben -> der Nulltest vergleicht bitgenau -> A1 rot.
+    Lauf unter der Mutation:
+      Bau EqCopNullTest: Exit 0
+      A1: Binaer 07:10:58.120, Quelle 07:10:52.551, Binaer juenger: ja
+      A1: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-A1-mutiert-A1.txt
+      Summe: NULLTEST FEHLGESCHLAGEN
+    Zusagepruefung: FEHLER
+      gefallen: FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+      gefallen: FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      (keine)
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (A1: NULLTEST FEHLGESCHLAGEN; Einzelzeilen in NAK-313-e3-mutation-A1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:10:58: SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+      Bau EqCopNullTest: Exit 0
+      A1: Binaer 07:11:04.193, Quelle 07:10:58.276, Binaer juenger: ja
+      A1 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (NULLTEST OK)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-C1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+
+--- Haelfte 6: A16 bitidentisch (Probeeq) - Etikett: Regressionswache ---
+Am Basisstand: gruen - das Bein lief in der Gegenprobe nicht (sie faehrt nur B2); gruen im geerbten Kanon vorher (NAK-313 Etappe 2 Fortsetzung, 8299c7a1, Code gleich 8aeac2db und f77738a0: GRUEN 70/70, docs/beweise/roh/NAK-313-8299c7a-dirty.md) - Regressionswache.
+
+  Mutation A16 (eq-copilot/plugin/sonde/SondeProcessor.cpp - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter)), Stand 097bb663:
+    Datei eq-copilot/plugin/sonde/SondeProcessor.cpp (CRLF)
+    SHA-256 vorher 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\A16-SondeProcessor.cpp (SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b)
+    Mutation ab Zeile 510 (Stand vor der Mutation):
+      vorher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+      nachher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+        |     if (puffer.getNumSamples() > 0 && puffer.getNumChannels() > 0)   // MUTATION M-38 A16: 1 LSB
+        |         puffer.getWritePointer (0)[0] = std::nextafter (puffer.getSample (0, 0), 2.0f);
+    Mutiert 24.09.2026 07:11:04, SHA-256 mutiert 13a731e919b875a4aebbfe70b858d2477b0fdc5826bf7cbe0abe1bbcaeb42506
+    Kette (R-313-11): Das erste Sample jedes Probeeq-Blocks um 1 LSB verschoben -> A16 vergleicht bitgenau -> rot.
+    Lauf unter der Mutation:
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16: Binaer 07:11:10.247, Quelle 07:11:04.432, Binaer juenger: ja
+      A16: Exit 1, gefallene Pruefungen 37, Rohausgabe rot-A16-mutiert-A16.txt
+      Summe: SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler
+    Zusagepruefung: default_ist_bitidentisch_ueber_1000_bloecke
+      gefallen: FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      gefallen: FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      gefallen: FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      gefallen: FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - 33 weitere Pruefungen (Einzelzeilen in NAK-313-e3-mutation-A16.txt) - Grund: dieselbe Bitgleichheit: jede Pruefung, die den Probeeq-Ausgang bitgenau mit dem Eingang oder einem Vergleichslauf misst, sieht das verschobene erste Sample
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (A16: SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler; Einzelzeilen in NAK-313-e3-mutation-A16.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:11:11: SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b - gleich dem Stand vor der Mutation
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16: Binaer 07:11:16.912, Quelle 07:11:11.044, Binaer juenger: ja
+      A16 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-C1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

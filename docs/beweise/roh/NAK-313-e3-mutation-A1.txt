@@ -1,0 +1,41 @@
+NAK-313 Etappe 3 - Mutationslauf A1: eq-copilot/plugin/src/PluginProcessor.cpp - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf A1 - 24.09.2026 07:10:52 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+Mutation ab Zeile 641 (Stand vor der Mutation):
+  vorher:
+    |     if (n == 0 || kanaele == 0)
+    |         return;
+    | 
+  nachher:
+    |     if (n == 0 || kanaele == 0)
+    |         return;
+    |     buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-38 A1: 1 LSB
+    | 
+Mutiert 24.09.2026 07:10:52, SHA-256 mutiert 06a7b741ee18f0aeeb4a55173d35c7516602cbe0c52b1d5cf341894fb6e4f3dd
+Lauf unter der Mutation:
+  Bau EqCopNullTest: Exit 0
+  A1: Binaer 07:10:58.120, Quelle 07:10:52.551, Binaer juenger: ja
+  A1: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-A1-mutiert-A1.txt
+    Summe: NULLTEST FEHLGESCHLAGEN
+  gefallen in A1:
+    - FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+    - FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:10:58: SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+  Bau EqCopNullTest: Exit 0
+  A1: Binaer 07:11:04.193, Quelle 07:10:58.276, Binaer juenger: ja
+  A1: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-A1-zurueck-A1.txt
+    Summe: NULLTEST OK
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-C1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

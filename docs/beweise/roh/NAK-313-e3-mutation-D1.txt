@@ -1,0 +1,46 @@
+NAK-313 Etappe 3 - Mutationslauf D1: eq-copilot/plugin/state/NakamaState.cpp - lade: die Duplikaterkennung entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf D1 - 24.09.2026 07:04:17 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D1-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+Mutation ab Zeile 2317 (Stand vor der Mutation):
+  vorher:
+    |     if (namenZusammengelegt (v, eigenschaften))
+    |         return nurLesen ("duplicate property name in the state tree", {});
+    | 
+  nachher:
+    |     // MUTATION D1: Erkennung entfernt
+    | 
+Mutiert 24.09.2026 07:04:17, SHA-256 mutiert a0c5b6b15e48c5f6ea7bcd6919a5f94b91746f17d393d50f9c582bef15fac1ee
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:04:21.826, Quelle 07:04:17.852, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 9, Rohausgabe rot-D1-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 362 Pruefungen ok, 9 Fehler
+  gefallen in B2:
+    - FEHLER  313/M-29 doppelte_eigenschaft_bleibt_read_only (Bibliothek): Common.future = A, dann B - nurLesen mit Duplikatgrund, speichere = Originalbytes, Reload nurLesen  [geladen (4 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 6 Eintraege), Reload geladen]
+    - FEHLER  313/M-29 doppelte_eigenschaft_bleibt_read_only (Prozessor): setzeBindung verweigert, 0 Host-Dirty, getStateInformation bytegleich  [Prozessor schreibbar, setzeBindung (pre true), Host-Dirty 1, getStateInformation neu (Common 7 Eintraege), Reload geladen]
+    - FEHLER  313/M-30 (a) (Teilfall von 313/M-29) label_doppelt: nurLesen bytegleich, weder A noch B als Label gelesen  [geladen (4 ms), Grund '', Label 'B', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+    - FEHLER  313/M-30 (b) (Teilfall von 313/M-29) wurzel_schema_doppelt: nurLesen bytegleich  [geladen (4 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+    - FEHLER  313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt: nurLesen bytegleich, keine Migration  [migriert (4 ms), Grund '', Label '', instance_id '66666666-7777-8888-9999-000000000000', Save neu (Common 5 Eintraege)]
+    - FEHLER  313/M-34 duplikat_tief_und_am_rand (a): Duplikat in einem Kind von Common (Ebene 2) - nurLesen bytegleich  [geladen (5 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+    - FEHLER  313/M-34 duplikat_tief_und_am_rand (b): Common mit 65.536 Eintraegen, davon ein Name doppelt - nurLesen bytegleich  [nurLesen (562 ms), Grund 'state leaves no bounded headroom for a losslessly reloadable save', Label '', instance_id '', Save = Originalbytes]
+    - FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = Originalbytes  [geladen (5 ms), Grund '', Label 'Klavier A', instance_id '11111111-2222-3333-4444-555555555555', Save neu (Common 6 Eintraege)]
+    - FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:04:40: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:04:45.173, Quelle 07:04:40.366, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-D1-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

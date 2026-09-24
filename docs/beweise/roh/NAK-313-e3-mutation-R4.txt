@@ -1,0 +1,49 @@
+NAK-313 Etappe 3 - Mutationslauf R4: eq-copilot/plugin/state/NakamaState.cpp - baum: eine Knotenzahlgrenze 64 in den Riegel gesetzt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R4 - 24.09.2026 07:03:33 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\R4-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+Mutation ab Zeile 291 (Stand vor der Mutation):
+  vorher:
+    |         if (tiefe >= kMaxStateTiefe || ! utf8CString (false, tiefe == 0))
+    | 
+  nachher:
+    |         if (++mutationKnoten > 64)   // MUTATION R4: Knotenzahlgrenze
+    |             return false;
+    |         if (tiefe >= kMaxStateTiefe || ! utf8CString (false, tiefe == 0))
+    | 
+Mutation ab Zeile 317 (Stand vor der Mutation):
+  vorher:
+    |     int eigenschaftenGesamt = 0;
+    | 
+  nachher:
+    |     int eigenschaftenGesamt = 0;
+    |     int mutationKnoten = 0;   // MUTATION R4
+    | 
+Mutiert 24.09.2026 07:03:33, SHA-256 mutiert 01a966a625542329f005a7cf2cb57a2dff2ecba2918b3f0033e90a190e0a6134
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:03:37.150, Quelle 07:03:33.303, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-R4-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler
+  gefallen in B2:
+    - FEHLER  313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt  [Load 1 nurLesen (3 ms, Grund 'state leaves no bounded headroom for a losslessly reloadable save'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl  [Load 1 ignoriert (0 ms, Grund ''), Save neu (Common 5 Eintraege), Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:03:55: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:03:59.441, Quelle 07:03:55.432, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-R4-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

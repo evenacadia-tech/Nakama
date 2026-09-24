@@ -1,0 +1,59 @@
+NAK-313 Etappe 3 - Rotbeweis M-34 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-34 - T3-02-05 - R-313-2 - Duplikat tief und am Sammlungsrand
+Zustand: (a) Duplikat future in einem Kindknoten von Common (Ebene 2); (b) Common mit 65.536 Eintraegen, davon ein Name (f000001) doppelt.
+Ereignis: lade.
+Zusage: Beide nurLesen bytegleich; die Erkennung zaehlt, sie sammelt keine Namen: Vor- und Nachzaehlung ueber alle Ebenen.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, 313/M-34 duplikat_tief_und_am_rand (a), (b).
+
+--- Haelfte 1: (a) und (b) nurLesen bytegleich - Etikett: heute rot ---
+Pruefung: 313/M-34 duplikat_tief_und_am_rand (a); 313/M-34 duplikat_tief_und_am_rand (b)
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  FEHLER  313/M-34 duplikat_tief_und_am_rand (a): Duplikat in einem Kind von Common (Ebene 2) - nurLesen bytegleich  [geladen (5 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+  FEHLER  313/M-34 duplikat_tief_und_am_rand (b): Common mit 65.536 Eintraegen, davon ein Name doppelt - nurLesen bytegleich  [geladen (556 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 65535 Eintraege)]
+  -> am Basisstand rot: heute rot
+
+  Mutation D5 (eq-copilot/plugin/state/NakamaState.cpp - Vor- und Nachzaehlung symmetrisch auf die Ebenen 0 und 1 beschnitten), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\D5-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 297 (Stand vor der Mutation):
+      vorher:
+        |         eigenschaftenGesamt += eigenschaften;   // R-313-2: die Vorzaehlung, jede Ebene
+      nachher:
+        |         if (tiefe < 2)   // MUTATION D5: Vorzaehlung nur Ebene 0 und 1
+        |             eigenschaftenGesamt += eigenschaften;
+    Mutation ab Zeile 361 (Stand vor der Mutation):
+      vorher:
+        |     if (tiefe >= kMaxStateTiefe)
+        |         return false;
+        |     summe += knoten.getNumProperties();
+      nachher:
+        |     if (tiefe >= kMaxStateTiefe)
+        |         return false;
+        |     if (tiefe >= 2)   // MUTATION D5: Nachzaehlung nur Ebene 0 und 1
+        |         return true;
+        |     summe += knoten.getNumProperties();
+    Mutiert 24.09.2026 07:07:15, SHA-256 mutiert 9df0703069f14bccc7081dc06f665b49787a337f0b08e11708f79b66def3a7d0
+    Kette (R-313-11): Beide Zaehlungen symmetrisch nur auf Ebene 0 und 1: das Duplikat im Kind von Common (Ebene 2) zaehlt keine Seite -> gleiche Zahl -> (a) geladen; (b) liegt auf Ebene 1 und bleibt erkannt; eindeutige Staende zaehlen beidseitig gleich, M-33 bleibt gruen.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:07:20.033, Quelle 07:07:15.971, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-D5-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 369 Pruefungen ok, 2 Fehler
+    Zusagepruefung: 313/M-34 duplikat_tief_und_am_rand (a)
+      gefallen: FEHLER  313/M-34 duplikat_tief_und_am_rand (a): Duplikat in einem Kind von Common (Ebene 2) - nurLesen bytegleich  [geladen (5 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      (keine)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 369 Pruefungen ok, 2 Fehler; Einzelzeilen in NAK-313-e3-mutation-D5.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:07:38: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:07:42.583, Quelle 07:07:38.617, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

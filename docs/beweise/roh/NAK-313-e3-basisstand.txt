@@ -1,0 +1,398 @@
+NAK-313 Etappe 3 - Gegenprobe am Basisstand (heute rot), Bein B2 EqCopStateMigrationTest
+
+Zweck: die neuen Faelle 313/M-17 bis 313/M-37 laufen VOR der Reparatur gegen den
+unveraenderten Produktcode (Manifest docs/beweise/NAK-313.md §8.1, R-313-12).
+Produktcode: HEAD f77738a0a6874760caf9828d46944f8810916b59 (Basis der Etappe 3),
+  eq-copilot/plugin/state/NakamaState.cpp unveraendert (git diff HEAD leer; Blob
+  a03fe941525770a3f513325c77b22db204e55f62, SHA-256
+  9bc6ab829b0802f29ff9ff66b04d3cf768c9fc09921d69b5a9ab782db9dc97a5).
+Testdatei: eq-copilot/plugin/tests/StateMigrationTestMain.cpp mit den neuen Faellen,
+  SHA-256 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3 (Stand der Gegenprobe).
+Bau: cmake --build eq-copilot/build --config Release --target EqCopStateMigrationTest (aus pwsh),
+  24.09.2026; Binaer 2026-09-24 06:43:25.087, juenger als die Testquelle (06:42:49.028) und
+  NakamaState.cpp (04:13:07.639).
+Lauf: 24.09.2026, Start 06:43:41 Uhr, Dauer 20,2 s, Exitcode 1.
+Ergebnis: 346 Pruefungen ok, 25 Fehler. Gefallen sind genau die Haelften mit Etikett
+  "heute rot" (M-17, M-18, M-19, M-20, M-21, M-24 G+1 und 262.144 ohne label, M-29, M-30,
+  M-31, M-34) und M-35 (Datei fehlt: "heute nicht messbar") samt den zwei Abschnittszeilen
+  G7 (traegt die Dateipruefung von M-35) und G14. Gruen: die Wachen M-22, M-23, M-24 (G),
+  M-25, M-26, M-27, M-32, M-33, M-37.
+
+--- vollstaendige Ausgabe ---
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v2.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v2.json ist gueltiges JSON
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 120  [120]
+  ok      anzahl_parameter_v1 == 109  [109]
+  ok      anzahl_host_parameter == 112  [112]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 2
+  ok      v1-Datei bleibt bei dsp_schema_version 1
+  ok      v1-Datei bleibt bei 109 Kennungen
+  ok      ids-Liste hat 120 Eintraege
+  ok      alle 120 IDs in Vertragsreihenfolge identisch  [120]
+  ok      die 109 v1-IDs stehen unveraendert am Anfang der v2-Reihenfolge  [109]
+  ok      112 Host-Parameter als Praefix, acht occupied dahinter  [112/8]
+  ok      die drei v2-Host-Parameter haengen in R2/R3/R4-Reihenfolge hinten an
+  ok      120 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch, Host-Attribut) deckungsgleich  [120]
+  ok      jeder v1-Eintrag ist woertlich uebernommen, nur um layout und host_parameter ergaenzt  [109/109]
+  ok      indexVonId: erste, letzte v1, letzte v2, nicht vorhandene ID
+  ok      nakama-preset-v1.json ist gueltiges JSON
+  ok      preset_schema_version == 1
+  ok      das Preset nennt das Layout, fuer das es geschrieben ist
+  ok      die sechs verbotenen Presetfelder sind in Vertrag und Leser dieselbe Menge  [adresse,eq_enabled,host_bus_name,instance_id,label,undo_ring]
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v2.json, v1 unveraendert abgeleitet
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [7/7]
+  ok      standardSatz() ohne Zone hasht wie dto/gueltig/default.json  [67c7eed5cba0acf3030e4e36fd0d875042bed6093ac9069a9ea8b5caec01beda]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [29/29]
+  ok      D8 Gegenprobe: dieses Bein sieht FE_INVALID (sqrt von -1)
+  ok      D8 Ziel: dto/gueltig/gemischt.json mit zwei Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, DTO): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, DTO): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, DTO): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, DTO: dto/gueltig/maxima.json)  [ ]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      neunte Zone faellt vor dem Hash  [zone_anzahl]
+  ok      doppelte Zonen-id faellt vor dem Hash  [zone_doppelt]
+  ok      unsortierte Zonenliste faellt vor dem Hash  [zone_sortierung]
+  ok      low == high faellt vor dem Hash  [bereich]
+  ok      low unter 20 Hz faellt vor dem Hash  [bereich]
+  ok      high ueber 20 kHz faellt vor dem Hash  [bereich]
+  ok      Zonen-id 8 faellt vor dem Hash  [bereich]
+  ok      == DTO: 7 gueltige gehasht, 29 ungueltige vor dem Hash abgelehnt
+  ok      MANIFEST.json ist gueltiges JSON
+  ok      gueltige Presets angenommen  [3/3]
+  ok      ungueltige Presets mit dem erwarteten Grund abgelehnt  [17/17]
+  ok      D8 Ziel: preset/gueltig/gemischt.json mit Zonen gelesen  [ ]
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-minus-1  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-minus-1  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-minus-1
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-8  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-8  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-8
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-2147483648  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-2147483648  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-2147483648
+  ok      D8 zone_id_ausserhalb_faellt_mit_bereich (M-66, Preset): zone-id-9007199254740991  [Grund bereich @ schutz_zonen[0].id]
+  ok      D8 zone_id_ausserhalb_faellt_ohne_konvertierung (M-66, Preset): zone-id-9007199254740991  [kein FE_INVALID]
+  ok      D8 das Ziel bleibt unveraendert (M-66, Preset): zone-id-9007199254740991
+  ok      D8 gueltige Rand-ids 0 bis 7 kommen exakt an, ohne FE_INVALID (M-66, Preset: vom Writer geschrieben)  [ ]
+  ok      der Preset-Writer erzeugt preset/gueltig/default.json bytegleich  [ 3282 Bytes]
+  ok      ein geladenes Preset schaltet den eingeschalteten Rollenschalter nicht aus
+  ok      und schaltet den ausgeschalteten nicht ein (nichts Ungefragtes)
+  ok      der Klanginhalt kommt in beiden Faellen identisch an
+  ok      Preset schreiben->lesen->schreiben ist bytegleich und feldgleich  [ ]
+  ok      == Preset: 3 gueltige gelesen, 17 ungueltige mit Grund abgelehnt, Writer bytegleich
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)  [Rohfassung = Writer-Bytes, Mutant 202 Bytes, Datei fehlt]
+  ok      Intent-Golden main-intent-v1.bin bytegleich zum Writer
+  ok      Intent-Golden laedt normal
+  ok      und traegt vier Intents, zwei Schutzangaben, zwei Kanten, Revision 8
+  ok      Save nach Load des Intent-Goldens ist bytegleich
+  ok      main-binding-v1.bin liegt eingefroren auf der Platte  [main-binding-v1.bin]
+  ok      M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert  [geladen, Bindung '0123456789abcdef0123456789abcdef']
+  ok      M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes  [256 Bytes vom Writer, 256 auf der Platte]
+  ok      M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich
+  ok      legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)  [2397 Bytes vom Writer, 2397 auf der Platte, Kinder Common,RetainedMainProject]
+  ok      legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich  [geladen, 3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Grund '']
+  ok      Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+  ok      Dsp-Golden laedt normal
+  ok      und traegt Revision 12, zwei Zonen, einen Undo-Eintrag und Slot 2 belegt
+  ok      Layout-v1-Golden layout-v1.bin bytegleich
+  ok      ein v1-Stand laedt verlustfrei und wird als migriert gemeldet
+  ok      die drei v2-Host-Parameter bekommen ihren Default, nichts wird erfunden
+  ok      occupied := enabled ODER ein Wert weicht ab - das ausgeschaltete Band 4 ueberlebt
+  ok      sechs nie beruehrte Slots bleiben frei  [6]
+  ok      ein v1-Stand bringt kein Dsp-Kind mit: Revision 0, keine Zone, kein Undo
+  ok      der Writer haelt das Vorzeichen der Null (var haelt 0.0 == -0.0)
+  ok      minus null gilt bitgenau als Abweichung vom Default (kein Epsilon)
+  ok      der gespeicherte Stand ist Layout v2 und migriert nicht erneut
+  ok      Save nach Load des migrierten Standes ist bytegleich
+  ok      die migrierte Belegung landet im Kind Dsp und ueberlebt
+  ok      unbekannte Eigenschaft im Dsp-Kind macht den Stand NICHT read-only
+  ok      sie ueberlebt den Roundtrip, und die echte Aenderung kommt an
+  ok      ein Dsp-Kind ohne bekannten Inhalt laedt schreibbar
+  ok      leerer Dsp-Inhalt mit unbekannter Eigenschaft: das Kind bleibt, die Eigenschaft auch
+  ok      ohne unbekannte Eigenschaft faellt das leere Dsp-Kind weiterhin weg
+  ok      ein unbekannter Wurzelschluessel im DTO faellt  [ ]
+  ok      Dsp bei legacy: read-only mit Originalbytes  [Dsp is not allowed for legacy]
+  ok      Layout v1 MIT Dsp-Kind ist ein Widerspruch: read-only mit Originalbytes  [Parameters is layout 1 but a Dsp child is present]
+  ok      Dsp ohne state_revision macht den Stand read-only  [Dsp.state_revision is missing]
+  ok      unbekanntes Layout-Major: read-only mit Originalbytes  [Parameters dsp_schema_version 3 is unknown to this version (it reads layout 1 and 2)]
+  ok      ein frischer active_probe-Stand schreibt kein Dsp-Kind
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters und Dsp laedt (Bundle NkAc)
+  ok      120 Parameterwerte bit-exakt durch den Roundtrip  [120]
+  ok      Dsp-Kind feldgleich nach dem Roundtrip: Revision, Zonen, Undo-Ring, Cursor
+  ok      Parameters- und Dsp-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [d7efcb6a2d98b93b6d345ede11d3fdc8bd374cc0ef0398800ac61e5d1b9b6924]
+  ok      Dsp nutzt flache Arrays: kein Kindknoten, occupied_v1/schutz_zonen_v1/undo_ring_v1 sind Arrays  [0 Kindknoten]
+  ok      und der Baum bleibt weit unter der 64-Knoten-Grenze des Byte-Riegels  [4]
+  ok      Slot mit eingeschaltetem Dynamic laedt
+  ok      Slot mit ausgeschaltetem Dynamic laedt
+  ok      dynamicwerte_ueberleben_aus_und_ein_bitgleich: Ausschalten aendert nur dynamic_enabled
+  ok      Slot mit wieder eingeschaltetem Dynamic laedt
+  ok      beim Wiedereinschalten stehen die fuenf Werte unveraendert bereit
+  ok      channel_mode_ist_diskret_und_ungekoppelt: der Typ bleibt bei bell
+  ok      kein_slot_erbt_den_modus  [0]
+  ok      voller Undo-Ring (32 Eintraege, 8 Zonen) laedt und ist bytegleich  [45669 Bytes]
+  ok      voller Dsp-Stand bleibt weit unter der 16-MiB-Grenze  [45669 Bytes]
+  ok      33. Undo-Eintrag macht den Stand read-only  [Dsp.undo_ring_v1 must be an array of at most 32 entries]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 120 Werte bit-exakt, voller Undo-Ring
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for passive_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [16]
+  ok      post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt
+  ok      == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      instance_address_alias_vectors  [6/6]
+  ok      instance_alias_target_recomputed_and_matched
+  ok      instance_alias_unknown_fail_closed
+  ok      instance_address_empty_uses_fresh_uuid  [10f0c38a04df4a139075d53d32171b1c]
+  ok      legacy_instance_id_save_load_bytegleich
+  ok      == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [geladen / geladen, erster Save = Eingang, zweiter Save = erster]
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (537 ms), Grund 'NakamaState schema  is unknown to this version (it reads schema 2)']
+  ok      65.537 Eintraege in einer Sammlung werden verworfen (313/M-23: Zustand wie vor dem Aufruf)  [ignoriert, instance_id 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (2159 ms), Grund 'NakamaState schema  is unknown to this version (it reads schema 2)']
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16638027]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16672153]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      312/M-115 read-only: main-intent-v1.bin + Bestandskind (in main neben MainProject)  [nurLesen, Grund 'RetainedMainProject is not allowed for main', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: dsp-v2-voll.bin + Bestandskind (in active_probe)  [nurLesen, Grund 'RetainedMainProject is not allowed for active_probe']
+  ok      312/M-115 read-only: Golden mit plugin_kind passive_probe  [nurLesen, Grund 'RetainedMainProject is not allowed for passive_probe']
+  ok      312/M-115 read-only: Golden mit doppeltem Bestandskind  [nurLesen, Grund 'duplicated child', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: Golden mit Bestandskind schema 2  [nurLesen, Grund 'RetainedMainProject schema is unknown to this version (it reads schema 1)', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: Golden mit ungerader confirmed_members_v1  [nurLesen, Grund 'RetainedMainProject.confirmed_members_v1 must be an even array with at most 64 pairs', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: Golden mit doppelter instance_id im Bestandskind  [nurLesen, Grund 'RetainedMainProject.confirmed_members_v1 contains a duplicate instance_id', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: Golden mit 65 Paaren im Bestandskind  [nurLesen, Grund 'RetainedMainProject.confirmed_members_v1 must be an even array with at most 64 pairs', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: Golden mit Intentinhalt ohne intent_revision_v1  [nurLesen, Grund 'RetainedMainProject carries intent data without intent_revision_v1', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 read-only: Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject)  [nurLesen, Grund 'MainProject is not allowed for legacy', Prozessor verweigert, 0 Dirty]
+  ok      312/M-115 kind_matrix_des_bestandskinds: 10 Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund  [10]
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [5964355bd8104fbe8a258f416e9d1be9]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, 0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60  [geladen ja, Rueckgabe false, Host-Dirty nach dem Laden 0 (beim Laden 0), Reconnect-Anforderungen 0, Save bytegleich ja]
+  ok      313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler): 0 Reconnect-Anforderungen  [geladen ja, Rueckgabe false, Host-Dirty nach dem Laden 0 (beim Laden 0), Reconnect-Anforderungen 0, Save bytegleich ja]
+  ok      313/M-04 api_rolle_mit_unveraendert_langem_label (R-313-3 Satz 3): am geladenen Stand setzeBindung (post, 121, 61) - Rueckgabe true, genau 1 Host-Dirty, Rolle post, Label und Paarname 121/61 unveraendert  [Rueckgabe true, Host-Dirty 1, Rolle 'post', Label 121 Zeichen, Paarname 61 Zeichen]
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau 2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes mit Bestandskind und Speichern melden 0  [Wechsel 2, nach dem Speichern 2, Laden des Goldens 0]
+  ok      312/M-117 read_only_verweigert_den_wechsel (fremdes Major 9): sensor und hub verweigert, Rolle, Label, Paar-ID, Common und die sieben im Speicher unveraendert, Originalbytes bytegleich, 0 Host-Dirty  [Grund 'NakamaState schema 9 is unknown to this version (it reads schema 2)', Bindung nach sensor gleich, nach hub gleich, Host-Dirty 0]
+  ok      312/M-117 read_only_verweigert_den_wechsel (Golden als main mit Bestandskind (Kind-Matrix)): sensor und hub verweigert, Rolle, Label, Paar-ID, Common und die sieben im Speicher unveraendert, Originalbytes bytegleich, 0 Host-Dirty  [Grund 'main requires exactly one MainProject', Bindung nach sensor gleich, nach hub gleich, Host-Dirty 0]
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [80b61e23a0f3417d9801ff630248387b]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+  ok      M-11 Aufbau: Main mit Bindung
+  ok      M-11 Aufbau: ein Intent ist gesetzt
+  ok      M-11 Aufbau: ein Assistentenschritt ist offen
+  ok      M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an (Vorbedingung der Zusage)  [9223372036854775807 / 9223372036854775807]
+  ok      M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt int64max - kein Ueberlauf auf einen negativen Wert  [9223372036854775807]
+  ok      M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [497 vs. 497 Bytes]
+  ok      M-11: kein abgewiesener Handgriff meldet Host-Dirty  [0]
+  ok      M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  ok      M-11: beide Revisionen kommen als int64max zurueck  [9223372036854775807 / 9223372036854775807]
+  ok      M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [1 Eintrag/Eintraege]
+  ok      == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+  ok      312/M-49 (B2): die eingefrorenen Statebytes s1 passen zu ihrer Zeile im Parametergolden (Laenge und SHA-256)  [s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810 / s1 5745 4ea7c41e26e7c53cfb99d7038b45f391cbfa8f16ac2e6738f98482448a917810]
+  ok      312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 5745 Byte, bytegleich]
+  ok      == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+  ok      312/M-110 rollenwechsel_erhaelt_den_bestand_live (Legacy): alle sieben unveraendert gehalten, das Quellenmodell zeigt 0 Zeilen, die Handgriffe am Bestand verweigern  [3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Zeilen in Legacy 0, Handgriffe verweigert]
+  ok      312/M-110 rollenwechsel_erhaelt_den_bestand_live (zurueck zu Main): alle sieben wertgleich zum Stand vor dem Wechsel, das Quellenmodell zeigt die Mitglieder wieder  [3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Zeilen 3]
+  ok      312/M-119 welche_bestaende (Teilfall von 312/M-110): sensor, pre, post und hub - der ruhende Bestand bleibt unveraendert und ist nach hub vollstaendig zurueck; Label, Paar-ID und Messposition folgen der Rollenwahl in Common, nach post ohne Paar traegt der Stand keine pair_id, die Projektbindung bleibt  [Paar nach pre 'paar-b', nach post ohne pair_id, 3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding]
+  ok      312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern (Form, Weg Z-A): der Stand in Legacy traegt Common und das Bestandskind RetainedMainProject (schema 1) mit denselben Eigenschaften wie MainProject, kein MainProject; speichere (lade (x)) == x bytegleich  [Kinder Common,RetainedMainProject, Eigenschaften gleich, Roundtrip bytegleich, geladen]
+  ok      312/M-111 rollenwechsel_erhaelt_den_bestand_ueber_speichern: nach Laden in eine frische Instanz und Rueckkehr zu hub sind alle sieben wertgleich - Live-Rueckweg und gespeicherter Rueckweg ergeben denselben Bestand; das Laden meldet kein Host-Dirty  [3 Mitglieder, 2 Passagen, 3 Intents, 2 Schutzangaben, 2 Beziehungen, Revision 7, Assistent finding, Host-Dirty beim Laden 0]
+  ok      312/M-112 unbekannte_felder_reisen_mit (Teilfall von 312/M-111): die unbekannte Eigenschaft wandert mit dem Bestand vom MainProject ins Bestandskind und zurueck, die in Common bleibt in Common - main, legacy, speichern, laden, main, speichern  [Kinder am Ende Common,MainProject]
+  ok      312/M-111: nach main, legacy, speichern, laden, main ist der gespeicherte Stand bytegleich zum Stand vor dem Wechsel  [2396 / 2396 Bytes]
+  ok      312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject  [legacy gespeichert bytegleich]
+  ok      312/M-121 (a) leerer_bestand_kein_bestandskind: ohne Bestand schreibt legacy nur Common - die Bytes wie heute  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 229 Bytes, Kinder Common, Zeilen 0]
+  ok      312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [1 Mitglieder, 1 Passagen, 1 Intents, 1 Schutzangaben, 1 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 1981 Bytes, Kinder Common,RetainedMainProject, Zeilen 1]
+  ok      312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [64 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 138635 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+  M-121 Kosten: Legacy mit maximalem Bestand 138635 Bytes, Main 138625 Bytes, Differenz 10 Bytes, Abstand zur 16-MiB-Grenze 16638581 Bytes
+  ok      312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [20 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 115711 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+  ok      312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [21 Mitglieder, 64 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 116232 Bytes, Kinder Common,RetainedMainProject, Zeilen 20]
+  ok      312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [2 Mitglieder, 2 Passagen, 256 Intents, 256 Schutzangaben, 256 Beziehungen, Revision 9223372036854775807, Assistent verdict, Legacy 71704 Bytes, Kinder Common,RetainedMainProject, Zeilen 2, leer 2, gefuellt 2]
+  ok      == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+  FEHLER  313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 geladen (545 ms, Grund ''), Save neu (Common 65537 Eintraege), Load 2 ignoriert, zweiter Save anders]
+  FEHLER  313/M-17 common_65536_ohne_label_bleibt_lesbar (b): speichere liefert die Originalbytes  [Load 1 geladen (545 ms, Grund ''), Save neu (Common 65537 Eintraege), Load 2 ignoriert, zweiter Save anders]
+  FEHLER  313/M-17 common_65536_ohne_label_bleibt_lesbar (c): zweiter Load wieder nurLesen bytegleich, nie ignoriert  [Load 1 geladen (545 ms, Grund ''), Save neu (Common 65537 Eintraege), Load 2 ignoriert, zweiter Save anders]
+  FEHLER  313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65.538)  [Load 1 geladen (574 ms, Grund ''), Save neu (Common 65536 Eintraege), Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-20 (Teilfall von 313/M-17) Paarname ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [Prozessor schreibbar, setzeBindung (sensor true), Host-Dirty 1, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+  FEHLER  313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 geladen (549 ms, Grund ''), Save neu (Common 65535 Eintraege), Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-21 (Teilfall von 313/M-17) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [Prozessor schreibbar, setzeBindung (pre true, hub true), Host-Dirty 2, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+  FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 geladen (561 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustand, den der naechste Load ignoriert  [Prozessor schreibbar, setzeBindung (pre true), Host-Dirty 1, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+  FEHLER  313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 geladen (551 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-19 (Teilfall von 313/M-18) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [Prozessor schreibbar, setzeBindung (pre true, hub true), Host-Dirty 2, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+  ok      313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)  [Load 1 geladen (547 ms, Grund ''), Save neu (Common 65534 Eintraege), Load 2 geladen, zweiter Save = erster]
+  ok      313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A  [Load schreibbar, pre true, hub true, Common in Save A 65536, Load von Save A schreibbar (593 ms, Grund ''), Save B = Save A]
+  FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 geladen (17 ms, Grund ''), Save neu (Common 10 Eintraege), Load 2 geladen, zweiter Save = erster]
+  ok      313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258412, Load geladen (16 ms, Grund ''), Prozessor schreibbar/schreibbar, pre true, hub true, nach hub 258417 Eintraege, Reload schreibbar (Grund ''), Save bytegleich]
+  FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 geladen (16 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  ok      313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258413, Load geladen (16 ms, Grund ''), Prozessor schreibbar/schreibbar, pre true, hub true, nach hub 258417 Eintraege, Reload schreibbar (Grund ''), Save bytegleich]
+  FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (262.144 ohne label): nurLesen bytegleich, nie ignoriert  [Load 1 geladen (18 ms, Grund ''), Save neu (Common 10 Eintraege), Load 2 ignoriert, zweiter Save anders]
+  ok      313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt  [Load 1 geladen (4 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  ok      313/M-26 knotentiefe_rand_rueckschreibbar: eine Kette bis Ebene 64 bleibt ignoriert  [ignoriert]
+  ok      313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl  [Load 1 geladen (4 ms, Grund ''), Save = Originalbytes, Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-29 doppelte_eigenschaft_bleibt_read_only (Bibliothek): Common.future = A, dann B - nurLesen mit Duplikatgrund, speichere = Originalbytes, Reload nurLesen  [geladen (4 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 6 Eintraege), Reload geladen]
+  FEHLER  313/M-29 doppelte_eigenschaft_bleibt_read_only (Prozessor): setzeBindung verweigert, 0 Host-Dirty, getStateInformation bytegleich  [Prozessor schreibbar, setzeBindung (pre true), Host-Dirty 1, getStateInformation neu (Common 7 Eintraege), Reload geladen]
+  FEHLER  313/M-30 (a) (Teilfall von 313/M-29) label_doppelt: nurLesen bytegleich, weder A noch B als Label gelesen  [geladen (4 ms), Grund '', Label 'B', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+  FEHLER  313/M-30 (b) (Teilfall von 313/M-29) wurzel_schema_doppelt: nurLesen bytegleich  [geladen (4 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+  FEHLER  313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt: nurLesen bytegleich, keine Migration  [migriert (4 ms), Grund '', Label '', instance_id '66666666-7777-8888-9999-000000000000', Save neu (Common 5 Eintraege)]
+  ok      313/M-32 (Teilfall von 313/M-29) fremde_wurzel_mit_doppeltem_namen: ignoriert, Zustand unveraendert  [ignoriert]
+  FEHLER  313/M-34 duplikat_tief_und_am_rand (a): Duplikat in einem Kind von Common (Ebene 2) - nurLesen bytegleich  [geladen (5 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 5 Eintraege)]
+  FEHLER  313/M-34 duplikat_tief_und_am_rand (b): Common mit 65.536 Eintraegen, davon ein Name doppelt - nurLesen bytegleich  [geladen (556 ms), Grund '', Label 'Grenzlabel', instance_id 'cccccccccccccccccccccccccccccccc', Save neu (Common 65535 Eintraege)]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin nurLesen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 3 is unknown to this version (it reads schema 2)', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin geladen  [geladen, Grund '', Save anders]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  ok      313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin geladen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+  FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = Originalbytes  [Datei fehlt: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state\schema2\doppelte-eigenschaft-v1.bin]
+  FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 346 Pruefungen ok, 25 Fehler

@@ -1,0 +1,62 @@
+NAK-313 Etappe 3 - Mutationslauf T1: eq-copilot/plugin/tests/StateMigrationTestMain.cpp - Testhelfer: baumMitEigenschaftszahl und baumMitGesamteintraegen schreiben wieder lauter gleiche Namen x
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf T1 - 24.09.2026 07:11:33 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/tests/StateMigrationTestMain.cpp (LF)
+SHA-256 vorher 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\T1-StateMigrationTestMain.cpp (SHA-256 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3)
+Mutation ab Zeile 406 (Stand vor der Mutation):
+  vorher:
+    |         s.writeString (eindeutig (i + 1));
+    |         juce::var().writeToStream (s);
+    |     }
+    |     s.writeCompressedInt (0);
+    |     s.flush();
+    |     return b;
+    | }
+    | 
+    | juce::MemoryBlock baumMitGesamteintraegen
+    | 
+  nachher:
+    |         s.writeString ("x");   // MUTATION T1: gleiche Namen
+    |         juce::var().writeToStream (s);
+    |     }
+    |     s.writeCompressedInt (0);
+    |     s.flush();
+    |     return b;
+    | }
+    | 
+    | juce::MemoryBlock baumMitGesamteintraegen
+    | 
+Mutation ab Zeile 432 (Stand vor der Mutation):
+  vorher:
+    |             s.writeString (eindeutig (i + 1));
+    | 
+  nachher:
+    |             s.writeString ("x");   // MUTATION T1: gleiche Namen
+    | 
+Mutiert 24.09.2026 07:11:33, SHA-256 mutiert 3ac395309c9bc6d8a4bbd50e6b50daf7645bf147da8435997782e59ebec1e39a
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:11:59.496, Quelle 07:11:33.304, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 3, Rohausgabe rot-T1-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 368 Pruefungen ok, 3 Fehler
+  gefallen in B2:
+    - FEHLER  65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (9 ms), Grund 'duplicate property name in the state tree']
+    - FEHLER  262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige Namen, read-only aus dem Schemagrund)  [nurLesen (40 ms), Grund 'duplicate property name in the state tree']
+    - FEHLER  == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:12:15: SHA-256 8d52fc4ec765e093dd16f898736ade90f87036ae09289d56f2315d3d92940bd3 - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:12:41.236, Quelle 07:12:15.242, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-T1-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-C1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-G2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

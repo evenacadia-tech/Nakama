@@ -1,0 +1,52 @@
+NAK-313 Etappe 3 - Rotbeweis M-23 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-23 - T3-02-02 - Byte-Riegel unveraendert
+Zustand: Wurzel NakamaState mit 65.537 Eigenschaften (baumMitEigenschaftszahl, eindeutige Namen); Zustand vorher frisch ("aaaa...").
+Ereignis: lade.
+Zusage: ignoriert; instance_id bleibt "aaaa..." - Zustand wie vor dem Aufruf.
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G9, bestehender Fall "65.537 Eintraege in einer Sammlung werden verworfen", um die Zustandspruefung ergaenzt (313/M-23).
+
+--- Haelfte 1: ignoriert, Zustand unveraendert - Etikett: Regressionswache ---
+Pruefung: 65.537 Eintraege in einer Sammlung werden verworfen (313/M-23
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  ok      65.537 Eintraege in einer Sammlung werden verworfen (313/M-23: Zustand wie vor dem Aufruf)  [ignoriert, instance_id 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
+  -> am Basisstand gruen: Regressionswache
+
+  Mutation R1 (eq-copilot/plugin/state/NakamaState.cpp - zaehler: Sammlungsgrenze um eins erhoeht (wert > kMaxEintraegeJeSammlung + 1)), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\R1-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 203 (Stand vor der Mutation):
+      vorher:
+        |         if (! komprimierteZahl (wert) || wert < 0 || wert > kMaxEintraegeJeSammlung)
+      nachher:
+        |         if (! komprimierteZahl (wert) || wert < 0 || wert > kMaxEintraegeJeSammlung + 1)   // MUTATION R1
+    Mutiert 24.09.2026 07:01:15, SHA-256 mutiert abeee3c8332e1435d737c7fea396f70b30058c5fecec28b8640fd182b1071f23
+    Kette (R-313-11): Mit der Grenze 65.537 passiert die Wurzel mit 65.537 Eigenschaften den Riegel; JUCE liest sie, leseSchema2 findet kein schema -> nurLesen, und lade ersetzt den Zustand (instance_id leer statt aaaa...).
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:01:19.268, Quelle 07:01:15.172, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 9, Rohausgabe rot-R1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 362 Pruefungen ok, 9 Fehler
+    Zusagepruefung: 65.537 Eintraege in einer Sammlung werden verworfen (313/M-23
+      gefallen: FEHLER  65.537 Eintraege in einer Sammlung werden verworfen (313/M-23: Zustand wie vor dem Aufruf)  [nurLesen, instance_id '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  (Zusagepruefung von M-21, M-28)
+      - B2: 313/M-21 (Teilfall von 313/M-17) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-21)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.53 (Zusagepruefung von M-18)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustan (Zusagepruefung von M-18)
+      - B2: 313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 gel (Zusagepruefung von M-19)
+      - B2: 313/M-19 (Teilfall von 313/M-18) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-19)
+    mitgefallen (mit Grund):
+      - B2: == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck - Grund: Abschnittszeile: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 362 Pruefungen ok, 9 Fehler; Einzelzeilen in NAK-313-e3-mutation-R1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 07:01:40: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 07:01:45.096, Quelle 07:01:40.930, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

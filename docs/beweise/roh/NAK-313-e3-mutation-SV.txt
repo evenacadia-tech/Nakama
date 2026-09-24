@@ -1,0 +1,117 @@
+NAK-313 Etappe 3 - Mutationslauf SV: eq-copilot/plugin/state/NakamaState.cpp - kRootSchema auf 3
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...) und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der
+Sicherung zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, Beine erneut,
+git status und git diff --stat. Die Rohausgaben der Laeufe liegen im Job-Temp; hier stehen das
+Protokoll und die gefallenen Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf SV - 24.09.2026 07:09:14 - HEAD 097bb663ab53c33ca87f79d49fd7fe009c9d929a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\SV-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+Mutation ab Zeile 72 (Stand vor der Mutation):
+  vorher:
+    | constexpr int kRootSchema   = 2;
+    | 
+  nachher:
+    | constexpr int kRootSchema   = 3;   // MUTATION SV
+    | 
+Mutiert 24.09.2026 07:09:14, SHA-256 mutiert 6c6e6bafc2dd2f910203d454890daf906a8471c8473ea6b7f2c00012c1b031ab
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:09:18.803, Quelle 07:09:14.819, Binaer juenger: ja
+  B2: Exit 1, gefallene Pruefungen 81, Rohausgabe rot-SV-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 295 Pruefungen ok, 81 Fehler
+  gefallen in B2:
+    - FEHLER  Golden 'sensor' weicht ab  [178 Bytes]
+    - FEHLER  Golden 'hub' weicht ab  [205 Bytes]
+    - FEHLER  Golden 'pre' weicht ab  [195 Bytes]
+    - FEHLER  Golden 'post' weicht ab  [197 Bytes]
+    - FEHLER  4 Rollen bytegleich zum Schema-2-Golden  [0]
+    - FEHLER  313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)  [Rohfassung = Writer-Bytes, Mutant 202 Bytes, Datei 202 Bytes]
+    - FEHLER  Intent-Golden main-intent-v1.bin bytegleich zum Writer
+    - FEHLER  M-57 main-binding-v1: das eingefrorene Byte-Bild laedt mit geladen, nicht read-only, und traegt die Bindung unveraendert  [nurLesen, Bindung '']
+    - FEHLER  M-58 main-binding-v1: der heutige Writer erzeugt genau die eingefrorenen Bytes  [256 Bytes vom Writer, 256 auf der Platte]
+    - FEHLER  M-58 main-binding-v1: Speichern nach dem Laden des Goldens ist bytegleich
+    - FEHLER  legacy-retained-v1.bin bytegleich zum Writer (Produkt-API: Main mit den sieben Bestaenden und einer unbekannten Eigenschaft, dann sensor; 312/M-111)  [2397 Bytes vom Writer, 2397 auf der Platte, Kinder Common,RetainedMainProject]
+    - FEHLER  legacy-retained-v1.bin laedt schreibbar als legacy mit dem ganzen ruhenden Bestand, Speichern nach dem Laden bytegleich  [nurLesen, 0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+    - FEHLER  Dsp-Golden dsp-v2-voll.bin bytegleich zum Writer
+    - FEHLER  Layout-v1-Golden layout-v1.bin bytegleich
+    - FEHLER  == Migration: 4 Rollen bytegleich zum Golden, idempotent
+    - FEHLER  Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='NakamaState schema 2 is unknown to this version (it reads schema 2)', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+    - FEHLER  16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [6]
+    - FEHLER  == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+    - FEHLER  legacy_instance_id_save_load_bytegleich
+    - FEHLER  == NAK-40 Aliasvektoren, Zielvergleich und Save+Load
+    - FEHLER  read-only-Fall: Root schema 3  [bib FALSCH proz FALSCH grund '']
+    - FEHLER  21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [20]
+    - FEHLER  63 verschachtelte Arrays plus Blatt passieren und laden
+    - FEHLER  313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter Save bytegleich  [nurLesen / nurLesen, erster Save = Eingang, zweiter Save = erster]
+    - FEHLER  Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [1024]
+    - FEHLER  additive Binaer- und Array-Properties bleiben bytegleich lesbar
+    - FEHLER  312/M-115 read-only: main-intent-v1.bin + Bestandskind (in main neben MainProject)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: dsp-v2-voll.bin + Bestandskind (in active_probe)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+    - FEHLER  312/M-115 read-only: Golden mit plugin_kind passive_probe  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)']
+    - FEHLER  312/M-115 read-only: Golden mit doppeltem Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit Bestandskind schema 2  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit ungerader confirmed_members_v1  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit doppelter instance_id im Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit 65 Paaren im Bestandskind  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit Intentinhalt ohne intent_revision_v1  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 read-only: Golden mit dem Bestand unter dem Namen MainProject (legacy mit MainProject)  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Prozessor verweigert, 0 Dirty]
+    - FEHLER  312/M-115 kind_matrix_des_bestandskinds: 10 Mutanten der Writer-Goldens read-only mit Originalbytes, je aus ihrem Grund  [0]
+    - FEHLER  read-only gesetzt
+    - FEHLER  == Unbekanntes Major: 20 Faelle read-only, Originalbytes bytegleich zurueck
+    - FEHLER  312/M-116 host_dirty_je_wechsel: hub -> sensor -> hub mit gefuelltem Bestand meldet genau 2 Host-Dirty, die Verlagerung keine zusaetzliche; Laden eines Standes mit Bestandskind und Speichern melden 0  [Wechsel 2, nach dem Speichern 2, Laden des Goldens 0]
+    - FEHLER  == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+    - FEHLER  frisch speichert NakamaState schema 2, legacy
+    - FEHLER  Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+    - FEHLER  == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+    - FEHLER  312/M-49 statebytes_des_basis_sha_reisen_bytegleich (T3-01-02, R-312-4, B2): der Stand mit drei belegten Slots aus dem Golden des Basis-SHA laedt normal (active_probe, nicht read-only) und kommt aus speichere bytegleich zurueck  [5745 Byte, zurueck 0 Byte, VERSCHIEDEN]
+    - FEHLER  == NAK-312 312/M-49: Statebytes des Parametergoldens bytegleich
+    - FEHLER  312/M-112 unbekannte_felder_reisen_mit (zweiter Weg, Golden): beim Speichern als legacy bleibt die unbekannte Eigenschaft im Bestandskind, nach dem Wechsel zu hub steht sie im MainProject  [legacy gespeichert bytegleich]
+    - FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+    - FEHLER  313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 nurLesen (528 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65.538)  [Load 1 nurLesen (538 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nurLesen (531 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nurLesen (520 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 nurLesen (543 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-22 common_rand_bleibt_schreibbar (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)  [Load 1 nurLesen (523 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-22 common_rand_bleibt_schreibbar (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege (65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A  [Load read-only, pre false, hub false, Common in Save A 65533, Load von Save A NICHT schreibbar (523 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save B = Save A]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 nurLesen (6 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258412, ohne label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258412, Load nurLesen (5 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Prozessor read-only/read-only, pre false, hub false, nach hub 258412 Eintraege, Reload read-only (Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save bytegleich]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 nurLesen (6 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G = 258413, mit label): jeder Load geladen, jeder Folgezustand laedt schreibbar, nach hub 258417 Eintraege, Save nach Reload bytegleich  [Eintraege 258413, Load nurLesen (6 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Prozessor read-only/read-only, pre false, hub false, nach hub 258413 Eintraege, Reload read-only (Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save bytegleich]
+    - FEHLER  313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive Wurzel) laedt, Save bytegleich, Reload laedt  [Load 1 nurLesen (0 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl  [Load 1 nurLesen (0 ms, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)'), Save = Originalbytes, Load 2 nurLesen, zweiter Save = erster]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-sensor.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-hub.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-pre.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: aus-schema1-post.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: fremdes-major-3.bin nurLesen, Save bytegleich  [geladen, Grund '', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: main-intent-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: dsp-v2-voll.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: layout-v1.bin geladen  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: main-binding-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  313/M-33 eindeutige_namen_laden_wie_bisher: legacy-retained-v1.bin geladen, Save bytegleich  [nurLesen, Grund 'NakamaState schema 2 is unknown to this version (it reads schema 2)', Save bytegleich]
+    - FEHLER  == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+Ruecknahme und Gegenlauf:
+  Ruecknahme 24.09.2026 07:09:35: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 07:09:38.987, Quelle 07:09:35.247, Binaer juenger: ja
+  B2: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-SV-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler
+  git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-D5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-H5.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R1.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R2.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R3.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-R4.txt | ?? docs/beweise/roh/NAK-313-e3-mutation-T1.txt | ?? nimbalyst-local/
+  git diff --stat: (leer)

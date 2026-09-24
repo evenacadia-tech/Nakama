@@ -1,0 +1,59 @@
+NAK-313 Etappe 3 - Rotbeweis M-20 (Manifest docs/beweise/NAK-313.md §6.2, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 097bb663 (Reparatur); Mutationslaeufe 24.09.2026, 06:57 bis 07:12 Uhr; Gegenprobe am Basisstand 24.09.2026, 06:43 Uhr gegen den Produktcode von f77738a0 (NAK-313-e3-basisstand.txt).
+
+Matrixzeile M-20 - T3-02-02 - R-313-1 - 65.535 ohne label (Gegenfall der Validierung berichtigt)
+Zustand: Common legacy/insert mit 65.535 Eintraegen ohne label.
+Ereignis: lade, speichere, lade; danach der Paarname ueber die API am gespeicherten Stand.
+Zusage: Load nurLesen bytegleich (Kandidat 65.538).
+Bein: B2 (EqCopStateMigrationTest), eq-copilot/plugin/tests/StateMigrationTestMain.cpp, Abschnitt G14, Teilfall von 313/M-17: 313/M-20 common_65535_ohne_label, Paarname ueber die API.
+
+--- Haelfte 1: nurLesen bytegleich - Etikett: heute rot ---
+Pruefung: 313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label; 313/M-20 (Teilfall von 313/M-17) Paarname
+Am Basisstand (Produktcode von f77738a0, Testdatei der Gegenprobe):
+  FEHLER  313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65.538)  [Load 1 geladen (574 ms, Grund ''), Save neu (Common 65536 Eintraege), Load 2 geladen, zweiter Save = erster]
+  FEHLER  313/M-20 (Teilfall von 313/M-17) Paarname ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [Prozessor schreibbar, setzeBindung (sensor true), Host-Dirty 1, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+  -> am Basisstand rot: heute rot
+
+  Mutation H1 (eq-copilot/plugin/state/NakamaState.cpp - passt: den Riegelaufruf entfernt - der Kandidat zaehlt wieder nur nach seiner Groesse (Zeile vor der Etappe)), Stand 097bb663:
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\df10e2b0\tmp\rot-sicherung\H1-NakamaState.cpp (SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b)
+    Mutation ab Zeile 1294 (Stand vor der Mutation):
+      vorher:
+        |             return pruefeValueTreeBytes (bytes.getData(), bytes.getSize()) == BytePruefung::verlustfrei;
+      nachher:
+        |             return bytes.getSize() <= kMaxStateBytes;   // MUTATION H1: nur Groesse
+    Mutiert 24.09.2026 06:57:19, SHA-256 mutiert e3de3d72601c213aebbb0f9f9c12bfb5ed1c25523074481b00c04d0275bd3a25
+    Kette (R-313-11): Wie M-17: nur Groesse -> Load geladen; der Save ergaenzt label (65.536) und laedt noch; der Paarname ueber die API macht 65.537 -> der naechste Load ignoriert. Beobachtet: Save Common 65.536, Load 2 geladen; API setzeBindung (sensor) true, 1 Host-Dirty, Common 65.537, Reload ignoriert.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:57:23.354, Quelle 06:57:19.568, Binaer juenger: ja
+      B2: Exit 1, gefallene Pruefungen 15, Rohausgabe rot-H1-mutiert-B2.txt
+      Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 356 Pruefungen ok, 15 Fehler
+    Zusagepruefung: 313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label; 313/M-20 (Teilfall von 313/M-17) Paarname
+      gefallen: FEHLER  313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes, Reload nurLesen (Kandidat 65.538)  [Load 1 geladen (555 ms, Grund ''), Save neu (Common 65536 Eintraege), Load 2 geladen, zweiter Save = erster]
+      gefallen: FEHLER  313/M-20 (Teilfall von 313/M-17) Paarname ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [Prozessor schreibbar, setzeBindung (sensor true), Host-Dirty 1, getStateInformation neu (Common 65537 Eintraege), Reload ignoriert]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen, als Zusagepruefung anderer Haelften oder Zeilen derselben Mutation:
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (a): erster Load nurLesen mit Headroom-Grund  [Load 1 geladen (543 ms, Grund ''), Save neu (Com (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (b): speichere liefert die Originalbytes  [Load 1 geladen (543 ms, Grund ''), Save neu (Common  (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-17 common_65536_ohne_label_bleibt_lesbar (c): zweiter Load wieder nurLesen bytegleich, nie ignoriert  [Load 1 geladen (543 ms, Grund '') (Zusagepruefung von M-17, M-28)
+      - B2: 313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  (Zusagepruefung von M-21, M-28)
+      - B2: 313/M-21 (Teilfall von 313/M-17) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-21)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.53 (Zusagepruefung von M-18)
+      - B2: 313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustan (Zusagepruefung von M-18)
+      - B2: 313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)  [Load 1 gel (Zusagepruefung von M-19)
+      - B2: 313/M-19 (Teilfall von 313/M-18) pre und hub ueber die API: verweigert, 0 Host-Dirty, getStateInformation = Originalbytes, Reload nurLesen  [P (Zusagepruefung von M-19)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258413, ohne label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258413, Load 1 g (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (G + 1 = 258414, mit label): nurLesen bytegleich (Kandidat 262.145)  [Eintraege 258414, Load 1 ge (Zusagepruefung von M-24, M-28)
+      - B2: 313/M-24 gesamtgrenze_bleibt_rueckschreibbar (262.144 ohne label): nurLesen bytegleich, nie ignoriert  [Load 1 geladen (16 ms, Grund ''), Save (Zusagepruefung von M-24)
+    mitgefallen (mit Grund):
+      - B2: == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only - Grund: Abschnittszeile G14: folgt aus den gefallenen Einzelpruefungen des Abschnitts
+    gruen geblieben: alle uebrigen Pruefungen der gefahrenen Beine (B2: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 356 Pruefungen ok, 15 Fehler; Einzelzeilen in NAK-313-e3-mutation-H1.txt)
+    Ruecknahme und Gegenlauf:
+      Ruecknahme 24.09.2026 06:57:42: SHA-256 5775aca6580f1568bcd118bb6986e0924487c09267249e997b5dc70055134c4b - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 06:57:47.049, Quelle 06:57:42.902, Binaer juenger: ja
+      B2 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0 (STATE-MIGRATION-TEST OK - 371 Pruefungen ok, 0 Fehler)
+      git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e3-basisstand.txt | ?? nimbalyst-local/
+      git diff --stat: (leer)
+

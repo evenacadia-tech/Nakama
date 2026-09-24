@@ -3782,6 +3782,96 @@ def evidenz_lokal_wire() -> bytes:
     })
 
 
+# ── NAK-313 Etappe 5b · die Handinstanz des Intentwriters ────────────────
+#
+# R-313-4 (M-89, E-313-14): alle persistenten Revisionen und ihre Drahtform
+# enden bei 2^53-1. Diese Instanz haelt den Rand fuer den Intent-Bestand: der
+# echte C++-Writer (B27, v3IntentUpdateJson ueber v3IntentUpdateFuerTest)
+# wird ab dem Feld bestand_revision bytegleich gegen wire_ausschnitt verglichen,
+# der echte Rust-Leser (A4) nimmt wire ueber die P1-Weiche an.
+
+REVISION_MAX = 9_007_199_254_740_991   # 2^53-1, v3-Textriegel Regel 2
+
+
+def _intent_byteinstanz() -> tuple[dict, str, str]:
+    """(eingabe, wire_ausschnitt, wire) des leeren Bestands am Revisionsrand."""
+    eingabe = {
+        "adresse": dict(ADRESSE),
+        "bestand": {
+            "intent_revision_v1": REVISION_MAX,
+            "source_intents_v1": [],
+            "intent_protections_v1": [],
+            "intent_relations_v1": [],
+        },
+        "vollstaendig": True,
+    }
+    # Schluesselreihenfolge und Zahlform des Writers: Kopf, Adresse in der
+    # Reihenfolge von adresseAlsJson, Sitzungsepoche, Revision als
+    # Zifferntext, die Marke; ein leerer Bestand traegt keine Liste.
+    ausschnitt = f',"bestand_revision":{REVISION_MAX},"vollstaendig":true}}'
+    wire = ('{"type":"intent_update","adresse":' + _kompakt(eingabe["adresse"])
+            + ',"session_epoch":' + json.dumps(eingabe["adresse"]["session_epoch"])
+            + ausschnitt)
+    # Selbstpruefung: der Ausschnitt schliesst wire ab, und wire traegt die
+    # Revision als exakte Ganzzahl in der Feldfolge des Writers.
+    geparst = json.loads(wire)
+    if (not wire.endswith(ausschnitt)
+            or list(geparst) != ["type", "adresse", "session_epoch", "bestand_revision", "vollstaendig"]
+            or list(geparst["adresse"]) != list(ADRESSE)
+            or geparst["bestand_revision"] != REVISION_MAX
+            or type(geparst["bestand_revision"]) is not int):
+        raise SystemExit("Handinstanz intent-wire-v1.json: Wiretext und Ausschnitt passen nicht")
+    return eingabe, ausschnitt, wire
+
+
+def intent_wire() -> bytes:
+    """intent-wire-v1.json - die Handinstanz des Intentwriters am Rand 2^53-1.
+
+    NAK-313 R-313-4 (M-89, E-313-14): Ausgabe keiner Implementierung. B27 laedt
+    einen Main-Stand mit leerem Bestand und der Revision aus eingabe und
+    vergleicht den Writertext ab dem Feld bestand_revision bytegleich mit
+    wire_ausschnitt; Adresse und session_epoch sind dort Laufzeitwerte und
+    stehen nicht im Vergleich. A4 koppelt einen Link mit der Adresse aus
+    eingabe, speist wire in die P1-Weiche und erwartet die
+    Bestandsrevision 2^53-1.
+    """
+    eingabe, ausschnitt, wire = _intent_byteinstanz()
+    return als_text({
+        "_kommentar": [
+            "NAK-313 R-313-4 - die HANDINSTANZ des Intentwriters am Revisionsrand 2^53-1.",
+            "",
+            "`eingabe` traegt den Bestand, den B27 in einen Main-Stand laedt (leer,",
+            "intent_revision_v1 = 2^53-1), und die feste Adresse, mit der A4 einen Link",
+            "koppelt. `wire` ist der Text, den v3IntentUpdateJson fuer genau diese",
+            "Adresse schreiben muss; `wire_ausschnitt` ist sein Ende ab",
+            "`,\"bestand_revision\":` - bis dorthin stehen im Writertext Laufzeitwerte",
+            "(Logon-SID, Sitzungsepoche, Laufzeitnonce), deshalb vergleicht B27 nur",
+            "den Ausschnitt. Keine der beiden Sprachen erzeugt diese Datei.",
+        ],
+        "eingabe": eingabe,
+        "wire_ausschnitt": ausschnitt,
+        "wire": wire,
+    })
+
+
+def handinstanzen_register() -> dict:
+    """Der MANIFEST-Eintrag der Handinstanzen, die dieses Register fuehrt."""
+    return {
+        "zweck": ("Byteinstanzen NEBEN gueltig/, von Hand ausgeschriebene Wiretexte: "
+                  "ein echter Writer wird gegen sie bytegleich verglichen, ein echter "
+                  "Leser nimmt sie an. Der Erzeuger schreibt sie, A8 haelt sie "
+                  "bytegleich, ihr SHA-256 steht hier. Registriert seit NAK-313 "
+                  "Etappe 5b (M-89, E-313-14); die aelteren Byteinstanzen neben "
+                  "gueltig/ fuehrt dieses Register nicht."),
+        "dateien": [{
+            "datei": "intent-wire-v1.json",
+            "sha256": hashlib.sha256(intent_wire()).hexdigest(),
+            "warum": ("R-313-4: der Intentwriter schreibt bestand_revision 2^53-1 "
+                      "unveraendert (B27), der Rust-Leser uebernimmt sie (A4)."),
+        }],
+    }
+
+
 def lokale_evidenz_negativ() -> list[tuple[str, dict, list[dict], str]]:
     """Das Negativfixture mit `project_sample_start: null` (M-53).
 
@@ -4656,6 +4746,7 @@ def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
                             "Escape-Alias). Keine Verletzungsmenge, aus demselben Grund "
                             "wie bei textriegel_lehnt_ab (NAK-313 R-313-6; "
                             "schemas/v3/README.md, Abschnitt zum strengen Parselauf)."),
+        "handinstanzen": handinstanzen_register(),
         "anzahl_gueltig": sum(1 for e in eintraege if e["urteil"] == "gueltig"),
         "anzahl_ungueltig": sum(1 for e in eintraege if e["urteil"] == "ungueltig"),
         "fixtures": eintraege,
@@ -5018,6 +5109,9 @@ def main(argv: list[str]) -> int:
         # v3-Nachricht.
         (ZIEL / "PRODUKTEINGAENGE-FAELLE.json", als_text(produkteingaenge_tabelle())),
         (ZIEL / "evidenz-lokal-wire-v1.json", evidenz_lokal_wire()),
+        # NAK-313 Etappe 5b (R-313-4, M-89): die Handinstanz des Intentwriters,
+        # mit SHA-256 im MANIFEST (Schluessel handinstanzen).
+        (ZIEL / "intent-wire-v1.json", intent_wire()),
     ]
     alle += [(ZIEL / p, als_text(d)) for p, d in sorted(dateien.items())]
     alle += [(ZIEL / p, b) for p, b in sorted(rohdateien.items())]

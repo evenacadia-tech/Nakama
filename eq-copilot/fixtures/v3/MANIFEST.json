@@ -7,6 +7,16 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "parser_lehnt_ab": "Markiert ein Fixture, das den Textriegel passiert und am STRENGEN PARSELAUF faellt, bevor das Schema es sieht: Nachspann, zweites Dokument, Schlusskomma, unbekanntes Escape, Verschachtelung tiefer als 64 Ebenen oder derselbe dekodierte Name zweimal im selben Objekt (auch als Escape-Alias). Keine Verletzungsmenge, aus demselben Grund wie bei textriegel_lehnt_ab (NAK-313 R-313-6; schemas/v3/README.md, Abschnitt zum strengen Parselauf).",
+  "handinstanzen": {
+    "zweck": "Byteinstanzen NEBEN gueltig/, von Hand ausgeschriebene Wiretexte: ein echter Writer wird gegen sie bytegleich verglichen, ein echter Leser nimmt sie an. Der Erzeuger schreibt sie, A8 haelt sie bytegleich, ihr SHA-256 steht hier. Registriert seit NAK-313 Etappe 5b (M-89, E-313-14); die aelteren Byteinstanzen neben gueltig/ fuehrt dieses Register nicht.",
+    "dateien": [
+      {
+        "datei": "intent-wire-v1.json",
+        "sha256": "672111c85015ee449095e88491da0c27306160917b5a4f005f65895fd00ab17e",
+        "warum": "R-313-4: der Intentwriter schreibt bestand_revision 2^53-1 unveraendert (B27), der Rust-Leser uebernimmt sie (A4)."
+      }
+    ]
+  },
   "anzahl_gueltig": 112,
   "anzahl_ungueltig": 302,
   "fixtures": [

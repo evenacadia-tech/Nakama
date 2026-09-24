@@ -1,0 +1,31 @@
+{
+  "_kommentar": [
+    "NAK-313 R-313-4 - die HANDINSTANZ des Intentwriters am Revisionsrand 2^53-1.",
+    "",
+    "`eingabe` traegt den Bestand, den B27 in einen Main-Stand laedt (leer,",
+    "intent_revision_v1 = 2^53-1), und die feste Adresse, mit der A4 einen Link",
+    "koppelt. `wire` ist der Text, den v3IntentUpdateJson fuer genau diese",
+    "Adresse schreiben muss; `wire_ausschnitt` ist sein Ende ab",
+    "`,\"bestand_revision\":` - bis dorthin stehen im Writertext Laufzeitwerte",
+    "(Logon-SID, Sitzungsepoche, Laufzeitnonce), deshalb vergleicht B27 nur",
+    "den Ausschnitt. Keine der beiden Sprachen erzeugt diese Datei."
+  ],
+  "eingabe": {
+    "adresse": {
+      "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+      "project_binding_id": "11111111111111111111111111111111",
+      "session_epoch": "22222222222222222222222222222222",
+      "instance_id": "33333333333333333333333333333333",
+      "runtime_nonce": "44444444444444444444444444444444"
+    },
+    "bestand": {
+      "intent_revision_v1": 9007199254740991,
+      "source_intents_v1": [],
+      "intent_protections_v1": [],
+      "intent_relations_v1": []
+    },
+    "vollstaendig": true
+  },
+  "wire_ausschnitt": ",\"bestand_revision\":9007199254740991,\"vollstaendig\":true}",
+  "wire": "{\"type\":\"intent_update\",\"adresse\":{\"logon_sid\":\"S-1-5-21-1111111111-2222222222-3333333333-1001\",\"project_binding_id\":\"11111111111111111111111111111111\",\"session_epoch\":\"22222222222222222222222222222222\",\"instance_id\":\"33333333333333333333333333333333\",\"runtime_nonce\":\"44444444444444444444444444444444\"},\"session_epoch\":\"22222222222222222222222222222222\",\"bestand_revision\":9007199254740991,\"vollstaendig\":true}"
+}

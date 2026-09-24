@@ -3345,6 +3345,7 @@ void nak289AllokationsfehlerTerminiert()
 // NAK-313 Etappe 5a (R-313-5, Wire-Teil von R-313-4): der flache C++-Leser
 // mit seinem Ganzzahlleser. Die Zeilen M-55 bis M-60 und M-96 des Manifests
 // `docs/beweise/NAK-313.md`; je Tabelleneintrag ein Fall mit seiner Kennung.
+// Seit Etappe 5b dazu M-88: die Sender schreiben state_revision ungekappt.
 namespace nak313e5
 {
 /// Die Tabelle - Testeingabe, kein Produkteingang, deshalb mit JUCE gelesen.
@@ -3804,6 +3805,33 @@ void konfliktkopfAusGelesenerRevision (const char* literal)
     server.stoppen();
 }
 
+/// NAK-313 Etappe 5b, M-88 (R-313-4): beide Sender schreiben state_revision
+/// unveraendert - 2^53-1 als 9007199254740991 und ein Testaufbau mit 2^53 als
+/// 9007199254740992 (der Empfaenger lehnt ihn ab, M-90), nie still gekappt.
+/// sequence und die Zaehler behalten ihre Kappung.
+void senderOhneKappung()
+{
+    abschnitt ("NAK-313 M-88 · sender_ohne_kappung");
+    const auto a = testAdresse (hex32 ('5'));
+    struct Fall { std::uint64_t wert; const char* text; const char* name; };
+    const Fall faelle[] = { { 9007199254740991ULL, "9007199254740991", "2^53-1" },
+                            { 9007199254740992ULL, "9007199254740992", "2^53" } };
+    for (const auto& f : faelle)
+    {
+        ControlStatus s;
+        s.stateRevision = f.wert;
+        const std::string soll = std::string (",\"state_revision\":") + f.text + ",";
+        const auto herz = heartbeatAlsJson (a, 1, s);
+        const auto bericht = controlclient_intern::stateReportJson (a, s);
+        pruefe (herz.find (soll) != std::string::npos,
+                std::string ("313/M-88 sender_ohne_kappung heartbeat ") + f.name + " steht als " + f.text,
+                herz.substr (0, std::min<std::size_t> (herz.size(), 400)));
+        pruefe (bericht.find (soll) != std::string::npos,
+                std::string ("313/M-88 sender_ohne_kappung state_report ") + f.name + " steht als " + f.text,
+                bericht);
+    }
+}
+
 void alle()
 {
     ganzzahlAusLiteralFaelle();
@@ -3813,6 +3841,7 @@ void alle()
     ueberlauftextIstKeinAck (false);
     konfliktkopfAusGelesenerRevision ("5");
     konfliktkopfAusGelesenerRevision ("5.0");
+    senderOhneKappung();
 }
 } // namespace nak313e5
 } // namespace

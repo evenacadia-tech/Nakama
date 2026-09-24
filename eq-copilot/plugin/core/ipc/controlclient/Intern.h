@@ -425,7 +425,8 @@ inline std::string stateReportJson (const Adresse& adresse, const ControlStatus&
     return std::string ("{\"type\":\"state_report\",\"adresse\":")
          + adresseAlsJson (adresse)
          + ",\"dsp_schema_version\":" + std::to_string (schema)
-         + ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+         // NAK-313 R-313-4: unveraendert wie im Heartbeat (controlclient/Vertrag.cpp).
+         + ",\"state_revision\":" + std::to_string (status.stateRevision)
          + ",\"state_hash\":" + stateHashJson (status.stateHash)
          + ",\"record_state\":{\"valid\":" + boolJson (status.recordStateValid)
          + ",\"recording\":" + boolJson (status.recording) + "}}";

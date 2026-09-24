@@ -160,7 +160,9 @@ std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
     return std::string ("{\"type\":\"heartbeat\",\"adresse\":")
          + adresseAlsJson (adresse)
          + ",\"sequence\":" + std::to_string (jsonSafe (sequence))
-         + ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+         // NAK-313 R-313-4: die Revision reist unveraendert; ihr Bereich endet im
+         // State bei 2^53-1 (kRevisionMax), eine Kappung aenderte den Wert still.
+         + ",\"state_revision\":" + std::to_string (status.stateRevision)
          + ",\"capabilities\":" + capabilitiesJson()
          + ",\"zaehler\":{\"frames_dropped\":"
          + std::to_string (jsonSafe (status.framesDropped))

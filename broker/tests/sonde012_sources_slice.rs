@@ -597,6 +597,182 @@ fn nak313_m116_zusatzslot_wird_nicht_weitergereicht() {
     );
 }
 
+/// NAK-313 R-313-9: die Tabelle der Produkteingaenge (Manifest §7.3,
+/// Etappe 7). Die zwei Heartbeats von M-129 (`rust_p0`, gueltig in `vertrag`
+/// und `produkt`) - dieselben Bytes, die der Tabellenlauf fuer `rust_p0`
+/// faehrt - und die Adresse ihrer Einspeisung.
+fn tabelle_m129() -> (Adresse, Vec<(String, Vec<u8>)>) {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json");
+    let roh = std::fs::read(&pfad).unwrap_or_else(|e| panic!("{}: {e}", pfad.display()));
+    let kopf: Value = serde_json::from_slice(&roh).expect("die Tabelle ist JSON");
+    let adresse: Adresse =
+        serde_json::from_value(kopf["eingaenge"]["rust_p0"]["einspeisung"]["adresse"].clone())
+            .expect("die Einspeisung von rust_p0 traegt eine Adresse");
+    let heartbeats = kopf["faelle"]
+        .as_array()
+        .expect("die Tabelle traegt faelle")
+        .iter()
+        .filter(|f| f["eingang"] == "rust_p0" && f["matrix"] == "M-129")
+        .map(|f| {
+            let hex = f["bytes_hex"].as_str().expect("bytes_hex");
+            let bytes: Vec<u8> = (0..hex.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).expect("bytes_hex ist hex"))
+                .collect();
+            let wert: Value = serde_json::from_slice(&bytes).expect("der Heartbeat ist JSON");
+            let bit = wert["capabilities"]["binary_telemetry"]
+                .as_str()
+                .expect("binary_telemetry ist ein Text")
+                .to_owned();
+            (bit, bytes)
+        })
+        .collect();
+    (adresse, heartbeats)
+}
+
+fn heartbeat_der_tabelle(heartbeats: &[(String, Vec<u8>)], bit: &str) -> Vec<u8> {
+    heartbeats
+        .iter()
+        .find(|(wert, _)| wert == bit)
+        .unwrap_or_else(|| panic!("die Tabelle traegt einen Heartbeat mit {bit}"))
+        .1
+        .clone()
+}
+
+fn deskriptor_bit(c: &Coordinator, quelle: &Adresse) -> Option<String> {
+    let snapshot: Value = serde_json::from_slice(
+        &c.session_snapshot_json(&quelle.project_binding_id, &quelle.session_epoch),
+    )
+    .expect("session_snapshot ist JSON");
+    mitglied(&snapshot, &quelle.instance_id)
+        .get("probe_descriptor")
+        .map(|d| d["capabilities"]["binary_telemetry"].as_str().unwrap_or("kein Text").to_owned())
+}
+
+fn pruefe(rot: &mut Vec<String>, ok: bool, was: String) {
+    if !ok {
+        rot.push(was);
+    }
+}
+
+/// NAK-313 M-129 (R-313-9, R-313-15): `binary_telemetry` ist keine
+/// Transportzulassung. Eine Quelle meldet das Bit ueber den Heartbeat der
+/// Tabelle einmal `unsupported`, in einem zweiten Lauf `supported`; in beiden
+/// wird ihr P2 angenommen - `p2_live_frames` + 1 und genau ein
+/// `messframe_schreiben` an das abonnierte Main -, und der Deskriptor traegt
+/// den gemeldeten Wert.
+#[test]
+fn nak313_m129_p2_ohne_bit_angenommen() {
+    let (quelle, heartbeats) = tabelle_m129();
+    assert_eq!(heartbeats.len(), 2, "M-129: zwei Heartbeats in der Tabelle");
+    let mut rot: Vec<String> = Vec::new();
+    for bit in ["unsupported", "supported"] {
+        let (c, _clock, push) = coordinator();
+        let main = Adresse {
+            instance_id: hex(10),
+            runtime_nonce: hex(100),
+            ..quelle.clone()
+        };
+        anmelden(&c, "main", &main, "main", Some(77));
+        assert!(heartbeat(&c, "main", &main, 1));
+        assert!(abonnieren(&c, "main", &main));
+        anmelden(&c, "probe", &quelle, "active_probe", Some(9001));
+        let beantwortet = Senke::p0(&c, "probe", &heartbeat_der_tabelle(&heartbeats, bit)).is_some();
+        pruefe(&mut rot, beantwortet, format!("{bit}: der Heartbeat der Tabelle wird beantwortet"));
+        Senke::telemetrie_gekoppelt(&c, "probe");
+        let gespeichert = deskriptor_bit(&c, &quelle);
+        pruefe(
+            &mut rot,
+            gespeichert.as_deref() == Some(bit),
+            format!("{bit}: der Deskriptor traegt den gemeldeten Wert ({gespeichert:?})"),
+        );
+
+        let live_vorher = c.p2_live_frames();
+        let frames_vorher = push.frames().len();
+        Senke::p2(&c, "probe", &feature_batch(&quelle, 1, 2048, None, None, Some(1)));
+        pruefe(
+            &mut rot,
+            c.p2_live_frames() == live_vorher + 1,
+            format!("{bit}: P2 angenommen, p2_live_frames {} -> {}", live_vorher, c.p2_live_frames()),
+        );
+        let frames = push.frames();
+        let an_main = frames.len() == frames_vorher + 1
+            && frames.last().is_some_and(|(link, instanz, _)| link == "main" && *instanz == quelle.instance_id);
+        pruefe(
+            &mut rot,
+            an_main,
+            format!("{bit}: genau ein messframe_schreiben an den Main ({} -> {})", frames_vorher, frames.len()),
+        );
+    }
+    assert!(rot.is_empty(), "M-129 gefallen:\n{}", rot.join("\n"));
+}
+
+/// NAK-313 M-130 (R-313-9, R-313-15, verbinden<->trennen): ein Reconnect mit
+/// anderem Capabilitysatz. Link 1 meldet `unsupported` und trennt; Link 2
+/// derselben Instanz meldet sich an und im ersten Heartbeat `supported`.
+/// Zwischen Anmeldung und erstem Heartbeat traegt der `session_snapshot` fuer
+/// die Quelle keinen `probe_descriptor` (Runtime-Felder sind linkgebunden),
+/// danach den neuen Wert; P2 wird ueber beide Links angenommen.
+#[test]
+fn nak313_m130_reconnect_mit_anderem_capability_satz() {
+    let (quelle, heartbeats) = tabelle_m129();
+    let (c, _clock, _push) = coordinator();
+    let mut rot: Vec<String> = Vec::new();
+    let main = Adresse {
+        instance_id: hex(10),
+        runtime_nonce: hex(100),
+        ..quelle.clone()
+    };
+    anmelden(&c, "main", &main, "main", Some(77));
+    assert!(heartbeat(&c, "main", &main, 1));
+    assert!(abonnieren(&c, "main", &main));
+
+    anmelden(&c, "probe-1", &quelle, "active_probe", Some(9001));
+    let beantwortet = Senke::p0(&c, "probe-1", &heartbeat_der_tabelle(&heartbeats, "unsupported")).is_some();
+    pruefe(&mut rot, beantwortet, "Link 1: der Heartbeat mit unsupported wird beantwortet".into());
+    Senke::telemetrie_gekoppelt(&c, "probe-1");
+    let link1 = deskriptor_bit(&c, &quelle);
+    pruefe(
+        &mut rot,
+        link1.as_deref() == Some("unsupported"),
+        format!("Link 1: der Deskriptor traegt unsupported ({link1:?})"),
+    );
+    let live = c.p2_live_frames();
+    Senke::p2(&c, "probe-1", &feature_batch(&quelle, 1, 2048, None, None, Some(1)));
+    pruefe(
+        &mut rot,
+        c.p2_live_frames() == live + 1,
+        format!("Link 1: P2 vor dem Trennen angenommen ({} -> {})", live, c.p2_live_frames()),
+    );
+    c.control_ende("probe-1");
+
+    anmelden(&c, "probe-2", &quelle, "active_probe", Some(9001));
+    let fenster = deskriptor_bit(&c, &quelle);
+    pruefe(
+        &mut rot,
+        fenster.is_none(),
+        format!("Link 2 angemeldet, vor dem ersten Heartbeat: kein probe_descriptor ({fenster:?})"),
+    );
+    let beantwortet = Senke::p0(&c, "probe-2", &heartbeat_der_tabelle(&heartbeats, "supported")).is_some();
+    pruefe(&mut rot, beantwortet, "Link 2: der Heartbeat mit supported wird beantwortet".into());
+    Senke::telemetrie_gekoppelt(&c, "probe-2");
+    let link2 = deskriptor_bit(&c, &quelle);
+    pruefe(
+        &mut rot,
+        link2.as_deref() == Some("supported"),
+        format!("Link 2 nach dem Heartbeat: probe_descriptor.capabilities.binary_telemetry = supported ({link2:?})"),
+    );
+    let live = c.p2_live_frames();
+    Senke::p2(&c, "probe-2", &feature_batch(&quelle, 2, 2048, None, None, Some(1)));
+    pruefe(
+        &mut rot,
+        c.p2_live_frames() == live + 1,
+        format!("Link 2: P2 nach dem Heartbeat angenommen ({} -> {})", live, c.p2_live_frames()),
+    );
+    assert!(rot.is_empty(), "M-130 gefallen:\n{}", rot.join("\n"));
+}
+
 #[test]
 fn latest_per_source_no_cross_gap_interpolation() {
     let (c, clock, _push) = coordinator();

@@ -26,6 +26,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::transport::v3::MAX_BOOTSTRAP_BYTES;
 
@@ -195,6 +196,35 @@ fn plugin_version_pruefen(v: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Der gepruefte Hello-Wert fuer die typisierte Uebernahme (NAK-313 R-313-5,
+/// E-313-16, M-72): jede Gleitkommazahl, die der Ganzzahlhelfer als Ganzzahl
+/// im Bereich +/-(2^53 - 1) liest, wird diese Ganzzahl — so liest ein
+/// `u32`-Feld `256.0` wie `256`. Die Ganzzahligkeit entscheidet derselbe
+/// Helfer wie die Protokollwahl, ohne eigene Pruefung; alles andere bleibt,
+/// wie es ist.
+fn ganzzahlen_normalisiert(wert: &Value) -> Value {
+    fn normalisieren(wert: &mut Value) {
+        if wert.is_f64() {
+            if let Some(ganz) = crate::vertrag::ganzzahl(
+                wert,
+                -crate::vertrag::GANZZAHL_MAX,
+                crate::vertrag::GANZZAHL_MAX,
+            ) {
+                *wert = Value::from(ganz);
+            }
+            return;
+        }
+        match wert {
+            Value::Array(liste) => liste.iter_mut().for_each(normalisieren),
+            Value::Object(objekt) => objekt.values_mut().for_each(normalisieren),
+            _ => {}
+        }
+    }
+    let mut kopie = wert.clone();
+    normalisieren(&mut kopie);
+    kopie
+}
+
 /// Liest die erste Nachricht einer Verbindung aus einem Bytepuffer.
 ///
 /// Es gibt bewusst KEINEN Weg, hier einen v3-Binaerframe hineinzureichen: die
@@ -245,7 +275,12 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
         )));
     }
 
-    match obj.get("protocol").and_then(|v| v.as_u64()) {
+    // 🔑 NAK-313 R-313-5 (M-72): die v3-Protokollwahl liest `protocol` ueber
+    // den Ganzzahlhelfer - `3.0` ist das Protokoll 3, `3.5` keines.
+    match obj
+        .get("protocol")
+        .and_then(|v| crate::vertrag::ganzzahl(v, 0, crate::vertrag::GANZZAHL_MAX))
+    {
         Some(3) => {}
         Some(p) => {
             return Err(BootstrapFehler::KeinHello(format!(
@@ -257,7 +292,7 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
 
     match obj.get("connection_kind").and_then(|v| v.as_str()) {
         Some("control") => {
-            let h: HelloControl = serde_json::from_value(wert.clone())
+            let h: HelloControl = serde_json::from_value(ganzzahlen_normalisiert(&wert))
                 .map_err(|e| BootstrapFehler::KeinHello(e.to_string()))?;
             plugin_version_pruefen(&h.plugin_version).map_err(BootstrapFehler::KeinHello)?;
             if !PLUGIN_KIND_ERLAUBT.contains(&h.plugin_kind.as_str()) {
@@ -279,7 +314,7 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
             Ok((Bootstrap::V3Control(Box::new(h)), ende))
         }
         Some("telemetry") => {
-            let h: HelloTelemetry = serde_json::from_value(wert.clone())
+            let h: HelloTelemetry = serde_json::from_value(ganzzahlen_normalisiert(&wert))
                 .map_err(|e| BootstrapFehler::KeinHello(e.to_string()))?;
             plugin_version_pruefen(&h.plugin_version).map_err(BootstrapFehler::KeinHello)?;
             adresse_pruefen(&h.adresse).map_err(BootstrapFehler::KeinHello)?;
@@ -698,11 +733,59 @@ mod tests {
         assert!(k.control_anmelden("3", neue_kennung(), neue_kennung()).is_err());
     }
 
+    /// NAK-313 M-72 (R-313-5, E-313-16): `protocol` und die typisierten Felder
+    /// in der `.0`- und `e`-Form. Die Protokollwahl liest `3.0` als 3, die
+    /// Normalisierung vor `from_value` macht `256.0` zur Ganzzahl fuer `u32` -
+    /// beide ueber DENSELBEN Ganzzahlhelfer. `3.5` bleibt kein Hello; die
+    /// Negativen am Bootstrap haben hier keinen Stufenvergleich (ihre
+    /// Tabelleneintraege entstehen mit dem Tor in Etappe 6).
+    #[test]
+    fn nak313_m72_hello_als_1punkt0() {
+        let n = "a".repeat(32);
+        let lesen = |j: &str| bootstrap_lesen(&praefix(j));
+        let mit_protokoll = |p: &str| control_json(&n).replace("\"protocol\":3", &format!("\"protocol\":{p}"));
+        for p in ["3.0", "3e0", "30e-1"] {
+            match lesen(&mit_protokoll(p)) {
+                Ok((Bootstrap::V3Control(h), _)) => assert_eq!(h.protocol, 3, "protocol {p}"),
+                andere => panic!("protocol {p} ist die Ganzzahl 3 und wird ein V3Control: {andere:?}"),
+            }
+        }
+        let typisiert = control_json(&n)
+            .replace("\"block_size\":512", "\"block_size\":256.0")
+            .replace("\"channels\":2", "\"channels\":2.0");
+        match lesen(&typisiert) {
+            Ok((Bootstrap::V3Control(h), _)) => {
+                assert_eq!((h.audio.block_size, h.audio.channels), (256, 2));
+            }
+            andere => panic!("256.0 und 2.0 sind Ganzzahlen fuer u32: {andere:?}"),
+        }
+        let mit_pid = control_json_mit_host(&n, "FL64", "1.0").replace("\"pid\":4242", "\"pid\":1234.0");
+        match lesen(&mit_pid) {
+            Ok((Bootstrap::V3Control(h), _)) => {
+                assert_eq!(h.host.map(|host| host.pid), Some(1234));
+            }
+            andere => panic!("pid 1234.0 ist die Ganzzahl 1234: {andere:?}"),
+        }
+        for p in ["3.5", "-3", "4"] {
+            assert!(
+                matches!(lesen(&mit_protokoll(p)), Err(BootstrapFehler::KeinHello(_))),
+                "protocol {p} ist kein v3-Hello"
+            );
+        }
+        assert!(
+            matches!(lesen(&typisiert.replace("\"block_size\":256.0", "\"block_size\":256.5")),
+                     Err(BootstrapFehler::KeinHello(_))),
+            "256.5 ist keine Ganzzahl fuer u32"
+        );
+    }
+
     /// NAK-313 M-45 (R-313-6, R-313-13): jeder Eintrag von `rust_bootstrap`
     /// als eigener Fall durch `bootstrap_lesen`. Die Stufe steht am
     /// `BootstrapFehler` (Manifest §7.2): `KeinJson` mit der Marke des
     /// doppelten Schluessels heisst `duplikat`, jeder andere `KeinJson`
-    /// `parser`. Kein Eintrag wird ein `V3Control`; zuletzt die Zaehlpruefung.
+    /// `parser`. Seit Etappe 5 (M-72, M-73) stehen dort auch gueltige Hellos
+    /// in der `.0`- und `e`-Form: sie werden ein `V3Control` mit dem Wert aus
+    /// `wert`. Zuletzt die Zaehlpruefung.
     #[test]
     fn nak313_m45_doppelter_schluessel_im_hello() {
         use crate::vertrag::produkteingaenge as tabelle;
@@ -744,6 +827,21 @@ mod tests {
                 };
                 if !gehalten {
                     rot.push(format!("{id}: Wirkung {wirkung} nicht gehalten ({ergebnis:?})"));
+                }
+            }
+            // NAK-313 Etappe 5 (M-72, M-73): bei eigenem Urteil `gueltig` der
+            // Wert, den die typisierte Uebernahme gelesen hat.
+            if let (Ok((Bootstrap::V3Control(h), _)), Some(wert)) = (&ergebnis, fall["wert"].as_str()) {
+                let soll_wert: u64 = wert.parse().expect("wert ist ein Dezimaltext");
+                let gelesen = match fall["feld"].as_str() {
+                    Some("/protocol") => Some(u64::from(h.protocol)),
+                    Some("/audio/block_size") => Some(u64::from(h.audio.block_size)),
+                    Some("/audio/channels") => Some(u64::from(h.audio.channels)),
+                    Some("/host/pid") => h.host.as_ref().map(|host| u64::from(host.pid)),
+                    _ => None,
+                };
+                if gelesen != Some(soll_wert) {
+                    rot.push(format!("{id}: Wert {gelesen:?} am Feld {}, soll {soll_wert}", fall["feld"]));
                 }
             }
         }

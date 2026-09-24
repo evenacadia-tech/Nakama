@@ -164,7 +164,9 @@ impl Coordinator {
     ) -> Option<Vec<u8>> {
         let kopf = wert.get("kopf")?;
         let command_id = kopf.get("command_id")?.as_str()?;
-        let base_revision = kopf.get("base_revision")?.as_u64()?;
+        // NAK-313 R-313-5 (M-68): `5.0` ist dieselbe Basis wie `5`.
+        let base_revision =
+            crate::vertrag::ganzzahl(kopf.get("base_revision")?, 0, crate::vertrag::GANZZAHL_MAX)? as u64;
         let ziel: Adresse = serde_json::from_value(kopf.get("ziel")?.clone()).ok()?;
         let session = ClientKey::aus_adresse(&ziel).session();
         let shard = self.session_flush_shard(&session);
@@ -682,6 +684,16 @@ impl Coordinator {
                 {
                     return None;
                 }
+                // 🔑 NAK-313 R-313-5 (M-64): `sequence` - das einzige
+                // Ganzzahlfeld, das dieser Weg liest - wird VOR den
+                // Seiteneffekten gelesen. Ein Wert, den der Helfer nicht liest,
+                // verbraucht weder den Erstling noch loest er den Resync, und
+                // `91.0` ist dieselbe Sequenz wie `91`.
+                let sequence = crate::vertrag::ganzzahl(
+                    wert.get("sequence")?,
+                    0,
+                    crate::vertrag::GANZZAHL_MAX,
+                )?;
                 // 🔑 NAK-180 Nacharbeit 1 (EP-10/E4): "erster Heartbeat" ist
                 // eine eigene Tatsache, keine Ableitung aus der
                 // Ereignissequenz. Die Frage wird HIER gestellt - vor der
@@ -756,7 +768,6 @@ impl Coordinator {
                     Some(false) if self.nachbericht_abschliessen_und_bestaetigen(link_id) => {}
                     _ => {}
                 }
-                let sequence = wert.get("sequence")?.as_u64()?;
                 let _ = self.heartbeat_kontakt(link_id, Some(&wert));
                 let duplicate_instance_id = self.alias_quarantaenisiert(link_id);
                 Some(
@@ -788,29 +799,61 @@ impl Coordinator {
                     self.intervention_overflow_fuer_link(link_id);
                     return None;
                 }
+                // 🔑 NAK-313 R-313-5 (M-67): die Ganzzahlfelder ueber den
+                // Helfer - `7.0` und `4800.0` sind dieselben Werte wie `7` und
+                // `4800`; ein vorhandener Start, den der Helfer nicht liest,
+                // lehnt die Nachricht ab, statt die Sitzung ohne Start zu
+                // fuehren.
+                let event_sequence = crate::vertrag::ganzzahl(
+                    wert.get("event_sequence")?,
+                    0,
+                    crate::vertrag::GANZZAHL_MAX,
+                )? as u64;
+                let start = crate::vertrag::ganzzahl_optional(
+                    wert.get("project_sample_start"),
+                    -crate::vertrag::GANZZAHL_MAX,
+                    crate::vertrag::GANZZAHL_MAX,
+                )?;
                 self.intervention_begin_mit_art(
                     link_id,
                     &adresse,
                     wert.get("intervention_id")?.as_str()?,
-                    wert.get("event_sequence")?.as_u64()?,
+                    event_sequence,
                     art,
                     experiment_id,
                     // 🔑 Nacharbeit 2 (Befund R25, M-52): der Beginn wird
                     // GESPEICHERT. Ohne ihn invalidierte das Ende pauschal ab
                     // `i64::MIN / 2` und schloss auch saemtliche aeltere,
                     // nicht ueberlappende Evidenz aus.
-                    wert.get("project_sample_start").and_then(Value::as_i64),
+                    start,
                 );
                 None
             }
             "audible_intervention_end" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
-                let tail = wert.get("tail_samples")?.as_u64()?;
+                // NAK-313 R-313-5 (M-67): alle drei Ganzzahlfelder vor der
+                // Wirkung - auch das Ende des Bereichs, damit ein Wert, den der
+                // Helfer nicht liest, nichts halb annimmt.
+                let tail = crate::vertrag::ganzzahl(
+                    wert.get("tail_samples")?,
+                    0,
+                    crate::vertrag::GANZZAHL_MAX,
+                )? as u64;
+                let event_sequence = crate::vertrag::ganzzahl(
+                    wert.get("event_sequence")?,
+                    0,
+                    crate::vertrag::GANZZAHL_MAX,
+                )? as u64;
+                let ende = crate::vertrag::ganzzahl_optional(
+                    wert.get("project_sample_end"),
+                    -crate::vertrag::GANZZAHL_MAX,
+                    crate::vertrag::GANZZAHL_MAX,
+                )?;
                 let (angenommen, beginn) = self.intervention_end_mit_beginn(
                     link_id,
                     &adresse,
                     wert.get("intervention_id")?.as_str()?,
-                    wert.get("event_sequence")?.as_u64()?,
+                    event_sequence,
                     tail,
                 );
                 // 🔑 M-52, Befund B24: ein hoerbarer Eingriff NIMMT die Evidenz
@@ -822,7 +865,6 @@ impl Coordinator {
                 // Markers laeuft in die folgende Messung hinein (§34.2).
                 if angenommen {
                     let session = ClientKey::aus_adresse(&adresse).session();
-                    let ende = wert.get("project_sample_end").and_then(Value::as_i64);
                     match (beginn, ende) {
                         // 🔑 Nacharbeit 2 (Befund R25, M-52): der Bereich ist
                         // EXAKT Begin bis Ende plus Nachlauf. Die Runde 1

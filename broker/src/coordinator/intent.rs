@@ -300,8 +300,16 @@ fn band_aus(wert: &Value) -> Result<Option<(u32, u32)>, IntentAbweisung> {
     let Some(band) = wert.get("band") else {
         return Ok(None);
     };
-    let von = band.get("von").and_then(Value::as_u64).unwrap_or(u64::MAX);
-    let bis = band.get("bis").and_then(Value::as_u64).unwrap_or(0);
+    // NAK-313 R-313-5 (M-70): die Grenzen ueber den Ganzzahlhelfer - `0.0`
+    // bis `12.0` ist dasselbe Band wie `0` bis `12`. Eine Grenze, die er nicht
+    // liest, ist kein Band.
+    let grenze = |name: &str| {
+        band.get(name)
+            .and_then(|w| crate::vertrag::ganzzahl(w, 0, i64::from(u32::MAX)))
+    };
+    let (Some(von), Some(bis)) = (grenze("von"), grenze("bis")) else {
+        return Err(IntentAbweisung::BandintervallLeer);
+    };
     if von >= bis {
         return Err(IntentAbweisung::BandintervallLeer);
     }
@@ -344,10 +352,13 @@ impl Coordinator {
 
         // Alles, was nur den Payload betrifft, entsteht VOR dem Lock.
         let vollstaendig = wert["vollstaendig"].as_bool().unwrap_or(false);
-        let revision = wert["bestand_revision"].as_i64().unwrap_or(-1);
-        if revision < 0 {
+        // NAK-313 R-313-5 (M-70): `5.0` ist die Bestandsrevision 5; was der
+        // Helfer nicht liest, weist den Bestand ab.
+        let Some(revision) =
+            crate::vertrag::ganzzahl(&wert["bestand_revision"], 0, crate::vertrag::GANZZAHL_MAX)
+        else {
             return Err(IntentAbweisung::Vertrag);
-        }
+        };
 
         let leer: Vec<Value> = Vec::new();
         let liste = |name: &str| -> &[Value] {
@@ -399,11 +410,13 @@ impl Coordinator {
             if !ROLLEN.contains(&rolle.as_str()) {
                 return Err(IntentAbweisung::Vertrag);
             }
-            let objekt_revision = eintrag["revision"].as_i64().unwrap_or(0);
+            // NAK-313 R-313-5 (M-70): `2.0` ist die Revision 2.
+            let objekt_revision =
+                crate::vertrag::ganzzahl(&eintrag["revision"], 1, crate::vertrag::GANZZAHL_MAX);
             let konfidenz = eintrag["konfidenz"].as_f64().unwrap_or(f64::NAN);
-            if objekt_revision < 1 || !konfidenz.is_finite() {
+            let (Some(objekt_revision), true) = (objekt_revision, konfidenz.is_finite()) else {
                 return Err(IntentAbweisung::Vertrag);
-            }
+            };
             neue_intents.insert(
                 (quelle_id.clone(), passage_id.clone()),
                 SourceIntentSpiegel {

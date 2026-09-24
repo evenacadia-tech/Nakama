@@ -926,9 +926,45 @@ mod nak313_tests {
     use crate::vertrag::produkteingaenge as tabelle;
     use crate::vertrag::{json_streng, MARKE_DOPPELT, MAX_TIEFE};
 
+    /// NAK-313 Etappe 5 (§7.2): der Wert, den P0 bei eigenem Urteil `gueltig`
+    /// gelesen hat — `sequence` im ACK, der Mixerindex im gespeicherten
+    /// Deskriptor (E-313-9). Beide muessen GANZZAHLEN sein, keine Gleitkommazahl.
+    fn p0_wert(c: &Coordinator, antwort: &[u8], feld: &str) -> Result<i64, String> {
+        let ganz = |w: &Value| -> Result<i64, String> {
+            if w.is_i64() || w.is_u64() {
+                w.as_i64().ok_or_else(|| format!("{w} liegt ausserhalb i64"))
+            } else {
+                Err(format!("{w} ist keine Ganzzahl"))
+            }
+        };
+        match feld {
+            "/sequence" => {
+                let ack: Value = serde_json::from_slice(antwort).map_err(|e| e.to_string())?;
+                ganz(&ack["sequence"])
+            }
+            "/runtime/host_mixer_index" => {
+                let stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+                let key = stand
+                    .links
+                    .get("link-p0")
+                    .map(|l| l.client_key.clone())
+                    .ok_or("kein Link")?;
+                let descriptor = stand
+                    .clients
+                    .get(&key)
+                    .and_then(|k| k.descriptor.clone())
+                    .ok_or("kein Deskriptor")?;
+                ganz(&descriptor["host_mixer_index"])
+            }
+            andere => Err(format!("dieses Bein beobachtet {andere} nicht")),
+        }
+    }
+
     /// M-43, M-49: jeder Eintrag von `rust_p0` als eigener Fall — Urteil und
     /// Stufe ueber die Lesefunktion und `p0_json_mit_minor`, die Wirkung am
-    /// Link (`erster_heartbeat_gesehen`), zuletzt die Zaehlpruefung.
+    /// Link (`erster_heartbeat_gesehen`), zuletzt die Zaehlpruefung. Seit
+    /// Etappe 5 (M-64, M-65, M-73, M-90, M-96) bei eigenem Urteil `gueltig`
+    /// dazu der Wert aus `wert`.
     #[test]
     fn nak313_m43_p0_parser_lehnt_ab() {
         let kopf = tabelle::kopf();
@@ -976,6 +1012,14 @@ mod nak313_tests {
                     ));
                 }
             }
+            if let (Some(antwort), Some(wert)) = (&antwort, fall["wert"].as_str()) {
+                let soll_wert: i64 = wert.parse().expect("wert ist ein Dezimaltext");
+                match p0_wert(&c, antwort, fall["feld"].as_str().unwrap_or("")) {
+                    Ok(gelesen) if gelesen == soll_wert => {}
+                    Ok(gelesen) => rot.push(format!("{id}: Wert {gelesen}, soll {soll_wert}")),
+                    Err(g) => rot.push(format!("{id}: Wert nicht gelesen ({g}), soll {soll_wert}")),
+                }
+            }
         }
         let soll_anzahl = kopf["anzahl_je_eingang"]["rust_p0"].as_u64().unwrap_or(0) as usize;
         assert!(
@@ -983,6 +1027,56 @@ mod nak313_tests {
             "M-49 Zaehlpruefung rust_p0: {gefahren} Eintraege gefahren, der Kopf nennt {soll_anzahl}"
         );
         assert!(rot.is_empty(), "rust_p0 weicht von `produkt` ab:\n{}", rot.join("\n"));
+    }
+
+    /// M-96: `NaN`, `Infinity`, `-Infinity` und `1e999` in einem Ganzzahlfeld
+    /// — die Eintraege der Tabelle fuer P0 (`sequence`) und P1
+    /// (`transport.sequence`). Kein Leser liefert einen Wert: die Lesefunktion
+    /// endet am Textriegel (Regeln 8 und 3), P0 antwortet nicht und verbraucht
+    /// den ersten Heartbeat nicht.
+    #[test]
+    fn nak313_m96_nicht_endlich_p0_p1() {
+        let kopf = tabelle::kopf();
+        let adresse: Adresse = serde_json::from_value(
+            kopf["eingaenge"]["rust_p0"]["einspeisung"]["adresse"].clone(),
+        )
+        .expect("die Einspeisung von rust_p0 traegt eine Adresse");
+        let mut rot: Vec<String> = Vec::new();
+        let mut gefahren = 0usize;
+        for eingang in ["rust_p0", "rust_p1"] {
+            for fall in tabelle::faelle(&kopf, eingang).into_iter().filter(|f| f["matrix"] == "M-96") {
+                gefahren += 1;
+                let id = fall["id"].as_str().unwrap_or("?").to_owned();
+                let bytes = tabelle::bytes(&fall);
+                let stufe = lesestufe(&bytes);
+                if stufe != Some("textriegel") {
+                    rot.push(format!("{id} ({eingang}): Stufe {stufe:?}, soll textriegel"));
+                }
+                if v3_nachricht_lesen_beliebig_mit_minor(&bytes, JSON_SCHEMA_MINOR_AKTIV).is_ok() {
+                    rot.push(format!("{id} ({eingang}): die Lesefunktion liefert einen Wert"));
+                }
+                if eingang == "rust_p0" {
+                    let c = Coordinator::default();
+                    c.control_registrieren("link-p0", adresse.clone());
+                    let antwort = c.p0_json_mit_minor("link-p0", &bytes, JSON_SCHEMA_MINOR_AKTIV);
+                    let erster = c
+                        .stand
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .links
+                        .get("link-p0")
+                        .map(|l| l.erster_heartbeat_gesehen);
+                    if antwort.is_some() || erster != Some(false) {
+                        rot.push(format!(
+                            "{id}: ACK {}, erster Heartbeat {erster:?}",
+                            antwort.is_some()
+                        ));
+                    }
+                }
+            }
+        }
+        assert_eq!(gefahren, 8, "M-96: je vier Vektoren fuer P0 und P1 in der Tabelle");
+        assert!(rot.is_empty(), "M-96:\n{}", rot.join("\n"));
     }
 
     /// Die Raender des strengen Laufs (Manifest §8.4, Selbstaudit): Tiefe 64

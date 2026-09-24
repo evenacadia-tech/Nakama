@@ -588,6 +588,54 @@ pub fn json_streng(bytes: &[u8]) -> Result<Value, String> {
     Ok(wert)
 }
 
+/// 2^53 - 1 als `i64`: die Obergrenze, die der Ganzzahlhelfer fuer die
+/// v3-Felder bekommt (NAK-313 R-313-5).
+pub const GANZZAHL_MAX: i64 = SICHERE_GANZZAHL as i64;
+
+/// Der Ganzzahlhelfer der Rust-Produktleser (NAK-313 R-313-5, M-63).
+///
+/// Eine JSON-Zahl ist eine Ganzzahl, wenn ihr Wert keinen Nachkommateil hat:
+/// `7`, `7.0` und `7e0` sind dieselbe 7 (JSON Schema draft 2020-12,
+/// `integer`). `serde_json` liest `7.0` aber als `f64`, und `as_u64`/`as_i64`
+/// liefern dann `None`. Der Helfer nimmt deshalb `as_i64`, sonst `as_u64`
+/// im Bereich, sonst ein endliches `f64` ohne Nachkommateil im Bereich; alles
+/// andere — ein Bruch, ein Wert ausserhalb von `min..=max`, eine Nicht-Zahl —
+/// ist `None`, nie 0. `-0` (als `F64(-0.0)` gelesen) ist 0.
+///
+/// Ein **vorhandenes** Feld, das der Helfer nicht liest, lehnt der Aufrufer ab;
+/// ein **fehlendes** optionales Feld behaelt die Vorgabe des Vertrags
+/// (`ganzzahl_optional`).
+pub fn ganzzahl(wert: &Value, min: i64, max: i64) -> Option<i64> {
+    let zahl = wert.as_number()?;
+    let ganz = if let Some(i) = zahl.as_i64() {
+        i
+    } else if let Some(u) = zahl.as_u64() {
+        i64::try_from(u).ok()?
+    } else {
+        let f = zahl.as_f64()?;
+        if !f.is_finite() || f.fract() != 0.0 {
+            return None;
+        }
+        // `as` saettigte still: nur der exakt darstellbare Teil von i64.
+        const ZWEI_HOCH_63: f64 = 9_223_372_036_854_775_808.0;
+        if !(-ZWEI_HOCH_63..ZWEI_HOCH_63).contains(&f) {
+            return None;
+        }
+        f as i64
+    };
+    (min..=max).contains(&ganz).then_some(ganz)
+}
+
+/// Ein optionales Ganzzahlfeld: fehlt es oder ist es `null`, `Some(None)` —
+/// die Vorgabe des Vertrags bleibt; traegt es eine Ganzzahl im Bereich,
+/// `Some(Some(n))`; sonst `None`, und der Aufrufer lehnt die Nachricht ab.
+pub fn ganzzahl_optional(wert: Option<&Value>, min: i64, max: i64) -> Option<Option<i64>> {
+    match wert {
+        None | Some(Value::Null) => Some(None),
+        Some(w) => ganzzahl(w, min, max).map(Some),
+    }
+}
+
 /// Traegt die Tiefe des umschliessenden Knotens in den naechsten Wert.
 struct TiefenSaat {
     tiefe: usize,
@@ -1264,6 +1312,52 @@ mod tests {
     fn unbekanntes_schluesselwort_bricht_das_laden() {
         let f = Schema::laden(json!({ "type": "object", "multipleOf": 2 })).unwrap_err();
         assert!(f.contains("multipleOf"), "{f}");
+    }
+
+    /// NAK-313 M-63: der Ganzzahlhelfer an den Zahlenraendern aus M-55, im
+    /// Bereich 0 bis 2^53-1 — dieselben Werte und Ablehnungen wie der C++-Leser
+    /// fuer jede JSON-Zahl, die `serde_json` liest (`1e`, `01`, `+1`, `1.`,
+    /// `1e400`, `NaN`, `Infinity` und leer erreichen den Helfer nicht; der
+    /// strenge Lauf lehnt sie ab). Nie 0 als Ersatz.
+    #[test]
+    fn nak313_m63_ganzzahl_aus_wert() {
+        let mut rot = Vec::new();
+        for (text, soll) in [
+            ("0", Some(0)),
+            ("-0", Some(0)),
+            ("1", Some(1)),
+            ("1.0", Some(1)),
+            ("1e0", Some(1)),
+            ("10E-1", Some(1)),
+            ("91.0", Some(91)),
+            ("1.00e2", Some(100)),
+            ("9007199254740991", Some(GANZZAHL_MAX)),
+            ("9007199254740991e0", Some(GANZZAHL_MAX)),
+            ("1.5", None),
+            ("-1", None),
+            ("9007199254740992", None),
+            ("9007199254740992.0", None),
+            ("18446744073709551616", None),
+            ("null", None),
+            ("\"1\"", None),
+            ("true", None),
+        ] {
+            let wert = json_streng(text.as_bytes()).unwrap_or_else(|e| panic!("{text}: {e}"));
+            let ist = ganzzahl(&wert, 0, GANZZAHL_MAX);
+            if ist != soll {
+                rot.push(format!("{text}: {ist:?}, soll {soll:?}"));
+            }
+        }
+        for text in ["1e", "01", "+1", "1.", "1e400", "NaN", "Infinity", "-Infinity", ""] {
+            if json_streng(text.as_bytes()).is_ok() {
+                rot.push(format!("{text}: der strenge Lauf liest es, soll ablehnen"));
+            }
+        }
+        assert_eq!(ganzzahl_optional(None, 0, 9), Some(None), "ein fehlendes Feld behaelt die Vorgabe");
+        assert_eq!(ganzzahl_optional(Some(&Value::Null), 0, 9), Some(None));
+        assert_eq!(ganzzahl_optional(Some(&json!(3.0)), 0, 9), Some(Some(3)));
+        assert_eq!(ganzzahl_optional(Some(&json!(3.5)), 0, 9), None, "vorhanden und ungueltig lehnt ab");
+        assert!(rot.is_empty(), "M-63:\n{}", rot.join("\n"));
     }
 
     // --- T2-Runde 1 -------------------------------------------------------

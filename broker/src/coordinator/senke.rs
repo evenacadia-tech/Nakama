@@ -342,7 +342,9 @@ mod nak313_tests {
 
     /// M-44, M-49, M-51 bis M-53: jeder Eintrag von `rust_p1` als eigener
     /// Fall durch die ECHTE Weiche — Urteil und Stufe, Wirkung, und genau ein
-    /// strenger Lauf ueber genau diese Bytes; zuletzt die Zaehlpruefung.
+    /// strenger Lauf ueber genau diese Bytes (keiner, wenn der Textriegel
+    /// davor ablehnt); zuletzt die Zaehlpruefung. Seit Etappe 5 (M-66, M-73,
+    /// M-90, M-96) bei eigenem Urteil `gueltig` der Wert.
     #[test]
     fn nak313_m44_p1_weiche_ein_lauf() {
         let kopf = tabelle::kopf();
@@ -388,10 +390,27 @@ mod nak313_tests {
                     rot.push(format!("{id}: Wirkung {wirkung} nicht gehalten ({vorher:?} -> {nachher:?})"));
                 }
             }
-            if laeufe_ueber_diese_bytes != 1 {
+            // Genau ein strenger Lauf je Nachricht - keiner, wenn schon der
+            // Textriegel davor ablehnt (Etappe 5: 2^53, NaN, 1e999).
+            let soll_laeufe = usize::from(lesestufe(&bytes) != Some("textriegel"));
+            if laeufe_ueber_diese_bytes != soll_laeufe {
                 rot.push(format!(
-                    "{id}: {laeufe_ueber_diese_bytes} strenge Laeufe ueber dieselben Bytes, zugesagt ist genau einer"
+                    "{id}: {laeufe_ueber_diese_bytes} strenge Laeufe ueber dieselben Bytes, zugesagt sind {soll_laeufe}"
                 ));
+            }
+            // NAK-313 Etappe 5 (§7.2, M-66, M-73): bei eigenem Urteil `gueltig`
+            // der Wert, den der Evidenzstand traegt.
+            if let (true, Some(wert)) = (angenommen, fall["wert"].as_str()) {
+                let soll_wert: u64 = wert.parse().expect("wert ist ein Dezimaltext");
+                let gelesen = match fall["feld"].as_str() {
+                    Some("/transport/sequence") => {
+                        c.evidenz_sicht(&adresse.instance_id).map(|s| s.sequence)
+                    }
+                    _ => None,
+                };
+                if gelesen != Some(soll_wert) {
+                    rot.push(format!("{id}: Wert {gelesen:?} am Feld {}, soll {soll_wert}", fall["feld"]));
+                }
             }
         }
         let soll_anzahl = kopf["anzahl_je_eingang"]["rust_p1"].as_u64().unwrap_or(0) as usize;

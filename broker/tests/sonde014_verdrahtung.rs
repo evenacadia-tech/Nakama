@@ -3126,6 +3126,55 @@ fn gleicher_kanal_nimmt_nichts_zurueck() {
     );
 }
 
+/// **NAK-313 M-65 (R-313-5, E-313-9).** Derselbe Kanal in der `.0`-Form ist
+/// derselbe Kanal. Der erste Heartbeat traegt `3`, der zweite `3.0`, sonst
+/// gleich: keine Kanalwechselreaktion, kein Ausschluss, und der gespeicherte
+/// Deskriptor sowie der Snapshot an Gen tragen die GANZZAHL 3 - alle Leser des
+/// gespeicherten Werts sehen dieselbe Zahl.
+#[test]
+fn nak313_m65_mixerindex_3punkt0_ohne_kanalwechsel() {
+    let c = coordinator();
+    let a = buehne_nak213(&c, 1);
+    reihe(&c, "main", &a[0], 0, 12);
+    reihe(&c, "sonde0", &a[1], 100, 8);
+    assert!(heartbeat_mit_kanal(&c, "sonde0", &a[1], 1, Some(3)));
+    let invalidierungen = c.invalidierungen_zaehler();
+    let ausgeschlossen = c.evidenz_ausgeschlossen_zaehler();
+    let mut runtime = runtime_block(None);
+    runtime["host_mixer_index"] = json!(3.0);
+    assert!(heartbeat_mit_runtime(&c, "sonde0", &a[1], 2, runtime));
+    // Beide Haelften werden gesammelt, damit ein Bruch jede einzeln zeigt.
+    let mut rot: Vec<String> = Vec::new();
+    let nachher = (c.invalidierungen_zaehler(), c.evidenz_ausgeschlossen_zaehler());
+    if nachher != (invalidierungen, ausgeschlossen) {
+        rot.push(format!(
+            "M-65 Kanalwechselreaktion: Invalidierungen und Ausschluesse {nachher:?}, soll {:?}",
+            (invalidierungen, ausgeschlossen)
+        ));
+    }
+    if !c
+        .evidenz_historie(&a[1].instance_id)
+        .iter()
+        .all(|e| e.ausschlussgrund.is_none())
+    {
+        rot.push("M-65 Kanalwechselreaktion: ein Beleg der Sonde traegt einen Ausschlussgrund".into());
+    }
+    let snapshot: Value = serde_json::from_slice(&c.session_snapshot_json(&hex(0x11), &hex(0x22)))
+        .expect("der Snapshot ist JSON");
+    let sonde = snapshot["mitglieder"]
+        .as_array()
+        .expect("die Mitglieder sind eine Liste")
+        .iter()
+        .find(|m| m["adresse"]["instance_id"] == json!(a[1].instance_id))
+        .expect("die Sonde steht im Snapshot")
+        .clone();
+    let index = &sonde["probe_descriptor"]["host_mixer_index"];
+    if !(index.is_u64() && index.as_u64() == Some(3)) {
+        rot.push(format!("M-65 Deskriptor und Snapshot: host_mixer_index {index}, soll die Ganzzahl 3"));
+    }
+    assert!(rot.is_empty(), "M-65:\n{}", rot.join("\n"));
+}
+
 /// **K-41 und K-42.** Beide Richtungen sind ein Wechsel — eine einseitige
 /// Prüfung (`nur wenn beide Some`) ließe genau diesen Weg offen, dieselbe
 /// Lücke, die der Positionsvergleich heute hat (NB-4).

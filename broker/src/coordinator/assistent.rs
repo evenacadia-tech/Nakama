@@ -113,10 +113,13 @@ impl Coordinator {
         if !SCHRITTE.contains(&schritt.as_str()) {
             return Err(SchrittAbweisung::Vertrag);
         }
-        let revision = wert["revision"].as_i64().unwrap_or(0);
-        if revision < 1 {
+        // NAK-313 R-313-5 (M-71): `3.0` ist die Revision 3; was der Helfer
+        // nicht liest, weist den Schritt ab.
+        let Some(revision) =
+            crate::vertrag::ganzzahl(&wert["revision"], 1, crate::vertrag::GANZZAHL_MAX)
+        else {
             return Err(SchrittAbweisung::Vertrag);
-        }
+        };
         let Some(step_id) = wert["step_id"].as_str().map(str::to_owned) else {
             return Err(SchrittAbweisung::Vertrag);
         };

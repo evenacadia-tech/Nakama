@@ -142,8 +142,11 @@ impl Coordinator {
 
         // Alles, was NUR den Payload betrifft, entsteht VOR dem Lock. Der
         // Lockabschnitt darunter soll so kurz sein wie moeglich — er haelt
-        // den gesamten Sessiongraphen an.
-        let stand_neu = Self::evidenzstand_aus_wert(&wert);
+        // den gesamten Sessiongraphen an. Ein Ganzzahlfeld, das der Helfer
+        // nicht liest, lehnt den Snapshot hier ab (NAK-313 R-313-5, M-66).
+        let Some(stand_neu) = Self::evidenzstand_aus_wert(&wert) else {
+            return false;
+        };
         let beeinflusst = stand_neu.beeinflusst;
 
         // ── DER EINE LOCKABSCHNITT (M-63) ───────────────────────────────
@@ -260,22 +263,41 @@ impl Coordinator {
 
     /// Die Zusammenfassung aus dem Wire-Wert. Sie steht als eigene Funktion,
     /// damit der Lockabschnitt oben nichts rechnet.
-    pub(super) fn evidenzstand_aus_wert(wert: &Value) -> Evidenzstand {
+    ///
+    /// 🔑 NAK-313 R-313-5 (M-66): die Ganzzahlfelder liest der Ganzzahlhelfer
+    /// — `8241.0` ist die Sequenz 8241, nicht 0, und `3.0` nach `3` ist kein
+    /// Epochwechsel. Ein FEHLENDES Feld behaelt die Vorgabe (0 beziehungsweise
+    /// kein Startwert); ein VORHANDENES, das der Helfer nicht liest, macht den
+    /// ganzen Stand zu `None` — nie 0 als Ersatz.
+    pub(super) fn evidenzstand_aus_wert(wert: &Value) -> Option<Evidenzstand> {
+        let feld = |zeiger: &str, max: i64| -> Option<i64> {
+            crate::vertrag::ganzzahl_optional(wert.pointer(zeiger), 0, max).map(|w| w.unwrap_or(0))
+        };
+        let max = crate::vertrag::GANZZAHL_MAX;
+        let sequence = feld("/transport/sequence", max)? as u64;
+        let ereignisse_verloren = feld("/ereignisse/verloren", max)? as u64;
+        let verteilung_fenster = feld("/konfidenz/verteilung_fenster", max)? as u64;
+        let samples_nicht_endlich = feld("/konfidenz/samples_nicht_endlich", max)? as u64;
+        let transport_epoch = feld("/transport/transport_epoch", max)? as u64;
+        let continuity_segment = feld("/transport/continuity_segment", max)? as u64;
+        let sample_count = feld("/transport/sample_count", i64::from(u32::MAX))? as u32;
+        let project_sample_start = crate::vertrag::ganzzahl_optional(
+            wert.pointer("/transport/project_sample_start"),
+            -max,
+            max,
+        )?;
         let p50 = Self::perzentil_dekodieren(wert, "p50");
         let p95 = Self::perzentil_dekodieren(wert, "p95");
         let ereignisse = wert
             .pointer("/ereignisse/liste")
             .and_then(Value::as_array)
             .map_or(0, Vec::len);
-        Evidenzstand {
+        Some(Evidenzstand {
             evidence_id: wert["evidence_id"].as_str().unwrap_or_default().to_owned(),
             // Die Ankunftsreihenfolge vergibt der EMPFAENGER, nicht der
             // Payload; sie wird unter dem Lock gesetzt.
             empfangsfolge: 0,
-            sequence: wert
-                .pointer("/transport/sequence")
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
+            sequence,
             abdeckung: wert["abdeckung"].as_f64().unwrap_or(0.0),
             konvergenz: wert["konvergenz"].as_f64().unwrap_or(0.0),
             klasse: wert
@@ -284,18 +306,9 @@ impl Coordinator {
                 .unwrap_or_default()
                 .to_owned(),
             ereignisse,
-            ereignisse_verloren: wert
-                .pointer("/ereignisse/verloren")
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
-            verteilung_fenster: wert
-                .pointer("/konfidenz/verteilung_fenster")
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
-            samples_nicht_endlich: wert
-                .pointer("/konfidenz/samples_nicht_endlich")
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
+            ereignisse_verloren,
+            verteilung_fenster,
+            samples_nicht_endlich,
             beeinflusst: wert["beeinflusst"].as_bool().unwrap_or(false),
             hat_baender: wert.get("baender").is_some(),
             hat_verteilung: wert.get("verteilung").is_some(),
@@ -323,21 +336,10 @@ impl Coordinator {
                         .sum::<f64>() as f32
                 })
                 .unwrap_or(0.0),
-            transport_epoch: wert
-                .pointer("/transport/transport_epoch")
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
-            continuity_segment: wert
-                .pointer("/transport/continuity_segment")
-                .and_then(Value::as_u64)
-                .unwrap_or(0),
-            project_sample_start: wert
-                .pointer("/transport/project_sample_start")
-                .and_then(Value::as_i64),
-            sample_count: wert
-                .pointer("/transport/sample_count")
-                .and_then(Value::as_u64)
-                .unwrap_or(0) as u32,
+            transport_epoch,
+            continuity_segment,
+            project_sample_start,
+            sample_count,
             sample_rate: wert
                 .pointer("/transport/sample_rate")
                 .and_then(Value::as_f64)
@@ -346,7 +348,7 @@ impl Coordinator {
                 .pointer("/verteilung/p50/werte")
                 .and_then(Value::as_array)
                 .map_or(0, Vec::len) as u32,
-        }
+        })
     }
 
     /// Dekodiert `verteilung.p50` zu dB samt Praesenzbits.
@@ -534,5 +536,68 @@ impl Coordinator {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .evidence_beeinflusst
+    }
+}
+
+/// NAK-313 Etappe 5 (R-313-5, M-66): `evidenzstand_aus_wert` an Werten, die
+/// von Hand gebaut sind — am Draht fangen Textriegel oder Schema sie vorher.
+#[cfg(test)]
+mod nak313_tests {
+    use super::*;
+    use serde_json::json;
+
+    /// M-66, zweite Haelfte: ein VORHANDENES Ganzzahlfeld, das der Helfer
+    /// nicht liest, lehnt den ganzen Stand ab (`None`), nie 0; ein FEHLENDES
+    /// behaelt die Vorgabe des Vertrags (0, kein Startwert).
+    #[test]
+    fn nak313_m66_feld_ohne_ganzzahl_lehnt_ab() {
+        let basis = json!({
+            "type": "evidence_snapshot",
+            "evidence_id": "e",
+            "transport": {
+                "sequence": 8241.0, "transport_epoch": 3.0, "continuity_segment": 2.0,
+                "sample_count": 256.0, "project_sample_start": -1024.0
+            },
+            "ereignisse": { "verloren": 1.0, "liste": [] },
+            "konfidenz": { "verteilung_fenster": 4.0, "samples_nicht_endlich": 2.0 }
+        });
+        let stand = Coordinator::evidenzstand_aus_wert(&basis).expect("die .0-Formen sind Ganzzahlen");
+        assert_eq!(
+            (
+                stand.sequence,
+                stand.transport_epoch,
+                stand.continuity_segment,
+                stand.sample_count,
+                stand.project_sample_start,
+                stand.ereignisse_verloren,
+                stand.verteilung_fenster,
+                stand.samples_nicht_endlich
+            ),
+            (8241, 3, 2, 256, Some(-1024), 1, 4, 2)
+        );
+        let mut rot = Vec::new();
+        for (zeiger, schlecht) in [
+            ("/transport/sequence", json!(1.5)),
+            ("/transport/transport_epoch", json!(-1)),
+            ("/transport/continuity_segment", json!("2")),
+            ("/transport/sample_count", json!(4_294_967_296u64)),
+            ("/transport/project_sample_start", json!(0.5)),
+            ("/ereignisse/verloren", json!(9_007_199_254_740_992u64)),
+            ("/konfidenz/verteilung_fenster", json!(true)),
+            ("/konfidenz/samples_nicht_endlich", json!(2.5)),
+        ] {
+            let mut wert = basis.clone();
+            *wert.pointer_mut(zeiger).expect("das Feld steht in der Basis") = schlecht.clone();
+            if let Some(stand) = Coordinator::evidenzstand_aus_wert(&wert) {
+                rot.push(format!(
+                    "{zeiger} = {schlecht}: ein Stand (sequence {}, Start {:?}) statt der Ablehnung",
+                    stand.sequence, stand.project_sample_start
+                ));
+            }
+        }
+        let ohne = json!({ "type": "evidence_snapshot", "evidence_id": "e", "transport": {} });
+        let stand = Coordinator::evidenzstand_aus_wert(&ohne).expect("fehlende Felder lehnen nicht ab");
+        assert_eq!((stand.sequence, stand.project_sample_start), (0, None));
+        assert!(rot.is_empty(), "M-66:\n{}", rot.join("\n"));
     }
 }

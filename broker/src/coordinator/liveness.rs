@@ -563,7 +563,18 @@ impl Coordinator {
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
             return false;
         };
-        let revision = wert.get("state_revision").and_then(Value::as_u64);
+        // 🔑 NAK-313 R-313-4, R-313-5 (M-69, M-90): die gemeldete Revision
+        // ueber den Ganzzahlhelfer - `7.0` ist die Revision 7, und ein Wert
+        // ueber 2^53-1 lehnt den Bericht ab, statt `state_revision` still zu
+        // leeren. Hinter dem Textriegel ist das die zweite Sperre.
+        let Some(revision) = crate::vertrag::ganzzahl_optional(
+            wert.get("state_revision"),
+            0,
+            crate::vertrag::GANZZAHL_MAX,
+        ) else {
+            return false;
+        };
+        let revision = revision.map(|r| r as u64);
         let state_hash = wert
             .get("state_hash")
             .and_then(Value::as_str)
@@ -759,10 +770,17 @@ impl Coordinator {
             "frische": {"stale": false, "letzter_kontakt_ms": 0}
         });
         let objekt = descriptor.as_object_mut()?;
-        for feld in ["host_bus_name", "host_mixer_index"] {
-            if let Some(wert) = runtime.get(feld) {
-                objekt.insert(feld.into(), wert.clone());
-            }
+        if let Some(name) = runtime.get("host_bus_name") {
+            objekt.insert("host_bus_name".into(), name.clone());
+        }
+        // 🔑 NAK-313 R-313-5, E-313-9 (Weg N, M-65): der Index geht als
+        // GANZZAHL in den Deskriptor, nicht als Rohwert. Kanalvergleich
+        // (`kanal_von`), Hypothesen und die Snapshotkopie an Gen lesen damit
+        // dieselbe 3, ob der Heartbeat `3` oder `3.0` schrieb. Einen Wert, den
+        // der Helfer nicht liest, hat das Schema vorher abgewiesen.
+        if let Some(index) = runtime.get("host_mixer_index") {
+            let index = crate::vertrag::ganzzahl(index, 1, crate::vertrag::GANZZAHL_MAX)?;
+            objekt.insert("host_mixer_index".into(), Value::from(index));
         }
         // Derselbe Riegel wie im Setter. Er kann hier nur fallen, wenn die
         // Bauvorschrift darueber und der Vertrag auseinanderlaufen - genau

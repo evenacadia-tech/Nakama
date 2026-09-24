@@ -6614,3 +6614,392 @@ fn sonde014_m75_ohne_zustellung_bleibt_die_schuld_stehen() {
         "die Gegenprobe: der Abfluss FUNKTIONIERT, er hat nur nicht gelogen"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-313 Etappe 5a · die Wertregel an den Rust-Produktlesern (R-313-5)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Jeder Fall schickt eine vertragsgueltige Ganzzahl in der `.0`-Form. Der
+// eigene Writer schreibt sie nie, eine vertragstreue fremde Quelle darf es
+// (README Regel 2, draft 2020-12: `1.0` ist ein Integer). Der Leser muss
+// denselben Wert sehen wie aus dem Zifferntext - nie 0, nie `None`, nie ein
+// stilles Verwerfen (Manifest NAK-313 §6.4, M-64 bis M-71, M-90).
+
+/// Eine Grundform aus `gueltig/` des committeten Korpus.
+fn korpus_wert(name: &str) -> Value {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/gueltig")
+        .join(format!("{name}.json"));
+    serde_json::from_slice(&std::fs::read(&pfad).expect("Fixture liegt im Korpus"))
+        .expect("Fixture ist JSON")
+}
+
+/// NAK-313 M-64: `sequence` 91.0 wird mit 91 beantwortet, und der Resync des
+/// ersten Heartbeats laeuft genau dann, wenn eine Antwort entsteht - die
+/// Feldauswertung steht VOR den Seiteneffekten. Die Bytes sind die des
+/// Korpusfalls `heartbeat-integer-als-1punkt0.json`.
+#[cfg(windows)]
+#[test]
+fn nak313_m64_heartbeat_sequence_als_1punkt0() {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/gueltig/heartbeat-integer-als-1punkt0.json");
+    let roh = std::fs::read(&pfad).expect("Korpusfall liegt im Korpus");
+    let wert: Value = serde_json::from_slice(&roh).expect("Korpusfall ist JSON");
+    let (c, _) = coordinator();
+    let mut h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    h.adresse = serde_json::from_value(wert["adresse"].clone()).expect("Adresse");
+    anmelden(&c, "a", &h);
+    c.intervention_overflow_fuer_link("a");
+    assert!(
+        c.interventionssicht_fuer_link("a").unknown,
+        "Einrichtung: das Unknown der Sitzung ist gesetzt"
+    );
+    let antwort = Senke::p0(&c, "a", &roh);
+    let unknown = c.interventionssicht_fuer_link("a").unknown;
+    assert_eq!(
+        antwort.is_some(),
+        !unknown,
+        "M-64: der Resync laeuft genau dann, wenn eine Antwort entsteht (Antwort {}, unknown {unknown})",
+        antwort.is_some()
+    );
+    let ack: Value = serde_json::from_slice(
+        &antwort.expect("M-64: 91.0 ist die Ganzzahl 91 - der Heartbeat wird beantwortet"),
+    )
+    .expect("ACK ist JSON");
+    assert_eq!(ack["type"], "heartbeat_ack");
+    assert!(
+        ack["sequence"].is_u64() && ack["sequence"] == json!(91),
+        "M-64: das ACK zitiert die Ganzzahl 91: {ack}"
+    );
+}
+
+/// NAK-313 M-66: die Evidenzfelder in der `.0`-Form tragen ihre Werte in den
+/// Evidenzstand - nie 0, nie ein verlorener Startwert -, und dieselbe Epoche
+/// als `3` und dann `3.0` ist kein Transportbruch.
+#[cfg(windows)]
+#[test]
+fn nak313_m66_evidenzfelder_als_1punkt0() {
+    for (start, erwartet) in [(1024.0, 1024i64), (-1024.0, -1024)] {
+        let (c, _) = coordinator();
+        let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+        anmelden(&c, "a", &h);
+        report(&c, "a", &h.adresse);
+        let payload = evidenz_payload(&h.adresse, 0, |w| {
+            w["transport"]["sequence"] = json!(8241.0);
+            w["transport"]["transport_epoch"] = json!(3.0);
+            w["transport"]["continuity_segment"] = json!(2.0);
+            w["transport"]["sample_count"] = json!(256.0);
+            w["transport"]["project_sample_start"] = json!(start);
+            w["ereignisse"]["verloren"] = json!(1.0);
+            w["konfidenz"]["verteilung_fenster"] = json!(4.0);
+            w["konfidenz"]["samples_nicht_endlich"] = json!(2.0);
+        });
+        Senke::p1(&c, "a", &payload);
+        let s = c
+            .evidenz_sicht(&h.adresse.instance_id)
+            .expect("M-66: der Snapshot mit .0-Feldern wird angenommen");
+        assert_eq!(
+            (
+                s.sequence,
+                s.transport_epoch,
+                s.continuity_segment,
+                s.sample_count,
+                s.project_sample_start,
+                s.ereignisse_verloren,
+                s.verteilung_fenster,
+                s.samples_nicht_endlich
+            ),
+            (8241, 3, 2, 256, Some(erwartet), 1, 4, 2),
+            "M-66: der Evidenzstand traegt die Werte, nie 0 und nie einen verlorenen Start ({start})"
+        );
+    }
+
+    // Gegenprobe: dieselbe Epoche in zwei Schreibweisen ist kein Bruch.
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+    assert!(c.evidence_snapshot_json(
+        "a",
+        &evidenz_payload(&h.adresse, 10, |w| w["transport"]["transport_epoch"] = json!(3))
+    ));
+    let vorher = c.invalidierungen_zaehler();
+    assert!(c.evidence_snapshot_json(
+        "a",
+        &evidenz_payload(&h.adresse, 11, |w| w["transport"]["transport_epoch"] = json!(3.0))
+    ));
+    assert_eq!(
+        c.invalidierungen_zaehler(),
+        vorher,
+        "M-66: 3 und 3.0 sind dieselbe Epoche - kein Transportbruch"
+    );
+}
+
+/// Eine Probe mit zwei Belegen der Sitzung (Start 5000 und 20000) und OHNE
+/// bestaetigte Ereignisbasis - sonst stuende die Basis auf 0 und die 7 unten
+/// waere eine Luecke.
+#[cfg(windows)]
+fn m67_buehne() -> (Coordinator, HelloControl) {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    anmelden(&c, "a", &h);
+    report(&c, "a", &h.adresse);
+    for (nr, start) in [(0usize, 5000i64), (1, 20000)] {
+        assert!(c.evidence_snapshot_json(
+            "a",
+            &evidenz_payload(&h.adresse, nr, |w| w["transport"]["project_sample_start"] = json!(start))
+        ));
+    }
+    (c, h)
+}
+
+/// NAK-313 M-67: Beginn und Ende einer Intervention in der `.0`-Form. Je Feld
+/// ein Einzelvektor mit sonst ganzzahligen Werten - im kombinierten Vektor
+/// verdeckte die Sequenz `7.0` den Start. Zurueckgenommen wird genau der
+/// Bereich 4800 bis 9600 + 480.
+#[cfg(windows)]
+#[test]
+fn nak313_m67_intervention_als_1punkt0() {
+    let vektoren = [
+        ("kombiniert", json!(7.0), json!(4800.0), json!(8.0), json!(480.0), json!(9600.0)),
+        ("begin.event_sequence", json!(7.0), json!(4800), json!(8), json!(480), json!(9600)),
+        ("begin.project_sample_start", json!(7), json!(4800.0), json!(8), json!(480), json!(9600)),
+        ("end.event_sequence", json!(7), json!(4800), json!(8.0), json!(480), json!(9600)),
+        ("end.tail_samples", json!(7), json!(4800), json!(8), json!(480.0), json!(9600)),
+        ("end.project_sample_end", json!(7), json!(4800), json!(8), json!(480), json!(9600.0)),
+    ];
+    let mut rot: Vec<String> = Vec::new();
+    for (name, sequenz_beginn, start, sequenz_ende, nachlauf, ende) in vektoren {
+        let (c, h) = m67_buehne();
+        let beginn = json!({
+            "type": "audible_intervention_begin",
+            "intervention_id": hex(0x6701),
+            "adresse": h.adresse,
+            "event_sequence": sequenz_beginn,
+            "art": "hoermarkierung",
+            "project_sample_start": start
+        });
+        Senke::p0(&c, "a", &serde_json::to_vec(&beginn).unwrap());
+        let nach_beginn = c.interventionssicht_fuer_link("a");
+        if !(nach_beginn.aktive == 1 && !nach_beginn.unknown) {
+            rot.push(format!("M-67 {name}: der Beginn wird nicht angenommen ({nach_beginn:?})"));
+            continue;
+        }
+        let schluss = json!({
+            "type": "audible_intervention_end",
+            "intervention_id": hex(0x6701),
+            "adresse": h.adresse,
+            "event_sequence": sequenz_ende,
+            "project_sample_end": ende,
+            "tail_samples": nachlauf
+        });
+        Senke::p0(&c, "a", &serde_json::to_vec(&schluss).unwrap());
+        let nach_ende = c.interventionssicht_fuer_link("a");
+        if !(nach_ende.aktive == 0 && nach_ende.tail_samples_offen == 480 && !nach_ende.unknown) {
+            rot.push(format!("M-67 {name}: das Ende wird nicht angenommen ({nach_ende:?})"));
+            continue;
+        }
+        let historie = c.evidenz_historie(&h.adresse.instance_id);
+        let ausschluss = |start: i64| {
+            historie
+                .iter()
+                .find(|e| e.project_sample_start == Some(start))
+                .map(|e| e.ausschlussgrund.is_some())
+        };
+        if (ausschluss(5000), ausschluss(20000)) != (Some(true), Some(false)) {
+            rot.push(format!(
+                "M-67 {name}: nicht genau der Bereich 4800 bis 10080 (5000: {:?}, 20000: {:?})",
+                ausschluss(5000),
+                ausschluss(20000)
+            ));
+        }
+    }
+    assert!(rot.is_empty(), "M-67:\n{}", rot.join("\n"));
+}
+
+/// Ein `preview_begin` an den Main des Harnischs mit der Basis `basis`.
+#[cfg(windows)]
+fn preview_an_main(h: &HarnischMitStore, command: usize, basis: Value) -> Option<Value> {
+    let mut w = korpus_wert("preview_begin");
+    w["kopf"]["ziel"] = serde_json::to_value(&h.main.adresse).unwrap();
+    w["kopf"]["command_id"] = json!(hex(command));
+    w["kopf"]["base_revision"] = basis;
+    h.p0_von("main", &w)
+}
+
+/// Ein Harnisch, dessen Main die Revision `revision` gemeldet hat.
+#[cfg(windows)]
+fn harnisch_mit_revision(name: &str, revision: u64) -> HarnischMitStore {
+    let h = HarnischMitStore::neu(name);
+    assert!(h.c.state_report_json("main", &state_report_payload(&h.main.adresse, revision)));
+    h
+}
+
+/// NAK-313 M-68: (a) `base_revision` 5.0 bekommt dasselbe ACK wie 5 - am
+/// Persistenzweg (`preview_begin`) wie am Experimentweg (`experiment_begin`);
+/// (b) das Experimentziel in der `.0`-Form traegt sein Band.
+#[cfg(windows)]
+#[test]
+fn nak313_m68_befehlskopf_als_1punkt0() {
+    let kurz = |a: &Option<Value>| a.as_ref().map(|a| (a["ergebnis"].clone(), a["state_revision"].clone()));
+    let ziffern = preview_an_main(&harnisch_mit_revision("nak313-m68-ziffern", 5), 0x6801, json!(5));
+    let punkt = preview_an_main(&harnisch_mit_revision("nak313-m68-punkt", 5), 0x6801, json!(5.0));
+    assert!(ziffern.is_some(), "Zifferntext wird beantwortet");
+    assert_eq!(kurz(&punkt), kurz(&ziffern), "M-68 (a): preview_begin mit 5.0 wie mit 5 ({punkt:?})");
+
+    let begin = |name: &str, basis: Value| {
+        let h = harnisch_mit_revision(name, 5);
+        let mut w = experiment_begin_wert(&h.main.adresse, 0x6810, 0x6811);
+        w["kopf"]["base_revision"] = basis;
+        h.p0_von("main", &w)
+    };
+    let e_ziffern = begin("nak313-m68-e-ziffern", json!(5));
+    let e_punkt = begin("nak313-m68-e-punkt", json!(5.0));
+    assert!(e_ziffern.is_some(), "Zifferntext wird beantwortet");
+    assert_eq!(kurz(&e_punkt), kurz(&e_ziffern), "M-68 (a): experiment_begin mit 5.0 wie mit 5 ({e_punkt:?})");
+
+    for (name, von, bis) in [("band_von", json!(3.0), json!(9)), ("band_bis", json!(3), json!(9.0))] {
+        let h = HarnischMitStore::neu(&format!("nak313-m68-ziel-{name}"));
+        let versuch = 0x6830;
+        let mut w = experiment_begin_wert(&h.main.adresse, 0x6831, versuch);
+        w["ziel"] = json!({"band_von": von, "band_bis": bis});
+        let ack = h.p0(&w);
+        assert_eq!(ack["ergebnis"], "angewandt", "M-68 (b) {name}: das ACK wie mit Zifferntext: {ack}");
+        let ziel = h.c.experiment_sicht(&hex(versuch)).and_then(|e| e.ziel.clone());
+        assert_eq!(
+            ziel.map(|z| (z.band_von, z.band_bis)),
+            Some((3, 9)),
+            "M-68 (b) {name}: das Ziel traegt das Band 3 bis 9"
+        );
+    }
+}
+
+/// NAK-313 M-69: ein `state_report` mit `state_revision` 7.0 setzt die
+/// gemeldete Revision 7 - der Konfliktvergleich des Dispatch liest sie.
+#[cfg(windows)]
+#[test]
+fn nak313_m69_state_report_als_1punkt0() {
+    let h = HarnischMitStore::neu("nak313-m69");
+    let mut bericht: Value =
+        serde_json::from_slice(&state_report_payload(&h.main.adresse, 0)).unwrap();
+    bericht["state_revision"] = json!(7.0);
+    assert!(
+        h.c.state_report_json("main", &serde_json::to_vec(&bericht).unwrap()),
+        "M-69: der Bericht mit 7.0 wird angenommen"
+    );
+    let mit_7 = preview_an_main(&h, 0x6901, json!(7)).expect("M-69: Basis 7 wird beantwortet");
+    assert_eq!(
+        (mit_7["ergebnis"].clone(), mit_7["state_revision"].clone()),
+        (json!("angewandt"), json!(7)),
+        "M-69: Basis 7 trifft die gemeldete 7: {mit_7}"
+    );
+    let mit_6 = preview_an_main(&h, 0x6902, json!(6)).expect("M-69: Basis 6 wird beantwortet");
+    assert_eq!(
+        (mit_6["ergebnis"].clone(), mit_6["code"].clone(), mit_6["state_revision"].clone()),
+        (json!("konflikt"), json!("revision_conflict"), json!(7)),
+        "M-69: Basis 6 ist ein Konflikt gegen 7, nie record_state_unknown: {mit_6}"
+    );
+}
+
+/// NAK-313 M-70: der Intentbestand in der `.0`-Form - Bestand, Eintrag und
+/// Schutzband. Je Feld ein Einzelvektor; im kombinierten fiele heute alles
+/// schon an der Bestandsrevision.
+#[test]
+fn nak313_m70_intent_als_1punkt0() {
+    let vektoren = [
+        ("kombiniert", json!(5.0), json!(2.0), json!(0.0), json!(12.0)),
+        ("bestand_revision", json!(5.0), json!(2), json!(0), json!(12)),
+        ("revision", json!(5), json!(2.0), json!(0), json!(12)),
+        ("band.von", json!(5), json!(2), json!(0.0), json!(12)),
+        ("band.bis", json!(5), json!(2), json!(0), json!(12.0)),
+    ];
+    let mut rot: Vec<String> = Vec::new();
+    for (name, bestand, revision, von, bis) in vektoren {
+        let (c, _) = coordinator();
+        let h = hello(1, 2, 10, 100, "main", Some(9));
+        anmelden(&c, "a", &h);
+        let mut w = korpus_wert("intent_update");
+        w["adresse"] = serde_json::to_value(&h.adresse).unwrap();
+        w["session_epoch"] = json!(h.adresse.session_epoch);
+        w["bestand_revision"] = bestand;
+        w["intents"][0]["revision"] = revision;
+        w["schutzangaben"][0]["band"] = json!({"von": von, "bis": bis});
+        let vorher = c.intent_updates();
+        let grund = c.intent_update_json_grund_fuer_test("a", &serde_json::to_vec(&w).unwrap());
+        if grund.is_err() {
+            rot.push(format!("M-70 {name}: der vertragsgueltige Bestand wird abgewiesen: {grund:?}"));
+            continue;
+        }
+        let sicht = c.intent_sicht(&h.adresse.project_binding_id, &h.adresse.session_epoch);
+        let ist = (
+            sicht.revision,
+            sicht.intents.values().map(|i| i.revision).collect::<Vec<_>>(),
+            sicht.schutzangaben.iter().map(|s| s.band).collect::<Vec<_>>(),
+            c.intent_updates() - vorher,
+        );
+        if ist != (5, vec![2], vec![Some((0, 12))], 1) {
+            rot.push(format!("M-70 {name}: Bestand, Eintrag, Band, Zaehler {ist:?}, soll (5, [2], [(0, 12)], 1)"));
+        }
+    }
+    assert!(rot.is_empty(), "M-70:\n{}", rot.join("\n"));
+}
+
+/// NAK-313 M-71: die Assistentenrevision 3.0 ist die Revision 3.
+#[test]
+fn nak313_m71_assistent_als_3punkt0() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "a", &h);
+    let mut w = korpus_wert("assistant_step_update");
+    w["adresse"] = serde_json::to_value(&h.adresse).unwrap();
+    w["session_epoch"] = json!(h.adresse.session_epoch);
+    w["revision"] = json!(3.0);
+    let vorher = c.assistent_updates();
+    let grund = c.assistant_step_update_grund_fuer_test("a", &serde_json::to_vec(&w).unwrap());
+    assert!(grund.is_ok(), "M-71: der Schritt mit Revision 3.0 wird angenommen: {grund:?}");
+    let sicht = c
+        .assistent_sicht(&h.adresse.project_binding_id, &h.adresse.session_epoch)
+        .expect("M-71: der Schritt ist gespiegelt");
+    assert_eq!(sicht.revision, 3, "M-71: die Revision ist 3");
+    assert_eq!(c.assistent_updates(), vorher + 1, "M-71: gezaehlt");
+}
+
+/// NAK-313 M-90 (R-313-4): eine Revision ueber 2^53-1 ist ein Vertragsbruch.
+/// Der Heartbeat bekommt keine Antwort und markiert keinen ersten Heartbeat
+/// (das Unknown der Sitzung bleibt stehen); der Bericht aendert die gemeldete
+/// Revision nicht. Die Stufe (Textriegel) messen die Tabelleneintraege von
+/// `rust_p0` und `rust_p1`.
+#[cfg(windows)]
+#[test]
+fn nak313_m90_revision_ueber_2hoch53() {
+    let (c, _) = coordinator();
+    let mut h = hello(1, 2, 10, 100, "passive_probe", Some(9));
+    let mut herzschlag = korpus_wert("heartbeat");
+    h.adresse = serde_json::from_value(herzschlag["adresse"].clone()).expect("Adresse");
+    anmelden(&c, "a", &h);
+    c.intervention_overflow_fuer_link("a");
+    herzschlag["state_revision"] = json!(9_007_199_254_740_992u64);
+    assert!(
+        Senke::p0(&c, "a", &serde_json::to_vec(&herzschlag).unwrap()).is_none(),
+        "M-90 (i): kein heartbeat_ack"
+    );
+    assert!(
+        c.interventionssicht_fuer_link("a").unknown,
+        "M-90 (i): kein erster Heartbeat markiert, kein Resync"
+    );
+
+    let h2 = harnisch_mit_revision("nak313-m90", 7);
+    assert!(
+        !h2.c.state_report_json(
+            "main",
+            &state_report_payload(&h2.main.adresse, 9_007_199_254_740_992)
+        ),
+        "M-90 (ii): der Bericht mit 2^53 wird abgelehnt"
+    );
+    let ack = preview_an_main(&h2, 0x9001, json!(7)).expect("M-90 (ii): der Auftrag wird beantwortet");
+    assert_eq!(
+        (ack["ergebnis"].clone(), ack["state_revision"].clone()),
+        (json!("angewandt"), json!(7)),
+        "M-90 (ii): die gemeldete Revision bleibt 7: {ack}"
+    );
+}

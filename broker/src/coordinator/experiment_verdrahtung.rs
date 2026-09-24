@@ -40,7 +40,9 @@ impl Coordinator {
         let art = wert.get("type")?.as_str()?;
         let kopf = wert.get("kopf")?;
         let command_id = kopf.get("command_id")?.as_str()?;
-        let base_revision = kopf.get("base_revision")?.as_u64()?;
+        // NAK-313 R-313-5 (M-68): `5.0` ist dieselbe Basis wie `5`.
+        let base_revision =
+            crate::vertrag::ganzzahl(kopf.get("base_revision")?, 0, crate::vertrag::GANZZAHL_MAX)? as u64;
         let experiment_id = wert.get("experiment_id")?.as_str()?.to_owned();
 
         // 🔑 Nacharbeit 2 (Befund R08): die IDEMPOTENZ steht VOR der
@@ -216,7 +218,8 @@ impl Coordinator {
         )
         .session();
         let command_id = kopf.get("command_id")?.as_str()?;
-        let base_revision = kopf.get("base_revision")?.as_u64()?;
+        let base_revision =
+            crate::vertrag::ganzzahl(kopf.get("base_revision")?, 0, crate::vertrag::GANZZAHL_MAX)? as u64;
 
         // Die Resultatmessung nimmt ihr eigenes Lock — deshalb VOR dem Block
         // unten, nicht darin.
@@ -402,20 +405,18 @@ impl Coordinator {
     /// Consumer (`schemas/v3/README.md`).
     fn ziel_aus_wert(wert: Option<&Value>) -> Option<Experimentziel> {
         let w = wert?;
-        let von = u32::try_from(w.get("band_von")?.as_u64()?).ok()?;
-        let bis = u32::try_from(w.get("band_bis")?.as_u64()?).ok()?;
+        // NAK-313 R-313-5 (M-68): die Bandgrenzen ueber den Ganzzahlhelfer —
+        // `3.0` bis `9.0` ist dasselbe Band wie `3` bis `9`.
+        let band = |v: &Value| crate::vertrag::ganzzahl(v, 0, i64::from(u32::MAX)).map(|b| b as u32);
+        let von = band(w.get("band_von")?)?;
+        let bis = band(w.get("band_bis")?)?;
         let geschuetzte = w
             .get("geschuetzte_baender")
             .and_then(Value::as_array)
             .map(|liste| {
                 liste
                     .iter()
-                    .filter_map(|b| {
-                        Some((
-                            u32::try_from(b.get("von")?.as_u64()?).ok()?,
-                            u32::try_from(b.get("bis")?.as_u64()?).ok()?,
-                        ))
-                    })
+                    .filter_map(|b| Some((band(b.get("von")?)?, band(b.get("bis")?)?)))
                     .collect::<Vec<(u32, u32)>>()
             })
             .unwrap_or_default();
@@ -1435,7 +1436,12 @@ impl Coordinator {
             let Ok(adresse) = serde_json::from_value::<Adresse>(snapshot["adresse"].clone()) else {
                 continue;
             };
-            let mut eintrag = Self::evidenzstand_aus_wert(snapshot);
+            // NAK-313 R-313-5 (M-66): eine Zeile, deren Ganzzahlfelder der
+            // Helfer nicht liest, uebergeht der Restore wie jede andere
+            // unlesbare Zeile.
+            let Some(mut eintrag) = Self::evidenzstand_aus_wert(snapshot) else {
+                continue;
+            };
             // Der Ausschlussgrund steht NEBEN dem Snapshot: er ist eine
             // Aussage ueber den Beleg, nicht Teil der Wire-Wahrheit.
             if let Some(grund) = zeile.get("ausschlussgrund").and_then(Value::as_str) {

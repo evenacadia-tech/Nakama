@@ -98,7 +98,7 @@ pub fn bandintervall_der_gruppe(gruppe: usize) -> Bandintervall {
 /// 🔑 **NAK-213 E1 (08.09.2026).** Bis hierher lief `rang_und_beleg` fuer
 /// JEDEN Gate-Ueberlebenden, und der Deckel schnitt danach — spurlos (M-87
 /// gebrochen, Gate-Befund G-D3/A7). M-18 nennt woertlich vier Groessen fuer
-/// das Screening, und Entwurf §36.2 (`:2371–2373`) nennt dieselben: die
+/// das Screening, und Entwurf §36.2 (`:2390–2392`) nennt dieselben: die
 /// Energie in den **64 Gruppen** des Livegitters, die paarweise Ueberlappung,
 /// die Onset-/Peak-Koinzidenz und die musikalische Prioritaet.
 ///

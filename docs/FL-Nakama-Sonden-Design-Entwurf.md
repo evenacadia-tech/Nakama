@@ -7,7 +7,7 @@
 - **Bauentscheidung:** erteilt am 20.08.2026 (User: „okay dann fangen wir damit nächste session an"; Errata (a))
 - **Errata 21.08.2026:** **in Fassung 0.5 eingearbeitet.** Der Block unter dieser Liste bleibt als
   **Verlaufsabschnitt** stehen — er ist die Quelle jeder Einarbeitung und wird nicht gelöscht. Seine
-  Vorrangregel ist erfüllt, nicht aufgehoben: jedes Erratum (a) bis (q) steht ab 0.5 zusätzlich an
+  Vorrangregel ist erfüllt, nicht aufgehoben: jedes Erratum (a) bis (r) steht ab 0.5 zusätzlich an
   seiner eigenen Stelle im Text, mit Buchstabe, Datum und User-Wort-Quelle.
 - **Fassung 0.4 (20.08.2026):** Befunde des unabhängigen Prüfberichts
   ([`pruefbericht-sondenentwurf-2026-08-20.md`](pruefbericht-sondenentwurf-2026-08-20.md))
@@ -54,7 +54,7 @@ weder durch stilles Umschreiben noch durch eine Oberfläche, die den Konflikt ve
 
 ## Errata und Entscheide nach dem Kontext-Interview (21.08.2026)
 
-> **Verlaufsabschnitt seit Fassung 0.5 (02.09.2026).** Alle 17 Errata (a) bis (q) sind unten im
+> **Verlaufsabschnitt seit Fassung 0.5 (02.09.2026).** Alle 18 Errata (a) bis (r) sind unten im
 > Text an ihrer Stelle eingearbeitet und dort mit Buchstabe, Datum und User-Wort belegt. Dieser
 > Block bleibt stehen, weil er die **Quelle** jeder Einarbeitung ist — er wird nicht gelöscht und
 > nicht umgeschrieben. Die Regel „Fassung 0.4 bleibt darunter unverändert stehen" galt für 0.4;
@@ -361,6 +361,15 @@ nach, die sie bisher nicht erreicht haben.
   T2-Regel „Gate-Text aus dem Entwurf" einen stabilen Bezug behält (`bauaufteilung-sonden.md`
   §6.4). Der Errata-Block hat Vorrang; Drafts nutzen die manuellen Bereiche (±12 dB, Q 0,15–24).
   Register: NAK-108.
+
+**(r) Befund, nachgetragen mit NAK-313 (25.09.2026, `beweise/NAK-313.md` R-313-9).** Kein
+User-Wort und kein Produktentscheid: `binary_telemetry` ist eine Build-Tatsache — dieser Build
+überträgt P2 als geprüftes FlatBuffers-`FeatureBatch`, bewiesen durch SONDE-010 (A21 Transport-Fuzz,
+A22 Ende-zu-Ende-Last, T2 PASS 30.08.2026) —, der Wert ist `supported`, für P2 gibt es keinen
+JSON-Rückfall (Zustand und Evidenz laufen über P0/P1-JSON, kein P0-Verlust), das Bit ist keine
+Transportzulassung, und die Zählung „2 supported, 8 unsupported“ aus (k) bleibt die Hostmessung vom
+22.08.2026, mit der Build-Tatsache gelten 3 supported, 7 unsupported (Kasten in §53.6, Register
+NAK-386).
 
 ---
 
@@ -3980,6 +3989,16 @@ liegen nie im Audiocallback.
 
 Capabilities sind maschinenlesbare Tatsachen aus Build **und** laufendem Host. Ein Capabilitybit
 wird nur nach seinem Golden gesetzt.
+
+> **[0.5 · Erratum (r) · Befund 23.09.2026]**
+> `binary_telemetry` ist eine Build-Tatsache: dieser Build überträgt P2 als geprüftes
+> FlatBuffers-`FeatureBatch`, bewiesen durch SONDE-010 (A21 Transport-Fuzz, A22 Ende-zu-Ende-Last,
+> T2 PASS 30.08.2026); der Wert ist `supported`. Die Spalte „Verhalten ohne Beweis“ der Zeile
+> `binary_telemetry` trifft nicht zu: für P2 gibt es keinen JSON-Rückfall (§33.1, v3-Vertrag),
+> Zustand und Evidenz laufen immer über P0/P1-JSON, ein P0-Verlust entsteht nicht. Das Bit ist
+> keine Transportzulassung. Die Zählung „2 supported, 8 unsupported“ aus Erratum (k) bleibt die
+> Hostmessung vom 22.08.2026; mit der Build-Tatsache gelten 3 supported, 7 unsupported. Quelle:
+> NAK-313 R-313-9, Register NAK-386; kein User-Wort, kein Produktentscheid.
 
 | Capability | Beweis | Verhalten ohne Beweis |
 |---|---|---|

@@ -2264,7 +2264,7 @@ fn stumme_quelle_setzt_die_duplikatmarke() {
 // NAK-213 R4/E7 · das FUEHRENDE Main   (K-32, K-33, K-34, K-37, K-53)
 // ═════════════════════════════════════════════════════════════════════════
 //
-// Entwurf `:1669`: „genau ein führendes Main pro aktiver Sitzung". Bis
+// Entwurf `:1688`: „genau ein führendes Main pro aktiver Sitzung". Bis
 // NAK-213 las `aufnahmen_sammeln` `fuehrendes_main` NIE — es nahm den letzten
 // `main` nach `instance_id`, und der erste verschwand spurlos (G-D4).
 

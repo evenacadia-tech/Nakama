@@ -117,7 +117,7 @@ pub struct Aufnahme {
     /// fuehrendes Main". Bis hierher nahm `aufnahmen_sammeln` bei zwei
     /// `main`-Clients schlicht den letzten nach `instance_id` — der erste
     /// verschwand spurlos, und eine Sonde trug einen Befund im Band des
-    /// ANDEREN Masters (Gate-Befund G-D4). Entwurf `:1669` sagt „genau ein
+    /// ANDEREN Masters (Gate-Befund G-D4). Entwurf `:1688` sagt „genau ein
     /// fuehrendes Main pro aktiver Sitzung"; ohne das rechnet die Kette
     /// nicht, sondern enthaelt sich MIT GRUND.
     ///

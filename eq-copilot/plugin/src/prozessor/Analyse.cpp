@@ -1294,26 +1294,48 @@ bool EqCopilotProcessor::assistentVersuchStarten (const juce::String& passageId)
     // bestehenden Weg — `experiment_begin` → `experiment_candidate` →
     // `experiment_manual_result` beziehungsweise `experiment_abort` — und
     // schreibt nie selbst in den Experimentstore.
+    //
+    // NAK-313 R-313-4 (M-84): die Revisionsgrenze VOR jeder Nebenwirkung -
+    // beginneVersuch friert den Vergleichspegel ein und sendet experiment_begin.
+    // Am Rand kRevisionMax koennte die Verknuepfung den Schritt nicht mehr
+    // heben; dann beginnt der Versuch gar nicht erst.
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (! zustand.assistent.gesetzt || ! zustand.assistent.offen)
             return false;
+        if (zustand.assistent.revision >= nakama::state::kRevisionMax)
+            return false;
     }
     if (! beginneVersuch (passageId))
         return false;
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    // NAK-313 M-86: der Testhaken zwischen Versuchsbeginn und Verknuepfung,
+    // unter bindungMutex wie jeder Schreiber des Zustands.
+    if (versuchsbeginnHakenFuerTest)
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        versuchsbeginnHakenFuerTest (zustand);
+    }
+#endif
     juce::String versuchId;
     {
         std::lock_guard<std::mutex> l (versuchMutex);
         versuchId = versuchIdAktiv;
     }
+    // NAK-313 R-313-4 (M-86): das Inkrement laeuft ueber die Bibliotheksfunktion,
+    // die selbst prueft. Weist sie ab, endet der begonnene Versuch - er haengt
+    // sonst an keinem Schritt und hielte den Slot.
     bool veraendert = false;
+    bool verknuepft = false;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
-        if (zustand.assistent.experimentId == versuchId)
-            return true;
-        zustand.assistent.experimentId = versuchId;
-        zustand.assistent.revision += 1;
-        veraendert = true;
+        juce::String grund;
+        verknuepft = nakama::state::assistentVersuchVerknuepfen (zustand, versuchId, veraendert, grund);
+    }
+    if (! verknuepft)
+    {
+        brichVersuchAb();
+        return false;
     }
     return assistentAenderungMelden (veraendert);
 }

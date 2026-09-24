@@ -39,6 +39,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <string_view>
@@ -225,6 +226,168 @@ std::unique_ptr<EqCopilotProcessor> prozessorAmDraht()
     p->setzeEditorOffen (true);
     p->setzeBindung ("hub", {}, {});
     return p;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAK-313 Etappe 5b (R-313-4; 313/M-82, M-84 bis M-87; Manifest
+// docs/beweise/NAK-313.md §6.4 und §8.5): die Assistentenrevision haelt an
+// 2^53-1 - im Automaten und beim Versuchsstart. Der Versuchsweg oeffnet sich
+// erst mit allem, was beginneVersuch verlangt; die Einrichtung folgt dem
+// Muster aus Sonde013PassageStateTest.cpp (C5).
+// ═══════════════════════════════════════════════════════════════════════
+
+constexpr juce::int64 kRand = 9007199254740991;   // 2^53-1, Vertragswert
+
+std::unique_ptr<EqCopilotProcessor> prozessorMit (const juce::MemoryBlock& block)
+{
+    auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+    p->setStateInformation (block.getData(), static_cast<int> (block.getSize()));
+    return p;
+}
+
+/** Ein Transport, den der Test bewegt: der Vergleichspegel verlangt gueltige
+    Projektzeit UND spielt. */
+struct TestPlayHead : juce::AudioPlayHead
+{
+    juce::int64 pos = 0;
+    juce::Optional<PositionInfo> getPosition() const override
+    {
+        PositionInfo p;
+        p.setIsPlaying (true);
+        p.setTimeInSamples (pos);
+        return p;
+    }
+};
+
+/** Eine klassifizierte Quelle mit bekanntem Messpunkt - ohne sie liefert die
+    Versuchsreferenz einen leeren Text und kein Versuch entsteht. */
+SourcesModel::Sicht eineQuelle()
+{
+    SourcesModel::Sicht s;
+    s.subscriptionAktiv = true;
+    s.mainDarfSchreiben = true;
+    s.fuehrendesMain = hex32 (0x1234).toStdString();
+    SourcesModel::Zeile q;
+    q.instanceId = hex32 (0xA1).toStdString();
+    q.runtimeNonce = hex32 (0xB1).toStdString();
+    q.pluginKind = "active_probe";
+    q.mitgliedschaft = SourcesModel::Mitgliedschaft::bestaetigt;
+    q.control = SourcesModel::Control::verbunden;
+    q.messung = SourcesModel::Messung::fresh;
+    q.betrieb = SourcesModel::Betrieb::active;
+    q.lautheit = SourcesModel::Lautheit::gueltig;
+    q.messpunkt = SourcesModel::Messpunkt::insert;
+    q.descriptorVorhanden = true;
+    q.hauptziel = true;
+    s.quellen.push_back (q);
+    return s;
+}
+
+/** Faehrt Bloecke, bis die Bedingung gilt; mit pause bekommt der Analyseworker Zeit. */
+bool fahreBis (EqCopilotProcessor& p, TestPlayHead& kopf, juce::AudioBuffer<float>& puffer,
+               const std::function<bool()>& bedingung, int hoechstens, bool pause)
+{
+    juce::MidiBuffer midi;
+    for (int i = 0; i < hoechstens; ++i)
+    {
+        for (int c = 0; c < puffer.getNumChannels(); ++c)
+            for (int s = 0; s < puffer.getNumSamples(); ++s)
+                puffer.setSample (c, s, 0.5f);
+        p.processBlock (puffer, midi);
+        kopf.pos += puffer.getNumSamples();
+        if (bedingung())
+            return true;
+        if (pause)
+            std::this_thread::sleep_for (std::chrono::milliseconds (2));
+    }
+    return false;
+}
+
+/** Die Versuchsbuehne: Main mit Projektbindung und offenem Schritt der
+    uebergebenen Revision am Probe-Testserver, klassifizierte Quelle,
+    TestPlayHead, gemerkte Passage mit gebundenem Fenster und genug
+    Pegelmaterial. grund nennt die Stufe, an der die Einrichtung scheiterte. */
+struct Versuchsbuehne
+{
+    std::unique_ptr<TestServer> server;
+    std::unique_ptr<EqCopilotProcessor> p;
+    TestPlayHead kopf;
+    juce::AudioBuffer<float> puffer { 2, 512 };
+    juce::String passage { hex32 (0x71) };
+    juce::String grund;
+
+    bool einrichten (const char* fall, juce::int64 revision)
+    {
+        server = std::make_unique<TestServer> (testPipeName (fall));
+        server->commandAckArt.store (1);   // angewandt
+        if (! server->starten()) { grund = "Probe-Server startet nicht"; return false; }
+        auto v = mainBaum();
+        v.getChildWithName ("Common").setProperty ("project_binding_id", hex32 (0x55), nullptr);
+        v.getChildWithName ("MainProject").setProperty ("assistant_step_v1",
+                                                        schrittListe (kSchritt, "coverage", revision, true),
+                                                        nullptr);
+        p = prozessorMit (alsBlock (v));
+        if (p->stateNurLesen()) { grund = "Stand read-only: " + p->holeStateGrund(); return false; }
+        p->prepareToPlay (48000.0, 512);
+        if (! p->v3ProbeGegenstelleFuerTest (server->pipeName(), testExeErwartung()))
+        { grund = "Probe-Gegenstelle abgelehnt"; return false; }
+        p->v3StartFuerTest();
+        if (! warteAuf (8000, [&] { return p->controlV3Snapshot().status == ControlClient::Status::verbunden; }))
+        { grund = "Control verbindet nicht"; return false; }
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        p->setPlayHead (&kopf);
+        fahreBis (*p, kopf, puffer, [] { return false; }, 20, false);
+        if (! p->merkeManuellePassage (passage, "Refrain", 0, 4800000))
+        { grund = "Passage nicht gemerkt"; return false; }
+        if (! fahreBis (*p, kopf, puffer, [&] { return p->passagenfensterFuehrt (passage); }, 400, true))
+        { grund = "die Engine fuehrt das Fenster nicht"; return false; }
+        if (! fahreBis (*p, kopf, puffer, [&] { return p->versuchAufgenommeneBloecke() >= 60; }, 1200, false))
+        { grund = "zu wenig Pegelmaterial"; return false; }
+        // Der Linkaufbau leert die Quellen der Sitzung; die Quelle steht erst
+        // danach fest.
+        p->setzeSourcesFixtureFuerTest (eineQuelle());
+        if (p->sourcesSicht().quellen.size() != 1) { grund = "keine klassifizierte Quelle"; return false; }
+        return true;
+    }
+
+    std::vector<std::string> p0Texte()
+    {
+        std::lock_guard<std::mutex> l (server->textMutex);
+        return server->p0Texte;
+    }
+
+    void abbauen()
+    {
+        if (p != nullptr)
+        {
+            p->setPlayHead (nullptr);
+            p->v3StopFuerTest();
+            p->releaseResources();
+        }
+        if (server != nullptr)
+            server->stoppen();
+    }
+};
+
+std::vector<std::string> vomTyp (const std::vector<std::string>& texte, const char* typ)
+{
+    const std::string marke = std::string ("\"type\":\"") + typ + "\"";
+    std::vector<std::string> aus;
+    for (const auto& t : texte)
+        if (t.find (marke) != std::string::npos)
+            aus.push_back (t);
+    return aus;
+}
+
+/** Der Textwert eines Feldes aus einem gesendeten Text ("name":"wert"). */
+std::string textfeld (const std::string& text, const char* name)
+{
+    const std::string marke = std::string ("\"") + name + "\":\"";
+    const auto anfang = text.find (marke);
+    if (anfang == std::string::npos)
+        return {};
+    const auto ende = text.find ('"', anfang + marke.size());
+    return ende == std::string::npos ? std::string {} : text.substr (anfang + marke.size(), ende - anfang - marke.size());
 }
 } // namespace
 
@@ -1207,6 +1370,175 @@ int main()
         pruefe (! p->urteilMitFrischemKopfFuerTest (juce::String (id1), ersteres, 23).empty(),
                 "KR-01: auch das aelteste offene Urteil ueberlebt die Saettigung");
     }
+
+    // ===================================================================
+    // NAK-313 Etappe 5b · 313/M-82: die Assistentenrevision haelt an 2^53-1
+    // ===================================================================
+    //
+    // Am Rand wird jeder Handgriff abgewiesen, bevor er etwas zuweist: ein
+    // offener Schritt geht nicht weiter und bekommt kein Ergebnis, ein
+    // geschlossener beginnt keinen neuen Lauf. Kein Umklappen, keine
+    // Saettigung, keine 0, kein Host-Dirty.
+    abschnitt ("NAK-313 M-82: die Assistentenrevision haelt an 2^53-1");
+    {
+        auto p = prozessorMit (baumMitSchritt (schrittListe (kSchritt, "coverage", kRand, true)));
+        DirtyZaehler z;
+        p->addListener (&z);
+        const auto vor = p->assistentAusState();
+        const bool weiter = p->assistentWeiter (state::Assistentenschritt::finding);
+        const bool antwort = p->assistentAntwort (state::Assistentenergebnis::passageMessen);
+        const auto nach = p->assistentAusState();
+        pruefe (! p->stateNurLesen() && vor.gesetzt && vor.offen && vor.revision == kRand
+                    && ! weiter && ! antwort && nach.schritt == vor.schritt && nach.offen
+                    && nach.ergebnis == vor.ergebnis && nach.revision == kRand && z.nonParam == 0,
+                juce::String ("313/M-82 assistentenrevision_haelt_an_der_grenze (offen): Weiter und Antwort "
+                              "liefern false, Schritt, offen, Ergebnis und Revision 2^53-1 unveraendert, "
+                              "0 Host-Dirty - Weiter ")
+                    + (weiter ? "angenommen" : "abgewiesen") + ", Antwort " + (antwort ? "angenommen" : "abgewiesen")
+                    + ", Revision " + juce::String (nach.revision) + ", " + juce::String (z.nonParam) + " Dirty");
+        p->removeListener (&z);
+
+        auto q = prozessorMit (baumMitSchritt (schrittListe (kSchritt, "coverage", kRand, false)));
+        DirtyZaehler zq;
+        q->addListener (&zq);
+        const bool neu = q->assistentStarten (hex32 (0x5742));
+        const auto nachStart = q->assistentAusState();
+        pruefe (! q->stateNurLesen() && ! neu && nachStart.gesetzt && ! nachStart.offen
+                    && nachStart.stepId == kSchritt && nachStart.revision == kRand && zq.nonParam == 0,
+                juce::String ("313/M-82 assistentenrevision_haelt_an_der_grenze (geschlossen): ein neuer Lauf "
+                              "liefert false, Schritt und Revision 2^53-1 unveraendert, 0 Host-Dirty - Start ")
+                    + (neu ? "angenommen" : "abgewiesen") + ", Revision " + juce::String (nachStart.revision)
+                    + ", " + juce::String (zq.nonParam) + " Dirty");
+        q->removeListener (&zq);
+    }
+
+    // ===================================================================
+    // NAK-313 Etappe 5b · 313/M-84 bis M-87: der Versuchsstart am Rand
+    // ===================================================================
+    //
+    // assistentVersuchStarten prueft unter dem Bindungsschloss VOR
+    // beginneVersuch, ob der Schritt offen ist und seine Revision unter 2^53-1
+    // liegt; die Verknuepfung laeuft ueber die Bibliotheksfunktion, die selbst
+    // prueft, und weist sie ab, bricht der Prozessor den Versuch ab. Beobachtet
+    // wird der Draht (p0Texte des Probe-Servers), der Versuchsslot, der
+    // Vergleichspegel, der Stand und das Host-Dirty ab der Einrichtung.
+    abschnitt ("NAK-313 M-84: der Versuchsstart am Rand hat keine Nebenwirkung");
+    {
+        Versuchsbuehne b;
+        const bool bereit = b.einrichten ("nak313-m84", kRand);
+        pruefe (bereit, "313/M-84 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel - " + b.grund);
+        if (bereit)
+        {
+            DirtyZaehler z;
+            b.p->addListener (&z);
+            const bool gestartet = b.p->assistentVersuchStarten (b.passage);
+            warteAuf (1000, [&] { return ! vomTyp (b.p0Texte(), "experiment_begin").empty(); });
+            const auto begins = vomTyp (b.p0Texte(), "experiment_begin");
+            const auto schritt = b.p->assistentAusState();
+            const bool abgeglichen = b.p->versuchLautheitAbgeglichen();
+            pruefe (! gestartet && begins.empty() && b.p->letzterVersuchP0FuerTest().empty()
+                        && b.p->laufenderVersuch().isEmpty() && ! abgeglichen && z.nonParam == 0
+                        && schritt.revision == kRand && schritt.experimentId.isEmpty(),
+                    juce::String ("313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung: false, kein "
+                                  "experiment_begin, Slot leer, Pegel nicht eingefroren, 0 Host-Dirty, Revision "
+                                  "2^53-1, experimentId leer - ")
+                        + (gestartet ? "gestartet" : "abgewiesen") + ", " + juce::String ((int) begins.size())
+                        + " begin, Slot '" + b.p->laufenderVersuch() + "', abgeglichen "
+                        + (abgeglichen ? "ja" : "nein") + ", " + juce::String (z.nonParam) + " Dirty, Revision "
+                        + juce::String (schritt.revision) + ", experimentId '" + schritt.experimentId + "'");
+            b.p->removeListener (&z);
+
+            // M-87: der abgewiesene Start hat nichts gespeichert.
+            juce::MemoryBlock gespeichert;
+            b.p->getStateInformation (gespeichert);
+            state::Zustand zl;
+            juce::String grund;
+            const bool normal = laedtNormal (gespeichert, zl, grund);
+            pruefe (normal && zl.assistent.revision == kRand && zl.assistent.offen
+                        && zl.assistent.experimentId.isEmpty(),
+                    "313/M-87 (Teilfall von 313/M-84) versuchskennung_nicht_gespeichert: geladen mit Revision "
+                    "2^53-1, offen, experimentId leer - " + juce::String (normal ? "geladen" : "nicht geladen: " + grund)
+                        + ", Revision " + juce::String (zl.assistent.revision) + ", experimentId '"
+                        + zl.assistent.experimentId + "'");
+        }
+        b.abbauen();
+    }
+
+    abschnitt ("NAK-313 M-85: unter der Grenze startet der Versuch wie bisher");
+    {
+        Versuchsbuehne b;
+        const bool bereit = b.einrichten ("nak313-m85", 5);
+        pruefe (bereit, "313/M-85 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel - " + b.grund);
+        if (bereit)
+        {
+            DirtyZaehler z;
+            b.p->addListener (&z);
+            const bool gestartet = b.p->assistentVersuchStarten (b.passage);
+            warteAuf (8000, [&] { return ! vomTyp (b.p0Texte(), "experiment_begin").empty(); });
+            const auto begins = vomTyp (b.p0Texte(), "experiment_begin");
+            const auto id = begins.size() == 1 ? textfeld (begins.front(), "experiment_id") : std::string {};
+            const auto schritt = b.p->assistentAusState();
+            pruefe (gestartet && begins.size() == 1 && id.size() == 32
+                        && b.p->laufenderVersuch().toStdString() == id && schritt.experimentId.toStdString() == id
+                        && schritt.revision == 6 && z.nonParam == 1,
+                    juce::String ("313/M-85 versuchsstart_unter_der_grenze: true, genau ein experiment_begin, Slot "
+                                  "und experimentId gleich dessen experiment_id, Revision 6, genau 1 Host-Dirty - ")
+                        + juce::String ((int) begins.size()) + " begin, id '" + id + "', Slot '"
+                        + b.p->laufenderVersuch() + "', Revision " + juce::String (schritt.revision) + ", "
+                        + juce::String (z.nonParam) + " Dirty");
+            b.p->removeListener (&z);
+        }
+        b.abbauen();
+    }
+
+#if defined (NAK313_GEGENPROBE_BASISSTAND)
+    std::cout << "  --      313/M-86 grenze_nach_versuchsbeginn_bricht_ab  [Basisstand: Haken und "
+                 "Bibliotheksfunktion entstehen erst im Bau, nicht gewertet]" << std::endl;
+#else
+    abschnitt ("NAK-313 M-86: die Grenze zwischen Versuchsbeginn und Verknuepfung bricht den Versuch ab");
+    {
+        Versuchsbuehne b;
+        const bool bereit = b.einrichten ("nak313-m86", 5);
+        pruefe (bereit, "313/M-86 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel - " + b.grund);
+        if (bereit)
+        {
+            // Der Testhaken laeuft nach beginneVersuch und vor der Verknuepfung,
+            // unter bindungMutex; er setzt nur die Revision, ohne Host-Dirty und Draht.
+            b.p->versuchsbeginnHakenFuerTest = [] (nakama::state::Zustand& zs) { zs.assistent.revision = kRand; };
+            DirtyZaehler z;
+            b.p->addListener (&z);
+            const bool gestartet = b.p->assistentVersuchStarten (b.passage);
+            b.p->versuchsbeginnHakenFuerTest = nullptr;
+            warteAuf (8000, [&] { return ! vomTyp (b.p0Texte(), "experiment_abort").empty(); });
+            const auto texte = b.p0Texte();
+            const auto begins = vomTyp (texte, "experiment_begin");
+            const auto aborts = vomTyp (texte, "experiment_abort");
+            const auto id = begins.size() == 1 ? textfeld (begins.front(), "experiment_id") : std::string {};
+            std::size_t stelleBegin = texte.size(), stelleAbort = texte.size();
+            for (std::size_t i = 0; i < texte.size(); ++i)
+            {
+                if (texte[i].find ("\"type\":\"experiment_begin\"") != std::string::npos) stelleBegin = i;
+                if (texte[i].find ("\"type\":\"experiment_abort\"") != std::string::npos) stelleAbort = i;
+            }
+            const auto schritt = b.p->assistentAusState();
+            pruefe (! gestartet && schritt.revision == kRand && schritt.experimentId.isEmpty() && z.nonParam == 0,
+                    juce::String ("313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung): false, Revision "
+                                  "2^53-1, experimentId leer, 0 Host-Dirty - ")
+                        + (gestartet ? "gestartet" : "abgewiesen") + ", Revision " + juce::String (schritt.revision)
+                        + ", experimentId '" + schritt.experimentId + "', " + juce::String (z.nonParam) + " Dirty");
+            pruefe (b.p->laufenderVersuch().isEmpty() && begins.size() == 1 && aborts.size() == 1 && id.size() == 32
+                        && stelleBegin < stelleAbort && textfeld (aborts.front(), "experiment_id") == id
+                        && textfeld (aborts.front(), "grund") == "user_abbruch",
+                    juce::String ("313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch): Slot leer, genau ein "
+                                  "experiment_begin und danach genau ein experiment_abort mit derselben experiment_id "
+                                  "und grund user_abbruch - ")
+                        + juce::String ((int) begins.size()) + " begin, " + juce::String ((int) aborts.size())
+                        + " abort, Slot '" + b.p->laufenderVersuch() + "'");
+            b.p->removeListener (&z);
+        }
+        b.abbauen();
+    }
+#endif
 
     std::cout << std::endl << "SONDE-014 AssistantStep: " << bestanden << "/"
               << (bestanden + fehler) << " gruen" << std::endl;

@@ -1084,6 +1084,7 @@ public:
     void setzeKadenzUhrFuerTest (std::int64_t ns) { kadenzUhrFuerTestNs.store (ns); weckeWorkerFuerTest(); }
     /// M-54, M-82: laeuft in der Antwort hinter dem Sperrblock, vor dem Schreiben.
     void setzeDiagnoseHakenFuerTest (std::function<void()> haken) { diagnoseHakenFuerTest = std::move (haken); }
+    std::function<void (nakama::state::Zustand&)> versuchsbeginnHakenFuerTest; ///< NAK-313 M-86: nach beginneVersuch, unter bindungMutex
     /// M-54: laesst sich die Steuersperre binnen `fristMs` nehmen? Nie vom Halter.
     bool analyseSteuerSperreFreiFuerTest (int fristMs) const
     {

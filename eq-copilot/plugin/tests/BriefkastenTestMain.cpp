@@ -3,7 +3,9 @@
     Misst die Verhaltensmatrix aus docs/beweise/NAK-286.md, Block 4.3 (M-23 bis
     M-40, M-77, M-79 bis M-83) und die C++-Haelften aus 4.5 und 4.6 (M-48 bis
     M-54), an den ECHTEN Prozessoren Gen (`EqCopilotProcessor`) und Probeeq
-    (`SondeProcessor`).
+    (`SondeProcessor`). Seit NAK-313 Etappe 7 (R-313-10) dazu der Export des
+    Festhalten-Handgriffs, docs/beweise/NAK-313.md M-132 bis M-144: exklusiv
+    veroeffentlicht, nie ersetzt, jeder Fall in einem Testordner unter %TEMP%.
 
     Aufruf:
       EqCopBriefkastenTest.exe             alle Faelle; Exit 0 gruen, 1 rot
@@ -11,6 +13,8 @@
                                            (M-39, Manifest §5.2) nach
                                            eq-copilot/fixtures/diagnose/
                                            festhalten-referenz.json
+      EqCopBriefkastenTest.exe --nak313-e7 nur der Export (NAK-313 M-132 bis
+                                           M-144), fuer Gegenprobe und Rotlaeufe
 
     Jede Zeile beginnt mit `[ok]  ` oder `[ROT] ` und nennt die Matrixzeile;
     ein Rotbeweis zaehlt nur mit einer `[ROT]`-Zeile, die den Traeger der
@@ -131,6 +135,12 @@ juce::String sha256Hex (const juce::MemoryBlock& daten)
 // sie. Er bleibt nach der Erzeugung unveraendert: jede Aenderung hier waere
 // eine andere Buehne, und die Referenz bewiese nichts mehr.
 //
+// Ausnahme NAK-313 Etappe 7 (25.09.2026), an genau zwei Stellen, beide
+// erzwungen: der Zielordner ist ein Testordner statt der Nutzerablage
+// (R-313-10, M-133), und der Aufruf nimmt die neue Signatur mit dem Snapshot,
+// den die alte Funktion selbst holte (M-142). Sampleplan, Zustand und
+// Maskierung bleiben; die Referenz bleibt bytegleich (M-132).
+//
 // Deterministisch heisst hier drei Dinge:
 //   1. fester Zustand (Instanzkennung, Label) und fester Sampleplan;
 //   2. die schwere Auswertung faellt NUR an Zuggrenzen: der Zug wird
@@ -201,7 +211,7 @@ bool maskiere (std::string& text)
     return true;
 }
 
-Ergebnis fahre()
+Ergebnis fahre (const std::shared_ptr<nakama::diagnose::WurzelFassade>& testordner)
 {
     Ergebnis e;
     for (int versuch = 1; versuch <= 3; ++versuch)
@@ -269,8 +279,12 @@ Ergebnis fahre()
         if (! gueltig)
             continue;
 
-        juce::String pfad;
-        if (! p->schreibeSnapshotDatei (pfad))
+        // NAK-313 Etappe 7 (25.09.2026), Stelle 1: der Testordner (M-133).
+        eqcop::testzugang::snapshotOrdnerFuerTest() = testordner;
+        // NAK-313 Etappe 7 (25.09.2026), Stelle 2: die neue Signatur (M-142).
+        const auto ex = p->schreibeSnapshotDatei (p->messSnapshot());
+        const auto pfad = ex.art == eqcop::SnapshotExport::Art::neu ? ex.datei : ex.grund;
+        if (ex.art != eqcop::SnapshotExport::Art::neu)
         {
             e.grund = "der Knopfweg schrieb nicht: " + pfad;
             return e;
@@ -329,9 +343,45 @@ bool nameWieKnopfweg (const juce::String& name)
 // ENDE DER REFERENZBUEHNE
 //==============================================================================
 
+/** NAK-313 Etappe 7 (R-313-10, M-133): der Testordner des Exports - eine
+    Wurzel unter %TEMP%, die die Ordnerfassade statt %LOCALAPPDATA% liefert.
+    Der Export legt darunter evenacadia\EQ-Copilot\snapshots an. Die Wurzel
+    entfernt sich mit ihrem Ende. */
+class ExportWurzel final : public nakama::diagnose::WurzelFassade
+{
+public:
+    explicit ExportWurzel (const char* fall)
+    {
+        static std::atomic<int> laufend { 0 };
+        wurzel = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                     .getChildFile ("nak313e7-" + juce::String ((int) GetCurrentProcessId()) + "-"
+                                    + juce::String (++laufend) + "-" + fall);
+        wurzel.deleteRecursively();
+        wurzel.createDirectory();
+    }
+    ~ExportWurzel() override { wurzel.deleteRecursively(); }
+
+    juce::File snapshots() const
+    {
+        return wurzel.getChildFile ("evenacadia").getChildFile ("EQ-Copilot").getChildFile ("snapshots");
+    }
+    juce::String pfad() const { return wurzel.getFullPathName(); }
+
+    juce::File wurzel;
+
+protected:
+    bool wurzelImpl (std::wstring& aus) override
+    {
+        aus = wurzel.getFullPathName().toWideCharPointer();
+        return wurzel.isDirectory();
+    }
+};
+
 int erzeugeReferenz()
 {
-    const auto e = referenz::fahre();
+    const auto testordner = std::make_shared<ExportWurzel> ("erzeuge");
+    const auto e = referenz::fahre (testordner);
+    eqcop::testzugang::snapshotOrdnerFuerTest() = nullptr;
     if (! e.ok)
     {
         std::cout << "REFERENZ NICHT ERZEUGT: " << e.grund.toStdString()
@@ -374,13 +424,18 @@ void festhaltenBytegleich()
               "Referenz fehlt: " + referenzDatei.getFullPathName());
         return;
     }
-    const auto e = referenz::fahre();
+    // NAK-313 Etappe 7 (M-132, M-133): die Buehne schreibt in einen Testordner;
+    // der Ordner wird mit ihm verglichen, der Produktordner nur noch als Pfad
+    // in 313/M-143.
+    const auto testordner = std::make_shared<ExportWurzel> ("referenz");
+    const auto e = referenz::fahre (testordner);
+    eqcop::testzugang::snapshotOrdnerFuerTest() = nullptr;
     if (! e.ok)
     {
         fall ("M-39", "festhalten_bytegleich", false, "Buehne: " + e.grund);
         return;
     }
-    const bool ordnerOk = juce::File (e.ordner) == referenz::snapshotOrdner();
+    const bool ordnerOk = juce::File (e.ordner) == testordner->snapshots();
     const bool nameOk = referenz::nameWieKnopfweg (e.dateiname);
     fall ("M-39", "festhalten_ordner_und_name_wie_knopfweg", ordnerOk && nameOk,
           e.ordner + "\\" + e.dateiname);
@@ -3300,6 +3355,452 @@ void langsamerTaktOhneAudiowirkung()
           "Bloecke waehrend des Gen-Takts " + zahl (waehrendGen) + ", waehrend des Probeeq-Takts " + zahl (waehrendProbeeq));
 }
 
+//==============================================================================
+// NAK-313 Etappe 7 (R-313-10): der Export des Festhalten-Handgriffs. Die Zeilen
+// M-133 bis M-140, M-142 (a), M-143 und M-144 des Manifests
+// docs/beweise/NAK-313.md. Jeder Fall faehrt in einem eigenen Testordner unter
+// %TEMP% mit Testuhr und einer Dateisystemfassade, die einen Pfad ausserhalb
+// des Testordners nie ausfuehrt, nur zaehlt; der Messstand m stammt aus einem
+// gefuetterten Gen. Der Export liest nur m (M-142 (a)): eine zweite Instanz
+// exportiert denselben Messstand unter ihrer eigenen Kennung.
+namespace nak313e7
+{
+using Art = eqcop::SnapshotExport::Art;
+
+constexpr const char* kInstanzA = "e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7a1";
+constexpr const char* kInstanzB = "e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7b2";
+
+/// Ortszeit 25.09.2026 hh:mm:ss,mmm - eine Ablesung der Testuhr.
+std::int64_t um (int stunde, int minute, int sekunde, int milli)
+{
+    return juce::Time (2026, 8, 25, stunde, minute, sekunde, milli, true).toMilliseconds();
+}
+
+/** Liefert je Ablesung den naechsten Wert, danach den letzten, und zaehlt die
+    Ablesungen (M-139: genau eine je Export). */
+class FolgeUhr final : public dg::UhrFassade
+{
+public:
+    explicit FolgeUhr (std::vector<std::int64_t> w) : werte (std::move (w)) {}
+    std::int64_t jetztUtcMs() override
+    {
+        const auto i = ablesungen.fetch_add (1);
+        return werte[std::min<std::size_t> (i, werte.size() - 1)];
+    }
+    std::vector<std::int64_t> werte;
+    std::atomic<std::size_t> ablesungen { 0 };
+};
+
+/** Die Teil-Schreibfehler aus M-140. */
+enum class Stoerung
+{
+    keine,
+    schreibenMeldetFehler,   ///< (1) alle Bytes geschrieben, nicht gespuelt, Rueckgabe false
+    spuelenMeldetFehler,     ///< (2) geschrieben und gespuelt, Rueckgabe false
+    kurzGeschrieben,         ///< (3) ein Byte fehlt, Rueckgabe true: die Groesse weicht ab
+    umbenennenScheitert,     ///< (4) benenneUmOhneErsetzen false, der Zielname fehlt
+    schreibenUndLoeschen     ///< (5) wie (1), dazu scheitert loesche
+};
+
+/** Die echten Aufrufe unter dem Testordner, mit den Stoerungen aus M-140. Ein
+    Pfad ausserhalb des Testordners wird nie ausgefuehrt, nur gezaehlt (M-133). */
+class ExportFassade final : public dg::EchteDateisystemFassade
+{
+public:
+    explicit ExportFassade (const juce::String& wurzel) : praefix (wurzel.toWideCharPointer()) {}
+
+    std::atomic<Stoerung> stoerung { Stoerung::keine };
+    std::atomic<std::uint64_t> ausserhalb { 0 };
+
+protected:
+    dg::DateiAttribute attributeImpl (const std::wstring& p) override
+    {
+        return innen (p) ? EchteDateisystemFassade::attributeImpl (p) : dg::DateiAttribute {};
+    }
+    bool liesImpl (const std::wstring& p, char* ziel, std::size_t hoechstens, std::size_t& gelesen) override
+    {
+        return innen (p) && EchteDateisystemFassade::liesImpl (p, ziel, hoechstens, gelesen);
+    }
+    Handle legeExklusivAnImpl (const std::wstring& p) override
+    {
+        return innen (p) ? EchteDateisystemFassade::legeExklusivAnImpl (p) : nullptr;
+    }
+    bool schreibeUndSpueleImpl (Handle datei, const char* daten, std::size_t anzahl) override
+    {
+        switch (stoerung.load())
+        {
+            case Stoerung::schreibenMeldetFehler:
+            case Stoerung::schreibenUndLoeschen:
+            {
+                DWORD geschrieben = 0;
+                WriteFile (static_cast<HANDLE> (datei), daten, (DWORD) anzahl, &geschrieben, nullptr);
+                return false;
+            }
+            case Stoerung::spuelenMeldetFehler:
+                (void) EchteDateisystemFassade::schreibeUndSpueleImpl (datei, daten, anzahl);
+                return false;
+            case Stoerung::kurzGeschrieben:
+                return EchteDateisystemFassade::schreibeUndSpueleImpl (datei, daten, anzahl - 1);
+            case Stoerung::keine:
+            case Stoerung::umbenennenScheitert:
+                break;
+        }
+        return EchteDateisystemFassade::schreibeUndSpueleImpl (datei, daten, anzahl);
+    }
+    bool groesseImpl (const std::wstring& p, std::int64_t& aus) override
+    {
+        return innen (p) && EchteDateisystemFassade::groesseImpl (p, aus);
+    }
+    bool benenneUmOhneErsetzenImpl (const std::wstring& von, const std::wstring& nach) override
+    {
+        if (! innen (von) || ! innen (nach) || stoerung.load() == Stoerung::umbenennenScheitert)
+            return false;
+        return EchteDateisystemFassade::benenneUmOhneErsetzenImpl (von, nach);
+    }
+    bool legeOrdnerAnImpl (const std::wstring& p) override
+    {
+        return innen (p) && EchteDateisystemFassade::legeOrdnerAnImpl (p);
+    }
+    bool loescheImpl (const std::wstring& p) override
+    {
+        if (! innen (p) || stoerung.load() == Stoerung::schreibenUndLoeschen)
+            return false;
+        return EchteDateisystemFassade::loescheImpl (p);
+    }
+
+private:
+    std::wstring praefix;
+
+    bool innen (const std::wstring& p) noexcept
+    {
+        if (p.size() < praefix.size() || _wcsnicmp (p.c_str(), praefix.c_str(), praefix.size()) != 0)
+        {
+            ausserhalb.fetch_add (1);
+            return false;
+        }
+        return true;
+    }
+};
+
+/** Beruehrt kein Dateisystem und zaehlt jeden Aufruf (M-133 (b)). */
+class AttrappenFassade final : public dg::DateisystemFassade
+{
+protected:
+    dg::DateiAttribute attributeImpl (const std::wstring&) override { return {}; }
+    bool liesImpl (const std::wstring&, char*, std::size_t, std::size_t&) override { return false; }
+    Handle legeExklusivAnImpl (const std::wstring&) override { return nullptr; }
+    bool schreibeUndSpueleImpl (Handle, const char*, std::size_t) override { return false; }
+    void schliesseImpl (Handle) override {}
+    bool groesseImpl (const std::wstring&, std::int64_t&) override { return false; }
+    bool benenneUmOhneErsetzenImpl (const std::wstring&, const std::wstring&) override { return false; }
+    bool legeOrdnerAnImpl (const std::wstring&) override { return false; }
+    bool loescheImpl (const std::wstring&) override { return false; }
+};
+
+/** Setzt die Fassaden des Exports ueber testzugang und nimmt sie am Ende zurueck. */
+struct Fassaden
+{
+    Fassaden (std::shared_ptr<dg::WurzelFassade> ordner, std::shared_ptr<dg::UhrFassade> uhr,
+              std::shared_ptr<dg::DateisystemFassade> dateisystem)
+    {
+        eqcop::testzugang::snapshotOrdnerFuerTest() = std::move (ordner);
+        eqcop::testzugang::snapshotUhrFuerTest() = std::move (uhr);
+        eqcop::testzugang::snapshotDateisystemFuerTest() = std::move (dateisystem);
+    }
+    ~Fassaden()
+    {
+        eqcop::testzugang::snapshotOrdnerFuerTest() = nullptr;
+        eqcop::testzugang::snapshotUhrFuerTest() = nullptr;
+        eqcop::testzugang::snapshotDateisystemFuerTest() = nullptr;
+    }
+    Fassaden (const Fassaden&) = delete;
+    Fassaden& operator= (const Fassaden&) = delete;
+};
+
+/** Ein Fall: Testordner, Testuhr mit ihren Ablesungen, Dateisystemfassade. */
+struct Buehne
+{
+    std::shared_ptr<ExportWurzel>  wurzel;
+    std::shared_ptr<FolgeUhr>      uhr;
+    std::shared_ptr<ExportFassade> fs;
+    Fassaden                       gesetzt;
+
+    Buehne (const char* fall, std::vector<std::int64_t> ablesungen)
+        : wurzel (std::make_shared<ExportWurzel> (fall)),
+          uhr (std::make_shared<FolgeUhr> (std::move (ablesungen))),
+          fs (std::make_shared<ExportFassade> (wurzel->pfad())),
+          gesetzt (wurzel, uhr, fs)
+    {
+    }
+    juce::File ziel (const juce::String& name) const { return wurzel->snapshots().getChildFile (name); }
+    int dateien (const juce::String& muster = "*") const
+    {
+        return (int) wurzel->snapshots().findChildFiles (juce::File::findFiles, false, muster).size();
+    }
+};
+
+/// Ueber alle Exporte dieses Abschnitts (M-144).
+struct Zaehlung
+{
+    int neu = 0, ersetzt = 0, abgelehnt = 0, fehler = 0, ohneAngabe = 0;
+} zaehlung;
+
+juce::String artText (Art a)
+{
+    switch (a)
+    {
+        case Art::neu:       return "neu";
+        case Art::ersetzt:   return "ersetzt";
+        case Art::abgelehnt: return "abgelehnt";
+        case Art::fehler:    return "fehler";
+    }
+    return "?";
+}
+
+juce::String text (const eqcop::SnapshotExport& e)
+{
+    return artText (e.art) + (e.datei.isNotEmpty() ? " datei=" + e.datei : juce::String())
+         + (e.vorhanden.isNotEmpty() ? " vorhanden=" + e.vorhanden : juce::String())
+         + (e.rest.isNotEmpty() ? " rest=" + e.rest : juce::String())
+         + (e.grund.isNotEmpty() ? " grund=" + e.grund : juce::String());
+}
+
+eqcop::SnapshotExport exportiere (Gen& g, const eqcop::MessSnapshot& m)
+{
+    const auto e = g.schreibeSnapshotDatei (m);
+    switch (e.art)
+    {
+        case Art::neu:       ++zaehlung.neu;       if (e.datei.isEmpty())     ++zaehlung.ohneAngabe; break;
+        case Art::ersetzt:   ++zaehlung.ersetzt;   if (e.datei.isEmpty())     ++zaehlung.ohneAngabe; break;
+        case Art::abgelehnt: ++zaehlung.abgelehnt; if (e.vorhanden.isEmpty()) ++zaehlung.ohneAngabe; break;
+        case Art::fehler:    ++zaehlung.fehler;    if (e.grund.isEmpty())     ++zaehlung.ohneAngabe; break;
+    }
+    return e;
+}
+
+std::unique_ptr<Gen> genMit (const char* instanz, const juce::String& label)
+{
+    auto g = std::make_unique<Gen>();   // NAK-175: Heap
+    ladeZustand (*g, instanz, label, false);
+    return g;
+}
+
+/// 313/M-133 (a) je Fall: jeder Dateizugriff lag unter dem Testordner, und
+/// jeder gemeldete Pfad auch.
+void inDerAblage (const Buehne& b, const char* name, const std::vector<eqcop::SnapshotExport>& ergebnisse)
+{
+    bool unter = true;
+    for (const auto& e : ergebnisse)
+        for (const auto* p : { &e.datei, &e.vorhanden, &e.rest })
+            unter = unter && (p->isEmpty() || p->startsWithIgnoreCase (b.wurzel->pfad() + "\\"));
+    fall ("313/M-133", (std::string ("nie_in_der_nutzerablage ") + name
+                        + ": jeder Zugriff und jeder gemeldete Pfad unter dem Testordner").c_str(),
+          b.fs->ausserhalb.load() == 0 && unter,
+          "ausserhalb " + zahl (b.fs->ausserhalb.load()) + ", Testordner " + b.wurzel->pfad());
+}
+
+/// Der Wettlauf zweier Instanzen mit gleichem Namen (M-135 bis M-137): die
+/// erste gewinnt, die zweite wird abgelehnt, die Datei der ersten bleibt.
+void zweiInstanzen (const char* zeile, const char* ordner, const std::string& name, const juce::String& labelA,
+                    const juce::String& labelB, const juce::String& erwarteteDatei,
+                    const eqcop::MessSnapshot& m)
+{
+    Buehne b (ordner, { um (12, 0, 5, 0), um (12, 0, 5, 400) });
+    auto a = genMit (kInstanzA, labelA);
+    auto c = genMit (kInstanzB, labelB);
+    const auto e1 = exportiere (*a, m);
+    const auto nachErstem = sha256Datei (juce::File (e1.datei));
+    const auto e2 = exportiere (*c, m);
+    bool ok = false;
+    const auto inhalt = liesJson (juce::File (e1.datei), ok);
+    const int neu = (e1.art == Art::neu ? 1 : 0) + (e2.art == Art::neu ? 1 : 0);
+    fall (zeile, (name + ": genau einer neu, der andere abgelehnt").c_str(),
+          neu == 1 && e1.art == Art::neu && e2.art == Art::abgelehnt
+              && juce::File (e2.vorhanden) == juce::File (e1.datei),
+          "erster " + text (e1) + " | zweiter " + text (e2));
+    fall (zeile, (name + ": die Datei des Gewinners bytegleich zu seinem Snapshot").c_str(),
+          ok && sha256Datei (juce::File (e1.datei)) == nachErstem
+              && inhalt["sensor"]["sensor_id"].toString() == kInstanzA && b.dateien() == 1,
+          "sensor_id " + inhalt["sensor"]["sensor_id"].toString() + ", Dateien " + juce::String (b.dateien()));
+    if (erwarteteDatei.isNotEmpty())
+        fall (zeile, (name + ": Name " + erwarteteDatei.toStdString()).c_str(),
+              juce::File (e1.datei) == b.ziel (erwarteteDatei), e1.datei);
+    inDerAblage (b, name.c_str(), { e1, e2 });
+}
+
+void alle()
+{
+    std::cout << "== NAK-313 Etappe 7: der Export (313/M-133 bis M-144) ==" << std::endl;
+    // Der Messstand m: ein Gen mit Messdaten (Muster der Referenzbuehne).
+    GenLauf daten;
+    ladeZustand (*daten.p, kInstanzA, "Bass", false);
+    const bool mitDaten = daten.mitDaten (100);
+    const auto m = daten.p->messSnapshot();
+    fall ("313/M-133", "vorbedingung: ein Gen mit Messdaten", mitDaten && m.zustand != eqcop::MessZustand::keineDaten);
+
+    // 313/M-133 (b): ohne Testordner verweigert der Testbau vor jedem Zugriff.
+    {
+        auto attrappe = std::make_shared<AttrappenFassade>();
+        Fassaden gesetzt (nullptr, nullptr, attrappe);
+        auto g = genMit (kInstanzA, "Bass");
+        const auto e = exportiere (*g, m);
+        fall ("313/M-133", "nie_in_der_nutzerablage ohne Testordner: fehler, bevor das Dateisystem beruehrt wird",
+              e.art == Art::fehler && attrappe->stand().aufrufe() == 0,
+              text (e) + ", Aufrufe " + zahl (attrappe->stand().aufrufe()));
+    }
+
+    // 313/M-134: Doppelklick in derselben Sekunde.
+    {
+        Buehne b ("m134", { um (12, 0, 5, 0), um (12, 0, 5, 400) });
+        const auto e1 = exportiere (*daten.p, m);
+        const auto ziel = b.ziel ("snapshot-20260925-120005-Bass.json");
+        const auto nachErstem = sha256Datei (ziel);
+        const auto s1 = b.fs->stand();
+        const auto e2 = exportiere (*daten.p, m);
+        const auto d = differenz (b.fs->stand(), s1);
+        fall ("313/M-134", "doppelklick_gleiche_sekunde: erster neu",
+              e1.art == Art::neu && juce::File (e1.datei) == ziel, text (e1));
+        fall ("313/M-134", "doppelklick_gleiche_sekunde: zweiter abgelehnt, vorhanden ist die erste Datei",
+              e2.art == Art::abgelehnt && juce::File (e2.vorhanden) == ziel && e2.datei.isEmpty(), text (e2));
+        fall ("313/M-134", "doppelklick_gleiche_sekunde: die erste Datei bytegleich, keine zweite Datei",
+              sha256Datei (ziel) == nachErstem && b.dateien() == 1, "Dateien " + juce::String (b.dateien()));
+        fall ("313/M-134", "doppelklick_gleiche_sekunde: keine Temp-Datei bleibt (die eigene entfernt, loeschungen + 1)",
+              b.dateien ("*.tmp-*") == 0 && d.loeschungen == 1 && e2.rest.isEmpty(), stand (d));
+        inDerAblage (b, "M-134", { e1, e2 });
+    }
+
+    // 313/M-135 bis M-137: zwei Instanzen, gleicher Name nach Bereinigung.
+    zweiInstanzen ("313/M-135", "m135", "zwei_instanzen_gleicher_name", "Bass", "Bass",
+                   "snapshot-20260925-120005-Bass.json", m);
+    zweiInstanzen ("313/M-136", "m136", "leeres_label_gleiche_sekunde", "", "",
+                   "snapshot-20260925-120005.json", m);
+    zweiInstanzen ("313/M-137", "m137a", "gleich_nach_bereinigung Bass/bass", "Bass", "bass",
+                   "snapshot-20260925-120005-Bass.json", m);
+    zweiInstanzen ("313/M-137", "m137b", "gleich_nach_bereinigung Bass!/Bass?", "Bass!", "Bass?",
+                   "snapshot-20260925-120005-Bass.json", m);
+
+    // 313/M-138: die Uhr wird zurueckgestellt.
+    {
+        Buehne b ("m138", { um (12, 0, 5, 0), um (12, 0, 7, 0), um (12, 0, 5, 400) });
+        const auto e1 = exportiere (*daten.p, m);
+        const auto nachErstem = sha256Datei (juce::File (e1.datei));
+        const auto e2 = exportiere (*daten.p, m);
+        const auto e3 = exportiere (*daten.p, m);
+        fall ("313/M-138", "uhr_zurueckgestellt: neu, neu, abgelehnt",
+              e1.art == Art::neu && e2.art == Art::neu && e3.art == Art::abgelehnt
+                  && juce::File (e3.vorhanden) == juce::File (e1.datei),
+              text (e1) + " | " + text (e2) + " | " + text (e3));
+        fall ("313/M-138", "uhr_zurueckgestellt: die erste Datei bleibt bytegleich",
+              sha256Datei (juce::File (e1.datei)) == nachErstem && b.dateien() == 2,
+              "Dateien " + juce::String (b.dateien()));
+        inDerAblage (b, "M-138", { e1, e2, e3 });
+    }
+
+    // 313/M-139: die Kalendersekunde, je Export genau eine Ablesung.
+    for (const bool ueberDieGrenze : { false, true })
+    {
+        const auto t1 = ueberDieGrenze ? um (12, 0, 5, 999) : um (12, 0, 5, 0);
+        const auto t2 = ueberDieGrenze ? um (12, 0, 6, 0) : um (12, 0, 5, 999);
+        const std::string fallName = ueberDieGrenze ? "sekundengrenze (b) 05,999 und 06,000"
+                                                    : "sekundengrenze (a) 05,000 und 05,999";
+        Buehne b (ueberDieGrenze ? "m139b" : "m139a", { t1, t2 });
+        const auto e1 = exportiere (*daten.p, m);
+        const auto e2 = exportiere (*daten.p, m);
+        if (ueberDieGrenze)
+            fall ("313/M-139", (fallName + ": zwei neu").c_str(),
+                  e1.art == Art::neu && e2.art == Art::neu
+                      && juce::File (e1.datei) == b.ziel ("snapshot-20260925-120005-Bass.json")
+                      && juce::File (e2.datei) == b.ziel ("snapshot-20260925-120006-Bass.json"),
+                  text (e1) + " | " + text (e2));
+        else
+            fall ("313/M-139", (fallName + ": Kollision, abgelehnt").c_str(),
+                  e1.art == Art::neu && e2.art == Art::abgelehnt, text (e1) + " | " + text (e2));
+        bool ok1 = false, ok2 = false;
+        const auto c1 = liesJson (juce::File (e1.datei), ok1)["created_utc"].toString();
+        const auto c2 = ueberDieGrenze ? liesJson (juce::File (e2.datei), ok2)["created_utc"].toString()
+                                       : juce::String();
+        const bool eineAblesung = b.uhr->ablesungen.load() == 2
+                               && ok1 && c1 == juce::Time (t1).toISO8601 (true)
+                               && (! ueberDieGrenze || (ok2 && c2 == juce::Time (t2).toISO8601 (true)));
+        fall ("313/M-139", (fallName + ": Name und created_utc aus derselben Ablesung, genau eine je Export").c_str(),
+              eineAblesung,
+              "Ablesungen " + juce::String ((int) b.uhr->ablesungen.load()) + ", created_utc " + c1
+                  + (ueberDieGrenze ? " / " + c2 : juce::String()));
+        inDerAblage (b, ueberDieGrenze ? "M-139 (b)" : "M-139 (a)", { e1, e2 });
+    }
+
+    // 313/M-140: Teil-Schreibfehler sind Fehler, nie Erfolg und nie Kollision.
+    const std::pair<Stoerung, const char*> faelle[] = {
+        { Stoerung::schreibenMeldetFehler, "(1) schreiben meldet Fehler" },
+        { Stoerung::spuelenMeldetFehler,   "(2) spuelen meldet Fehler" },
+        { Stoerung::kurzGeschrieben,       "(3) Groesse weicht ab" },
+        { Stoerung::umbenennenScheitert,   "(4) umbenennen scheitert, Zielname fehlt" },
+        { Stoerung::schreibenUndLoeschen,  "(5) wie (1), loesche scheitert" },
+    };
+    for (const auto& [stoerung, name] : faelle)
+    {
+        Buehne b ("m140", { um (11, 59, 59, 0), um (12, 0, 5, 0) });
+        const auto e0 = exportiere (*daten.p, m);   // die Vorgaengerdatei anderen Namens
+        const auto vorgaenger = sha256Datei (juce::File (e0.datei));
+        b.fs->stoerung = stoerung;
+        const auto s1 = b.fs->stand();
+        const auto e = exportiere (*daten.p, m);
+        const auto d = differenz (b.fs->stand(), s1);
+        const auto ziel = b.ziel ("snapshot-20260925-120005-Bass.json");
+        const auto temp = ziel.getFullPathName() + ".tmp-" + juce::String ((int) GetCurrentProcessId());
+        const bool mitRest = stoerung == Stoerung::schreibenUndLoeschen;
+        const bool tempRichtig = mitRest ? (e.rest == temp && juce::File (temp).existsAsFile())
+                                         : (e.rest.isEmpty() && d.loeschungen == 1 && b.dateien ("*.tmp-*") == 0);
+        fall ("313/M-140", (std::string ("teilschreibfehler_ist_fehler ") + name).c_str(),
+              e0.art == Art::neu && e.art == Art::fehler && sha256Datei (juce::File (e0.datei)) == vorgaenger
+                  && ! ziel.exists() && tempRichtig,
+              text (e) + ", Loeschungen " + zahl (d.loeschungen) + ", Temp-Dateien "
+                  + juce::String (b.dateien ("*.tmp-*")));
+        b.fs->stoerung = Stoerung::keine;
+        inDerAblage (b, (std::string ("M-140 ") + name).c_str(), { e0, e });
+    }
+
+    // 313/M-142 (a): der Export nimmt den uebergebenen Snapshot.
+    {
+        Buehne b ("m142a", { um (12, 0, 5, 0) });
+        auto ohneDaten = genMit (kInstanzB, "Bass");
+        const bool engineLeer = ohneDaten->messSnapshot().zustand == eqcop::MessZustand::keineDaten;
+        const auto e = exportiere (*ohneDaten, m);
+        bool ok = false;
+        const auto inhalt = liesJson (juce::File (e.datei), ok);
+        bool baender = ok && inhalt["ltas"]["komposit_db"].size() == (int) m.ltasKompositDb.size();
+        for (int i = 0; baender && i < (int) m.ltasKompositDb.size(); ++i)
+            baender = std::abs ((double) inhalt["ltas"]["komposit_db"][i] - m.ltasKompositDb[(std::size_t) i]) <= 1e-9;
+        fall ("313/M-142", "export_mit_uebergebenem_snapshot: Gen ohne Messdaten, m mit Daten - neu, die Datei traegt m",
+              engineLeer && e.art == Art::neu && baender
+                  && std::abs ((double) inhalt["gesamt_sekunden"] - m.gesamtSekunden) <= 1e-9,
+              text (e) + ", Engine leer " + juce::String (engineLeer ? "ja" : "NEIN"));
+        inDerAblage (b, "M-142 (a)", { e });
+    }
+
+    // 313/M-143: die Vorgaben des Produkts, direkt abgefragt - der Produktordner
+    // nur als Pfad.
+    {
+        const auto ordner = eqcop::snapshotOrdnerVorgabe();
+        const auto uhr = eqcop::snapshotUhrVorgabe();
+        const bool systemuhr = dynamic_cast<dg::EchteUhrFassade*> (uhr.get()) != nullptr
+                            && std::abs (uhr->jetztUtcMs() - juce::Time::currentTimeMillis()) < 60000;
+        fall ("313/M-143", "vorgaben_ohne_injektion: Zielordner %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots, Uhr die Systemuhr",
+              ordner == referenz::snapshotOrdner() && systemuhr,
+              ordner.getFullPathName() + ", Systemuhr " + juce::String (systemuhr ? "ja" : "NEIN"));
+    }
+
+    // 313/M-144: der Ergebnistyp, ueber alle Exporte dieses Abschnitts.
+    const std::set<int> arten { (int) Art::neu, (int) Art::ersetzt, (int) Art::abgelehnt, (int) Art::fehler };
+    fall ("313/M-144", "ergebnistyp_vollstaendig: vier Arten, jedes Ergebnis mit Pfad oder Grund, ersetzt null Mal",
+          arten.size() == 4 && zaehlung.ersetzt == 0 && zaehlung.neu > 0 && zaehlung.abgelehnt > 0
+              && zaehlung.fehler > 0 && zaehlung.ohneAngabe == 0,
+          "neu " + juce::String (zaehlung.neu) + ", ersetzt " + juce::String (zaehlung.ersetzt) + ", abgelehnt "
+              + juce::String (zaehlung.abgelehnt) + ", fehler " + juce::String (zaehlung.fehler)
+              + ", ohne Pfad oder Grund " + juce::String (zaehlung.ohneAngabe));
+}
+} // namespace nak313e7
+
 } // namespace
 
 int main (int argc, char* argv[])
@@ -3309,7 +3810,19 @@ int main (int argc, char* argv[])
     if (argc > 1 && std::strcmp (argv[1], "--erzeuge") == 0)
         return erzeugeReferenz();
 
+    // NAK-313 Etappe 7: nur der Export (313/M-132 bis M-144) - fuer
+    // Gegenprobe und Rotlaeufe, damit die Rohausgabe die Faelle traegt.
+    if (argc > 1 && std::strcmp (argv[1], "--nak313-e7") == 0)
+    {
+        festhaltenBytegleich();
+        nak313e7::alle();
+        std::cout << "NAK-313 EXPORT: " << bestanden << " bestanden, " << fehlgeschlagen
+                  << " fehlgeschlagen" << std::endl;
+        return fehlgeschlagen == 0 ? 0 : 1;
+    }
+
     festhaltenBytegleich();
+    nak313e7::alle();
     ohneAnfrageNurExistenzpruefung();
     anfrageGenGenauEineAntwort();
     gleicheKennungKeineZweiteAntwort();

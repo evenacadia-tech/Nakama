@@ -272,6 +272,24 @@ Vertrag `eq-copilot/schemas/state/nakama-state-v2.md`; Code `plugin/state/`
   Originalbytes werden bytegleich zurückgegeben, `setzeBindung`/`neueSensorId`
   verweigern, die Pipe wird gestoppt, der Editor zeigt es (Kopf „READ-ONLY",
   Zelle „STATE READ-ONLY", Dauermeldung). Fremder Baumtyp/Müll ⇒ ignoriert.
+- **Byte-Riegel vor dem JUCE-Leser (NAK-313 Etappe 3, R-313-1, R-313-2):**
+  `pruefeValueTreeBytes` (`ValueTreeByteRiegel` in `NakamaState.cpp`) prüft
+  allokationsfrei genau einen vollständigen `ValueTree` — höchstens 16 MiB,
+  64 Ebenen, 65 536 Einträge je Sammlung, 262 144 im Baum — und zählt dabei
+  die Eigenschaftseinträge aller Knoten vor. Für einen schreibbaren Stand
+  baut `hatWriterHeadroom` den größten erreichbaren Folgezustand (Label,
+  Paarname, Bindung an den API-Grenzen) und lässt ihn serialisiert durch
+  denselben Riegel; nur `verlustfrei` gilt als Passen, sonst bleibt der
+  Eingang read-only mit Originalbytes (T3-02-02: vorher zählte allein
+  `bytes.getSize() <= kMaxStateBytes`). Nach `readFromData` zählt `lade`
+  die Eigenschaften rekursiv nach (Tiefe < 64, keine Allokation); eine
+  kleinere Nachzählung ist ein doppelter Name im selben Knoten (JUCE legt
+  Duplikate still zusammen) und endet bei bekannter Wurzel vor Migration
+  und `leseSchema2` in `nurLesen ("duplicate property name in the state
+  tree")`, bei fremder Wurzel `ignoriert` (T3-02-05). Negativ-Golden
+  `fixtures/state/schema2/doppelte-eigenschaft-v1.bin` (Erwartung
+  `nurLesen`); Vertrag §2 und §5; B2 313/M-17 bis M-38; Manifest
+  `docs/beweise/NAK-313.md` §24, Erstprüfung 3 PASS §26.
 - **Host-Dirty:** jede persistente Änderung (`setzeBindung` mit echter
   Änderung, `neueSensorId`) ruft `updateHostDisplay (ChangeDetails()
   .withNonParameterStateChanged (true))` — der VST3-Wrapper macht daraus
@@ -1460,6 +1478,20 @@ keine Mutation, keine Dirty-Meldung (B15 312/M-35, Marke 0 statt 1); der
 normale Handgriff meldet genau ein Host-Dirty (M-36), ohne Änderung keines
 (M-37). Rohdatei `docs/beweise/roh/NAK-312-rot-M-35.txt`; Manifest §5.6 und
 §27.
+
+Das Panel schreibt nur Geändertes (NAK-313 Etappe 2, T3-02-04, R-313-3): das
+Messpunkt-Panel merkt sich beim Öffnen Rollen-ID, Label und Paarnamen, wie
+die Felder sie zeigen; `uebernehmen()` bildet je Feld ein `std::optional`
+nur für Abweichungen und ruft `setzeBindungGeaendert` (`PluginProcessor.h`,
+`prozessor/State.cpp`) nur mit den geänderten Feldern; `setzeBindung`
+delegiert mit allen drei Werten. Die Eingabegrenzen 120 (Label) und 60
+(Paarname) Codepunkte gelten nur geänderten Werten; ein unverändert
+geladener längerer Wert bleibt stehen (vorher kürzte der Panel-Abbau
+121→120 und 61→60, ließ einen Paarnamen wegfallen und meldete ungefragt
+Dirty samt Reconnect). Nach einer Abweisung bleiben die Merkwerte, und die
+Statuszeile nennt die Grenze (E-313-18, M-12b). B15 313/M-01 bis M-16, B2
+313/M-04 und M-10; Manifest `docs/beweise/NAK-313.md` §19, §21, Erstprüfung
+2 PASS §23.
 
 Grenzen: denselben Fehler trug das Kennungskonflikt-Panel des Editors —
 Nebenfund der Validierung dieser Etappe (Register NAK-349), gebaut in Etappe

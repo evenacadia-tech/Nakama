@@ -1,6 +1,6 @@
 # State-Schema 2 — `NakamaState` (SONDE-006)
 
-- **Stand:** 2026-09-23 · **Ticket:** `SONDE-006` (S7), Kind `Dsp` definiert in `SONDE-015` (S26–28), Kind `RetainedMainProject` in `NAK-312` Etappe 7b · **Vertragstext:** Entwurf §53.8, §33.5, §32.1/32.2, §53.5, §67
+- **Stand:** 2026-09-24 · **Ticket:** `SONDE-006` (S7), Kind `Dsp` definiert in `SONDE-015` (S26–28), Kind `RetainedMainProject` in `NAK-312` Etappe 7b, Byte-Riegel, Headroom-Kandidat und Duplikatregel in `NAK-313` Etappe 3 · **Vertragstext:** Entwurf §53.8, §33.5, §32.1/32.2, §53.5, §67
 - **Leser/Schreiber:** `eq-copilot/plugin/state/NakamaState.*` (C++, JUCE-core, keine `JucePlugin_*`-Konstante — S8-tauglich)
 - **Beweis:** `EqCopStateMigrationTest` (Kanon B2), Goldens in `eq-copilot/fixtures/state/`, Python-Bein `tools/eq-copilot/erzeuge_state_fixtures.py --pruefen` (Kanon A12)
 - **Was das hier ist:** das Dateiformat, das in FL-Projekten reist. Wie die VST3-Identität (SONDE-001) ist es ab jetzt ein **Vertrag**: eine Änderung an Root-Major, Kind-Major oder Kind-Matrix ist eine Versionierung mit Beleg, kein Edit.
@@ -56,8 +56,8 @@ verbietet ausdrücklich eine zweite Wahrheit — ein Leser müsste bei Widerspru
 raten.
 
 **Flache Arrays, keine Kindknoten.** Der Byte-Riegel (§5) begrenzt die Tiefe auf 64
-`ValueTree`-Ebenen und jede Sammlung auf 65.536 Einträge; Kindknoten zählen dort wie Eigenschaften gegen 262.144 Einträge im ganzen Baum. *(Präzisiert am 24.09.2026, NAK-313. Bis dahin stand hier „erlaubt höchstens 64 `ValueTree`-Knoten im ganzen Baum".)* Acht Zonen und 32 Undo-Einträge als Knoten
-wären allein 40. `Dsp` führt seine Listen deshalb als flache bzw.
+`ValueTree`-Ebenen und jede Sammlung auf 65.536 Einträge; Kindknoten zählen dort wie Eigenschaften gegen 262.144 Einträge im ganzen Baum. *(Präzisiert am 24.09.2026, NAK-313. Bis dahin stand hier „erlaubt höchstens 64 `ValueTree`-Knoten im ganzen Baum".)* Die flache Form stammt aus dieser Knotengrenze (acht Zonen und 32 Undo-Einträge als Knoten
+wären allein 40 gewesen) und bleibt Vertragsform: `Dsp` führt seine Listen als flache bzw.
 verschachtelte Variantenarrays, wie `MainProject` es seit SONDE-012 tut.
 
 **Wann `Dsp` überhaupt geschrieben wird.** Nur, wenn es etwas zu sagen gibt:

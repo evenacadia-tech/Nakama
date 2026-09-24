@@ -1,0 +1,288 @@
+NAK-313 Etappe 6 - Basisstand-Gegenprobe (Bauer, 24.09.2026)
+
+Stand: HEAD 00e3bea66a1b673d5ea3574927ccd610be161dd0 (= origin/master beim Start, 21:30 Uhr).
+Im Arbeitsbaum: die neuen Faelle, der erweiterte Erzeuger und die erzeugten Fixtures und
+Tabellen - der Produktcode ist der von HEAD. Beleg: git diff --stat HEAD nennt allein
+Testdateien, Erzeuger und Fixtures; in broker/src/transport/bootstrap.rs liegen alle Hunks im
+Testmodul (mod tests, ab Zeile 531). Blob-IDs der Produktdateien der Etappe (= HEAD):
+  53949b49c5c08624737caea4788b5be4ffb7ec7b broker/src/transport/bootstrap.rs (Produktteil unveraendert)
+  17592c6bae7e6ae71f36e05950147f5ea7bff8db broker/src/vertrag.rs
+  14d1f41a3722d47d49525e215be1cab41406654a broker/src/telemetrie.rs
+  8ce1fa637b879d60195d3f7784cfc34e2df695d1 broker/src/coordinator/schema.rs
+  9892f2d629e07a6ada6bbcbb6a90b0b705c47de0 eq-copilot/plugin/core/ipc/IpcVerbindung.cpp
+  083d2ecc215b918b3d81f0d389166bda57645404 eq-copilot/plugin/core/ipc/IpcVerbindung.h
+  f651f74f1e48e1eb9bc9176057dcf37f39698840 eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp
+  7c3188db510d7fe6b4e013eec844f8c00fe2a123 eq-copilot/plugin/core/ipc/controlclient/Verbindung.cpp
+  a18fa633c308da2eff1fe3c916d52ce8b85c9c74 eq-copilot/plugin/core/ipc/TelemetryClient.cpp
+  4b08f9c7b5a1fa586432e70f13fd4a418a2ceaab eq-copilot/plugin/vertrag/NakamaTelemetrie.cpp
+  291f097f91c946ae0c58948e7929b6b0a9b2c094 eq-copilot/plugin/vertrag/NakamaVertrag.h
+  289870fe6e5d8755e0c826c90c338af1bdd5e5cb eq-copilot/plugin/vertrag/NakamaVertrag.cpp
+
+Variante der Gegenprobe (Marke BASIS-GEGENPROBE, nie committet): am Basisstand gibt es den
+Grund-Ausgang von flachesJsonObjekt nicht. In eq-copilot/plugin/tests/IpcTestMain.cpp standen
+fuer diesen Lauf drei Aufrufe mit zwei Argumenten statt drei:
+  stufeDesFlachenLesers:  flachesJsonObjekt (bytes, felder) /* BASIS-GEGENPROBE */
+  grundAusgang (Schleife): flachesJsonObjekt (f.text, felder) /* BASIS-GEGENPROBE */
+  grundAusgang (Gegenfall): flachesJsonObjekt (objekt (...), felder) /* BASIS-GEGENPROBE */
+Die Stufe duplikat des flachen Lesers und die acht Wortlaute des Grund-Ausgangs sind am
+Basisstand deshalb nicht messbar (Etikett heute nicht messbar). Direkt nach dem Bau wurde
+die echte Testdatei zurueckgelegt (21:47:49 Uhr, 0 Marken im Baum).
+
+Bau (pwsh, cmake --build eq-copilot/build --config Release --target EqCopIpcTest
+EqCopSonde012SourcesModelTest EqCopSchemaTest): Exit 0, 77 s; Binaries EqCopIpcTest.exe
+21:47:29, EqCopSonde012SourcesModelTest.exe 21:47:37, EqCopSchemaTest.exe 21:47:40 Uhr,
+jeweils juenger als die Variante (21:46 Uhr). Nur die geerbten MSVC-Warnungen (Stereo.h:70
+C4458, IpcTestMain.cpp C4456 an zwei aelteren Stellen). Rust: cargo test mit den neuen Faellen
+gegen denselben Produktcode.
+
+Python-Referenzen und Erzeuger (21:3x Uhr, vor dem Bau):
+  A8 am Basisstand vor der Erweiterung: Exit 0 (421 Dateien, MANIFEST b99deec4...).
+  A8 nach der Erweiterung, vor dem Erzeugen: Exit 2 (PRODUKTEINGAENGE-FAELLE.json weicht ab).
+  A8 nach dem Erzeugen: Exit 0 (421 Dateien bytegleich, MANIFEST b99deec4... unveraendert).
+  A10 am Basisstand: Exit 0 (129 Dateien, MANIFEST 342f9d91...); nach der Erweiterung, vor dem
+  Erzeugen: Exit 2 (MANIFEST.json weicht ab); nach dem Erzeugen: Exit 0 (131 Dateien bytegleich,
+  MANIFEST c9d6bb46...).
+  A9 am Basisstand: Exit 0, Drift 0.
+  A5 (pruefe_v3_vertrag.py --abdeckung) mit der neuen Tabelle: Exit 0, 840 bestanden, 0
+  gescheitert; 170 v3-Eintraege gegen vertrag (Kopf 170); die vier neuen Faelle der
+  Textriegel-Falltabelle wie erwartet (Regressionswache M-121, Python).
+  A11 (pruefe_v2_schemas.py) mit der neuen Tabelle: Exit 0, GRUEN; 27 v2-Eintraege (Kopf 27),
+  PE-166 und PE-167 gueltig wie vertrag.
+
+B3c EqCopSchemaTest (21:47:49 Uhr): Exit 1, 175 bestanden, 2 gescheitert
+  [ok]   Textriegel deckt die gemeinsame Falltabelle  [106 Faelle]
+  [ROT]  ungueltig/adresse-zusatzfeld-id5.bin: Urteil ungueltig erwartet, Leser sagt gueltig
+  [ROT]  Binaerkorpus klassifiziert wie das Manifest (130 Fixtures)  [1 Abweichungen]
+  [ok]   313/M-101 samplerate_wie_der_writer: 1e-307 haelt Regel 3 und verbindet
+  [ok]   313/M-101 samplerate_wie_der_writer: 768000.5 liegt ueber maximum 768000
+  [ROT]  313/M-114 adresse_zusatzfeld: genau ein Verstoss am Eintrag 0  [keine Verstoesse]
+  [ok]   313/M-118 adresse_vtable_slot5_leer: ein Nullslot bleibt gueltig
+  175 bestanden, 2 gescheitert
+
+B13 EqCopSonde012SourcesModelTest (21:47:50 Uhr): Exit 1, 205/207 gruen
+    ok      313/M-108 diagnose_der_handshakemeldungen: Broker lehnt ab: bootstrap: KeinHello("schema: /host verletzt type")  [5, ohne Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: kein gueltiges UTF-8  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: NUL-Escape  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: einsames Surrogat  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: unbekanntes Escape  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: \u-Escape ohne vier Hexziffern  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: rohes Steuerzeichen  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: doppelter Name  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: Syntax  [1, mit Handgriff]
+    ok      313/M-108 diagnose_der_handshakemeldungen: welcome: kein type  [1, mit Handgriff]
+    ok      313/M-117 uebernehme_p2_zusatzslot (Einrichtung: live-64-band wird uebernommen)
+    FEHLER  313/M-117 uebernehme_p2_zusatzslot (Rueckgabe false, Grund)
+    FEHLER  313/M-117 uebernehme_p2_zusatzslot (Zeile unveraendert: keine Messung)
+  SONDE-012 SourcesModel: 205/207 gruen
+
+B10 EqCopIpcTest voll (21:48:06 bis 21:51:56 Uhr, 230 s): Exit 1, 659 Pruefungen, 67 Fehler
+  Die Faelle der Etappe 6 (313/M-106 bis 313/M-113, Tabelle PE-168 bis PE-197, umgestellter H-Fall):
+    FEHLER  313/M-108 ein Escape wird nach dem Vertrag dekodiert (b\u0041 ist bA)  [null]
+    FEHLER  313/M-106 broker_version_in_codepunkten control PE-168 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf hello]
+    FEHLER  313/M-106 broker_version_in_codepunkten control PE-168 (Wirkung)  [nicht verbunden]
+    ok      313/M-106 broker_version_in_codepunkten control PE-169 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+    ok      313/M-106 broker_version_in_codepunkten control PE-169 (Wirkung)  [nicht verbunden]
+    ok      313/M-106 broker_version_in_codepunkten control PE-170 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+    ok      313/M-106 broker_version_in_codepunkten control PE-170 (Wirkung)  [verbunden]
+    FEHLER  313/M-107 reject_reason_in_codepunkten control PE-171 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+    FEHLER  313/M-107 reject_reason_in_codepunkten control PE-171 (Wirkung)  [nicht verbunden]
+    ok      313/M-107 reject_reason_in_codepunkten control PE-172 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - reject haelt den Vertrag nicht]
+    ok      313/M-107 reject_reason_in_codepunkten control PE-172 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-108 escapes_dekodiert control PE-173 (Urteil, Stufe)  [ist ungueltig/parser, soll gueltig/ - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-108 escapes_dekodiert control PE-173 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-108 escapes_dekodiert control PE-174 (Urteil, Stufe)  [ist ungueltig/parser, soll gueltig/ - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-108 escapes_dekodiert control PE-174 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-108 escapes_dekodiert control PE-175 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/feldregel - welcome: kein flaches JSON-Objekt]
+    ok      313/M-108 escapes_dekodiert control PE-175 (Wirkung)  [nicht verbunden]
+    ok      313/M-109 verbotene_escapes control PE-176 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes control PE-176 (Wirkung)  [nicht verbunden]
+    ok      313/M-109 verbotene_escapes control PE-177 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes control PE-177 (Wirkung)  [nicht verbunden]
+    ok      313/M-109 verbotene_escapes control PE-178 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes control PE-178 (Wirkung)  [nicht verbunden]
+    ok      313/M-109 verbotene_escapes control PE-179 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes control PE-179 (Wirkung)  [nicht verbunden]
+    ok      313/M-110 leere_texte control PE-180 (Urteil, Stufe)  [ist gueltig/, soll gueltig/ - Broker lehnt ab: ]
+    ok      313/M-110 leere_texte control PE-180 (Wirkung)  [nicht verbunden]
+    ok      313/M-110 leere_texte control PE-181 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf hello]
+    ok      313/M-110 leere_texte control PE-181 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-182 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-182 (Wirkung)  [verbunden]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-183 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Broker lehnt ab: ab�cd]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-183 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-184 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Broker lehnt ab: inkompatibel]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens control PE-184 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-112 duplikat_dekodiert control PE-185 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - welcome: kein flaches JSON-Objekt]
+    ok      313/M-112 duplikat_dekodiert control PE-185 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-112 duplikat_dekodiert control PE-186 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - welcome: kein flaches JSON-Objekt]
+    ok      313/M-112 duplikat_dekodiert control PE-186 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-187 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - unerwartete Antwort auf das Telemetry-Hello]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-187 (Wirkung)  [nicht verbunden]
+    ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-188 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/feldregel - unerwartete Antwort auf das Telemetry-Hello]
+    ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-188 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-189 (Urteil, Stufe)  [ist ungueltig/feldregel, soll gueltig/ - reject haelt den Vertrag nicht]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-189 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-190 (Urteil, Stufe)  [ist ungueltig/parser, soll gueltig/ - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-190 (Wirkung)  [nicht verbunden]
+    ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-191 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - welcome: kein flaches JSON-Objekt]
+    ok      313/M-113 telemetrie_welcome_wie_control telemetrie PE-191 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-192 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-192 (Wirkung)  [verbunden]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-193 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Broker lehnt ab: ab�cd]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-193 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-194 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Broker lehnt ab: inkompatibel]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control telemetrie PE-194 (Wirkung)  [nicht verbunden]
+    FEHLER  313/M-108 escapes_dekodiert PE-195 (Urteil, Stufe)  [ist ungueltig/parser, soll gueltig/ - inFlight 1, Erfolg 0, endgueltig 0]
+    FEHLER  313/M-108 escapes_dekodiert PE-195 (Wirkung)  [annahme - inFlight 1, Erfolg 0, endgueltig 0]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens PE-196 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - inFlight 0, Erfolg 0, endgueltig 1]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens PE-196 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 0, Erfolg 0, endgueltig 1]
+    FEHLER  313/M-112 duplikat_dekodiert PE-197 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/duplikat - inFlight 1, Erfolg 0, endgueltig 0]
+    ok      313/M-112 duplikat_dekodiert PE-197 (Wirkung)  [kein_ack, kein_freigegebener_auftrag - inFlight 1, Erfolg 0, endgueltig 0]
+    FEHLER  313/M-109 grund_ausgang kein gueltiges UTF-8
+    FEHLER  313/M-109 grund_ausgang NUL-Escape
+    FEHLER  313/M-109 grund_ausgang einsames Surrogat
+    FEHLER  313/M-109 grund_ausgang unbekanntes Escape
+    FEHLER  313/M-109 grund_ausgang \u-Escape ohne vier Hexziffern
+    FEHLER  313/M-109 grund_ausgang rohes Steuerzeichen
+    FEHLER  313/M-109 grund_ausgang doppelter Name
+    FEHLER  313/M-109 grund_ausgang Syntax
+    FEHLER  313/M-109 grund_ausgang: ein gelesenes Objekt laesst den Ausgang unberuehrt  [unberuehrt]
+    FEHLER  313/M-106 broker_version_in_codepunkten (a) 64 x e-Akut (128 Bytes) verbindet  [nicht verbunden - unerwartete Antwort auf hello]
+    ok      313/M-106 broker_version_in_codepunkten (b) 65 x e-Akut verbindet nicht  [nicht verbunden - unerwartete Antwort auf hello]
+    ok      313/M-106 broker_version_in_codepunkten (c) 64 ASCII verbindet  [verbunden - ]
+    FEHLER  313/M-107 reject_reason_in_codepunkten (a) 500 x e-Akut: der volle Grund  [nicht verbunden - reject haelt den Vertrag nicht]
+    ok      313/M-107 reject_reason_in_codepunkten (b) 501 x e-Akut haelt den Vertrag nicht  [nicht verbunden - reject haelt den Vertrag nicht]
+    FEHLER  313/M-108 escapes_dekodiert reject: genau die Bytes 0A 5C 22 2F C3 A9 F0 9F 98 80  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-108 escapes_dekodiert Randfall 499 x a plus Paar (500 Codepunkte) gilt  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-108 escapes_dekodiert Randfall 500 x a plus Paar (501 Codepunkte) nicht  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-108 escapes_dekodiert ack: konflikt mit dem Code revision_conflict beendet den Auftrag  [inFlight 1, Erfolg 0, endgueltig 0]
+    ok      313/M-109 verbotene_escapes (a) NUL-Escape (Urteil)  [welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-109 verbotene_escapes (a) NUL-Escape (Meldung)  [welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes (b) einsames ud800 (Urteil)  [welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-109 verbotene_escapes (b) einsames ud800 (Meldung)  [welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes (c) unbekanntes q (Urteil)  [welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-109 verbotene_escapes (c) unbekanntes q (Meldung)  [welcome: kein flaches JSON-Objekt]
+    ok      313/M-109 verbotene_escapes (d) kurzes u00 (Urteil)  [welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-109 verbotene_escapes (d) kurzes u00 (Meldung)  [welcome: kein flaches JSON-Objekt]
+    ok      313/M-110 leere_texte reject mit leerem reason: Broker lehnt ab  [nicht verbunden - Broker lehnt ab: ]
+    ok      313/M-110 leere_texte welcome mit leerer broker_version verbindet nicht  [nicht verbunden - unerwartete Antwort auf hello]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (a) welcome mit C3 28  [verbunden - ]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (b) reject mit FF im reason  [nicht verbunden - Broker lehnt ab: ab�cd]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (c) reject mit FF im code  [nicht verbunden - Broker lehnt ab: inkompatibel]
+    FEHLER  313/M-111 utf8_am_anfang_des_flachen_lesens (d) ack mit FF im code ist keinAck  [inFlight 0, Erfolg 0, endgueltig 1]
+    FEHLER  313/M-112 duplikat_dekodiert (a) typ-u0065-Alias neben type  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-112 duplikat_dekodiert (b) link_id zweimal roh  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    ok      313/M-112 duplikat_dekodiert (c) ack mit ergebnis als Alias und roh ist keinAck  [inFlight 1, Erfolg 0, endgueltig 0]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-106 (a) koppelt  [nicht verbunden - unerwartete Antwort auf das Telemetry-Hello]
+    ok      313/M-113 telemetrie_welcome_wie_control M-106 (b)  [nicht verbunden - unerwartete Antwort auf das Telemetry-Hello]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-107 (a)  [nicht verbunden - reject haelt den Vertrag nicht]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-108 (Reject)  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-109 (a)  [nicht verbunden - welcome: kein flaches JSON-Objekt]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-111 (a)  [verbunden - ]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-111 (b)  [nicht verbunden - Broker lehnt ab: ab�cd]
+    FEHLER  313/M-113 telemetrie_welcome_wie_control M-111 (c)  [nicht verbunden - Broker lehnt ab: inkompatibel]
+  FEHLER — 659 Pruefungen, 67 Fehler
+
+A4 cargo test --lib -- transport::bootstrap (21:52:19 Uhr): Exit 101, 13 bestanden, 6 gescheitert
+  test transport::bootstrap::tests::hello_ueber_16_kib_faellt_vor_dem_parser ... ok
+  test transport::bootstrap::tests::hex32_riegel ... ok
+  test transport::bootstrap::tests::binaerframe_statt_hello_wird_abgelehnt ... ok
+  test transport::bootstrap::tests::nak313_m104_v2_hello_ohne_v3_regeln ... ok
+  test transport::bootstrap::tests::koppeln_und_entkoppeln_sind_symmetrisch ... ok
+  test transport::bootstrap::tests::nak313_m103_ein_parselauf_je_hello ... ok
+  test transport::bootstrap::tests::kopplung_verlangt_alle_drei_merkmale ... ok
+  test transport::bootstrap::tests::offene_kopplungen_sind_gedeckelt ... ok
+  test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+  test transport::bootstrap::tests::nak313_m100_nul_escape_im_hello ... FAILED
+  test transport::bootstrap::tests::nak313_m101_samplerate_raender ... FAILED
+  test transport::bootstrap::tests::nak313_m102_reihenfolge_am_tor ... FAILED
+  test transport::bootstrap::tests::unbekanntes_feld_im_hello_faellt ... ok
+  test transport::bootstrap::tests::nak313_m99_host_null_faellt_am_schema ... FAILED
+  test transport::bootstrap::tests::nak313_m98_host_fehlt_gueltig ... ok
+  test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
+  test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... ok
+  test transport::bootstrap::tests::nak313_m72_hello_als_1punkt0 ... ok
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+  PE-149: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-222
+  PE-149: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_
+  PE-150: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-222
+  PE-150: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_
+  PE-151: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("schema")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-222
+  PE-151: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_
+  PE-152: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-
+  PE-152: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_b
+  PE-153: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111
+  PE-153: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_
+  PE-157: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("audio ausserhalb des Vertrags")))
+  PE-158: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("textriegel")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-
+  PE-158: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "a\0b", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_b
+  PE-159: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("schema")) (Err(KeinHello("invalid type: floating point `1.5`, expected u32")))
+  PE-160: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("textriegel")) (Err(KeinHello("invalid value: integer `9007199254740992`, expected u32")))
+  test result: FAILED. 13 passed; 6 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.01s
+
+A4 cargo test --test contract_cross_language (21:52:43 Uhr): Exit 101, 10 bestanden, 2 gescheitert
+  test nak313_m118_nullslot_bleibt_gueltig ... ok
+  test nak313_m115_adresse_zusatzfeld ... FAILED
+  test quantisierung_stimmt_mit_den_testvektoren ... ok
+  test wirezahl_texte_halten_den_textriegel ... ok
+  test textriegel_deckt_die_gemeinsame_falltabelle ... ok
+  test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
+  test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+  test jcs_fixtures_stimmen_mit_manifest ... ok
+  test fb_korpus_klassifiziert_wie_das_manifest ... FAILED
+  test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+  test dto_korpus_klassifiziert_wie_das_manifest ... ok
+  test korpus_klassifiziert_wie_das_manifest ... ok
+  ungueltig/adresse-zusatzfeld-id5.bin: Urteil ungueltig erwartet, Leser sagt gueltig ([])
+  test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+A4 cargo test --test sonde012_sources_slice (21:52:45 Uhr): Exit 101, 26 bestanden, 1 gescheitert
+  test nak313_m116_zusatzslot_wird_nicht_weitergereicht ... FAILED
+  ---- nak313_m116_zusatzslot_wird_nicht_weitergereicht stdout ----
+  thread 'nak313_m116_zusatzslot_wird_nicht_weitergereicht' (119744) panicked at tests\sonde012_sources_slice.rs:583:5:
+  assertion `left == right` failed: die P2-Bytes erreichen Gen nicht
+    left: 1
+   right: 0
+      nak313_m116_zusatzslot_wird_nicht_weitergereicht
+  test result: FAILED. 26 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+Einordnung je Zeile (Etikett der Matrix, Ergebnis am Basisstand):
+  M-98   Regressionswache - gruen (nak313_m98, PE-148).
+  M-99   heute rot - rot (nak313_m99 und PE-149 bis PE-151: V3Control mit host None).
+  M-100  heute rot - rot (nak313_m100, PE-152: plugin_version a NUL b angenommen).
+  M-101  (a) heute rot - rot (PE-153 V3Control); (b), (d) Regressionswache - gruen (PE-154,
+         PE-156); (e) Urteil Wache gruen, Stufe heute rot - rot (PE-157 feldregel statt schema);
+         (c) ohne Etikett, Tabelleneintrag PE-155 gruen. Writer (B3c): alle Haelften gruen.
+  M-102  heute rot - rot (nak313_m102, PE-158).
+  M-103  heute nicht messbar laut Matrix (Stand 2b7472d2) - gemessen gruen: der Laufzaehler
+         besteht seit Etappe 4, und das Tor liest seit Etappe 4 genau einmal streng.
+  M-104  Regressionswache - gruen (nak313_m104, PE-166, PE-167).
+  M-105  Signatur und Varianten Regressionswache - gruen (Bau); umgestellter Test heute rot -
+         rot (host_haelt_die_laengen_des_vertrags nennt host.name statt schema: /host/name).
+  M-106  (a) heute rot - rot; (b), (c) Regressionswache - gruen (auch PE-168 rot, PE-169,
+         PE-170 gruen).
+  M-107  (a) heute rot - rot; (b) Regressionswache - gruen.
+  M-108  Reject, Randfaelle, ACK, umgestellter H-Fall: heute rot - rot; Diagnose (B13):
+         Regressionswache - gruen.
+  M-109  Urteil: Regressionswache - gruen (alle vier nicht verbunden, nie Broker lehnt ab);
+         Meldung: heute nicht messbar - rot (welcome: kein flaches JSON-Objekt); Grund-Ausgang
+         nicht messbar (Variante ohne Ausgang).
+  M-110  beide Faelle Regressionswache - gruen.
+  M-111  (a) bis (d) heute rot - rot ((a) verbindet, (b) und (c) Broker lehnt ab, (d) abgelehnt
+         mit endgueltig 1).
+  M-112  Urteil Regressionswache - gruen ((a), (b) nicht verbunden, (c) keinAck); Meldung und
+         Stufe duplikat: heute nicht messbar - rot (welcome: kein flaches JSON-Objekt, parser).
+  M-113  wie am Control-Leser: M-106 (a), M-107 (a), M-108, M-111 (a) bis (c) rot; M-106 (b),
+         M-109 (a) Urteil gruen.
+  M-114  heute rot - rot (B3c: keine Verstoesse, Korpuslauf 1 Abweichung).
+  M-115  heute rot - rot (A4: leere Menge, Korpuslauf rot).
+  M-116  heute rot - rot (A4: der Frame erreicht das Main, frames 1 statt 0).
+  M-117  heute rot - rot (B13: uebernommen; die Einrichtung selbst gruen).
+  M-118  heute nicht messbar laut Matrix - mit dem neuen Fixture gemessen gruen (B3c, A4).
+  M-119  Fixtures heute nicht messbar (A10 vor dem Erzeugen Exit 2); Gueltigkorpus
+         Regressionswache - gruen.
+  M-120  Text heute rot (gelesen, kein Lauf); generierter Code Regressionswache - A9 gruen.
+  M-121  Text und Kommentare heute rot (gelesen); die vier Faelle Regressionswache - gruen in
+         C++ (B3c), Rust (A4) und Python (A5).
+  M-122  Regressionswachen, am Basisstand nicht gefahren (Lesemass und Einzelbeine nach dem Bau).
+

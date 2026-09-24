@@ -328,8 +328,8 @@ bool istHexziffer (juce::juce_wchar c) noexcept
     DIESELBE Zerlegung wie im flachen Leser (`core/ipc/WireZahl.h`): erst die
     Stellenzahl, dann lexikographisch - auch fuer ein Literal ohne Bruch und
     Exponent, das bis dahin `getLargeIntValue()` las (sicher nur bis 16 Stellen:
-    dahinter steht unter Windows `_atoi64`, das bei Ueberlauf auf INT64_MAX
-    saettigt - gemessen im Rotlauf V91c -, sonst `atoll`).
+    dahinter steht unter Windows _atoi64 der C-Laufzeit, das bei Ueberlauf auf
+    INT64_MAX saettigt - gemessen im Rotlauf V91c -, sonst atoll).
 */
 bool zahlPruefen (std::string_view ganz, std::string_view bruch,
                   std::string_view expZiffern, bool expNegativ,

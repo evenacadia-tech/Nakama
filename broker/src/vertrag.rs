@@ -1353,10 +1353,19 @@ mod tests {
                 rot.push(format!("{text}: der strenge Lauf liest es, soll ablehnen"));
             }
         }
-        assert_eq!(ganzzahl_optional(None, 0, 9), Some(None), "ein fehlendes Feld behaelt die Vorgabe");
-        assert_eq!(ganzzahl_optional(Some(&Value::Null), 0, 9), Some(None));
-        assert_eq!(ganzzahl_optional(Some(&json!(3.0)), 0, 9), Some(Some(3)));
-        assert_eq!(ganzzahl_optional(Some(&json!(3.5)), 0, 9), None, "vorhanden und ungueltig lehnt ab");
+        // Das optionale Feld: fehlt es oder ist es null, bleibt die Vorgabe;
+        // vorhanden und ungueltig lehnt ab. Gesammelt wie oben, damit ein
+        // Bruch jede Zeile einzeln zeigt.
+        for (fall, ist, soll) in [
+            ("fehlt", ganzzahl_optional(None, 0, 9), Some(None)),
+            ("null", ganzzahl_optional(Some(&Value::Null), 0, 9), Some(None)),
+            ("3.0", ganzzahl_optional(Some(&json!(3.0)), 0, 9), Some(Some(3))),
+            ("3.5", ganzzahl_optional(Some(&json!(3.5)), 0, 9), None),
+        ] {
+            if ist != soll {
+                rot.push(format!("ganzzahl_optional {fall}: {ist:?}, soll {soll:?}"));
+            }
+        }
         assert!(rot.is_empty(), "M-63:\n{}", rot.join("\n"));
     }
 

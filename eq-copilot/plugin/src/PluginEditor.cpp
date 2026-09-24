@@ -84,6 +84,21 @@ void CopilotLookAndFeel::drawCallOutBoxBackground (juce::CallOutBox&, juce::Grap
     g.strokePath (pfad, juce::PathStrokeType (1.2f));
 }
 
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+namespace testzugang
+{
+/** NAK-313 Etappe 7 (M-142 (b)): der Haken direkt hinter dem Messsnapshot des
+    Festhalten-Handgriffs. Ein Bein ändert darin die Messdaten der Engine; die
+    Datei trägt trotzdem genau den Snapshot, aus dem die Linie stammt. Im
+    Produkt gibt es ihn nicht. */
+std::function<void()>& festhaltenHakenFuerTest()
+{
+    static std::function<void()> haken;
+    return haken;
+}
+} // namespace testzugang
+#endif
+
 EqCopilotEditor::EqCopilotEditor (EqCopilotProcessor& p)
     : juce::AudioProcessorEditor (p), processor (p)
 {
@@ -131,16 +146,25 @@ EqCopilotEditor::EqCopilotEditor (EqCopilotProcessor& p)
     });
     initKnopf (festhaltenKnopf, "Festhalten", [this]
     {
-        juce::String meldung;
+        // NAK-313 R-313-10: EIN Snapshot für Linie und Datei (M-142); die
+        // Meldung nennt die tatsächlich entstandene Datei oder den Grund,
+        // warum keine entstand (M-141).
         const auto m = processor.messSnapshot();
-        if (processor.schreibeSnapshotDatei (meldung))
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+        if (auto& haken = testzugang::festhaltenHakenFuerTest(); haken)
+            haken();
+#endif
+        const auto e = processor.schreibeSnapshotDatei (m);
+        if (e.art == SnapshotExport::Art::neu || e.art == SnapshotExport::Art::ersetzt)
         {
             vergleichRohDb = m.ltasKompositDb;   // Roh gemerkt — Glättung wirkt
             vergleichAktiv = m.ltasGueltig;      // beim Zeichnen auf BEIDE gleich
-            statusMeldung = "Festgehalten (Vergleichslinie + Datei): " + meldung;
+            statusMeldung = "Festgehalten (Vergleichslinie + Datei): " + e.datei
+                          + (e.grund.isEmpty() ? juce::String() : u8 (" — ") + e.grund);
         }
         else
-            statusMeldung = u8 ("Festhalten nicht möglich — ") + meldung;
+            statusMeldung = u8 ("Festhalten nicht möglich — ") + e.grund
+                          + (e.rest.isEmpty() ? juce::String() : " (Rest: " + e.rest + ")");
         statusMeldungBisMs = juce::Time::getMillisecondCounter() + 8000;
         uiDirty = true;
     });

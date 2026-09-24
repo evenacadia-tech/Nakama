@@ -77,6 +77,8 @@ public:
     MarkierungsModus markModusFuerTest() const { return markModus; }
     bool markierungAusKnopfSichtbarFuerTest() const { return markierungAusKnopf.isVisible(); }
     juce::String statusMeldungFuerTest() const { return statusMeldung; }
+    /// NAK-313 (M-142 (b)): die Vergleichslinie, die der Festhalten-Handgriff setzt.
+    std::array<double, kLtasBaender> vergleichslinieFuerTest() const { return vergleichRohDb; }
     bool mainFlaecheAktivFuerTest() const { return mainFlaecheAktiv; }
     /// 312/M-56 (c): die letzte Bedienung liegt `abstandMs` zurueck.
     void letzteBedienungVorFuerTest (juce::uint32 abstandMs)

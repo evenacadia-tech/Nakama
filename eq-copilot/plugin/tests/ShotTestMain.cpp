@@ -34,7 +34,11 @@
 // geaendert hat, auch mit geladenem Label ueber 120 und Paarnamen ueber 60
 // Zeichen; dazu 313/M-12b (E-313-18): weist die Bindungs-API eine Rollenwahl
 // ab, zeigt die Auswahl ohne zweiten Aufruf wieder die gespeicherte Rolle, und
-// die Statuszeile nennt es.
+// die Statuszeile nennt es. Seit NAK-313 Etappe 7 (R-313-10) danach der
+// Festhalten-Handgriff am echten Editor (313/M-141, 313/M-142 (b)) in einem
+// Testordner unter %TEMP%: die Meldung nennt die entstandene Datei, die
+// vorhandene oder den Grund samt Rest, und Datei und Vergleichslinie tragen
+// denselben Snapshot.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -307,6 +311,7 @@ namespace eqcop::testzugang
 // Definiert in src/PluginEditor.cpp unter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3.
 std::function<bool()>& messpunktMarkeFuerTest();
 std::function<bool()>& konfliktMarkeFuerTest();   // NAK-312 Etappe 6b (NAK-349)
+std::function<void()>& festhaltenHakenFuerTest(); // NAK-313 Etappe 7 (M-142 (b))
 }
 
 namespace
@@ -2207,6 +2212,285 @@ bool nak312Annahmegrenze (const juce::File& ordner)
     std::printf ("NAK-312 ANNAHME %d geprueft, %d Fehler\n", annahmeGeprueft, annahmeFehler);
     return annahmeFehler == 0 && annahmeGeprueft == 19;
 }
+
+//==============================================================================
+// NAK-313 Etappe 7 (R-313-10): der Festhalten-Handgriff am echten Editor. Die
+// Zeilen M-141 (die Meldung nennt die tatsaechlich entstandene Datei) und
+// M-142 (b) (ein Snapshot fuer Linie und Datei) des Manifests
+// docs/beweise/NAK-313.md. Testordner unter %TEMP%, Testuhr und
+// Dateisystemfassade ueber testzugang; nie die Nutzerablage.
+namespace nak313e7
+{
+namespace dg = nakama::diagnose;
+
+int geprueft = 0, fehler = 0;
+
+void pruefe (bool ok, const std::string& was, const juce::String& detail)
+{
+    ++geprueft;
+    if (! ok) ++fehler;
+    std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.toRawUTF8());
+}
+
+juce::String u8 (const char* text) { return juce::String (juce::CharPointer_UTF8 (text)); }
+
+/// Ortszeit 25.09.2026 hh:mm:ss,mmm.
+std::int64_t um (int stunde, int minute, int sekunde, int milli)
+{
+    return juce::Time (2026, 8, 25, stunde, minute, sekunde, milli, true).toMilliseconds();
+}
+
+/** Der Testordner: eine Wurzel unter %TEMP% statt %LOCALAPPDATA%. */
+class Wurzel final : public dg::WurzelFassade
+{
+public:
+    explicit Wurzel (const char* fall)
+    {
+        pfad = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                   .getChildFile ("nak313e7-shot-" + juce::String ((int) GetCurrentProcessId()) + "-" + fall);
+        pfad.deleteRecursively();
+        pfad.createDirectory();
+    }
+    ~Wurzel() override { pfad.deleteRecursively(); }
+    juce::File snapshots() const
+    {
+        return pfad.getChildFile ("evenacadia").getChildFile ("EQ-Copilot").getChildFile ("snapshots");
+    }
+    juce::File pfad;
+
+protected:
+    bool wurzelImpl (std::wstring& aus) override
+    {
+        aus = pfad.getFullPathName().toWideCharPointer();
+        return pfad.isDirectory();
+    }
+};
+
+class Uhr final : public dg::UhrFassade
+{
+public:
+    explicit Uhr (std::vector<std::int64_t> w) : werte (std::move (w)) {}
+    std::int64_t jetztUtcMs() override
+    {
+        const auto i = ablesungen++;
+        return werte[std::min<std::size_t> (i, werte.size() - 1)];
+    }
+    std::vector<std::int64_t> werte;
+    std::size_t ablesungen = 0;
+};
+
+/** Die echten Aufrufe; auf Zuruf scheitern Schreiben und Loeschen (M-141 (3)). */
+class Fassade final : public dg::EchteDateisystemFassade
+{
+public:
+    bool stoeren = false;
+
+protected:
+    bool schreibeUndSpueleImpl (Handle datei, const char* daten, std::size_t anzahl) override
+    {
+        return ! stoeren && EchteDateisystemFassade::schreibeUndSpueleImpl (datei, daten, anzahl);
+    }
+    bool loescheImpl (const std::wstring& p) override
+    {
+        return ! stoeren && EchteDateisystemFassade::loescheImpl (p);
+    }
+};
+
+/** Setzt die drei Fassaden des Exports und nimmt sie am Ende zurueck. */
+struct Gesetzt
+{
+    Gesetzt (std::shared_ptr<dg::WurzelFassade> o, std::shared_ptr<dg::UhrFassade> u,
+             std::shared_ptr<dg::DateisystemFassade> d)
+    {
+        eqcop::testzugang::snapshotOrdnerFuerTest() = std::move (o);
+        eqcop::testzugang::snapshotUhrFuerTest() = std::move (u);
+        eqcop::testzugang::snapshotDateisystemFuerTest() = std::move (d);
+    }
+    ~Gesetzt()
+    {
+        eqcop::testzugang::snapshotOrdnerFuerTest() = nullptr;
+        eqcop::testzugang::snapshotUhrFuerTest() = nullptr;
+        eqcop::testzugang::snapshotDateisystemFuerTest() = nullptr;
+        eqcop::testzugang::festhaltenHakenFuerTest() = {};
+    }
+};
+
+/** Speist n Bloecke ueber Hostbruecke und processBlock ein (Muster der
+    Referenzbuehne in BriefkastenTestMain.cpp) und wartet, bis die Engine
+    einen Stand mit gueltiger LTAS publiziert hat, der `bis` erfuellt. */
+bool speise (eqcop::EqCopilotProcessor& p, std::int64_t& zeit, int n, double frequenz, float rauschen,
+             const std::function<bool (const eqcop::MessSnapshot&)>& bis)
+{
+    juce::AudioBuffer<float> puffer (2, 512);
+    juce::MidiBuffer midi;
+    juce::Random r (20260925);
+    for (int b = 0; b < n; ++b)
+    {
+        for (int i = 0; i < 512; ++i)
+        {
+            const double t = (double) (zeit + i) / 48000.0;
+            const float s = 0.3f * (float) std::sin (juce::MathConstants<double>::twoPi * frequenz * t)
+                          + rauschen * (r.nextFloat() * 2.0f - 1.0f);
+            puffer.setSample (0, i, s);
+            puffer.setSample (1, i, s);
+        }
+        eqcop::hostbruecke::Blockbefund befund;
+        befund.kontext.processContextPresent = true;
+        befund.kontext.projectTimeSamples.setze (zeit);
+        befund.kontext.playing.setze (true);
+        befund.kontext.recording.setze (false);
+        befund.kontext.sampleRate.setze (48000.0);
+        befund.blockGroesse = 512;
+        p.nakamaBlockEmpfangen (befund);
+        p.processBlock (puffer, midi);
+        zeit += 512;
+    }
+    const auto ende = juce::Time::getMillisecondCounterHiRes() + 20000.0;
+    for (;;)
+    {
+        const auto s = p.messSnapshot();
+        if (s.zustand != eqcop::MessZustand::keineDaten && s.ltasGueltig && bis (s))
+            return true;
+        if (juce::Time::getMillisecondCounterHiRes() >= ende)
+            return false;
+        juce::Thread::sleep (5);
+    }
+}
+
+/** Die Baender der Datei gegen eine Linie: NaN der Linie ist null in der Datei. */
+bool baenderGleich (const juce::var& datei, const std::array<double, eqcop::kLtasBaender>& linie)
+{
+    const auto& werte = datei["ltas"]["komposit_db"];
+    if (werte.size() != (int) linie.size())
+        return false;
+    for (int b = 0; b < werte.size(); ++b)
+    {
+        const double l = linie[(std::size_t) b];
+        const auto& w = werte[b];
+        if (std::isnan (l) ? ! w.isVoid() : (w.isVoid() || std::abs ((double) w - l) > 1e-9 * std::max (1.0, std::abs (l))))
+            return false;
+    }
+    return true;
+}
+
+juce::TextButton* festhaltenKnopf (juce::Component& editor)
+{
+    for (auto* kind : editor.getChildren())
+        if (auto* b = dynamic_cast<juce::TextButton*> (kind))
+            if (b->getButtonText() == "Festhalten" && b->onClick)
+                return b;
+    return nullptr;
+}
+
+bool alle()
+{
+    std::printf ("== NAK-313 Etappe 7 - Festhalten am echten Editor (313/M-141, 313/M-142 (b)) ==\n");
+    const auto pid = juce::String ((int) GetCurrentProcessId());
+
+    // 313/M-141: zweimal in derselben Sekunde, dann ein drittes Mal mit
+    // Schreibfehler und scheiterndem loesche.
+    {
+        auto wurzel = std::make_shared<Wurzel> ("m141");
+        auto uhr = std::make_shared<Uhr> (std::vector<std::int64_t> { um (12, 0, 5, 0), um (12, 0, 5, 400),
+                                                                       um (12, 0, 9, 0) });
+        auto fs = std::make_shared<Fassade>();
+        Gesetzt gesetzt (wurzel, uhr, fs);
+        auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+        proz->setPlayConfigDetails (2, 2, 48000.0, 512);
+        proz->prepareToPlay (48000.0, 512);
+        std::int64_t zeit = 0;
+        const bool daten = speise (*proz, zeit, 200, 250.0, 0.05f, [] (const eqcop::MessSnapshot&) { return true; });
+        auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
+        editor->setSize (1200, 832);
+        auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get());
+        auto* knopf = festhaltenKnopf (*editor);
+        const bool bereit = daten && ed != nullptr && knopf != nullptr;
+        juce::String meldung[3];
+        for (int i = 0; bereit && i < 3; ++i)
+        {
+            fs->stoeren = i == 2;
+            knopf->onClick();
+            meldung[i] = ed->statusMeldungFuerTest();
+        }
+        fs->stoeren = false;
+        const auto datei = wurzel->snapshots().getChildFile ("snapshot-20260925-120005.json").getFullPathName();
+        const auto temp = wurzel->snapshots().getChildFile ("snapshot-20260925-120009.json").getFullPathName()
+                        + ".tmp-" + pid;
+        const auto erste = "Festgehalten (Vergleichslinie + Datei): " + datei;
+        const auto zweite = u8 ("Festhalten nicht möglich — in dieser Sekunde gibt es schon ") + datei
+                          + "; nichts gespeichert.";
+        const auto dritte = u8 ("Festhalten nicht möglich — Schreiben fehlgeschlagen: ") + temp
+                          + " (Rest: " + temp + ")";
+        pruefe (bereit, "313/M-141 meldung_nennt_die_datei vorbedingung: Messdaten, Editor, Knopf",
+                "Daten " + juce::String (daten ? "ja" : "NEIN"));
+        pruefe (meldung[0] == erste && juce::File (datei).existsAsFile(),
+                "313/M-141 meldung_nennt_die_datei (1) neu: die Meldung nennt die entstandene Datei", meldung[0]);
+        pruefe (meldung[1] == zweite && ! meldung[1].startsWith ("Festgehalten"),
+                "313/M-141 meldung_nennt_die_datei (2) abgelehnt: in dieser Sekunde gibt es schon die Datei, nichts gespeichert",
+                meldung[1]);
+        pruefe (meldung[2] == dritte && ! meldung[2].startsWith ("Festgehalten") && juce::File (temp).existsAsFile(),
+                "313/M-141 meldung_nennt_die_datei (3) fehler: der Grund und der Rest der eigenen Temp-Datei",
+                meldung[2]);
+        editor.reset();
+        proz.reset();
+    }
+
+    // 313/M-142 (b): ein Haken aendert die Messdaten der Engine direkt hinter
+    // processor.messSnapshot(); Datei und Vergleichslinie tragen trotzdem
+    // denselben Snapshot.
+    {
+        auto wurzel = std::make_shared<Wurzel> ("m142b");
+        auto uhr = std::make_shared<Uhr> (std::vector<std::int64_t> { um (12, 0, 5, 0) });
+        Gesetzt gesetzt (wurzel, uhr, std::make_shared<dg::EchteDateisystemFassade>());
+        auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+        proz->setPlayConfigDetails (2, 2, 48000.0, 512);
+        proz->prepareToPlay (48000.0, 512);
+        std::int64_t zeit = 0;
+        const bool daten = speise (*proz, zeit, 200, 250.0, 0.05f, [] (const eqcop::MessSnapshot&) { return true; });
+        auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
+        editor->setSize (1200, 832);
+        auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get());
+        auto* knopf = festhaltenKnopf (*editor);
+        const auto vorher = proz->messSnapshot();
+        bool geaendert = false;
+        eqcop::testzugang::festhaltenHakenFuerTest() = [&]
+        {
+            // Neues Material nach einem Reset: ein Ton bei 3 kHz ohne Rauschen.
+            proz->fordereMessResetAn();
+            geaendert = speise (*proz, zeit, 200, 3000.0, 0.0f, [&] (const eqcop::MessSnapshot& s)
+            {
+                for (int b = 0; b < eqcop::kLtasBaender; ++b)
+                    if (std::abs (s.ltasKompositDb[(std::size_t) b] - vorher.ltasKompositDb[(std::size_t) b]) > 1.0)
+                        return true;
+                return false;
+            });
+        };
+        if (daten && ed != nullptr && knopf != nullptr)
+            knopf->onClick();
+        eqcop::testzugang::festhaltenHakenFuerTest() = {};
+        const auto datei = wurzel->snapshots().getChildFile ("snapshot-20260925-120005.json");
+        juce::var inhalt;
+        const bool gelesen = juce::JSON::parse (datei.loadFileAsString(), inhalt).wasOk() && inhalt.isObject();
+        const auto linie = ed != nullptr ? ed->vergleichslinieFuerTest() : std::array<double, eqcop::kLtasBaender> {};
+        const auto nachher = proz->messSnapshot();
+        bool abweichend = false;
+        for (int b = 0; b < eqcop::kLtasBaender; ++b)
+            abweichend = abweichend || std::abs (nachher.ltasKompositDb[(std::size_t) b] - linie[(std::size_t) b]) > 1.0;
+        pruefe (daten && geaendert && abweichend,
+                "313/M-142 ein_snapshot vorbedingung: der Haken hat die Messdaten der Engine geaendert, die Engine weicht von der Linie ab",
+                "Daten " + juce::String (daten ? "ja" : "NEIN") + ", geaendert " + juce::String (geaendert ? "ja" : "NEIN")
+                    + ", abweichend " + juce::String (abweichend ? "ja" : "NEIN"));
+        pruefe (gelesen && baenderGleich (inhalt, linie),
+                "313/M-142 ein_snapshot (b): die Baender der Datei gleich der Vergleichslinie",
+                ed != nullptr ? ed->statusMeldungFuerTest() : juce::String ("kein Editor"));
+        editor.reset();
+        proz.reset();
+    }
+
+    std::printf ("NAK-313 FESTHALTEN %d geprueft, %d Fehler\n", geprueft, fehler);
+    return fehler == 0 && geprueft == 6;
+}
+} // namespace nak313e7
 } // namespace
 
 int main (int argc, char* argv[])
@@ -2230,7 +2514,9 @@ int main (int argc, char* argv[])
         const bool konflikt = nak312Konfliktpanel();
         // NAK-312 Etappe 7b (U51): die Annahmegrenze am echten Pfad.
         const bool annahme = nak312Annahmegrenze (ordner);
-        return shots == 0 && panel && label && ziel && konflikt && annahme ? 0 : 1;
+        // NAK-313 Etappe 7 (R-313-10): der Festhalten-Handgriff am echten Editor.
+        const bool festhalten = nak313e7::alle();
+        return shots == 0 && panel && label && ziel && konflikt && annahme && festhalten ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

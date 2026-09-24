@@ -39,6 +39,11 @@
 
     Engines liegen in diesem Bein auf dem HEAP (`std::unique_ptr`), nie im
     Funktionsrahmen — NAK-175, MSVC-Standardstack 1 MiB.
+
+    Seit NAK-313 Etappe 5b (R-313-4) stehen die Revisionsraender der
+    NAK-283-Faelle bei 2^53-1, und die Faelle 313/M-80, M-81 und M-89 messen
+    Bestands- und Eintragsrevision am Rand sowie den Intentwriter gegen die
+    Handinstanz eq-copilot/fixtures/v3/intent-wire-v1.json.
 */
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -1220,16 +1225,21 @@ void m11()
 // `int64max` ist signed-integer-UB, und der erzeugte negative Wert wird vom
 // EIGENEN Reader abgewiesen ("revision must be at least 1").
 //
-// Der Zustand am Rand ist ueber den LADEWEG erreichbar: der Reader hat keine
-// obere Schranke, und der eigene Headroomkandidat erzeugt `int64max`
-// ausdruecklich. Jeder Fall hier baut ihn deshalb als DEKLARIERTEN MUTANTEN
-// eines Writer-Standes mit genau EINER Abweichung (Pruefliste E) und laedt ihn,
-// statt den `Zustand` von Hand zu setzen.
+// Der Zustand am Rand ist ueber den LADEWEG erreichbar. Jeder Fall hier baut
+// ihn deshalb als DEKLARIERTEN MUTANTEN eines Writer-Standes mit genau EINER
+// Abweichung (Pruefliste E) und laedt ihn, statt den Zustand von Hand zu setzen.
 // Rotlauf: docs/beweise/roh/NAK-283-rot-M-07-etappe-2.txt bis -M-12-etappe-2.txt.
+//
+// NAK-313 Etappe 5b (R-313-4): der Rand ist seitdem 2^53-1, der Bereich aller
+// persistenten Revisionen und ihrer Drahtform - bis dahin stand er bei
+// int64max, das der Leser annahm und der Headroomkandidat erzeugte. Ein Stand
+// darueber laedt read-only; die Faelle M-07 bis M-10 und M-12 messen dieselben
+// Schranken deshalb an 2^53-1 beziehungsweise 2^53-2 (Nachtrag in
+// docs/beweise/NAK-283.md, Beleg docs/beweise/NAK-313.md M-79).
 
 namespace nak283
 {
-constexpr auto kMax = std::numeric_limits<juce::int64>::max();
+constexpr juce::int64 kMax = 9007199254740991;   // 2^53-1, Vertragswert
 
 /// Ein deklarierter Mutant eines WRITER-Standes: genau eine MainProject-
 /// Eigenschaft wird ersetzt.
@@ -1285,7 +1295,7 @@ state::Zustand geladen (const juce::MemoryBlock& bytes, const char* was)
     const auto erg = lade (bytes, z);
     pruefe (erg == state::LadeErgebnis::geladen && ! z.nurLesen,
             juce::String (was) + ": der Mutant laedt normal (der eigene Reader nimmt "
-            "int64max an, er hat keine obere Schranke) - " + z.grund);
+            "den Rand 2^53-1 an) - " + z.grund);
     return z;
 }
 
@@ -1327,7 +1337,7 @@ void m283_07_bis_09()
     {
         auto z = geladen (amRand, "M-07");
         pruefe (z.intentBestandRevision == kMax && z.sourceIntents.size() == 1,
-                "M-07: Vorbedingung - Bestandsrevision am int64-Maximum, ein Intent-Eintrag");
+                "M-07: Vorbedingung - Bestandsrevision am Rand 2^53-1, ein Intent-Eintrag");
         const auto vorher = bytesVon (z);
         const auto intentsVorher = z.sourceIntents;
 
@@ -1415,7 +1425,7 @@ void m283_07_bis_09()
 // Dirigentenregel vom 12.09.2026 (Manifest §22, Luecke aus der Erstpruefung 2):
 // "kein Host-Dirty, keine Revision" steht bei M-08 und M-09 in Reihenfolge und
 // Frist und ist damit Teil ihrer Zusage; gemessen wird es am Grenzstand
-// `int64max` ueber den Prozessor mit Hostlistener - null Meldungen, Revision
+// (seit NAK-313 R-313-4 2^53-1) ueber den Prozessor mit Hostlistener - null Meldungen, Revision
 // unveraendert. `StateMigrationTestMain.cpp` (M-11) fuehrt dieselbe Messung
 // heute schon fuer Intent und Assistent; Schutz und Beziehung fehlten an
 // beiden Raendern, und die Asymmetrie blieb ungeprueft.
@@ -1441,7 +1451,7 @@ void m283_08_09_am_host()
         p->addListener (&dirty);
         pruefe (! p->stateNurLesen() && p->intentBestandRevision() == kMax
                     && p->intentSchutzangaben().size() == 1,
-                "M-08 Host: Vorbedingung - Bestandsrevision am int64-Maximum IM Prozessor, "
+                "M-08 Host: Vorbedingung - Bestandsrevision am Rand 2^53-1 IM Prozessor, "
                 "eine Schutzangabe",
                 juce::String (p->intentBestandRevision()));
         const auto dirtyVor = dirty.nonParam;
@@ -1466,7 +1476,7 @@ void m283_08_09_am_host()
         DirtyZaehler dirty;
         p->addListener (&dirty);
         pruefe (p->intentBestandRevision() == kMax && p->intentBeziehungen().size() == 1,
-                "M-09 Host: Vorbedingung - Bestandsrevision am int64-Maximum, eine Beziehung");
+                "M-09 Host: Vorbedingung - Bestandsrevision am Rand 2^53-1, eine Beziehung");
         const auto dirtyVor = dirty.nonParam;
         const bool ok = p->entferneQuellenbeziehung (kQuelleA, kQuelleB);
         const auto dirtyNach = dirty.nonParam;
@@ -1496,7 +1506,7 @@ void m283_10()
     {
         auto z = geladen (offenAmRand, "M-10 (schrittAendern)");
         pruefe (z.assistent.gesetzt && z.assistent.offen && z.assistent.revision == kMax,
-                "M-10: Vorbedingung - ein OFFENER Schritt mit `revision == int64max`");
+                "M-10: Vorbedingung - ein OFFENER Schritt mit `revision == 2^53-1`");
         const auto schrittVorher = z.assistent.schritt;
         bool veraendert = true;
         juce::String grund;
@@ -1505,7 +1515,7 @@ void m283_10()
                 "M-10: `schrittAendern` weist ab statt zu inkrementieren - " + grund);
         pruefe (z.assistent.revision == kMax && z.assistent.schritt == schrittVorher
                     && z.assistent.offen,
-                "M-10: `a.revision` bleibt int64max, und weder `a.schritt` noch `a.offen` "
+                "M-10: `a.revision` bleibt 2^53-1, und weder `a.schritt` noch `a.offen` "
                 "sind angefasst - die Schranke steht VOR der Zuweisung",
                 juce::String (z.assistent.revision));
     }
@@ -1518,7 +1528,7 @@ void m283_10()
         const auto geschlossenAmRand = mitAssistentenPlatz (offenAmRand, 3, juce::var (false));
         auto z = geladen (geschlossenAmRand, "M-10 (neuer Schritt)");
         pruefe (z.assistent.gesetzt && ! z.assistent.offen && z.assistent.revision == kMax,
-                "M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == int64max`");
+                "M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == 2^53-1`");
         const auto stepIdVorher = z.assistent.stepId;
         bool veraendert = true;
         juce::String grund;
@@ -1527,7 +1537,7 @@ void m283_10()
         pruefe (! ok && ! veraendert && grund == "assistant revision would overflow",
                 "M-10: auch der NEUE Schritt weist ab - " + grund);
         pruefe (z.assistent.revision == kMax && z.assistent.stepId == stepIdVorher,
-                "M-10: `a.revision` bleibt int64max, und die Schritt-Kennung ist "
+                "M-10: `a.revision` bleibt 2^53-1, und die Schritt-Kennung ist "
                 "unveraendert");
     }
 
@@ -1543,7 +1553,7 @@ void m283_10()
                 "M-10: auch das Ergebnis weist ab - " + grund);
         pruefe (z.assistent.revision == kMax && z.assistent.ergebnis == ergebnisVorher,
                 "M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an "
-                "keiner der drei Stellen auf int64max ausgefuehrt; kein negativer "
+                "keiner der drei Stellen auf 2^53-1 ausgefuehrt; kein Schritt ueber den Rand, kein negativer "
                 "Folgewert, kein signed-integer-UB",
                 juce::String (z.assistent.revision));
     }
@@ -1553,10 +1563,11 @@ void m283_10()
 // M-12 · Regressionswache: unter der Grenze aendert sich nichts
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Die Vorpruefung darf den NORMALFALL nicht verschieben: bei `int64max - 1`
-// wird der Eintrag entfernt, die Revision steigt um GENAU 1, und jeder der
-// vier Handgriffe verhaelt sich wie vor der Etappe. Heute gruen; absichtlich
-// gebrochen mit einer Schranke bei `int64max - 1`.
+// Die Vorpruefung darf den NORMALFALL nicht verschieben: eine Stufe unter dem
+// Rand (seit NAK-313 R-313-4 bei 2^53-2) wird der Eintrag entfernt, die
+// Revision steigt um GENAU 1, und jeder der vier Handgriffe verhaelt sich wie
+// vor der Etappe. Heute gruen; absichtlich gebrochen mit einer Schranke eine
+// Stufe unter dem Rand.
 void m283_12()
 {
     abschnitt ("NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts");
@@ -1567,7 +1578,7 @@ void m283_12()
     {
         auto z = geladen (knappDrunter, "M-12 (Intent)");
         pruefe (z.intentBestandRevision == kMax - 1,
-                "M-12: Vorbedingung - Bestandsrevision bei int64max - 1");
+                "M-12: Vorbedingung - Bestandsrevision bei 2^53-2");
         bool veraendert = false;
         juce::String grund;
         const bool ok = state::entferneIntent (z, kQuelleA, {}, veraendert, grund);
@@ -1600,7 +1611,7 @@ void m283_12()
             mitAssistentenPlatz (writerMitAssistent(), 2, juce::var (kMax - 1));
         auto z = geladen (assistentDrunter, "M-12 (Assistent)");
         pruefe (z.assistent.revision == kMax - 1,
-                "M-12: Vorbedingung - Assistentenrevision bei int64max - 1");
+                "M-12: Vorbedingung - Assistentenrevision bei 2^53-2");
         bool veraendert = false;
         juce::String grund;
         const bool ok = state::assistentUeberspringen (z, veraendert, grund);
@@ -1615,7 +1626,7 @@ void m283_12()
     // ⚠️ NAK-283 Erstpruefung 2 Befund 3: die vier Bloecke oben laufen unter
     // den `state::`-Funktionen, die Host-Dirty gar nicht kennen. Die
     // Zusagespalte von M-12 nennt aber drei Groessen unter EINER Vorbedingung
-    // (`int64max - 1`, alle vier Handgriffe): Eintrag entfernt, Revision +1 und
+    // (eine Stufe unter dem Rand, alle vier Handgriffe): Eintrag entfernt, Revision +1 und
     // Host-Dirty GENAU EINMAL. Bis zur Nacharbeit 1 war die dritte Groesse nur
     // an einem Normalstand und nur fuer einen Handgriff gemessen - unter der
     // Mutation, die diese Zeile traegt, blieb der ganze Dirty-Block gruen, die
@@ -1628,7 +1639,7 @@ void m283_12()
         p->addListener (&dirty);
         pruefe (! p->stateNurLesen() && p->intentBestandRevision() == kMax - 1
                     && p->sourceIntents().size() == 1,
-                "M-12 Host (Intent): Vorbedingung - der Grenzstand int64max - 1 liegt IM "
+                "M-12 Host (Intent): Vorbedingung - der Grenzstand 2^53-2 liegt IM "
                 "Prozessor, ein Intent-Eintrag",
                 juce::String (p->intentBestandRevision()));
         const auto dirtyVor = dirty.nonParam;
@@ -1642,7 +1653,7 @@ void m283_12()
         const auto revNach = p->intentBestandRevision();
         const bool leer = p->sourceIntents().empty();
         pruefe (ok && leer && revNach == kMax && dirtyNach == dirtyVor + 1,
-                "M-12 Host (Intent): bei int64max - 1 wird der Eintrag entfernt, die "
+                "M-12 Host (Intent): bei 2^53-2 wird der Eintrag entfernt, die "
                 "Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet",
                 juce::String (dirtyNach - dirtyVor) + " Dirty, Revision "
                     + juce::String (revNach));
@@ -1716,7 +1727,7 @@ void m283_12()
         p->addListener (&dirty);
         pruefe (! p->stateNurLesen() && p->assistentAusState().revision == kMax - 1
                     && p->assistentAusState().offen,
-                "M-12 Host (Assistent): Vorbedingung - ein OFFENER Schritt bei int64max - 1",
+                "M-12 Host (Assistent): Vorbedingung - ein OFFENER Schritt bei 2^53-2",
                 juce::String (p->assistentAusState().revision));
         const auto dirtyVor = dirty.nonParam;
         const auto schrittVor = p->assistentAusState().schritt;
@@ -1771,6 +1782,170 @@ void m283_12()
 }
 } // namespace nak283
 
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-313 Etappe 5b · der Revisionsbereich am Intent (R-313-4; 313/M-80,
+// M-81, M-89; Manifest docs/beweise/NAK-313.md §6.4 und §8.5)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Bestands- und Eintragsrevision halten an 2^53-1: eine Stufe darunter geht
+// genau ein Schritt, am Rand weist der Handgriff ab, bevor er etwas zuweist -
+// kein Umklappen, keine Saettigung, keine 0. Der Intentwriter schreibt den
+// Rand unveraendert und bytegleich zur Handinstanz
+// eq-copilot/fixtures/v3/intent-wire-v1.json.
+namespace nak313
+{
+constexpr juce::int64 kRand = 9007199254740991;   // 2^53-1, Vertragswert
+
+/** Eine Repodatei, gesucht vom Arbeitsordner und vom Binary aufwaerts. */
+juce::File repoDatei (const juce::String& relativ)
+{
+    auto ausCwd = juce::File::getCurrentWorkingDirectory().getChildFile (relativ);
+    if (ausCwd.exists())
+        return ausCwd;
+    auto ordner = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+    for (int i = 0; i < 8 && ordner.exists(); ++i)
+    {
+        if (ordner.getChildFile (relativ).exists())
+            return ordner.getChildFile (relativ);
+        ordner = ordner.getParentDirectory();
+    }
+    return ausCwd;
+}
+
+void m80()
+{
+    abschnitt ("NAK-313 M-80  bestandsrevision_haelt_an_der_grenze");
+
+    // Prozessorweg: eine Stufe unter dem Rand, dann am Rand.
+    const auto knapp = baumMitEigenschaft ("intent_revision_v1", juce::var (kRand - 1), false);
+    auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+    p->setStateInformation (knapp.getData(), (int) knapp.getSize());
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    const bool vorbedingung = ! p->stateNurLesen() && p->intentBestandRevision() == kRand - 1;
+    const bool erster = p->setzeQuellenrolle (kQuelleA, {}, state::Rolle::fuehrt,
+                                              state::IntentHerkunft::user, 1.0);
+    const auto revErster = p->intentBestandRevision();
+    const int dirtyErster = dirty.nonParam;
+    juce::MemoryBlock nachErstem;
+    p->getStateInformation (nachErstem);
+    auto neu = std::make_unique<EqCopilotProcessor>();
+    neu->setStateInformation (nachErstem.getData(), (int) nachErstem.getSize());
+    const bool reloadSchreibbar = ! neu->stateNurLesen() && neu->intentBestandRevision() == kRand;
+    pruefe (vorbedingung && erster && revErster == kRand && dirtyErster == 1 && reloadSchreibbar,
+            "313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1, "
+            "1 Host-Dirty, Reload schreibbar",
+            juce::String (revErster) + ", " + juce::String (dirtyErster) + " Dirty, Reload "
+                + (neu->stateNurLesen() ? "read-only: " + neu->holeStateGrund() : juce::String ("schreibbar")));
+
+    const auto intentsVor = p->sourceIntents();
+    const bool zweiter = p->setzeQuellenrolle (kQuelleB, {}, state::Rolle::traegt,
+                                               state::IntentHerkunft::user, 1.0);
+    const auto revZweiter = p->intentBestandRevision();
+    const int dirtyZweiter = dirty.nonParam - dirtyErster;
+    const auto intentsNach = p->sourceIntents();
+    pruefe (! zweiter && revZweiter == kRand && intentsNach == intentsVor && dirtyZweiter == 0,
+            "313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-1 Rueckgabe false, Bestand und "
+            "Revision unveraendert, 0 Host-Dirty - kein Umklappen, keine Saettigung, keine 0",
+            juce::String (zweiter ? "angenommen" : "abgewiesen") + ", Revision " + juce::String (revZweiter)
+                + ", " + juce::String (dirtyZweiter) + " Dirty, " + juce::String ((int) intentsNach.size())
+                + " Intent(s)");
+    p->removeListener (&dirty);
+
+    // Bibliothek: den Grund setzt setzeIntent; der Prozessor gibt nur false zurueck.
+    state::Zustand z;
+    const auto amRand = baumMitEigenschaft ("intent_revision_v1", juce::var (kRand), false);
+    const bool geladenOk = lade (amRand, z) == state::LadeErgebnis::geladen;
+    juce::MemoryBlock vorher;
+    state::speichere (z, vorher);
+    bool veraendert = true;
+    juce::String grund;
+    const bool ok = state::setzeIntent (z, kQuelleB, {}, state::Rolle::traegt,
+                                        state::IntentHerkunft::user, 1.0, veraendert, grund);
+    juce::MemoryBlock nachher;
+    state::speichere (z, nachher);
+    pruefe (geladenOk && ! ok && ! veraendert && grund == "intent revision would overflow"
+                && z.intentBestandRevision == kRand && gleich (vorher, nachher),
+            "313/M-80 bestandsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent am Rand liefert false "
+            "mit Grund, der Zustand bleibt bytegleich",
+            grund + ", Revision " + juce::String (z.intentBestandRevision));
+}
+
+void m81()
+{
+    abschnitt ("NAK-313 M-81  eintragsrevision_haelt_an_der_grenze");
+
+    // Ein Eintrag am Rand, der Bestand darunter (intent_revision_v1 = 1).
+    const auto amRand = baumMitEigenschaft ("source_intents_v1",
+        juce::var (liste ({ kQuelleA, juce::String(), "fuehrt", juce::var (kRand), "user", juce::var (1.0) })));
+    auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+    p->setStateInformation (amRand.getData(), (int) amRand.getSize());
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    const auto vor = p->sourceIntents();
+    const bool vorbedingung = ! p->stateNurLesen() && vor.size() == 1 && vor[0].revision == kRand
+                           && p->intentBestandRevision() == 1;
+    const bool ok = p->setzeQuellenrolle (kQuelleA, {}, state::Rolle::traegt,
+                                          state::IntentHerkunft::user, 1.0);
+    const auto nach = p->sourceIntents();
+    const auto bestand = p->intentBestandRevision();
+    const int dirtyNach = dirty.nonParam;
+    const bool unveraendert = nach == vor && nach.size() == 1 && nach[0].rolle == state::Rolle::fuehrt
+                           && nach[0].revision == kRand;
+    pruefe (vorbedingung && ! ok && unveraendert && bestand == 1 && dirtyNach == 0,
+            "313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false vor jeder Zuweisung - Rolle, "
+            "Eintragsrevision 2^53-1 und Bestandsrevision unveraendert, 0 Host-Dirty",
+            juce::String (ok ? "angenommen" : "abgewiesen") + ", Eintrag "
+                + (nach.empty() ? juce::String ("-") : juce::String (nach[0].revision)) + ", Bestand "
+                + juce::String (bestand) + ", " + juce::String (dirtyNach) + " Dirty");
+    p->removeListener (&dirty);
+
+    state::Zustand z;
+    const bool geladenOk = lade (amRand, z) == state::LadeErgebnis::geladen;
+    juce::MemoryBlock vorher;
+    state::speichere (z, vorher);
+    bool veraendert = true;
+    juce::String grund;
+    const bool libOk = state::setzeIntent (z, kQuelleA, {}, state::Rolle::traegt,
+                                           state::IntentHerkunft::user, 1.0, veraendert, grund);
+    juce::MemoryBlock nachher;
+    state::speichere (z, nachher);
+    pruefe (geladenOk && ! libOk && ! veraendert && grund == "intent revision would overflow"
+                && gleich (vorher, nachher),
+            "313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent liefert false mit Grund, "
+            "der Zustand bleibt bytegleich", grund);
+}
+
+void m89()
+{
+    abschnitt ("NAK-313 M-89  intentwriter_revision_am_rand");
+    const auto datei = repoDatei ("eq-copilot/fixtures/v3/intent-wire-v1.json");
+    juce::var instanz;
+    const bool gelesen = datei.existsAsFile()
+                      && juce::JSON::parse (datei.loadFileAsString(), instanz).wasOk();
+    const auto ausschnitt = instanz.getProperty ("wire_ausschnitt", {}).toString().toStdString();
+    const auto revision = instanz.getProperty ("eingabe", {}).getProperty ("bestand", {})
+                                 .getProperty ("intent_revision_v1", {});
+
+    // Main mit gueltiger Wire-Adresse (Projektbindung), leerem Bestand und der
+    // Revision aus der Handinstanz.
+    auto v = mainBaum();
+    v.getChildWithName ("Common").setProperty ("project_binding_id", hex32 (0x55), nullptr);
+    v.getChildWithName ("MainProject").setProperty ("intent_revision_v1", revision, nullptr);
+    const auto saat = alsBlock (v);
+    auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+    p->setStateInformation (saat.getData(), (int) saat.getSize());
+    const auto text = p->v3IntentUpdateFuerTest (true);
+    const auto stelle = text.find (",\"bestand_revision\":");
+    const bool gleichAb = stelle != std::string::npos && text.substr (stelle) == ausschnitt;
+    pruefe (gelesen && ! ausschnitt.empty() && revision.isInt64() && (juce::int64) revision == kRand
+                && ! p->stateNurLesen() && p->intentBestandRevision() == kRand && gleichAb,
+            "313/M-89 intentwriter_revision_am_rand: der Writer schreibt bestand_revision 2^53-1 "
+            "unveraendert, ab ,\"bestand_revision\": bytegleich zu wire_ausschnitt der Handinstanz",
+            juce::String (stelle == std::string::npos ? text : text.substr (stelle)));
+}
+} // namespace nak313
+
 } // namespace
 
 int main()
@@ -1801,6 +1976,12 @@ int main()
     nak283::m283_08_09_am_host();
     nak283::m283_10();
     nak283::m283_12();
+    // NAK-313 Etappe 5b (R-313-4): Bestands- und Eintragsrevision halten an
+    // 2^53-1 (M-80, M-81), der Intentwriter schreibt den Rand bytegleich zur
+    // Handinstanz (M-89).
+    nak313::m80();
+    nak313::m81();
+    nak313::m89();
 
     std::cout << std::endl;
     if (fehler == 0)

@@ -44,6 +44,15 @@ enum class Herkunft     { frisch, schema1Migriert, schema2Geladen, nurLesen };
 
 enum class LadeErgebnis { geladen, migriert, nurLesen, ignoriert };
 
+/** NAK-313 R-313-4: die groesste persistente Revision, 2^53-1 - eine Zahl an
+    einer Stelle. Intent-Bestand, Intent-Eintrag, Assistentenschritt,
+    Dsp.state_revision und die Revision der Undo-Eintraege teilen diesen
+    Bereich mit ihrer Drahtform: 2^53-1 ist die groesste Ganzzahl, die jede
+    Drahtform exakt traegt (v3-Textriegel Regel 2). Die Leser halten einen
+    Stand darueber read-only mit Originalbytes, die Mutatoren und der
+    Transaktionskern halten an dieser Grenze. */
+inline constexpr juce::int64 kRevisionMax = 9007199254740991;
+
 const char* wort (Klasse k);
 const char* wort (Messposition p);
 bool klasseAusWort   (const juce::String& w, Klasse& aus);
@@ -617,6 +626,15 @@ bool assistentResume (const Zustand& z, Assistentenzustand& aus);
 /** §46.2: setzt eines der drei benannten Ergebnisse (M-61). */
 bool setzeAssistentenergebnis (Zustand& z, Assistentenergebnis ergebnis,
                                bool& veraendert, juce::String& grund);
+
+/** M-62, NAK-313 R-313-4: haengt die Kennung eines begonnenen Versuchs an den
+    offenen Schritt und hebt dessen Revision genau einmal. Die Funktion prueft
+    selbst, bevor sie etwas zuweist: ohne offenen Schritt, mit einer Kennung,
+    die keine hex32 ist, oder an der Revisionsgrenze kRevisionMax liefert sie
+    false mit Grund und laesst den Zustand unberuehrt. Dieselbe Kennung noch
+    einmal ist ein No-op (true, veraendert bleibt false). */
+bool assistentVersuchVerknuepfen (Zustand& z, const juce::String& experimentId,
+                                  bool& veraendert, juce::String& grund);
 
 /** Ein Kandidat der Assistentenpriorisierung (§46.2, M-60). */
 struct Schrittkandidat

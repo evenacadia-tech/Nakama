@@ -38,6 +38,13 @@
 // fremde bleibt ignoriert; das Negativ-Golden doppelte-eigenschaft-v1.bin
 // laedt read-only. Die Ladezeit der groessten Grenzfaelle steht im Detailtext.
 //
+// Seit NAK-313 Etappe 5b (R-313-4; 313/M-74 bis M-79) misst das Bein den
+// Revisionsbereich: Bestands-, Eintrags- und Assistentenrevision (im
+// MainProject und im RetainedMainProject), Dsp.state_revision und die
+// Undo-Revision laden bei 2^53-1 schreibbar und bytegleich zurueck; 2^53 und
+// int64max bleiben read-only mit Originalbytes, der Grund nennt das Feld. Der
+// NAK-283-Fall M-11 steht seitdem am Rand 2^53-1.
+//
 //   EqCopStateMigrationTest.exe                    misst
 //   EqCopStateMigrationTest.exe --schreibe-goldens schreibt fixtures/state/schema2/*.bin
 //   EqCopStateMigrationTest.exe --lade-bericht <datei>
@@ -235,6 +242,10 @@ void zaehlerPruefe (bool ok, const juce::String& name, const juce::String& zusat
     }
     pruefe (ok, name, zusatz);
 }
+
+/** NAK-313 R-313-4: der Rand aller persistenten Revisionen, 2^53-1. Ein
+    Vertragswert, von Hand ausgeschrieben - kein Fall liest ihn aus dem Produkt. */
+constexpr juce::int64 kRevisionsrand = 9007199254740991;
 
 /** Baut einen gueltigen Schema-2-Baum fuer Experimente. */
 juce::ValueTree schema2Baum (const char* klasse, const char* position, bool mitMainProject)
@@ -791,9 +802,10 @@ juce::String kinder (const juce::MemoryBlock& b)
 
 /// Der groesste Bestand, den der Vertrag zulaesst (Deckel `NakamaState.h`):
 /// 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP,
-/// je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand,
-/// Assistent gesetzt - gebaut wie der Kandidat des Headroom-Riegels, damit die
-/// Zeile den Rand des Vertrags misst und nicht einen erfundenen.
+/// je 256 Intents, Schutzangaben und Beziehungen, Revisionen am Rand 2^53-1
+/// (seit NAK-313 R-313-4; bis dahin am int64-Rand), Assistent gesetzt - gebaut
+/// wie der Kandidat des Headroom-Riegels, damit die Zeile den Rand des
+/// Vertrags misst und nicht einen erfundenen.
 state::Zustand maximalerMain()
 {
     auto z = state::frisch (kSaatId);
@@ -810,7 +822,7 @@ state::Zustand maximalerMain()
     for (int i = 0; i < state::maxSourceIntents; ++i)
         z.sourceIntents.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32),
                                      juce::String::toHexString (i + 1).paddedLeft ('f', 32),
-                                     state::Rolle::verschmolzen, std::numeric_limits<juce::int64>::max(),
+                                     state::Rolle::verschmolzen, kRevisionsrand,
                                      state::IntentHerkunft::abgeleitet, 1.0 });
     for (int i = 0; i < state::maxSchutzangaben; ++i)
         z.schutzangaben.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32),
@@ -819,9 +831,9 @@ state::Zustand maximalerMain()
         z.intentBeziehungen.push_back ({ juce::String::toHexString (i + 1).paddedLeft ('0', 32),
                                          juce::String::toHexString (i + 2).paddedLeft ('0', 32),
                                          state::Beziehungsart::darfVerschmelzen });
-    z.intentBestandRevision = std::numeric_limits<juce::int64>::max();
+    z.intentBestandRevision = kRevisionsrand;
     z.assistent = { true, juce::String::toHexString (0xa55e5).paddedLeft ('0', 32),
-                    state::Assistentenschritt::verdict, std::numeric_limits<juce::int64>::max(), true,
+                    state::Assistentenschritt::verdict, kRevisionsrand, true,
                     juce::String::toHexString (0xf1d6).paddedLeft ('0', 32),
                     juce::String::toHexString (0x9005a1).paddedLeft ('0', 32),
                     juce::String::toHexString (0xe89e21).paddedLeft ('0', 32),
@@ -1344,6 +1356,168 @@ void nak313Duplikate (const juce::File& fixtureOrdner)
         pruefe (da && duplikatNurLesen (d, b),
                 "313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = "
                 "Originalbytes", da ? duplikatText (d, b) : juce::String ("Datei fehlt: ") + datei.getFullPathName());
+    }
+}
+
+/*  ═══ NAK-313 Etappe 5b: der Revisionsbereich (R-313-4) ════════════════════
+    Manifest docs/beweise/NAK-313.md §6.4 (M-74 bis M-79) und §8.5.
+
+    Alle persistenten Revisionen - Intent-Bestand, Intent-Eintrag,
+    Assistentenschritt, Dsp.state_revision und die Revision der Undo-Eintraege -
+    enden bei 2^53-1, der groessten Ganzzahl, die jede Drahtform exakt traegt.
+    Ein Stand darueber stammt aus fremden Bytes und bleibt read-only mit
+    Originalbytes, der Grund nennt das Feld. Jeder Stand entsteht ueber den
+    Writer mit dem Randwert im Feld; 2^53-1 laedt schreibbar und kommt
+    bytegleich zurueck. */
+
+struct Randwert { juce::int64 wert; const char* name; };
+const Randwert kRandwerte[] = {
+    { kRevisionsrand,                          "2^53-1" },
+    { kRevisionsrand + 1,                      "2^53" },
+    { std::numeric_limits<juce::int64>::max(), "int64max" },
+};
+
+/** Ein Randstand durch den Leser: bis 2^53-1 geladen mit dem Wert und Save
+    bytegleich, darueber nurLesen mit genau diesem Grund und Originalbytes. */
+void randPruefe (const juce::String& name, const juce::MemoryBlock& x, const state::Bundle& bundle,
+                 const Randwert& r, const std::function<juce::int64 (const state::Zustand&)>& gelesen,
+                 const juce::String& grund)
+{
+    state::Zustand z;
+    const auto erg = state::lade (x.getData(), x.getSize(), bundle, z);
+    juce::MemoryBlock s;
+    if (erg != state::LadeErgebnis::ignoriert)
+        state::speichere (z, s);
+    const bool bytegleich = gleich (s, x);
+    const auto detail = juce::String (ladeErgebnisWort (erg)) + ", Wert " + juce::String (gelesen (z))
+                      + ", Grund '" + z.grund + "', Save " + (bytegleich ? "bytegleich" : "anders");
+    if (r.wert <= kRevisionsrand)
+        pruefe (erg == state::LadeErgebnis::geladen && ! z.nurLesen && z.grund.isEmpty()
+                    && gelesen (z) == r.wert && bytegleich,
+                name + " " + r.name + ": geladen mit " + juce::String (r.wert) + ", Save bytegleich", detail);
+    else
+        pruefe (erg == state::LadeErgebnis::nurLesen && z.nurLesen && z.grund == grund && bytegleich,
+                name + " " + r.name + ": nurLesen mit Originalbytes, Grund '" + grund + "'", detail);
+}
+
+/** Ein Main- oder Legacy-Stand mit dem Bestand im Kind MainProject
+    beziehungsweise RetainedMainProject (Vertrag §2.0b). */
+state::Zustand bestandsstand (bool main)
+{
+    auto z = state::frisch ("5b000000000000000000000000000001");
+    z.common.klasse = main ? state::Klasse::main : state::Klasse::legacy;
+    z.common.position = state::Messposition::insert;
+    z.common.label = main ? "Leitstand" : "Ruhend";
+    return z;
+}
+
+/** Ein Probeeq-Stand mit dem Kind Dsp. */
+state::Zustand dspStand()
+{
+    auto z = state::frisch ("5b000000000000000000000000000002");
+    z.common.klasse = state::Klasse::active_probe;
+    z.common.label = "Sonde am Revisionsrand";
+    z.hatParameters = true;
+    z.stateRevision = 1;
+    return z;
+}
+
+juce::MemoryBlock geschrieben (const state::Zustand& z)
+{
+    juce::MemoryBlock b;
+    state::speichere (z, b);
+    return b;
+}
+
+void nak313Revisionsbereich()
+{
+    const auto quelle = juce::String ("a5b00000000000000000000000000001");
+    for (const bool main : { true, false })
+    {
+        const juce::String knoten (main ? "MainProject" : "RetainedMainProject");
+        for (const auto& r : kRandwerte)
+        {
+            // M-74: die Bestandsrevision.
+            {
+                auto z = bestandsstand (main);
+                z.intentBestandRevision = r.wert;
+                randPruefe ("313/M-74 intent_revision_grenze " + knoten, geschrieben (z), state::Bundle::eqcp(), r,
+                            [] (const state::Zustand& g) { return g.intentBestandRevision; },
+                            knoten + ".intent_revision_v1 exceeds 2^53-1");
+            }
+            // M-75: die Revision eines Intent-Eintrags (Bestand darunter).
+            {
+                auto z = bestandsstand (main);
+                z.sourceIntents.push_back ({ quelle, {}, state::Rolle::fuehrt, r.wert,
+                                             state::IntentHerkunft::user, 1.0 });
+                z.intentBestandRevision = 1;
+                randPruefe ("313/M-75 source_intent_revision_grenze " + knoten, geschrieben (z),
+                            state::Bundle::eqcp(), r,
+                            [] (const state::Zustand& g)
+                            { return g.sourceIntents.empty() ? (juce::int64) 0 : g.sourceIntents.front().revision; },
+                            knoten + ".source_intents_v1 revision exceeds 2^53-1");
+            }
+            // M-76: die Revision des Assistentenschritts.
+            {
+                auto z = bestandsstand (main);
+                z.assistent = { true, juce::String ("5b0000000000000000000000000057e0"),
+                                state::Assistentenschritt::coverage, r.wert, true, {}, {}, {},
+                                state::Assistentenergebnis::schritt };
+                randPruefe ("313/M-76 assistent_revision_grenze " + knoten, geschrieben (z),
+                            state::Bundle::eqcp(), r,
+                            [] (const state::Zustand& g) { return g.assistent.revision; },
+                            knoten + ".assistant_step_v1 revision exceeds 2^53-1");
+            }
+        }
+    }
+    for (const auto& r : kRandwerte)
+    {
+        // M-77: Dsp.state_revision (das Kind Dsp wird nur fuer active_probe gelesen).
+        {
+            auto z = dspStand();
+            z.stateRevision = r.wert;
+            randPruefe ("313/M-77 dsp_state_revision_grenze", geschrieben (z), state::Bundle::nkac(), r,
+                        [] (const state::Zustand& g) { return g.stateRevision; },
+                        "Dsp.state_revision exceeds 2^53-1");
+        }
+        // M-78: die Revision eines Undo-Eintrags.
+        {
+            auto z = dspStand();
+            state::UndoEintrag u;
+            u.art = state::UndoArt::apply;
+            u.slot = -1;
+            u.revision = r.wert;
+            u.zustand.werte = param::standardSatz();
+            z.undoRing.push_back (std::move (u));
+            randPruefe ("313/M-78 undo_revision_grenze", geschrieben (z), state::Bundle::nkac(), r,
+                        [] (const state::Zustand& g)
+                        { return g.undoRing.empty() ? (juce::int64) 0 : g.undoRing.front().revision; },
+                        "Dsp.undo_ring_v1 revision exceeds 2^53-1");
+        }
+    }
+
+    // M-79 (a): Assistenten- und Bestandsrevision am int64-Maximum - bis zu
+    // dieser Etappe der Rand von NAK-283 M-11 und schreibbar geladen. Der
+    // Leser prueft die Bestandsrevision vor dem Assistentenschritt, deshalb
+    // nennt der Grund sie.
+    {
+        auto z = bestandsstand (true);
+        z.sourceIntents.push_back ({ quelle, {}, state::Rolle::fuehrt, 1, state::IntentHerkunft::user, 1.0 });
+        z.intentBestandRevision = std::numeric_limits<juce::int64>::max();
+        z.assistent = { true, juce::String ("5b0000000000000000000000000057e1"),
+                        state::Assistentenschritt::coverage, std::numeric_limits<juce::int64>::max(), true,
+                        {}, {}, {}, state::Assistentenergebnis::schritt };
+        const auto x = geschrieben (z);
+        state::Zustand g;
+        const auto erg = state::lade (x.getData(), x.getSize(), state::Bundle::eqcp(), g);
+        juce::MemoryBlock s;
+        state::speichere (g, s);
+        pruefe (erg == state::LadeErgebnis::nurLesen && g.nurLesen
+                    && g.grund == "MainProject.intent_revision_v1 exceeds 2^53-1" && gleich (s, x),
+                "313/M-79 int64max_laedt_nurlesen: Assistenten- und Bestandsrevision int64max - nurLesen mit "
+                "Originalbytes, der Grund nennt MainProject.intent_revision_v1",
+                juce::String (ladeErgebnisWort (erg)) + ", Grund '" + g.grund + "', Save "
+                    + (gleich (s, x) ? "bytegleich" : "anders"));
     }
 }
 } // namespace
@@ -3800,7 +3974,7 @@ int main (int argc, char* argv[])
     //       gespeicherte Stand truege `-9223372036854775808`, und der eigene
     //       Reader wiese ihn read-only ab ("revision must be at least 1") -
     //       "State bleibt verlustfrei" waere verletzt. Zusage: der geladene
-    //       Stand ist NICHT read-only, und `a.revision` kommt als int64max
+    //       Stand ist NICHT read-only, und `a.revision` kommt als Randwert
     //       zurueck.
     //   (b) `entferneIntent` wird an der Obergrenze tatsaechlich gerufen und
     //       abgewiesen. Zusage: die Bytes vor und nach dem Aufruf sind
@@ -3810,10 +3984,15 @@ int main (int argc, char* argv[])
     // Der Stand am Rand entsteht als deklarierter Mutant eines WRITER-Standes
     // mit genau zwei benannten Abweichungen (`intent_revision_v1` und der
     // Revisionsplatz der flachen Assistentenliste) - beide Werte nimmt der
-    // eigene Reader an, er hat keine obere Schranke.
+    // eigene Reader an.
+    //
+    // NAK-313 Etappe 5b (R-313-4, M-79 b): der Rand ist seit dieser Etappe
+    // 2^53-1 statt int64max - der Bereich aller persistenten Revisionen und
+    // ihrer Drahtform. Ein Stand bei int64max laedt read-only (313/M-79
+    // int64max_laedt_nurlesen in G15); Nachtrag in docs/beweise/NAK-283.md.
     {
         Abschnitt a;
-        constexpr auto kMax = std::numeric_limits<juce::int64>::max();
+        constexpr juce::int64 kMax = kRevisionsrand;
         const auto qa = juce::String::toHexString (0xA1).paddedLeft ('0', 32);
 
         // Writer-Stand: ein Intent und ein offener Assistentenschritt.
@@ -3849,7 +4028,7 @@ int main (int argc, char* argv[])
         pruefe (! p->stateNurLesen() && p->intentBestandRevision() == kMax
                     && p->assistentAusState().revision == kMax
                     && p->sourceIntents().size() == 1,
-                "M-11: der eigene Reader nimmt beide Revisionen am int64-Maximum an "
+                "M-11: der eigene Reader nimmt beide Revisionen am Rand 2^53-1 an "
                 "(Vorbedingung der Zusage)",
                 juce::String (p->intentBestandRevision()) + " / "
                     + juce::String (p->assistentAusState().revision));
@@ -3859,7 +4038,7 @@ int main (int argc, char* argv[])
         const bool uebersprungen = p->assistentUeberspringen();
         pruefe (! uebersprungen && p->assistentAusState().revision == kMax,
                 "M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt "
-                "int64max - kein Ueberlauf auf einen negativen Wert",
+                "2^53-1 - kein Schritt ueber den Rand",
                 juce::String (p->assistentAusState().revision));
 
         // ── (b) `entferneIntent` an der Obergrenze - Bytes vor und nach ────
@@ -3887,7 +4066,7 @@ int main (int argc, char* argv[])
                 "laedt in einer neuen Instanz NORMAL, nicht read-only");
         pruefe (neu->assistentAusState().revision == kMax
                     && neu->intentBestandRevision() == kMax,
-                "M-11: beide Revisionen kommen als int64max zurueck",
+                "M-11: beide Revisionen kommen als 2^53-1 zurueck",
                 juce::String (neu->intentBestandRevision()) + " / "
                     + juce::String (neu->assistentAusState().revision));
         const auto intents = neu->sourceIntents();
@@ -4180,7 +4359,7 @@ int main (int argc, char* argv[])
                 constexpr juce::int64 grenze = 16 * 1024 * 1024;
                 pruefe (ok && (juce::int64) l.getSize() < grenze && (juce::int64) m.getSize() < grenze,
                         "312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints "
-                        "ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am int64-Rand, "
+                        "ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am Rand 2^53-1, "
                         "Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, "
                         "schreibbar geladen",
                         beleg);
@@ -4239,6 +4418,16 @@ int main (int argc, char* argv[])
         nak313TiefeUndKnoten();
         nak313Duplikate (fixtureOrdner);
         a.schliesse ("NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // G15 · NAK-313 Etappe 5b: der Revisionsbereich (R-313-4; 313/M-74 bis
+    //       M-79 a; M-79 b steht beim NAK-283-Fall M-11, M-121 c bei G13)
+    // ══════════════════════════════════════════════════════════════════════
+    {
+        Abschnitt a;
+        nak313Revisionsbereich();
+        a.schliesse ("NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes");
     }
 
     std::cout << std::endl

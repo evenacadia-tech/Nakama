@@ -6613,6 +6613,60 @@ void nak312Hostbypass()
     }
 }
 
+//==============================================================================
+// NAK-313 Etappe 5b (R-313-4, 313/M-83): der Transaktionskern haelt an 2^53-1.
+// Alle persistenten Revisionen enden dort - der Kern bildet seine Grenze aus
+// derselben Konstante wie der State-Leser. Bei 2^53-2 committet genau eine
+// Transaktion auf 2^53-1; die naechste scheitert in S4 mit revision_erschoepft,
+// ohne Zustand, Hash, Undo-Ring, Register oder Revision zu beruehren; ein
+// Ladestart mit 2^53 wird mit dem Grund state_revision abgewiesen, und der Kern
+// bleibt, wie er war.
+void nak313Revisionsgrenze()
+{
+    abschnitt ("ZE - NAK-313 Etappe 5b: der Transaktionskern haelt an 2^53-1 (313/M-83)");
+    constexpr std::uint64_t rand53 = 9007199254740991ULL;   // 2^53-1, Vertragswert
+
+    Stand st; Sitzung s;
+    juce::String grund;
+    const bool geladen = st.tk->ladestart (mitEq (true), rand53 - 1, {}, 0, grund);
+    auto z = mitEq (true);
+    setzeBand (z, 0, 1000.0, 3.0);
+    const auto t1 = apply (*st.tk, z, 1);
+    const auto e1 = fahre (st, s, t1);
+    pruefe (geladen && e1.ausgang == tx::Ausgang::commit && e1.revision == rand53 && st.tk->revision() == rand53,
+            "313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit auf 2^53-1",
+            beschreibe (e1) + ", Ladestart " + (geladen ? "ok" : str (grund)));
+
+    const auto vorher = st.tk->bestaetigt();
+    const auto hash   = st.tk->hash();
+    const auto ring   = st.tk->undoRing();
+    const int  belegt = st.tk->registerBelegung();
+    auto z2 = z;
+    setzeBand (z2, 0, 1000.0, 6.0);
+    const auto t2 = apply (*st.tk, z2, 2);
+    const auto e2 = fahre (st, s, t2);
+    pruefe (e2.ausgang == tx::Ausgang::fehler && e2.stufe == tx::Stufe::s4 && e2.grund == "revision_erschoepft"
+                && ! e2.memoisiert && st.tk->revision() == rand53 && st.tk->bestaetigt() == vorher
+                && st.tk->hash() == hash && st.tk->undoRing() == ring
+                && st.tk->registerBelegung() == belegt && ! registerTraegt (*st.tk, t2.tid),
+            "313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert die Transaktion in S4 mit "
+            "revision_erschoepft, ohne Nebenwirkung",
+            beschreibe (e2) + ", r danach " + zahl (st.tk->revision()));
+    wachen (*st.tk, s, "313/M-83");
+
+    Stand zweiter;
+    const auto rVorher = zweiter.tk->revision();
+    const auto hashVorher = zweiter.tk->hash();
+    juce::String grundZwei;
+    const bool zuHoch = zweiter.tk->ladestart (mitEq (true), rand53 + 1, {}, 0, grundZwei);
+    pruefe (! zuHoch && grundZwei == "state_revision" && zweiter.tk->revision() == rVorher
+                && zweiter.tk->hash() == hashVorher,
+            "313/M-83 transaktion_haelt_an_2hoch53: ein Ladestart mit 2^53 wird mit state_revision "
+            "abgewiesen, der Kern bleibt, wie er war",
+            std::string (zuHoch ? "angenommen" : "abgewiesen") + ", Grund '" + str (grundZwei) + "', r "
+                + zahl (zweiter.tk->revision()));
+}
+
 } // namespace
 
 int main (int argc, char* argv[])
@@ -6693,6 +6747,9 @@ int main (int argc, char* argv[])
 
     // NAK-312 Etappe 7b, Satz 2 (T3-01-09, U48, U58): der Hostbypass am echten SondeProcessor
     nak312Hostbypass();
+
+    // NAK-313 Etappe 5b (R-313-4): der Transaktionskern haelt an 2^53-1
+    nak313Revisionsgrenze();
 
     std::cout << std::endl << geprueft << " geprueft, " << fehler << " Fehler" << std::endl;
     std::cout << (fehler == 0 ? "TRANSAKTION OK" : "TRANSAKTION FEHLGESCHLAGEN") << std::endl;

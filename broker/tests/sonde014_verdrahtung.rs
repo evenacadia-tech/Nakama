@@ -4936,3 +4936,35 @@ fn ohne_taugliche_passage_rechnet_die_aufnahme_ohne_passage() {
         "V-43: und ohne Passage entsteht kein Proposal (WN-04)"
     );
 }
+
+// ═════════════════════════════════════════════════════════════════════════
+// NAK-313 M-89 · der Intent am Revisionsrand (R-313-4, E-313-14)
+// ═════════════════════════════════════════════════════════════════════════
+//
+// Die Handinstanz eq-copilot/fixtures/v3/intent-wire-v1.json traegt den
+// Wiretext, den der echte C++-Writer fuer ihre Adresse schreiben muss (B27
+// vergleicht ihn ab bestand_revision bytegleich). Hier nimmt der echte
+// Rust-Leser ihn ueber die P1-Weiche an und uebernimmt die Bestandsrevision
+// 2^53-1 unveraendert.
+#[test]
+fn nak313_m89_intent_revision_am_rand() {
+    let pfad = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../eq-copilot/fixtures/v3/intent-wire-v1.json");
+    let instanz: Value =
+        serde_json::from_slice(&std::fs::read(&pfad).expect("die Handinstanz liegt im Korpus"))
+            .expect("die Handinstanz ist JSON");
+    let a: Adresse = serde_json::from_value(instanz["eingabe"]["adresse"].clone())
+        .expect("die Adresse der Handinstanz");
+    let wire = instanz["wire"].as_str().expect("wire ist ein Text");
+
+    let c = coordinator();
+    anmelden(&c, "link-a", &hello(a.clone()));
+    let vorher = c.intent_updates();
+    c.p1("link-a", wire.as_bytes());
+    let bestand = c.intent_sicht(&a.project_binding_id, &a.session_epoch);
+    assert_eq!(
+        (bestand.revision, bestand.vollstaendig, c.intent_updates() - vorher),
+        (9_007_199_254_740_991, true, 1),
+        "M-89: der Broker uebernimmt die Bestandsrevision 2^53-1 aus dem Wiretext unveraendert"
+    );
+}

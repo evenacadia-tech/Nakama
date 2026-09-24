@@ -1342,7 +1342,7 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
             juce::String::toHexString (i + 1).paddedLeft ('0', 32),
             juce::String::toHexString (i + 1).paddedLeft ('f', 32),
             Rolle::verschmolzen,
-            std::numeric_limits<juce::int64>::max(),
+            kRevisionMax,
             IntentHerkunft::abgeleitet,
             1.0
         });
@@ -1364,14 +1364,14 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
             Beziehungsart::darfVerschmelzen
         });
     }
-    kandidat.intentBestandRevision = std::numeric_limits<juce::int64>::max();
+    kandidat.intentBestandRevision = kRevisionMax;
     // SONDE-014 Etappe G: der Assistentenschritt gehoert in den Headroomriegel.
     // Er ist EIN Objekt und kostet wenig, aber „wenig" ist keine Messung.
     kandidat.assistent = {
         true,
         juce::String::toHexString (0xa55e5).paddedLeft ('0', 32),
         Assistentenschritt::verdict,
-        std::numeric_limits<juce::int64>::max(),
+        kRevisionMax,
         true,
         juce::String::toHexString (0xf1d6).paddedLeft ('0', 32),
         juce::String::toHexString (0x9005a1).paddedLeft ('0', 32),
@@ -1380,13 +1380,13 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
     };
 
     /*  SONDE-015: das Kind `Dsp` in seiner groessten erreichbaren Form -
-        Revision am `int64`-Rand, alle acht Slots belegt, acht Zonen und ein
+        Revision am Rand kRevisionMax, alle acht Slots belegt, acht Zonen und ein
         VOLLER Undo-Ring aus 32 Schnappschuessen. Ohne diesen Zusatz
         versprache der Headroomriegel etwas ueber einen Stand, den die
         Produkt-API laengst uebertreffen kann - dieselbe Luecke, die M-69 fuer
         die Passagen und SONDE-014 fuer den Intent geschlossen hat. Und genau
         das misst M-78: der volle Ring reisst die 16-MiB-Grenze NICHT. */
-    kandidat.stateRevision = std::numeric_limits<juce::int64>::max();
+    kandidat.stateRevision = kRevisionMax;
     for (int slot = 0; slot < parameter::kSlots; ++slot)
         kandidat.parameters[(size_t) parameter::indexOccupied (slot)].b = true;
     kandidat.schutzZonen.clear();
@@ -1398,7 +1398,7 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
         UndoEintrag u;
         u.art = UndoArt::presetLaden;   // laengstes Wort der geschlossenen Menge
         u.slot = parameter::kSlots - 1;
-        u.revision = std::numeric_limits<juce::int64>::max() - i;
+        u.revision = kRevisionMax - i;
         u.zustand.werte = kandidat.parameters;
         u.zustand.zonen = kandidat.schutzZonen;
         kandidat.undoRing.push_back (std::move (u));
@@ -1485,6 +1485,7 @@ bool leseDspKind (const juce::ValueTree& d, parameter::Satz& satz, juce::int64& 
         if (! w.isInt() && ! w.isInt64()) { grund = "Dsp.state_revision is not an integer"; return false; }
         revision = (juce::int64) w;
         if (revision < 0) { grund = "Dsp.state_revision must not be negative"; return false; }
+        if (revision > kRevisionMax) { grund = "Dsp.state_revision exceeds 2^53-1"; return false; }
     }
 
     // 2. Die acht `occupied`. Fehlt die Eigenschaft, ist kein Slot belegt.
@@ -1550,6 +1551,7 @@ bool leseDspKind (const juce::ValueTree& d, parameter::Satz& satz, juce::int64& 
             if (! rw.isInt() && ! rw.isInt64()) { grund = "Dsp.undo_ring_v1 revision is not an integer"; return false; }
             u.revision = (juce::int64) rw;
             if (u.revision < 0) { grund = "Dsp.undo_ring_v1 revision must not be negative"; return false; }
+            if (u.revision > kRevisionMax) { grund = "Dsp.undo_ring_v1 revision exceeds 2^53-1"; return false; }
 
             for (int i = 0; i < parameter::kAnzahl; ++i)
             {
@@ -1897,6 +1899,11 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                     grund = bestandName + ".source_intents_v1 revision must be at least 1";
                     return false;
                 }
+                if (eintrag.revision > kRevisionMax)
+                {
+                    grund = bestandName + ".source_intents_v1 revision exceeds 2^53-1";
+                    return false;
+                }
                 if (! herkunft.isString() || ! intentHerkunftAusWort (herkunft.toString(), eintrag.herkunft))
                 {
                     grund = bestandName + ".source_intents_v1 contains an unknown origin: " + herkunft.toString();
@@ -2052,6 +2059,11 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 grund = bestandName + ".intent_revision_v1 must be at least 1";
                 return false;
             }
+            if (mainIntentRevision > kRevisionMax)
+            {
+                grund = bestandName + ".intent_revision_v1 exceeds 2^53-1";
+                return false;
+            }
         }
         /*  Ein Bestand ohne Revision, der Inhalt traegt, ist kein gueltiger
             Stand: die Vollstaendigkeitsmarke aus M-86 haette keine Zahl.
@@ -2104,6 +2116,11 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
                 || static_cast<juce::int64> (revision) < 1)
             {
                 grund = bestandName + ".assistant_step_v1 revision must be at least 1";
+                return false;
+            }
+            if (static_cast<juce::int64> (revision) > kRevisionMax)
+            {
+                grund = bestandName + ".assistant_step_v1 revision exceeds 2^53-1";
                 return false;
             }
             if (! offen.isBool())
@@ -2391,12 +2408,13 @@ namespace
     drei Bestandteile - und zwar genau einmal je Aenderung. Sie ist die Zahl,
     die die Vollstaendigkeitsmarke aus M-86 traegt; ein Bestand, dessen
     Revision nicht steigt, saehe fuer den Broker aus wie "nichts passiert".
-    Der obere Rand ist kein Ueberlauf, sondern ein Halt: `int64` reicht fuer
-    9,2 Trillionen Aenderungen, und ein Wrap waere eine ruecklaufende
-    Revision - genau das, was M-85 verbietet. */
+    Der obere Rand ist kein Ueberlauf, sondern ein Halt: ein Wrap waere eine
+    ruecklaufende Revision - genau das, was M-85 verbietet. Seit NAK-313
+    R-313-4 liegt er bei kRevisionMax (2^53-1), dem Bereich der Drahtform;
+    bis dahin bei int64max, das der Draht nicht traegt. */
 bool bestandsrevisionHeben (Zustand& z, juce::String& grund)
 {
-    if (z.intentBestandRevision >= std::numeric_limits<juce::int64>::max())
+    if (z.intentBestandRevision >= kRevisionMax)
     {
         grund = "intent revision would overflow";
         return false;
@@ -2449,7 +2467,7 @@ bool setzeIntent (Zustand& z, const juce::String& quelleId, const juce::String& 
     if (treffer->rolle == rolle && treffer->herkunft == herkunft && treffer->konfidenz == konfidenz)
         return true;   // No-op: keine Revision, kein Dirty.
 
-    if (treffer->revision >= std::numeric_limits<juce::int64>::max())
+    if (treffer->revision >= kRevisionMax)
     {
         grund = "intent revision would overflow"; return false;
     }
@@ -2863,10 +2881,11 @@ namespace
     `nakama-state-v2.md:136` ("`revision` `int64` >= 1").
 
     Der Rand ist kein Ueberlauf, sondern ein HALT - dieselbe Form wie beim
-    Bestand: die Aenderung wird abgewiesen, der Wert bleibt stehen. */
+    Bestand: die Aenderung wird abgewiesen, der Wert bleibt stehen. Seit
+    NAK-313 R-313-4 liegt er bei kRevisionMax (2^53-1) statt bei int64max. */
 bool assistentenrevisionHeben (Assistentenzustand& a, juce::String& grund)
 {
-    if (a.revision >= std::numeric_limits<juce::int64>::max())
+    if (a.revision >= kRevisionMax)
     {
         grund = "assistant revision would overflow";
         return false;
@@ -3046,6 +3065,34 @@ bool setzeAssistentenergebnis (Zustand& z, Assistentenergebnis ergebnis,
     if (! assistentenrevisionHeben (a, grund))
         return false;
     a.ergebnis = ergebnis;
+    veraendert = true;
+    return true;
+}
+
+bool assistentVersuchVerknuepfen (Zustand& z, const juce::String& experimentId,
+                                  bool& veraendert, juce::String& grund)
+{
+    veraendert = false;
+    auto& a = z.assistent;
+    if (! a.gesetzt || ! a.offen)
+    {
+        grund = "no open assistant step to link an experiment to";
+        return false;
+    }
+    // Der Leser nimmt nur hex32 oder leer an; eine andere Kennung ergaebe einen
+    // Stand, den er beim naechsten Laden read-only haelte.
+    if (! istHex32 (experimentId))
+    {
+        grund = "experiment id must be 32 lowercase hex digits";
+        return false;
+    }
+    if (a.experimentId == experimentId)
+        return true;
+    // NAK-313 R-313-4 (M-86): die Schranke VOR jeder Zuweisung - bis hierher hob
+    // der Prozessor die Revision selbst und ohne Obergrenze.
+    if (! assistentenrevisionHeben (a, grund))
+        return false;
+    a.experimentId = experimentId;
     veraendert = true;
     return true;
 }

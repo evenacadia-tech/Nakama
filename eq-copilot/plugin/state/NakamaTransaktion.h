@@ -48,11 +48,13 @@ namespace nakama::transaktion
 inline constexpr int kRegisterPlaetze = parameter::kUndoTiefe;
 static_assert (kRegisterPlaetze == 32, "§5.11.4 I3: Kapazitaet = Fensterspanne = Undo-Tiefe = 32");
 
-/** Die groesste Revision, die der State tragen kann: `state_revision` reist
-    als int64 >= 0 (`nakama-state-v2.md`, Kind `Dsp`). Eine Transaktion auf
-    diesem Stand scheitert in S4 - hinter dem Commit-Punkt gibt es keinen
-    Ueberlauf, der fehlschlagen koennte. */
-inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) std::numeric_limits<juce::int64>::max();
+/** Die groesste Revision, die der State tragen kann: kRevisionMax aus
+    NakamaState.h, 2^53-1 (NAK-313 R-313-4) - eine Zahl an einer Stelle, die
+    der Leser von Dsp.state_revision und dieser Kern teilen. Eine Transaktion
+    auf diesem Stand scheitert in S4 mit revision_erschoepft - hinter dem
+    Commit-Punkt gibt es keinen Ueberlauf, der fehlschlagen koennte; ein
+    Ladestart darueber wird abgewiesen. */
+inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) state::kRevisionMax;
 
 /** Die Ruhegrenze der Hostautomation (§44.3: der Epochzaehler wechselt
     "einmal beim Beginn und Ende einer Hostgeste beziehungsweise nach einer

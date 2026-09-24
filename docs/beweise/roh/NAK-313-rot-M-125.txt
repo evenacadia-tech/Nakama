@@ -1,0 +1,129 @@
+NAK-313 Etappe 7 - Rotbeweis M-125 (Manifest docs/beweise/NAK-313.md §6.6, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits der Etappe 7); Mutationslaeufe je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am
+Basisstand 25.09.2026 gegen den Produktcode von 4aee3eec (NAK-313-e7-basisstand.txt).
+
+Matrixzeile M-125 - T3-03-10 - R-313-9 - kein neues Merkmal
+Zustand: Schema, Bericht, Schreiber
+Ereignis: A5, A13, B10; git diff
+Zusage: genau zehn Bits, keines hinzugefuegt oder umbenannt; remote_control bleibt unsupported; das Schema bleibt bytegleich
+Bein: Python: A5, A13; C++: B10; Lesen (Schema)
+
+--- Haelfte 1: zehn Bits - Etikett: Regressionswache ---
+Am Basisstand: gruen: A13 Schritt 1 am Basisstand gruen
+  Mutation R125a (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-R125a.txt):
+    Rotlauf R125a - M-125: ein elftes Bit im Bericht - 25.09.2026 01:36:32 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/identity/host-capabilities-fl-v1.json (LF)
+    SHA-256 vorher 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R125a-host-capabilities-fl-v1.json (SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7)
+    Mutation ab Zeile 34 in eq-copilot/identity/host-capabilities-fl-v1.json (Stand vor der Mutation):
+      vorher:
+        |    "remote_control": "unsupported"
+        |  },
+        |  "belege": {
+      nachher:
+        |    "remote_control": "unsupported",
+        |    "elftes_bit": "unsupported"
+        |  },
+        |  "belege": {
+    Mutiert 25.09.2026 01:36:32: eq-copilot/identity/host-capabilities-fl-v1.json, SHA-256 mutiert c63239ed6b38b459c8c7c951c3d22a0aff29b036057531bbf944091e727fe0b8 (git diff --numstat: 2	1	eq-copilot/identity/host-capabilities-fl-v1.json)
+    Kette (R-313-11): capabilities traegt elf Schluessel -> Schritt 1 (Schema strikt, genau die zehn Schluessel) faellt.
+    Lauf unter der Mutation:
+      A13: Exit 1, Fehlzeilen 3, 1 s, Rohausgabe R125a-mutiert-A13.txt
+    Ruecknahme 25.09.2026 01:36:33: eq-copilot/identity/host-capabilities-fl-v1.json SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7 - gleich dem Stand vor der Mutation
+      A13: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe R125a-zurueck-A13.txt
+    Erwartete Pruefungen unter der Mutation:
+      A13: 'genau die zehn Schluessel aus §53.6' gefallen: JA
+      A13: 'binary_telemetry=supported: Termin oder Kanonbeweis' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/identity/host-capabilities-fl-v1.json: (leer)
+    git diff --stat: (leer)
+    === A13 unter der Mutation: gefallene Pruefungen (3) ===
+        FEHLER  capabilities verletzt v3 $defs/capabilities: Additional properties are not allowed ('elftes_bit' was unexpected)
+        FEHLER  genau die zehn Schluessel aus §53.6
+        FEHLER  host_channel_context ist kein elftes Wire-Bit im capabilities-Objekt
+    === A13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: remote_control im Bericht - Etikett: Regressionswache ---
+Am Basisstand: gruen: remote_control unsupported
+  Mutation R125b (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-R125b.txt):
+    Rotlauf R125b - M-125: remote_control im Bericht auf supported - 25.09.2026 01:36:34 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/identity/host-capabilities-fl-v1.json (LF)
+    SHA-256 vorher 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R125b-host-capabilities-fl-v1.json (SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7)
+    Mutation ab Zeile 34 in eq-copilot/identity/host-capabilities-fl-v1.json (Stand vor der Mutation):
+      vorher:
+        |    "remote_control": "unsupported"
+        |  },
+        |  "belege": {
+      nachher:
+        |    "remote_control": "supported"
+        |  },
+        |  "belege": {
+    Mutiert 25.09.2026 01:36:34: eq-copilot/identity/host-capabilities-fl-v1.json, SHA-256 mutiert d99e7a827bf5f3ddda859c5a38f2fdbd72baacd084c4628ffb5197d17b97d2b1 (git diff --numstat: 1	1	eq-copilot/identity/host-capabilities-fl-v1.json)
+    Kette (R-313-11): remote_control=supported mit Termin keiner (kein Hostbit) ohne kanonbeweis -> die Regel aus Schritt 3 faellt, erwartete_bits faellt.
+    Lauf unter der Mutation:
+      A13: Exit 2, Fehlzeilen 2, 0 s, Rohausgabe R125b-mutiert-A13.txt
+    Ruecknahme 25.09.2026 01:36:34: eq-copilot/identity/host-capabilities-fl-v1.json SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7 - gleich dem Stand vor der Mutation
+      A13: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe R125b-zurueck-A13.txt
+    Erwartete Pruefungen unter der Mutation:
+      A13: 'remote_control=supported: Termin oder Kanonbeweis' gefallen: JA
+      A13: 'die zehn Bits stehen so' gefallen: JA
+      A13: 'binary_telemetry=supported: Termin oder Kanonbeweis' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/identity/host-capabilities-fl-v1.json: (leer)
+    git diff --stat: (leer)
+    === A13 unter der Mutation: gefallene Pruefungen (2) ===
+        FEHLER  remote_control=supported: Termin oder Kanonbeweis, Fallback und Rohdateien halten die Regel (remote_control=supported traegt weder einen Termin noch, ohne Hostanteil, einen Kanonbeweis (Termin keiner (kein Hostbit)))
+        FEHLER  die zehn Bits stehen so, wie die Rohdaten und die benannten Kanonbeweise es tragen (3 supported, 7 unsupported)
+    === A13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A13 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: remote_control im Schreiber - Etikett: Regressionswache ---
+Am Basisstand: gruen: 313/M-124 remote_control am Basisstand gleich
+  Mutation W125c (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-W125c.txt):
+    Rotlauf W125c - M-125: remote_control nur im Schreiber auf supported - 25.09.2026 01:34:15 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\W125c-Intern.h (SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322)
+    Mutation ab Zeile 388 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+      vorher:
+        |           "\"remote_control\":\"unsupported\"}";
+      nachher:
+        |           "\"remote_control\":\"supported\"}";   // MUTATION M-125: nur im Schreiber
+    Mutiert 25.09.2026 01:34:15: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert ad35572369d5a1b4165948a6790b86663480d57f15d99068281854d25e24233f (git diff --numstat: 1	1	eq-copilot/plugin/core/ipc/controlclient/Intern.h)
+    Kette (R-313-11): Schreiber remote_control=supported, Bericht unsupported -> 313/M-124 remote_control faellt; 313/M-123 Paar 10 faellt mit.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W125c-mutiert.log)
+        EqCopIpcTest: 01:35:23.420
+      B10e7: Binaer 01:35:23.420, Quelle 01:34:15.433, Binaer juenger: ja
+      B10e7: Exit 1, Fehlzeilen 3, 0 s, Rohausgabe W125c-mutiert-B10e7.txt
+    Ruecknahme 25.09.2026 01:35:23: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W125c-zurueck.log)
+        EqCopIpcTest: 01:36:31.668
+      B10e7: Binaer 01:36:31.668, Quelle 01:35:23.807, Binaer juenger: ja
+      B10e7: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe W125c-zurueck-B10e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B10e7: '313/M-124 bericht_gleich_schreiber remote_control' gefallen: JA
+      B10e7: '313/M-124 bericht_gleich_schreiber binary_telemetry' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Intern.h: (leer)
+    git diff --stat: (leer)
+    === B10e7 unter der Mutation: gefallene Pruefungen (3) ===
+        FEHLER  313/M-123 binary_telemetry_supported Paar 10: remote_control=unsupported  [remote_control=supported]
+        FEHLER  313/M-124 bericht_gleich_schreiber remote_control: Bericht und Schreiber gleich  [Schreiber supported, Bericht unsupported]
+      FEHLER — 23 Pruefungen, 2 Fehler
+    === B10e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === B10e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 4: Schema bytegleich - Etikett: Regressionswache (Lesemass) ---
+Am Basisstand: git diff 4aee3eec..HEAD nennt eq-copilot/schemas/v3/eq-ipc-v3.schema.json nicht (kein Bein misst die Bytegleichheit des Schemas)
+  (kein Rotlauf: gelesen beziehungsweise Lesemass, siehe oben)
+
+Ergebnis: 3 Rotlaeufe an den Haelften mit Lauf, faellt an der Zusagezeile: JA

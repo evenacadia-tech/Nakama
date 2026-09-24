@@ -1,0 +1,165 @@
+NAK-313 Etappe 7 - Rotbeweis M-123 (Manifest docs/beweise/NAK-313.md §6.6, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits der Etappe 7); Mutationslaeufe je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am
+Basisstand 25.09.2026 gegen den Produktcode von 4aee3eec (NAK-313-e7-basisstand.txt).
+
+Matrixzeile M-123 - T3-03-10 - R-313-9 - Schreiber und Leser des gemeldeten Werts
+Zustand: -
+Ereignis: capabilitiesJson()
+Zusage: der Heartbeat meldet binary_telemetry supported, die uebrigen neun Bits unveraendert (zehn Schluessel, Reihenfolge wie bisher); der Kommentar nennt drei Tatsachen und sieben Fallbacks; kein Produktleser entscheidet ueber den Wert
+Bein: B10: 313/M-123 binary_telemetry_supported (Modus --nak313-e7)
+
+--- Haelfte 1: Wert supported - Etikett: heute rot ---
+Am Basisstand: rot: 313/M-123 Paar 9 meldet unsupported (NAK-313-e7-basisstand.txt, Abschnitt 2)
+  Mutation W123a (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-W123a.txt):
+    Rotlauf W123a - M-123 Wert: der Schreiber meldet binary_telemetry wieder unsupported - 25.09.2026 01:27:21 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\W123a-Intern.h (SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322)
+    Mutation ab Zeile 387 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+      vorher:
+        |           "\"binary_telemetry\":\"supported\","
+      nachher:
+        |           "\"binary_telemetry\":\"unsupported\","   // MUTATION M-123: Wert zurueck
+    Mutiert 25.09.2026 01:27:21: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert 1284cb12970acc12b5f6cc72dc6d287d27ff8ba93bf1603a627033d2e24907e8 (git diff --numstat: 1	1	eq-copilot/plugin/core/ipc/controlclient/Intern.h)
+    Kette (R-313-11): capabilitiesJson traegt binary_telemetry=unsupported -> Paar 9 weicht von supported ab; der Bericht sagt supported -> 313/M-124 binary_telemetry faellt mit.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W123a-mutiert.log)
+        EqCopIpcTest: 01:28:30.037
+      B10e7: Binaer 01:28:30.037, Quelle 01:27:21.397, Binaer juenger: ja
+      B10e7: Exit 1, Fehlzeilen 3, 0 s, Rohausgabe W123a-mutiert-B10e7.txt
+    Ruecknahme 25.09.2026 01:28:30: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 69 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W123a-zurueck.log)
+        EqCopIpcTest: 01:29:39.302
+      B10e7: Binaer 01:29:39.302, Quelle 01:28:30.486, Binaer juenger: ja
+      B10e7: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe W123a-zurueck-B10e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B10e7: '313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported' gefallen: JA
+      B10e7: '313/M-123 binary_telemetry_supported Paar 8: float64_processing=unsupported' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Intern.h: (leer)
+    git diff --stat: (leer)
+    === B10e7 unter der Mutation: gefallene Pruefungen (3) ===
+        FEHLER  313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported  [binary_telemetry=unsupported]
+        FEHLER  313/M-124 bericht_gleich_schreiber binary_telemetry: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht supported]
+      FEHLER — 23 Pruefungen, 2 Fehler
+    === B10e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (10) ===
+        ok      313/M-123 binary_telemetry_supported: capabilitiesJson() ist streng lesbar und traegt zehn Schluessel  [10 Schluessel]
+        ok      313/M-123 binary_telemetry_supported Paar 1: host_context_presence=supported  [host_context_presence=supported]
+        ok      313/M-123 binary_telemetry_supported Paar 2: project_time_samples=supported  [project_time_samples=supported]
+        ok      313/M-123 binary_telemetry_supported Paar 3: sample_accurate_automation=unsupported  [sample_accurate_automation=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 4: presentation_latency=unsupported  [presentation_latency=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 5: aux_compare_pre=unsupported  [aux_compare_pre=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 6: aux_priority_sidechain=unsupported  [aux_priority_sidechain=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 7: contribution_aux=unsupported  [contribution_aux=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 8: float64_processing=unsupported  [float64_processing=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 10: remote_control=unsupported  [remote_control=unsupported]
+    === B10e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Kommentar - Etikett: heute rot (gelesen) ---
+Am Basisstand: rot: Intern.h:375-376 am Basis-SHA sagt zwei in FL gemessene Faehigkeiten, acht feste Fallbacks (NAK-313-e7-basisstand.txt, Abschnitt 3); Beleg ist die gelesene Stelle im Diff der Etappe, kein Lauf
+  (kein Rotlauf: gelesen beziehungsweise Lesemass, siehe oben)
+
+--- Haelfte 3: uebrige neun Bits - Etikett: Regressionswache ---
+Am Basisstand: gruen: Paare 1 bis 8 und 10 (NAK-313-e7-basisstand.txt, Abschnitt 2)
+  Mutation W123w (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-W123w.txt):
+    Rotlauf W123w - M-123 Wache der uebrigen neun Bits: float64_processing im Schreiber auf supported - 25.09.2026 01:29:39 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\W123w-Intern.h (SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322)
+    Mutation ab Zeile 386 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+      vorher:
+        |           "\"float64_processing\":\"unsupported\","
+      nachher:
+        |           "\"float64_processing\":\"supported\","   // MUTATION M-123: Wache der neun Bits
+    Mutiert 25.09.2026 01:29:39: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert 9492c20ef33e6344872d5b06e32d7ef9c42fc2da6c2d8fff1e67c313f7ddde87 (git diff --numstat: 1	1	eq-copilot/plugin/core/ipc/controlclient/Intern.h)
+    Kette (R-313-11): Paar 8 meldet supported statt unsupported -> der Zehnervergleich faellt an Paar 8; 313/M-124 float64_processing faellt mit.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W123w-mutiert.log)
+        EqCopIpcTest: 01:30:47.982
+      B10e7: Binaer 01:30:47.982, Quelle 01:29:39.848, Binaer juenger: ja
+      B10e7: Exit 1, Fehlzeilen 3, 0 s, Rohausgabe W123w-mutiert-B10e7.txt
+    Ruecknahme 25.09.2026 01:30:48: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W123w-zurueck.log)
+        EqCopIpcTest: 01:31:56.279
+      B10e7: Binaer 01:31:56.279, Quelle 01:30:48.458, Binaer juenger: ja
+      B10e7: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe W123w-zurueck-B10e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B10e7: '313/M-123 binary_telemetry_supported Paar 8: float64_processing=unsupported' gefallen: JA
+      B10e7: '313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Intern.h: (leer)
+    git diff --stat: (leer)
+    === B10e7 unter der Mutation: gefallene Pruefungen (3) ===
+        FEHLER  313/M-123 binary_telemetry_supported Paar 8: float64_processing=unsupported  [float64_processing=supported]
+        FEHLER  313/M-124 bericht_gleich_schreiber float64_processing: Bericht und Schreiber gleich  [Schreiber supported, Bericht unsupported]
+      FEHLER — 23 Pruefungen, 2 Fehler
+    === B10e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (10) ===
+        ok      313/M-123 binary_telemetry_supported: capabilitiesJson() ist streng lesbar und traegt zehn Schluessel  [10 Schluessel]
+        ok      313/M-123 binary_telemetry_supported Paar 1: host_context_presence=supported  [host_context_presence=supported]
+        ok      313/M-123 binary_telemetry_supported Paar 2: project_time_samples=supported  [project_time_samples=supported]
+        ok      313/M-123 binary_telemetry_supported Paar 3: sample_accurate_automation=unsupported  [sample_accurate_automation=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 4: presentation_latency=unsupported  [presentation_latency=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 5: aux_compare_pre=unsupported  [aux_compare_pre=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 6: aux_priority_sidechain=unsupported  [aux_priority_sidechain=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 7: contribution_aux=unsupported  [contribution_aux=unsupported]
+        ok      313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported  [binary_telemetry=supported]
+        ok      313/M-123 binary_telemetry_supported Paar 10: remote_control=unsupported  [remote_control=unsupported]
+    === B10e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 4: Leser - Etikett: Regressionswache ---
+Am Basisstand: gruen: liveness.rs uebernimmt ohne Inhaltspruefung, SourcesModel.cpp prueft nur die Form; der Einzelbruch steht in 313/M-129 (R129)
+  Mutation R129 (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-R129.txt):
+    Rotlauf R129 - M-129: in Senke::p2 ein Empfangsriegel am Bit - 25.09.2026 01:51:41 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei broker/src/coordinator/senke.rs (LF)
+    SHA-256 vorher dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R129-senke.rs (SHA-256 dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f)
+    Mutation ab Zeile 170 in broker/src/coordinator/senke.rs (Stand vor der Mutation):
+      vorher:
+        |                    P2RejectGrund::QuelladresseAbweichend,
+        |                );
+        |                return;
+        |            }
+        |
+      nachher:
+        |                    P2RejectGrund::QuelladresseAbweichend,
+        |                );
+        |                return;
+        |            }
+        |            // MUTATION M-129: ein Empfangsriegel am Bit
+        |            if stand.clients.get(&key).and_then(|c| c.descriptor.as_ref()).and_then(|d| d["capabilities"]["binary_telemetry"].as_str()) != Some("supported") {
+        |                return;
+        |            }
+        |
+    Mutiert 25.09.2026 01:51:41: broker/src/coordinator/senke.rs, SHA-256 mutiert dfa3583c8b9d8f0f41a98fa5b5b93a1ed22647d2ac9c39ab7d35b2f5bfdf7360 (git diff --numstat: 4	0	broker/src/coordinator/senke.rs)
+    Kette (R-313-11): der Deskriptor der Quelle traegt binary_telemetry unsupported -> Senke::p2 kehrt vor der Annahme zurueck -> p2_live_frames bleibt stehen, kein messframe_schreiben -> die Pruefungen unsupported faellen; supported bleibt gruen. M-130 Link 1 (unsupported) faellt mit.
+    Lauf unter der Mutation:
+      A4-slice: Exit 101, Fehlzeilen 9, 5 s, Rohausgabe R129-mutiert-A4-slice.txt
+    Ruecknahme 25.09.2026 01:51:46: broker/src/coordinator/senke.rs SHA-256 dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f - gleich dem Stand vor der Mutation
+      A4-slice: Exit 0, Fehlzeilen 0, 4 s, Rohausgabe R129-zurueck-A4-slice.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-slice: 'unsupported: P2 angenommen' gefallen: JA
+      A4-slice: 'unsupported: genau ein messframe_schreiben' gefallen: JA
+      A4-slice: 'supported: P2 angenommen, p2_live_frames' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-slice: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141p.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139u.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140g.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140l.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R142.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R143.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R144a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R144e.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R145.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- broker/src/coordinator/senke.rs: (leer)
+    git diff --stat: (leer)
+    === A4-slice unter der Mutation: gefallene Pruefungen (9) ===
+      test nak313_m129_p2_ohne_bit_angenommen ... FAILED
+      test nak313_m130_reconnect_mit_anderem_capability_satz ... FAILED
+      thread 'nak313_m129_p2_ohne_bit_angenommen' (203324) panicked at tests\sonde012_sources_slice.rs:708:5:
+      M-129 gefallen:
+      unsupported: P2 angenommen, p2_live_frames 0 -> 0
+      unsupported: genau ein messframe_schreiben an den Main (0 -> 0)
+      thread 'nak313_m130_reconnect_mit_anderem_capability_satz' (138696) panicked at tests\sonde012_sources_slice.rs:773:5:
+      M-130 gefallen:
+      Link 1: P2 vor dem Trennen angenommen (0 -> 0)
+    === A4-slice unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A4-slice nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis: 3 Rotlaeufe an den Haelften mit Lauf, faellt an der Zusagezeile: JA

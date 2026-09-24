@@ -1,0 +1,53 @@
+NAK-313 Etappe 7 - Mutationslauf R132n: M-132 Name: an den ersten Namen ein Zusatz gehaengt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R132n - M-132 Name: an den ersten Namen ein Zusatz gehaengt - 25.09.2026 01:37:42 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R132n-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+Mutation ab Zeile 1668 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+  vorher:
+    |              + (labelTeil.isEmpty() ? "" : "-" + labelTeil.substring (0, 40)) + ".json").toWideCharPointer();
+  nachher:
+    |              + (labelTeil.isEmpty() ? "" : "-" + labelTeil.substring (0, 40)) + "_2.json").toWideCharPointer();   // MUTATION M-132: Zusatz am ersten Namen
+Mutiert 25.09.2026 01:37:42: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert d78e7f3f50f67835c20955b5e1fa4b37611157eeddd31f79be84553c88bd2910 (git diff --numstat: 1	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+Kette (R-313-11): jeder Name endet auf _2.json -> nameWieKnopfweg erwartet -NAK286Referenz.json -> festhalten_ordner_und_name_wie_knopfweg faellt; die Namenspruefungen der Exportfaelle fallen mit.
+Lauf unter der Mutation:
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R132n-mutiert.log)
+    EqCopBriefkastenTest: 01:37:49.007
+  B30e7: Binaer 01:37:49.007, Quelle 01:37:42.815, Binaer juenger: ja
+  B30e7: Exit 1, Fehlzeilen 9, 12 s, Rohausgabe R132n-mutiert-B30e7.txt
+Ruecknahme 25.09.2026 01:38:01: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R132n-zurueck.log)
+    EqCopBriefkastenTest: 01:38:07.259
+  B30e7: Binaer 01:38:07.259, Quelle 01:38:01.004, Binaer juenger: ja
+  B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R132n-zurueck-B30e7.txt
+Erwartete Pruefungen unter der Mutation:
+  B30e7: 'festhalten_ordner_und_name_wie_knopfweg' gefallen: JA
+  B30e7: 'festhalten_bytegleich (Knopfweg gegen Referenz' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B30e7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+git diff --stat: (leer)
+
+=== B30e7 unter der Mutation: gefallene Pruefungen (9) ===
+  [ROT] M-39 festhalten_ordner_und_name_wie_knopfweg [C:\Users\phili\AppData\Local\Temp\nak313e7-27176-1-referenz\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-013800-NAK286Referenz_2.json]
+  [ROT] 313/M-134 doppelklick_gleiche_sekunde: erster neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-27176-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json]
+  [ROT] 313/M-134 doppelklick_gleiche_sekunde: zweiter abgelehnt, vorhanden ist die erste Datei [abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-27176-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-27176-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json; nichts gespeichert.]
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-27176-3-m135\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json]
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: Name snapshot-20260925-120005.json [C:\Users\phili\AppData\Local\Temp\nak313e7-27176-4-m136\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005_2.json]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-27176-5-m137a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-27176-6-m137b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json]
+  [ROT] 313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-27176-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json | neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-27176-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120006-Bass_2.json]
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (5) wie (1), loesche scheitert [fehler rest=C:\Users\phili\AppData\Local\Temp\nak313e7-27176-14-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json.tmp-27176 grund=Schreiben fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-27176-14-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass_2.json.tmp-27176, Loeschungen 1, Temp-Dateien 1]
+=== B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===

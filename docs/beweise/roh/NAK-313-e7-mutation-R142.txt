@@ -1,0 +1,75 @@
+NAK-313 Etappe 7 - Mutationslauf R142: M-142: im Export wieder engine.snapshot() gelesen
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R142 - M-142: im Export wieder engine.snapshot() gelesen - 25.09.2026 01:45:46 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R142-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+Mutation ab Zeile 1638 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+  vorher:
+    |SnapshotExport EqCopilotProcessor::schreibeSnapshotDatei (const MessSnapshot& m)
+    |{
+  nachher:
+    |SnapshotExport EqCopilotProcessor::schreibeSnapshotDatei (const MessSnapshot& mAufrufer)
+    |{
+    |    const auto m = engine.snapshot();   // MUTATION M-142: der Export fragt die Engine
+    |    (void) mAufrufer;
+Mutiert 25.09.2026 01:45:46: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 2e997c829f3b5c171d7014b7ea278b671bea73a5f788017232390b1a6b474ce8 (git diff --numstat: 3	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+Kette (R-313-11): der Export nimmt den Snapshot der Engine statt des uebergebenen -> (a) ein Gen ohne Messdaten endet fehler noch keine Messdaten; (b) der Haken aendert die Engine hinter dem Snapshot der Linie, die Datei traegt die neuen Daten -> Datei und Linie weichen ab.
+Lauf unter der Mutation:
+  Bau EqCopBriefkastenTest EqCopShot: Exit 0 (BAU Exit 0, 12 s, Ziele EqCopBriefkastenTest EqCopShot, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R142-mutiert.log)
+    EqCopBriefkastenTest: 01:45:52.480
+    EqCopShot: 01:45:58.368
+  B30e7: Binaer 01:45:52.480, Quelle 01:45:46.392, Binaer juenger: ja
+  B15: Binaer 01:45:58.368, Quelle 01:45:46.392, Binaer juenger: ja
+  B30e7: Exit 1, Fehlzeilen 13, 12 s, Rohausgabe R142-mutiert-B30e7.txt
+  B15: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe R142-mutiert-B15.txt
+Ruecknahme 25.09.2026 01:46:18: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+  Bau EqCopBriefkastenTest EqCopShot: Exit 0 (BAU Exit 0, 12 s, Ziele EqCopBriefkastenTest EqCopShot, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R142-zurueck.log)
+    EqCopBriefkastenTest: 01:46:24.210
+    EqCopShot: 01:46:30.059
+  B30e7: Binaer 01:46:24.210, Quelle 01:46:18.138, Binaer juenger: ja
+  B15: Binaer 01:46:30.059, Quelle 01:46:18.138, Binaer juenger: ja
+  B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R142-zurueck-B30e7.txt
+  B15: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe R142-zurueck-B15.txt
+Erwartete Pruefungen unter der Mutation:
+  B30e7: '313/M-142 export_mit_uebergebenem_snapshot' gefallen: JA
+  B15: '313/M-142 ein_snapshot (b)' gefallen: JA
+  B15: '313/M-142 ein_snapshot vorbedingung' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B30e7: Exit 0, Fehlzeilen 0
+  B15: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139u.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140g.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140l.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+git diff --stat: (leer)
+
+=== B30e7 unter der Mutation: gefallene Pruefungen (13) ===
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: genau einer neu, der andere abgelehnt [erster fehler grund=noch keine Messdaten | zweiter fehler grund=noch keine Messdaten]
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: Name snapshot-20260925-120005-Bass.json
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: genau einer neu, der andere abgelehnt [erster fehler grund=noch keine Messdaten | zweiter fehler grund=noch keine Messdaten]
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: Name snapshot-20260925-120005.json
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: genau einer neu, der andere abgelehnt [erster fehler grund=noch keine Messdaten | zweiter fehler grund=noch keine Messdaten]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: Name snapshot-20260925-120005-Bass.json
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: genau einer neu, der andere abgelehnt [erster fehler grund=noch keine Messdaten | zweiter fehler grund=noch keine Messdaten]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: Name snapshot-20260925-120005-Bass.json
+  [ROT] 313/M-142 export_mit_uebergebenem_snapshot: Gen ohne Messdaten, m mit Daten - neu, die Datei traegt m [fehler grund=noch keine Messdaten, Engine leer ja]
+=== B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+  [ok]  313/M-133 nie_in_der_nutzerablage M-142 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-122536-15-m142a]
+=== B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+=== B15 unter der Mutation: gefallene Pruefungen (1) ===
+    FEHLER  313/M-142 ein_snapshot (b): die Baender der Datei gleich der Vergleichslinie  [Festgehalten (Vergleichslinie + Datei): C:\Users\phili\AppData\Local\Temp\nak313e7-shot-40472-m142b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005.json]
+=== B15 unter der Mutation: gruen gebliebene Pruefungen der Zeile (1) ===
+    ok      313/M-142 ein_snapshot vorbedingung: der Haken hat die Messdaten der Engine geaendert, die Engine weicht von der Linie ab  [Daten ja, geaendert ja, abweichend ja]
+=== B15 nach der Ruecknahme: gefallene Pruefungen 0 ===

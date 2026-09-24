@@ -1,0 +1,48 @@
+NAK-313 Etappe 7 - Mutationslauf F128a: M-128 Annahme im Empfaenger: im Wiretext bestaetigt_neutral die adresse entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf F128a - M-128 Annahme im Empfaenger: im Wiretext bestaetigt_neutral die adresse entfernt - 25.09.2026 01:36:54 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/fixtures/v3/heartbeat-wire-v1.json (LF)
+SHA-256 vorher 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\F128a-heartbeat-wire-v1.json (SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e)
+Mutation ab Zeile 52 in eq-copilot/fixtures/v3/heartbeat-wire-v1.json (Stand vor der Mutation):
+  vorher:
+    |      "wire": "{\"type\":\"heartbeat\",\"adresse\":{\"logon_sid\":\"S-1-5-21-1111111111-2222222222-3333333333-1001\",\"project_binding_id\":\"11111111111111111111111111111111\",\"session_epoch\":\"22222222222222222222222222222222\",\"instance_id\":\"33333333333333333333333333333333\",\"runtime_nonce\":\"44444444444444444444444444444444\"},\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0},\"intervention_state_unknown\":false}"
+  nachher:
+    |      "wire": "{\"type\":\"heartbeat\",\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0},\"intervention_state_unknown\":false}"
+Mutiert 25.09.2026 01:36:54: eq-copilot/fixtures/v3/heartbeat-wire-v1.json, SHA-256 mutiert 41ba16128ec3108933448b23c9a9c1ceb02e0715ee5bf727f2284ba64cd8f76e (git diff --numstat: 1	1	eq-copilot/fixtures/v3/heartbeat-wire-v1.json)
+Kette (R-313-11): ein Heartbeat ohne adresse verletzt das Schema -> p0_json_mit_minor antwortet nicht -> N-01 (der Heartbeat wird beantwortet) faellt; A3 bestaetigt_neutral faellt mit.
+Lauf unter der Mutation:
+  A4-s013: Exit 101, Fehlzeilen 3, 3 s, Rohausgabe F128a-mutiert-A4-s013.txt
+  A3: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe F128a-mutiert-A3.txt
+Ruecknahme 25.09.2026 01:37:06: eq-copilot/fixtures/v3/heartbeat-wire-v1.json SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e - gleich dem Stand vor der Mutation
+  A4-s013: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe F128a-zurueck-A4-s013.txt
+  A3: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe F128a-zurueck-A3.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-s013: 'N-01: der Heartbeat wird beantwortet' gefallen: JA
+  A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/steady' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-s013: Exit 0, Fehlzeilen 0
+  A3: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/fixtures/v3/heartbeat-wire-v1.json: (leer)
+git diff --stat: (leer)
+
+=== A4-s013 unter der Mutation: gefallene Pruefungen (3) ===
+  test erster_heartbeat_mit_false_loest_das_sticky_unknown ... FAILED
+  thread 'erster_heartbeat_mit_false_loest_das_sticky_unknown' (137388) panicked at tests\sonde013_verdrahtung.rs:4708:5:
+  N-01: der Heartbeat wird beantwortet
+=== A4-s013 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A4-s013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+=== A3 unter der Mutation: gefallene Pruefungen (1) ===
+    FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"supported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0},"intervention_state_unknown":false}
+=== A3 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A3 nach der Ruecknahme: gefallene Pruefungen 0 ===

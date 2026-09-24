@@ -1,0 +1,55 @@
+NAK-313 Etappe 7 - Mutationslauf R140g: M-140 (3): die Groessenpruefung entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R140g - M-140 (3): die Groessenpruefung entfernt - 25.09.2026 01:43:55 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R140g-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+Mutation ab Zeile 1582 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+  vorher:
+    |    else if (! fs.groesse (temp, groesse) || groesse <= 0 || groesse != soll)
+  nachher:
+    |    else if (false)   // MUTATION M-140 (3): Groessenpruefung entfernt
+Mutiert 25.09.2026 01:43:55: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 9c2f2df4e77eb64a093246b219debceafe6e083391b0aa0e5871fc27174ab45e (git diff --numstat: 1	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+Kette (R-313-11): (3) schreibt ein Byte weniger und meldet Erfolg; ohne Groessenpruefung wird die kurze Datei umbenannt -> neu -> (3) faellt.
+Lauf unter der Mutation:
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 7 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R140g-mutiert.log)
+    EqCopBriefkastenTest: 01:44:02.094
+  B30e7: Binaer 01:44:02.094, Quelle 01:43:55.386, Binaer juenger: ja
+  B30e7: Exit 1, Fehlzeilen 1, 12 s, Rohausgabe R140g-mutiert-B30e7.txt
+Ruecknahme 25.09.2026 01:44:14: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R140g-zurueck.log)
+    EqCopBriefkastenTest: 01:44:20.068
+  B30e7: Binaer 01:44:20.068, Quelle 01:44:14.110, Binaer juenger: ja
+  B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R140g-zurueck-B30e7.txt
+Erwartete Pruefungen unter der Mutation:
+  B30e7: '313/M-140 teilschreibfehler_ist_fehler (3)' gefallen: JA
+  B30e7: '313/M-140 teilschreibfehler_ist_fehler (1)' gruen geblieben: JA
+  B30e7: '313/M-140 teilschreibfehler_ist_fehler (4)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B30e7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139u.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+git diff --stat: (leer)
+
+=== B30e7 unter der Mutation: gefallene Pruefungen (1) ===
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (3) Groesse weicht ab [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-136684-12-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json, Loeschungen 0, Temp-Dateien 0]
+=== B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (9) ===
+  [ok]  313/M-140 teilschreibfehler_ist_fehler (1) schreiben meldet Fehler [fehler grund=Schreiben fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-136684-10-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json.tmp-136684, Loeschungen 1, Temp-Dateien 0]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (1) schreiben meldet Fehler: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-136684-10-m140]
+  [ok]  313/M-140 teilschreibfehler_ist_fehler (2) spuelen meldet Fehler [fehler grund=Schreiben fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-136684-11-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json.tmp-136684, Loeschungen 1, Temp-Dateien 0]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (2) spuelen meldet Fehler: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-136684-11-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (3) Groesse weicht ab: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-136684-12-m140]
+  [ok]  313/M-140 teilschreibfehler_ist_fehler (4) umbenennen scheitert, Zielname fehlt [fehler grund=Umbenennen fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-136684-13-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json, Loeschungen 1, Temp-Dateien 0]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (4) umbenennen scheitert, Zielname fehlt: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-136684-13-m140]
+  [ok]  313/M-140 teilschreibfehler_ist_fehler (5) wie (1), loesche scheitert [fehler rest=C:\Users\phili\AppData\Local\Temp\nak313e7-136684-14-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json.tmp-136684 grund=Schreiben fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-136684-14-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json.tmp-136684, Loeschungen 1, Temp-Dateien 1]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (5) wie (1), loesche scheitert: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-136684-14-m140]
+=== B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===

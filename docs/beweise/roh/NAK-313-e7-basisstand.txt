@@ -1,0 +1,192 @@
+NAK-313 Etappe 7 - Gegenprobe am Basisstand (Manifest §8.1, Ablauf Schritte 3 und 4)
+Basis 4aee3eec835ca4bf51e3a73f1d141ed0658878ee (Produktcode gleich 1ffac1e5); Laeufe 25.09.2026, 00:27 bis 00:40 Uhr.
+Die Binaries des Basisstands sind die des Kanons nachher der Etappe 6 an 24583a03 (gebaut 24.09.2026, 22:57 bis 23:05 Uhr,
+Produktcode unveraendert); EqCopIpcTest wurde fuer die neuen Faelle um 00:36:44 Uhr gegen den unveraenderten Produktcode
+gebaut. Der Stand der neuen Faelle und Daten wurde nicht committet, bevor die Reparatur stand.
+
+=== 1. Bit zuerst (Ablauf 3): Byteinstanz, Tabelle, Bericht, A13 gegen den unveraenderten Schreiber ===
+A3 EqCopMarkierungTest (Basis-Schreiber, neue Wiretexte mit binary_telemetry supported): Exit 1
+    MARKIERUNGSTEST FEHLGESCHLAGEN
+  gefallen (3):
+      FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/steady - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"unsupported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0}}
+      FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"unsupported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0},"intervention_state_unknown":false}
+      FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/unbekannt - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"unsupported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0},"intervention_state_unknown":true}
+  -> 313/M-128 Wert supported in den Texten: am Basisstand rot (der Schreiber sagt unsupported).
+A8 erzeuge_v3_fixtures.py --pruefen: vor dem Erzeugen Exit 2 (PRODUKTEINGAENGE-FAELLE.json weicht ab), nach dem Erzeugen
+  Exit 0, 421 Dateien bytegleich, MANIFEST sha256=b99deec4... unveraendert; Tabelle 197 -> 199 Eintraege (PE-198, PE-199).
+A5 pruefe_v3_vertrag.py --abdeckung mit der neuen Tabelle: Exit 0, 842 Pruefungen bestanden, 172 v3-Eintraege gegen vertrag.
+  -> die zwei Heartbeats von 313/M-129 gibt es am Basisstand nicht (heute nicht messbar); gegen vertrag gueltig.
+A13 Basisskript gegen Basisbericht: Exit 0 (66 Pruefungen ok).
+A13 Basisskript gegen den neuen Bericht (binary_telemetry supported, Termin keiner (kein Hostbit), kanonbeweis): Exit 2
+      FEHLER  binary_telemetry=supported traegt einen Termin (keiner (kein Hostbit))
+      FEHLER  die zehn Bits stehen so, wie die Rohdaten es tragen (2 supported, 8 unsupported)
+  -> 313/M-126 Regel: am Basisstand rot (Schritt 3 verlangt fuer supported Termin A, B oder A + B; erwartete_bits unsupported).
+A13 neues Skript gegen den Basisbericht: Exit 2
+      FEHLER  die zehn Bits stehen so, wie die Rohdaten und die benannten Kanonbeweise es tragen (3 supported, 7 unsupported)
+  -> 313/M-127: der Basisbericht traegt binary_telemetry unsupported mit dem rohfeld "Beweis entsteht mit SONDE-010 ...;
+     bis dahin unsupported" (eq-copilot/identity/host-capabilities-fl-v1.json:100 am Basis-SHA), obwohl SONDE-010
+     seit 30.08.2026 T2 PASS ist. Die Selbstproben des neuen Skripts fallen an beiden Belegen (ok-Zeilen im Lauf).
+
+=== 2. Neue Faelle gegen den unveraenderten Produktcode (Ablauf 4) ===
+B10 EqCopIpcTest --nak313-e7 (Basis-Schreiber) mit dem neuen Bericht: Exit 1
+      FEHLER  313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported  [binary_telemetry=unsupported]
+      FEHLER  313/M-124 bericht_gleich_schreiber binary_telemetry: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht supported]
+      FEHLER — 23 Pruefungen, 2 Fehler
+B10 EqCopIpcTest --nak313-e7 (Basis-Schreiber) mit dem Basisbericht (zurueckgelegt, danach wieder bytegleich ersetzt): Exit 1
+      FEHLER  313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported  [binary_telemetry=unsupported]
+      FEHLER — 23 Pruefungen, 1 Fehler
+  -> 313/M-123 Wert: am Basisstand rot (Paar 9 unsupported); die uebrigen neun Paare gruen (Regressionswache).
+  -> 313/M-124: am Basisstand (Basisbericht, Basis-Schreiber) gruen - Regressionswache; mit dem neuen Bericht faellt
+     binary_telemetry, weil Bericht und Schreiber auseinanderlaufen.
+A4 cargo test --test sonde012_sources_slice (Basis-Brokercode): Exit 0, 29 bestanden, darunter
+  nak313_m129_p2_ohne_bit_angenommen ok und nak313_m130_reconnect_mit_anderem_capability_satz ok (Regressionswachen:
+  heute gibt es keinen Riegel am Bit, und der Deskriptor folgt dem Heartbeat).
+A4 cargo test --lib nak313_m43 (Tabellenlauf rust_p0 mit PE-198, PE-199): Exit 0.
+A4 cargo test --test sonde013_verdrahtung mit den neuen Wiretexten: Exit 0, 91 bestanden (der Empfaenger nimmt sie an).
+
+=== 3. Am Basis-SHA gelesen, nicht gefahren (§6.6-Kopf; der einzige Weg schriebe in die Nutzerablage) ===
+eq-copilot/plugin/src/prozessor/Analyse.cpp am Basis-SHA, schreibeSnapshotDatei:
+     1417| bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
+     1418| {
+     1419|     const auto m = engine.snapshot();
+     1420|     if (m.zustand == MessZustand::keineDaten)
+     1421|     {
+     1422|         pfadOderFehler = "noch keine Messdaten";
+     1423|         return false;
+     1424|     }
+     1425| 
+     1426|     // NAK-286 (F-5, M-39): das Objekt aus der herausgeloesten Rechnung. Ordner,
+     1427|     // Name und Schreibweise bleiben; der Inhalt ist nach Maskierung von
+     1428|     // `created_utc` bytegleich zur Referenz des Basis-SHA der Etappe 2
+     1429|     // (eq-copilot/fixtures/diagnose/festhalten-referenz.json).
+     1430|     const auto wurzel = snapshotObjektBauen (m, juce::Time::getCurrentTime().toISO8601 (true));
+     1431| 
+     1432|     auto ordner = juce::File::getSpecialLocation (juce::File::windowsLocalAppData)
+     1433|                       .getChildFile ("evenacadia").getChildFile ("EQ-Copilot")
+     1434|                       .getChildFile ("snapshots");
+     1435|     if (! ordner.createDirectory())
+     1436|     {
+     1437|         pfadOderFehler = "Ordner nicht anlegbar: " + ordner.getFullPathName();
+     1438|         return false;
+     1439|     }
+     1440|     juce::String labelTeil;
+     1441|     {
+     1442|         std::lock_guard<std::mutex> l (bindungMutex);
+     1443|         for (const auto z : zustand.common.label)
+     1444|             if (juce::CharacterFunctions::isLetterOrDigit (z) || z == '-')
+     1445|                 labelTeil += z;
+     1446|     }
+     1447|     const auto zeit = juce::Time::getCurrentTime().formatted ("%Y%m%d-%H%M%S");
+     1448|     const auto datei = ordner.getChildFile ("snapshot-" + zeit
+     1449|                                             + (labelTeil.isEmpty() ? "" : "-" + labelTeil.substring (0, 40))
+     1450|                                             + ".json");
+     1451|     if (! datei.replaceWithText (juce::JSON::toString (juce::var (wurzel), false), false, false, "\n"))
+     1452|     {
+     1453|         pfadOderFehler = "Schreiben fehlgeschlagen: " + datei.getFullPathName();
+     1454|         return false;
+     1455|     }
+     1456|     pfadOderFehler = datei.getFullPathName();
+     1457|     return true;
+     1458| }
+  - :1419 fragt die Engine selbst (M-142: heute nicht messbar, die Funktion nimmt keinen Snapshot).
+  - :1430 und :1447 lesen die Uhr zweimal (M-139 eine Ablesung: heute nicht messbar, keine Testuhr).
+  - :1432-1435 Ordner %LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots fest, createDirectory legt rekursiv an (M-143:
+    keine Vorgabefunktion, heute nicht messbar).
+  - :1451 replaceWithText ersetzt eine vorhandene Datei gleichen Namens still und meldet true (:1456-1457):
+    313/M-134, M-135, M-136 (Kollision), M-137, M-138, M-139 (a), M-145 (keine Reaktion ueber abgelehnt hinaus):
+    heute rot - der zweite Export derselben Sekunde ersetzt den ersten, beide melden Erfolg mit demselben Pfad.
+JUCE (Bauartefakt eq-copilot/build/_deps/juce-src, JUCE 8.0.9), juce_File.cpp:798-803:
+      798| bool File::replaceWithText (const String& textToWrite, bool asUnicode, bool writeHeaderBytes, const char* lineFeed) const
+      799| {
+      800|     TemporaryFile tempFile (*this, TemporaryFile::useHiddenFile);
+      801|     tempFile.getFile().appendText (textToWrite, asUnicode, writeHeaderBytes, lineFeed);
+      802|     return tempFile.overwriteTargetFileWithTemporary();
+      803| }
+  - :801 verwirft das Ergebnis von appendText, :802 veroeffentlicht die Temp-Datei trotzdem:
+    313/M-140 (1) bis (3): heute rot - ein Teil-Schreibfehler wird veroeffentlicht und als Erfolg gemeldet.
+juce_TemporaryFile.cpp:100-118 (overwriteTargetFileWithTemporary: bis zu fuenf Versuche, dann false):
+      100|     if (temporaryFile.exists())
+      101|     {
+      102|         // Have a few attempts at overwriting the file before giving up..
+      103|         for (int i = 5; --i >= 0;)
+      104|         {
+      105|             if (temporaryFile.replaceFileIn (targetFile))
+      106|                 return true;
+      107| 
+      108|             Thread::sleep (100);
+      109|         }
+      110|     }
+      111|     else
+      112|     {
+      113|         // There's no temporary file to use. If your write failed, you should
+      114|         // probably check, and not bother calling this method.
+      115|         jassertfalse;
+      116|     }
+      117| 
+      118|     return false;
+  - 313/M-140 (4): Regressionswache - ein scheiterndes Ersetzen meldet heute ehrlich Schreiben fehlgeschlagen (:1453).
+eq-copilot/plugin/src/PluginEditor.cpp am Basis-SHA, Festhalten:
+      132|     initKnopf (festhaltenKnopf, "Festhalten", [this]
+      133|     {
+      134|         juce::String meldung;
+      135|         const auto m = processor.messSnapshot();
+      136|         if (processor.schreibeSnapshotDatei (meldung))
+      137|         {
+      138|             vergleichRohDb = m.ltasKompositDb;   // Roh gemerkt — Glättung wirkt
+      139|             vergleichAktiv = m.ltasGueltig;      // beim Zeichnen auf BEIDE gleich
+      140|             statusMeldung = "Festgehalten (Vergleichslinie + Datei): " + meldung;
+      141|         }
+      142|         else
+      143|             statusMeldung = u8 ("Festhalten nicht möglich — ") + meldung;
+      144|         statusMeldungBisMs = juce::Time::getMillisecondCounter() + 8000;
+      145|         uiDirty = true;
+      146|     });
+  - :135 und Analyse.cpp:1419 lesen zwei Snapshots (M-142 (b): heute nicht messbar).
+  - :140 zeigt Festgehalten mit dem Pfad: 313/M-141 (1) Regressionswache; (2) heute rot - zweimal in derselben
+    Sekunde zweimal Festgehalten mit demselben Pfad, weil replaceWithText ersetzt; (3) heute nicht messbar (kein rest).
+eq-copilot/plugin/tests/BriefkastenTestMain.cpp am Basis-SHA (Referenzbuehne):
+      272|         juce::String pfad;
+      273|         if (! p->schreibeSnapshotDatei (pfad))
+      274|         {
+      275|             e.grund = "der Knopfweg schrieb nicht: " + pfad;
+      276|             return e;
+      277|         }
+      278|         const juce::File datei (pfad);
+      279|         e.dateiname = datei.getFileName();
+      280|         e.ordner = datei.getParentDirectory().getFullPathName();
+      281|         juce::MemoryBlock bytes;
+      282|         const bool gelesen = datei.loadFileAsData (bytes);
+      283|         e.dateiEntfernt = datei.deleteFile() && ! datei.exists();
+      307| juce::File snapshotOrdner()
+      308| {
+      309|     return juce::File::getSpecialLocation (juce::File::windowsLocalAppData)
+      310|                .getChildFile ("evenacadia").getChildFile ("EQ-Copilot").getChildFile ("snapshots");
+      311| }
+      383|     const bool ordnerOk = juce::File (e.ordner) == referenz::snapshotOrdner();
+  - 313/M-133 (a): heute rot - der Knopfweg schreibt in die echte Ablage (:273, Ordner Analyse.cpp:1432-1434),
+    geprueft (:383) und geloescht (:283). (b): heute nicht messbar (keine Fassade, kein Testordner).
+eq-copilot/plugin/core/ipc/controlclient/Intern.h am Basis-SHA, capabilitiesJson:
+      373| inline std::string capabilitiesJson()
+      374| {
+      375|     // Maschinenlesbare Wahrheit aus host-capabilities-fl-v1.json: zwei in FL
+      376|     // gemessene Faehigkeiten, acht feste Fallbacks. Diese Funktion wird nur
+      377|     // auf dem Clientthread gerufen.
+      378|     return "{\"host_context_presence\":\"supported\","
+      379|            "\"project_time_samples\":\"supported\","
+      380|            "\"sample_accurate_automation\":\"unsupported\","
+      381|            "\"presentation_latency\":\"unsupported\","
+      382|            "\"aux_compare_pre\":\"unsupported\","
+      383|            "\"aux_priority_sidechain\":\"unsupported\","
+      384|            "\"contribution_aux\":\"unsupported\","
+      385|            "\"float64_processing\":\"unsupported\","
+      386|            "\"binary_telemetry\":\"unsupported\","
+      387|            "\"remote_control\":\"unsupported\"}";
+      388| }
+  - :375-376 Kommentar "zwei in FL gemessene Faehigkeiten, acht feste Fallbacks": 313/M-123 Kommentar heute rot (gelesen).
+docs/FL-Nakama-Sonden-Design-Entwurf.md am Basis-SHA:
+       10|   Vorrangregel ist erfüllt, nicht aufgehoben: jedes Erratum (a) bis (q) steht ab 0.5 zusätzlich an
+       57| > **Verlaufsabschnitt seit Fassung 0.5 (02.09.2026).** Alle 17 Errata (a) bis (q) sind unten im
+     3972| > Stand für FL Studio 2026 26.1.4.5589 / JUCE 8.0.9: 2 supported, 8 unsupported.**
+     3994| | `binary_telemetry` | v3-CRC/Fuzz/Lasttest | reduzierte JSON-Kadenz, kein P0-Verlust |
+  - 313/M-131 Text heute rot: :3994 verspricht "reduzierte JSON-Kadenz, kein P0-Verlust" als Verhalten ohne Beweis;
+    (k) zaehlt 2 supported, 8 unsupported; kein Erratum (r), Zaehler (a) bis (q) und 17 Errata.

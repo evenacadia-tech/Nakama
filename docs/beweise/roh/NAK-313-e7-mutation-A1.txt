@@ -1,0 +1,50 @@
+NAK-313 Etappe 7 - Mutationslauf A1: M-145 Audio Gen: im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf A1 - M-145 Audio Gen: im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 25.09.2026 01:50:46 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+Mutation ab Zeile 641 in eq-copilot/plugin/src/PluginProcessor.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (n == 0 || kanaele == 0)
+    |        return;
+    |
+  nachher:
+    |    if (n == 0 || kanaele == 0)
+    |        return;
+    |    buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-145 A1: 1 LSB
+    |
+Mutiert 25.09.2026 01:50:46: eq-copilot/plugin/src/PluginProcessor.cpp, SHA-256 mutiert 998e997a890e3f0d275f8f9647031868388ef0a3d6790e3674934bf0a3634781 (git diff --numstat: 1	0	eq-copilot/plugin/src/PluginProcessor.cpp)
+Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Gen-Callback bricht die Bitidentitaet -> A1 rot.
+Lauf unter der Mutation:
+  Bau EqCopNullTest: Exit 0 (BAU Exit 0, 7 s, Ziele EqCopNullTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-A1-mutiert.log)
+    EqCopNullTest: 01:50:53.955
+  A1: Binaer 01:50:53.955, Quelle 01:50:46.849, Binaer juenger: ja
+  A1: Exit 1, Fehlzeilen 2, 0 s, Rohausgabe A1-mutiert-A1.txt
+Ruecknahme 25.09.2026 01:50:54: eq-copilot/plugin/src/PluginProcessor.cpp SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+  Bau EqCopNullTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopNullTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-A1-zurueck.log)
+    EqCopNullTest: 01:51:01.088
+  A1: Binaer 01:51:01.088, Quelle 01:50:54.440, Binaer juenger: ja
+  A1: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe A1-zurueck-A1.txt
+Erwartete Pruefungen unter der Mutation:
+  A1: Exit ungleich 0 (das Bein faellt): JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A1: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141p.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139u.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140g.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140l.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R142.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R143.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R144a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R144e.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R145.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/PluginProcessor.cpp: (leer)
+git diff --stat: (leer)
+
+=== A1 unter der Mutation: gefallene Pruefungen (2) ===
+    FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+    FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+=== A1 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A1 nach der Ruecknahme: gefallene Pruefungen 0 ===

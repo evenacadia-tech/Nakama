@@ -1,0 +1,47 @@
+NAK-313 Etappe 7 - Mutationslauf W125c: M-125: remote_control nur im Schreiber auf supported
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W125c - M-125: remote_control nur im Schreiber auf supported - 25.09.2026 01:34:15 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+SHA-256 vorher 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\W125c-Intern.h (SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322)
+Mutation ab Zeile 388 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+  vorher:
+    |           "\"remote_control\":\"unsupported\"}";
+  nachher:
+    |           "\"remote_control\":\"supported\"}";   // MUTATION M-125: nur im Schreiber
+Mutiert 25.09.2026 01:34:15: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert ad35572369d5a1b4165948a6790b86663480d57f15d99068281854d25e24233f (git diff --numstat: 1	1	eq-copilot/plugin/core/ipc/controlclient/Intern.h)
+Kette (R-313-11): Schreiber remote_control=supported, Bericht unsupported -> 313/M-124 remote_control faellt; 313/M-123 Paar 10 faellt mit.
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W125c-mutiert.log)
+    EqCopIpcTest: 01:35:23.420
+  B10e7: Binaer 01:35:23.420, Quelle 01:34:15.433, Binaer juenger: ja
+  B10e7: Exit 1, Fehlzeilen 3, 0 s, Rohausgabe W125c-mutiert-B10e7.txt
+Ruecknahme 25.09.2026 01:35:23: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W125c-zurueck.log)
+    EqCopIpcTest: 01:36:31.668
+  B10e7: Binaer 01:36:31.668, Quelle 01:35:23.807, Binaer juenger: ja
+  B10e7: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe W125c-zurueck-B10e7.txt
+Erwartete Pruefungen unter der Mutation:
+  B10e7: '313/M-124 bericht_gleich_schreiber remote_control' gefallen: JA
+  B10e7: '313/M-124 bericht_gleich_schreiber binary_telemetry' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10e7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Intern.h: (leer)
+git diff --stat: (leer)
+
+=== B10e7 unter der Mutation: gefallene Pruefungen (3) ===
+    FEHLER  313/M-123 binary_telemetry_supported Paar 10: remote_control=unsupported  [remote_control=supported]
+    FEHLER  313/M-124 bericht_gleich_schreiber remote_control: Bericht und Schreiber gleich  [Schreiber supported, Bericht unsupported]
+  FEHLER — 23 Pruefungen, 2 Fehler
+=== B10e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== B10e7 nach der Ruecknahme: gefallene Pruefungen 0 ===

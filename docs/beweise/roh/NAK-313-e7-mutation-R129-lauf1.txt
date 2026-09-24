@@ -1,0 +1,60 @@
+NAK-313 Etappe 7 - Mutationslauf R129: M-129: in Senke::p2 ein Empfangsriegel am Bit
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R129 - M-129: in Senke::p2 ein Empfangsriegel am Bit - 25.09.2026 01:37:14 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei broker/src/coordinator/senke.rs (LF)
+SHA-256 vorher dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R129-senke.rs (SHA-256 dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f)
+Mutation ab Zeile 170 in broker/src/coordinator/senke.rs (Stand vor der Mutation):
+  vorher:
+    |                    P2RejectGrund::QuelladresseAbweichend,
+    |                );
+    |                return;
+    |            }
+    |
+  nachher:
+    |                    P2RejectGrund::QuelladresseAbweichend,
+    |                );
+    |                return;
+    |            }
+    |            // MUTATION M-129: ein Empfangsriegel am Bit
+    |            if stand.clients.get(&key).and_then(|c| c.descriptor.as_ref()).and_then(|d| d["capabilities"]["binary_telemetry"].as_str()) != Some("supported") {
+    |                return;
+    |            }
+    |
+Mutiert 25.09.2026 01:37:14: broker/src/coordinator/senke.rs, SHA-256 mutiert dfa3583c8b9d8f0f41a98fa5b5b93a1ed22647d2ac9c39ab7d35b2f5bfdf7360 (git diff --numstat: 4	0	broker/src/coordinator/senke.rs)
+Kette (R-313-11): der Deskriptor der Quelle traegt binary_telemetry unsupported -> Senke::p2 kehrt vor der Annahme zurueck -> p2_live_frames bleibt stehen, kein messframe_schreiben -> die Pruefungen unsupported faellen; supported bleibt gruen. M-130 Link 1 (unsupported) faellt mit.
+Lauf unter der Mutation:
+  A4-slice: Exit 101, Fehlzeilen 9, 8 s, Rohausgabe R129-mutiert-A4-slice.txt
+Ruecknahme 25.09.2026 01:37:22: broker/src/coordinator/senke.rs SHA-256 dc11cea30787d3c2ec4cd3abdb2c1b40f785eae0b79d0bf546996278a02b1d5f - gleich dem Stand vor der Mutation
+  A4-slice: Exit 0, Fehlzeilen 0, 4 s, Rohausgabe R129-zurueck-A4-slice.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-slice: 'unsupported: P2 angenommen' gefallen: JA
+  A4-slice: 'unsupported: genau ein messframe_schreiben' gefallen: JA
+  A4-slice: 'supported: P2 angenommen, p2_live_frames' gruen geblieben: NEIN
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-slice: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/coordinator/senke.rs: (leer)
+git diff --stat: (leer)
+
+=== A4-slice unter der Mutation: gefallene Pruefungen (9) ===
+  test nak313_m130_reconnect_mit_anderem_capability_satz ... FAILED
+  test nak313_m129_p2_ohne_bit_angenommen ... FAILED
+  thread 'nak313_m130_reconnect_mit_anderem_capability_satz' (364680) panicked at tests\sonde012_sources_slice.rs:773:5:
+  M-130 gefallen:
+  Link 1: P2 vor dem Trennen angenommen (0 -> 0)
+  thread 'nak313_m129_p2_ohne_bit_angenommen' (31904) panicked at tests\sonde012_sources_slice.rs:708:5:
+  M-129 gefallen:
+  unsupported: P2 angenommen, p2_live_frames 0 -> 0
+  unsupported: genau ein messframe_schreiben an den Main (0 -> 0)
+=== A4-slice unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A4-slice nach der Ruecknahme: gefallene Pruefungen 0 ===

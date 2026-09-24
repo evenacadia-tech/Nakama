@@ -1,0 +1,39 @@
+NAK-313 Etappe 7 - Mutationslauf R127: M-127: an das rohfeld von binary_telemetry ein Segment x = 1 angehaengt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R127 - M-127: an das rohfeld von binary_telemetry ein Segment x = 1 angehaengt - 25.09.2026 01:36:37 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/identity/host-capabilities-fl-v1.json (LF)
+SHA-256 vorher 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R127-host-capabilities-fl-v1.json (SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7)
+Mutation ab Zeile 101 in eq-copilot/identity/host-capabilities-fl-v1.json (Stand vor der Mutation):
+  vorher:
+    |"rohfeld": "Build-Tatsache, kein Hostmesswert; Beleg im Kanon (kanonbeweis)",
+  nachher:
+    |"rohfeld": "Build-Tatsache, kein Hostmesswert; Beleg im Kanon (kanonbeweis); x = 1",
+Mutiert 25.09.2026 01:36:37: eq-copilot/identity/host-capabilities-fl-v1.json, SHA-256 mutiert 61bff066259454a4a95d5d5fb2d8687afdc4308b0905153f5da7bc62d5746a5b (git diff --numstat: 1	1	eq-copilot/identity/host-capabilities-fl-v1.json)
+Kette (R-313-11): der Ausdruck in Schritt 2b bildet das Token x = 1 (Termin B, kein A:), die Suche im Rohbestand scheitert -> Rohfeld x ... existiert nicht in B -> A13 faellt.
+Lauf unter der Mutation:
+  A13: Exit 2, Fehlzeilen 1, 0 s, Rohausgabe R127-mutiert-A13.txt
+Ruecknahme 25.09.2026 01:36:37: eq-copilot/identity/host-capabilities-fl-v1.json SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7 - gleich dem Stand vor der Mutation
+  A13: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe R127-zurueck-A13.txt
+Erwartete Pruefungen unter der Mutation:
+  A13: 'binary_telemetry: Rohfeld x' gefallen: JA
+  A13: 'binary_telemetry=supported: Termin oder Kanonbeweis' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/identity/host-capabilities-fl-v1.json: (leer)
+git diff --stat: (leer)
+
+=== A13 unter der Mutation: gefallene Pruefungen (1) ===
+    FEHLER  binary_telemetry: Rohfeld x (Praefix '') existiert nicht in B
+=== A13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A13 nach der Ruecknahme: gefallene Pruefungen 0 ===

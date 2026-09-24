@@ -1,0 +1,46 @@
+NAK-313 Etappe 7 - Mutationslauf R125a: M-125: ein elftes Bit im Bericht
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R125a - M-125: ein elftes Bit im Bericht - 25.09.2026 01:36:32 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/identity/host-capabilities-fl-v1.json (LF)
+SHA-256 vorher 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R125a-host-capabilities-fl-v1.json (SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7)
+Mutation ab Zeile 34 in eq-copilot/identity/host-capabilities-fl-v1.json (Stand vor der Mutation):
+  vorher:
+    |    "remote_control": "unsupported"
+    |  },
+    |  "belege": {
+  nachher:
+    |    "remote_control": "unsupported",
+    |    "elftes_bit": "unsupported"
+    |  },
+    |  "belege": {
+Mutiert 25.09.2026 01:36:32: eq-copilot/identity/host-capabilities-fl-v1.json, SHA-256 mutiert c63239ed6b38b459c8c7c951c3d22a0aff29b036057531bbf944091e727fe0b8 (git diff --numstat: 2	1	eq-copilot/identity/host-capabilities-fl-v1.json)
+Kette (R-313-11): capabilities traegt elf Schluessel -> Schritt 1 (Schema strikt, genau die zehn Schluessel) faellt.
+Lauf unter der Mutation:
+  A13: Exit 1, Fehlzeilen 3, 1 s, Rohausgabe R125a-mutiert-A13.txt
+Ruecknahme 25.09.2026 01:36:33: eq-copilot/identity/host-capabilities-fl-v1.json SHA-256 1235daa7d065ef36b38ceb7b8d18252dd806caa40221919e0073db32335dd4b7 - gleich dem Stand vor der Mutation
+  A13: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe R125a-zurueck-A13.txt
+Erwartete Pruefungen unter der Mutation:
+  A13: 'genau die zehn Schluessel aus §53.6' gefallen: JA
+  A13: 'binary_telemetry=supported: Termin oder Kanonbeweis' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/identity/host-capabilities-fl-v1.json: (leer)
+git diff --stat: (leer)
+
+=== A13 unter der Mutation: gefallene Pruefungen (3) ===
+    FEHLER  capabilities verletzt v3 $defs/capabilities: Additional properties are not allowed ('elftes_bit' was unexpected)
+    FEHLER  genau die zehn Schluessel aus §53.6
+    FEHLER  host_channel_context ist kein elftes Wire-Bit im capabilities-Objekt
+=== A13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A13 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,61 @@
+NAK-313 Etappe 7 - Rotbeweis M-124 (Manifest docs/beweise/NAK-313.md §6.6, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits der Etappe 7); Mutationslaeufe je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am
+Basisstand 25.09.2026 gegen den Produktcode von 4aee3eec (NAK-313-e7-basisstand.txt).
+
+Matrixzeile M-124 - T3-03-10 - R-313-9 - Bericht gegen Schreiber, melden<->senden
+Zustand: Bericht host-capabilities-fl-v1.json
+Ereignis: Vergleichstest
+Zusage: das Objekt capabilities des Berichts ist Schluessel fuer Schluessel gleich dem Objekt aus capabilitiesJson()
+Bein: B10: 313/M-124 bericht_gleich_schreiber (Modus --nak313-e7)
+
+--- Haelfte 1: Bericht gleich Schreiber - Etikett: Regressionswache ---
+Am Basisstand: gruen: am Basisstand (Basisbericht, Basis-Schreiber) gruen; mit dem neuen Bericht und dem Basis-Schreiber faellt binary_telemetry (NAK-313-e7-basisstand.txt, Abschnitt 2)
+  Mutation W124 (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-W124.txt):
+    Rotlauf W124 - M-124: ein Bit nur im Schreiber geaendert (presentation_latency auf supported) - 25.09.2026 01:31:57 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\W124-Intern.h (SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322)
+    Mutation ab Zeile 382 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+      vorher:
+        |           "\"presentation_latency\":\"unsupported\","
+      nachher:
+        |           "\"presentation_latency\":\"supported\","   // MUTATION M-124: nur im Schreiber
+    Mutiert 25.09.2026 01:31:57: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert c59512dede88c73a3e9acaa4d4151a6b08e03742931d1386b24c402f0ad4463b (git diff --numstat: 1	1	eq-copilot/plugin/core/ipc/controlclient/Intern.h)
+    Kette (R-313-11): Schreiber presentation_latency=supported, Bericht unsupported -> 313/M-124 presentation_latency faellt; 313/M-123 Paar 4 faellt mit (der Schreiber weicht auch von der Erwartung ab).
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W124-mutiert.log)
+        EqCopIpcTest: 01:33:05.372
+      B10e7: Binaer 01:33:05.372, Quelle 01:31:57.013, Binaer juenger: ja
+      B10e7: Exit 1, Fehlzeilen 3, 0 s, Rohausgabe W124-mutiert-B10e7.txt
+    Ruecknahme 25.09.2026 01:33:05: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 69 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W124-zurueck.log)
+        EqCopIpcTest: 01:34:14.878
+      B10e7: Binaer 01:34:14.878, Quelle 01:33:05.769, Binaer juenger: ja
+      B10e7: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe W124-zurueck-B10e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B10e7: '313/M-124 bericht_gleich_schreiber presentation_latency' gefallen: JA
+      B10e7: '313/M-124 bericht_gleich_schreiber binary_telemetry' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Intern.h: (leer)
+    git diff --stat: (leer)
+    === B10e7 unter der Mutation: gefallene Pruefungen (3) ===
+        FEHLER  313/M-123 binary_telemetry_supported Paar 4: presentation_latency=unsupported  [presentation_latency=supported]
+        FEHLER  313/M-124 bericht_gleich_schreiber presentation_latency: Bericht und Schreiber gleich  [Schreiber supported, Bericht unsupported]
+      FEHLER — 23 Pruefungen, 2 Fehler
+    === B10e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (11) ===
+        ok      313/M-124 bericht_gleich_schreiber: beide Objekte gelesen, je zehn Schluessel  [10 / 10]
+        ok      313/M-124 bericht_gleich_schreiber host_context_presence: Bericht und Schreiber gleich  [Schreiber supported, Bericht supported]
+        ok      313/M-124 bericht_gleich_schreiber project_time_samples: Bericht und Schreiber gleich  [Schreiber supported, Bericht supported]
+        ok      313/M-124 bericht_gleich_schreiber sample_accurate_automation: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht unsupported]
+        ok      313/M-124 bericht_gleich_schreiber aux_compare_pre: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht unsupported]
+        ok      313/M-124 bericht_gleich_schreiber aux_priority_sidechain: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht unsupported]
+        ok      313/M-124 bericht_gleich_schreiber contribution_aux: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht unsupported]
+        ok      313/M-124 bericht_gleich_schreiber float64_processing: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht unsupported]
+        ok      313/M-124 bericht_gleich_schreiber binary_telemetry: Bericht und Schreiber gleich  [Schreiber supported, Bericht supported]
+        ok      313/M-124 bericht_gleich_schreiber remote_control: Bericht und Schreiber gleich  [Schreiber unsupported, Bericht unsupported]
+        ok      313/M-124 bericht_gleich_schreiber: kein Schluessel nur im Bericht  [Bericht: host_context_presence=supported, project_time_samples=supported, sample_accurate_automation=unsupported, presentation_latency=unsupported, aux_compare_pre=unsupported, aux_priority_sidechain=unsupported, contribution_aux=unsupported, float64_processing=unsupported, binary_telemetry=supported, remote_control=unsupported]
+    === B10e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis: 1 Rotlaeufe an den Haelften mit Lauf, faellt an der Zusagezeile: JA

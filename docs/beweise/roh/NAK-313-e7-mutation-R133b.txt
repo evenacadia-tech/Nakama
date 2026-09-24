@@ -1,0 +1,76 @@
+NAK-313 Etappe 7 - Mutationslauf R133b: M-133 (b): die Schranke erst nach dem Anlegen des Ordners geprueft
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R133b - M-133 (b): die Schranke erst nach dem Anlegen des Ordners geprueft - 25.09.2026 01:39:32 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R133b-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+Mutation ab Zeile 1647 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+  vorher:
+    |    std::wstring wurzel;
+    |    if (! f.ordner->wurzel (wurzel))
+    |        return snapshotFehler ("kein Zielordner" + (wurzel.empty() ? juce::String()
+    |                                                                   : ": " + juce::String (wurzel.c_str())));
+    |    SnapshotVeroeffentlichung v { *f.dateisystem, {}, {}, {} };
+    |    juce::String grund;
+    |    if (! snapshotOrdnerAnlegen (*f.dateisystem, wurzel, v.ordner, grund))
+    |        return snapshotFehler (grund);
+    |
+  nachher:
+    |    std::wstring wurzel;
+    |    const bool wurzelDa = f.ordner->wurzel (wurzel);   // MUTATION M-133 (b): Schranke erst nach dem Anlegen
+    |    SnapshotVeroeffentlichung v { *f.dateisystem, {}, {}, {} };
+    |    juce::String grund;
+    |    if (! snapshotOrdnerAnlegen (*f.dateisystem, wurzel, v.ordner, grund))
+    |        return snapshotFehler (grund);
+    |    if (! wurzelDa)
+    |        return snapshotFehler ("kein Zielordner");
+    |
+Mutiert 25.09.2026 01:39:32: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 6f298c0c00f1347edc320a0f0f07fb537dba59d18f796dffbae990c301da1704 (git diff --numstat: 3	3	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+Kette (R-313-11): ohne Testordner liefert die Schranke eine leere Wurzel; der Export fragt die Ebenen trotzdem ab (attribute, legeOrdnerAn) -> die Attrappe zaehlt Aufrufe > 0 -> die Pruefung faellt.
+Lauf unter der Mutation:
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R133b-mutiert.log)
+    EqCopBriefkastenTest: 01:39:39.459
+  B30e7: Binaer 01:39:39.459, Quelle 01:39:32.751, Binaer juenger: ja
+  B30e7: Exit 1, Fehlzeilen 1, 12 s, Rohausgabe R133b-mutiert-B30e7.txt
+Ruecknahme 25.09.2026 01:39:51: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R133b-zurueck.log)
+    EqCopBriefkastenTest: 01:39:57.557
+  B30e7: Binaer 01:39:57.557, Quelle 01:39:51.404, Binaer juenger: ja
+  B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R133b-zurueck-B30e7.txt
+Erwartete Pruefungen unter der Mutation:
+  B30e7: '313/M-133 nie_in_der_nutzerablage ohne Testordner' gefallen: JA
+  B30e7: '313/M-134 doppelklick_gleiche_sekunde: erster neu' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B30e7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+git diff --stat: (leer)
+
+=== B30e7 unter der Mutation: gefallene Pruefungen (1) ===
+  [ROT] 313/M-133 nie_in_der_nutzerablage ohne Testordner: fehler, bevor das Dateisystem beruehrt wird [fehler grund=Ordner nicht anlegbar: \evenacadia, Aufrufe 3]
+=== B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (15) ===
+  [ok]  313/M-133 vorbedingung: ein Gen mit Messdaten
+  [ok]  313/M-133 nie_in_der_nutzerablage M-134: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-2-m134]
+  [ok]  313/M-133 nie_in_der_nutzerablage zwei_instanzen_gleicher_name: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-3-m135]
+  [ok]  313/M-133 nie_in_der_nutzerablage leeres_label_gleiche_sekunde: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-4-m136]
+  [ok]  313/M-133 nie_in_der_nutzerablage gleich_nach_bereinigung Bass/bass: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-5-m137a]
+  [ok]  313/M-133 nie_in_der_nutzerablage gleich_nach_bereinigung Bass!/Bass?: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-6-m137b]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-138: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-7-m138]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-139 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-8-m139a]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-139 (b): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-9-m139b]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (1) schreiben meldet Fehler: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-10-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (2) spuelen meldet Fehler: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-11-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (3) Groesse weicht ab: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-12-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (4) umbenennen scheitert, Zielname fehlt: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-13-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (5) wie (1), loesche scheitert: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-14-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-142 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-325760-15-m142a]
+=== B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===

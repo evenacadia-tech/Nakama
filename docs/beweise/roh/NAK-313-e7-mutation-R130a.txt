@@ -1,0 +1,42 @@
+NAK-313 Etappe 7 - Mutationslauf R130a: M-130 (1): ein Reconnect erbt den alten Deskriptor statt None
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R130a - M-130 (1): ein Reconnect erbt den alten Deskriptor statt None - 25.09.2026 01:37:27 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei broker/src/coordinator/link.rs (LF)
+SHA-256 vorher ff3c4f1c72c41086bcfaf171dff3874fc5fa429dc651b165367cf4a1388308bb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R130a-link.rs (SHA-256 ff3c4f1c72c41086bcfaf171dff3874fc5fa429dc651b165367cf4a1388308bb)
+Mutation ab Zeile 257 in broker/src/coordinator/link.rs (Stand vor der Mutation):
+  vorher:
+    |            descriptor: None,
+  nachher:
+    |            descriptor: geerbt.as_ref().and_then(|c| c.descriptor.clone()), // MUTATION M-130 (1)
+Mutiert 25.09.2026 01:37:27: broker/src/coordinator/link.rs, SHA-256 mutiert 5d36f0722be79623e45b139fb355e04216884d8b551e10e15f1c542e1b1feef1 (git diff --numstat: 1	1	broker/src/coordinator/link.rs)
+Kette (R-313-11): Link 2 erbt den Deskriptor von Link 1 (unsupported) -> das Fenster zwischen Anmeldung und erstem Heartbeat zeigt einen probe_descriptor -> die Pruefung faellt.
+Lauf unter der Mutation:
+  A4-slice: Exit 101, Fehlzeilen 4, 4 s, Rohausgabe R130a-mutiert-A4-slice.txt
+Ruecknahme 25.09.2026 01:37:31: broker/src/coordinator/link.rs SHA-256 ff3c4f1c72c41086bcfaf171dff3874fc5fa429dc651b165367cf4a1388308bb - gleich dem Stand vor der Mutation
+  A4-slice: Exit 0, Fehlzeilen 0, 4 s, Rohausgabe R130a-zurueck-A4-slice.txt
+Erwartete Pruefungen unter der Mutation:
+  A4-slice: 'Link 2 angemeldet, vor dem ersten Heartbeat: kein probe_descriptor' gefallen: JA
+  A4-slice: 'Link 2 nach dem Heartbeat' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4-slice: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- broker/src/coordinator/link.rs: (leer)
+git diff --stat: (leer)
+
+=== A4-slice unter der Mutation: gefallene Pruefungen (4) ===
+  test nak313_m130_reconnect_mit_anderem_capability_satz ... FAILED
+  thread 'nak313_m130_reconnect_mit_anderem_capability_satz' (145036) panicked at tests\sonde012_sources_slice.rs:773:5:
+  M-130 gefallen:
+  Link 2 angemeldet, vor dem ersten Heartbeat: kein probe_descriptor (Some("unsupported"))
+=== A4-slice unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A4-slice nach der Ruecknahme: gefallene Pruefungen 0 ===

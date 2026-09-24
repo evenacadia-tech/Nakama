@@ -1,0 +1,40 @@
+NAK-313 Etappe 7 - Mutationslauf R126k: M-126 Selbstprobe (1): die Bedingung nicht leerer kanonbeweis entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R126k - M-126 Selbstprobe (1): die Bedingung nicht leerer kanonbeweis entfernt - 25.09.2026 01:36:35 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei tools/eq-copilot/pruefe_host_capabilities.py (LF)
+SHA-256 vorher 204ceb77e61234973947d05d99f523ada347ead75291677a28f3655bfa14b6e2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R126k-pruefe_host_capabilities.py (SHA-256 204ceb77e61234973947d05d99f523ada347ead75291677a28f3655bfa14b6e2)
+Mutation ab Zeile 77 in tools/eq-copilot/pruefe_host_capabilities.py (Stand vor der Mutation):
+  vorher:
+    |        mit_kanonbeweis = termin == KEIN_HOSTBIT and str(beleg.get("kanonbeweis", "")).strip() != ""
+  nachher:
+    |        mit_kanonbeweis = termin == KEIN_HOSTBIT  # MUTATION M-126 (1): ohne Bedingung kanonbeweis
+Mutiert 25.09.2026 01:36:36: tools/eq-copilot/pruefe_host_capabilities.py, SHA-256 mutiert 185491dd49fb1c561c4b91453c78d0fd1cb590376575db12becccd9a377d61dc (git diff --numstat: 1	1	tools/eq-copilot/pruefe_host_capabilities.py)
+Kette (R-313-11): Termin keiner (kein Hostbit) genuegt allein -> die Selbstprobe ohne kanonbeweis wird angenommen -> ihre Pruefung faellt.
+Lauf unter der Mutation:
+  A13: Exit 2, Fehlzeilen 1, 0 s, Rohausgabe R126k-mutiert-A13.txt
+Ruecknahme 25.09.2026 01:36:36: tools/eq-copilot/pruefe_host_capabilities.py SHA-256 204ceb77e61234973947d05d99f523ada347ead75291677a28f3655bfa14b6e2 - gleich dem Stand vor der Mutation
+  A13: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe R126k-zurueck-A13.txt
+Erwartete Pruefungen unter der Mutation:
+  A13: 'Selbstprobe ohne_kanonbeweis' gefallen: JA
+  A13: 'Selbstprobe termin_a_ohne_rohdatei' gruen geblieben: JA
+  A13: 'binary_telemetry=supported: Termin oder Kanonbeweis' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- tools/eq-copilot/pruefe_host_capabilities.py: (leer)
+git diff --stat: (leer)
+
+=== A13 unter der Mutation: gefallene Pruefungen (1) ===
+    FEHLER  Selbstprobe ohne_kanonbeweis: die Regel lehnt den Beleg ab - NICHT abgelehnt
+=== A13 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A13 nach der Ruecknahme: gefallene Pruefungen 0 ===

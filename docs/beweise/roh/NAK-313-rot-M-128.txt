@@ -1,0 +1,115 @@
+NAK-313 Etappe 7 - Rotbeweis M-128 (Manifest docs/beweise/NAK-313.md §6.6, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits der Etappe 7); Mutationslaeufe je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am
+Basisstand 25.09.2026 gegen den Produktcode von 4aee3eec (NAK-313-e7-basisstand.txt).
+
+Matrixzeile M-128 - T3-03-10 - R-313-9 - Byteinstanz, schreiben<->lesen
+Zustand: heartbeat-wire-v1.json (von Hand, -text)
+Ereignis: A3 und A4 lesen sie
+Zusage: die drei Wiretexte tragen supported; der C++-Schreiber erzeugt sie bytegleich (A3), der Rust-Empfaenger beantwortet sie (A4)
+Bein: C++: A3 (MarkierungTestMain.cpp B04); Rust: A4 (sonde013_verdrahtung.rs)
+
+--- Haelfte 1: Wert supported in den Texten - Etikett: heute rot ---
+Am Basisstand: rot: die neuen Wiretexte gegen den Basis-Schreiber - A3 faellt an allen drei Bytevergleichen (NAK-313-e7-basisstand.txt, Abschnitt 1)
+  Mutation F128 (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-F128.txt):
+    Rotlauf F128 - M-128: ein Wiretext (steady) der Byteinstanz bleibt auf unsupported - 25.09.2026 01:36:38 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/fixtures/v3/heartbeat-wire-v1.json (LF)
+    SHA-256 vorher 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\F128-heartbeat-wire-v1.json (SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e)
+    Mutation ab Zeile 47 in eq-copilot/fixtures/v3/heartbeat-wire-v1.json (Stand vor der Mutation):
+      vorher:
+        |\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+      nachher:
+        |\"binary_telemetry\":\"unsupported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+    Mutiert 25.09.2026 01:36:38: eq-copilot/fixtures/v3/heartbeat-wire-v1.json, SHA-256 mutiert c75fde0befecf9e73571900259c83ba2f2b55a4dab5f09b7b7db1afe0c32b8d2 (git diff --numstat: 1	1	eq-copilot/fixtures/v3/heartbeat-wire-v1.json)
+    Kette (R-313-11): der Schreiber sagt supported, der Wiretext steady unsupported -> der Bytevergleich steady faellt.
+    Lauf unter der Mutation:
+      A3: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe F128-mutiert-A3.txt
+    Ruecknahme 25.09.2026 01:36:46: eq-copilot/fixtures/v3/heartbeat-wire-v1.json SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e - gleich dem Stand vor der Mutation
+      A3: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe F128-zurueck-A3.txt
+    Erwartete Pruefungen unter der Mutation:
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/steady' gefallen: JA
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral' gruen geblieben: JA
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/unbekannt' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A3: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/fixtures/v3/heartbeat-wire-v1.json: (leer)
+    git diff --stat: (leer)
+    === A3 unter der Mutation: gefallene Pruefungen (1) ===
+        FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/steady - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"supported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0}}
+    === A3 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A3 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Bytegleichheit - Etikett: Regressionswache ---
+Am Basisstand: gruen: am Basis-SHA sagen Texte und Schreiber unsupported, A3 gruen (Kanon an 24583a03)
+  Mutation F128 (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-F128.txt):
+    Rotlauf F128 - M-128: ein Wiretext (steady) der Byteinstanz bleibt auf unsupported - 25.09.2026 01:36:38 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/fixtures/v3/heartbeat-wire-v1.json (LF)
+    SHA-256 vorher 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\F128-heartbeat-wire-v1.json (SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e)
+    Mutation ab Zeile 47 in eq-copilot/fixtures/v3/heartbeat-wire-v1.json (Stand vor der Mutation):
+      vorher:
+        |\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+      nachher:
+        |\"binary_telemetry\":\"unsupported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+    Mutiert 25.09.2026 01:36:38: eq-copilot/fixtures/v3/heartbeat-wire-v1.json, SHA-256 mutiert c75fde0befecf9e73571900259c83ba2f2b55a4dab5f09b7b7db1afe0c32b8d2 (git diff --numstat: 1	1	eq-copilot/fixtures/v3/heartbeat-wire-v1.json)
+    Kette (R-313-11): der Schreiber sagt supported, der Wiretext steady unsupported -> der Bytevergleich steady faellt.
+    Lauf unter der Mutation:
+      A3: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe F128-mutiert-A3.txt
+    Ruecknahme 25.09.2026 01:36:46: eq-copilot/fixtures/v3/heartbeat-wire-v1.json SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e - gleich dem Stand vor der Mutation
+      A3: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe F128-zurueck-A3.txt
+    Erwartete Pruefungen unter der Mutation:
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/steady' gefallen: JA
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral' gruen geblieben: JA
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/unbekannt' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A3: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/fixtures/v3/heartbeat-wire-v1.json: (leer)
+    git diff --stat: (leer)
+    === A3 unter der Mutation: gefallene Pruefungen (1) ===
+        FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/steady - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"supported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0}}
+    === A3 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A3 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: Annahme im Empfaenger - Etikett: Regressionswache ---
+Am Basisstand: gruen: sonde013_verdrahtung mit den neuen Wiretexten 91 bestanden (NAK-313-e7-basisstand.txt, Abschnitt 2)
+  Mutation F128a (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-F128a.txt):
+    Rotlauf F128a - M-128 Annahme im Empfaenger: im Wiretext bestaetigt_neutral die adresse entfernt - 25.09.2026 01:36:54 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/fixtures/v3/heartbeat-wire-v1.json (LF)
+    SHA-256 vorher 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\F128a-heartbeat-wire-v1.json (SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e)
+    Mutation ab Zeile 52 in eq-copilot/fixtures/v3/heartbeat-wire-v1.json (Stand vor der Mutation):
+      vorher:
+        |      "wire": "{\"type\":\"heartbeat\",\"adresse\":{\"logon_sid\":\"S-1-5-21-1111111111-2222222222-3333333333-1001\",\"project_binding_id\":\"11111111111111111111111111111111\",\"session_epoch\":\"22222222222222222222222222222222\",\"instance_id\":\"33333333333333333333333333333333\",\"runtime_nonce\":\"44444444444444444444444444444444\"},\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0},\"intervention_state_unknown\":false}"
+      nachher:
+        |      "wire": "{\"type\":\"heartbeat\",\"sequence\":91,\"state_revision\":12,\"capabilities\":{\"host_context_presence\":\"supported\",\"project_time_samples\":\"supported\",\"sample_accurate_automation\":\"unsupported\",\"presentation_latency\":\"unsupported\",\"aux_compare_pre\":\"unsupported\",\"aux_priority_sidechain\":\"unsupported\",\"contribution_aux\":\"unsupported\",\"float64_processing\":\"unsupported\",\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0},\"intervention_state_unknown\":false}"
+    Mutiert 25.09.2026 01:36:54: eq-copilot/fixtures/v3/heartbeat-wire-v1.json, SHA-256 mutiert 41ba16128ec3108933448b23c9a9c1ceb02e0715ee5bf727f2284ba64cd8f76e (git diff --numstat: 1	1	eq-copilot/fixtures/v3/heartbeat-wire-v1.json)
+    Kette (R-313-11): ein Heartbeat ohne adresse verletzt das Schema -> p0_json_mit_minor antwortet nicht -> N-01 (der Heartbeat wird beantwortet) faellt; A3 bestaetigt_neutral faellt mit.
+    Lauf unter der Mutation:
+      A4-s013: Exit 101, Fehlzeilen 3, 3 s, Rohausgabe F128a-mutiert-A4-s013.txt
+      A3: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe F128a-mutiert-A3.txt
+    Ruecknahme 25.09.2026 01:37:06: eq-copilot/fixtures/v3/heartbeat-wire-v1.json SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e - gleich dem Stand vor der Mutation
+      A4-s013: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe F128a-zurueck-A4-s013.txt
+      A3: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe F128a-zurueck-A3.txt
+    Erwartete Pruefungen unter der Mutation:
+      A4-s013: 'N-01: der Heartbeat wird beantwortet' gefallen: JA
+      A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/steady' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4-s013: Exit 0, Fehlzeilen 0
+      A3: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/fixtures/v3/heartbeat-wire-v1.json: (leer)
+    git diff --stat: (leer)
+    === A4-s013 unter der Mutation: gefallene Pruefungen (3) ===
+      test erster_heartbeat_mit_false_loest_das_sticky_unknown ... FAILED
+      thread 'erster_heartbeat_mit_false_loest_das_sticky_unknown' (137388) panicked at tests\sonde013_verdrahtung.rs:4708:5:
+      N-01: der Heartbeat wird beantwortet
+    === A4-s013 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A4-s013 nach der Ruecknahme: gefallene Pruefungen 0 ===
+    === A3 unter der Mutation: gefallene Pruefungen (1) ===
+        FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"supported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0},"intervention_state_unknown":false}
+    === A3 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+    === A3 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis: 3 Rotlaeufe an den Haelften mit Lauf, faellt an der Zusagezeile: JA

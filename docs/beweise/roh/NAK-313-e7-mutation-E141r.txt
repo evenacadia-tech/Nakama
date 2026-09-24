@@ -1,0 +1,48 @@
+NAK-313 Etappe 7 - Mutationslauf E141r: M-141 (3): rest nicht in die Meldung uebernommen
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf E141r - M-141 (3): rest nicht in die Meldung uebernommen - 25.09.2026 01:50:18 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+SHA-256 vorher 284b1aeede1424df6f2303ac52b774d8da45703555969083ba4f0757181d14e7; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\E141r-PluginEditor.cpp (SHA-256 284b1aeede1424df6f2303ac52b774d8da45703555969083ba4f0757181d14e7)
+Mutation ab Zeile 167 in eq-copilot/plugin/src/PluginEditor.cpp (Stand vor der Mutation):
+  vorher:
+    |                          + (e.rest.isEmpty() ? juce::String() : " (Rest: " + e.rest + ")");
+  nachher:
+    |                          ;   // MUTATION M-141 (3): rest nicht in der Meldung
+Mutiert 25.09.2026 01:50:18: eq-copilot/plugin/src/PluginEditor.cpp, SHA-256 mutiert 3cc49925909bdb1acfa5f481483bc69f22a603ecab9de042833f4f774f31c3a1 (git diff --numstat: 1	1	eq-copilot/plugin/src/PluginEditor.cpp)
+Kette (R-313-11): die Fehlermeldung nennt die verbliebene Temp-Datei nicht -> (3) faellt.
+Lauf unter der Mutation:
+  Bau EqCopShot: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopShot, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-E141r-mutiert.log)
+    EqCopShot: 01:50:24.292
+  B15: Binaer 01:50:24.292, Quelle 01:50:18.446, Binaer juenger: ja
+  B15: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe E141r-mutiert-B15.txt
+Ruecknahme 25.09.2026 01:50:32: eq-copilot/plugin/src/PluginEditor.cpp SHA-256 284b1aeede1424df6f2303ac52b774d8da45703555969083ba4f0757181d14e7 - gleich dem Stand vor der Mutation
+  Bau EqCopShot: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopShot, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-E141r-zurueck.log)
+    EqCopShot: 01:50:38.435
+  B15: Binaer 01:50:38.435, Quelle 01:50:32.614, Binaer juenger: ja
+  B15: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe E141r-zurueck-B15.txt
+Erwartete Pruefungen unter der Mutation:
+  B15: '313/M-141 meldung_nennt_die_datei (3)' gefallen: JA
+  B15: '313/M-141 meldung_nennt_die_datei (2)' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B15: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-E141p.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139u.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140g.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140l.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R140s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R142.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R143.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R144a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R144e.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R145.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/PluginEditor.cpp: (leer)
+git diff --stat: (leer)
+
+=== B15 unter der Mutation: gefallene Pruefungen (1) ===
+    FEHLER  313/M-141 meldung_nennt_die_datei (3) fehler: der Grund und der Rest der eigenen Temp-Datei  [Festhalten nicht möglich — Schreiben fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-shot-5464-m141\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120009.json.tmp-5464]
+=== B15 unter der Mutation: gruen gebliebene Pruefungen der Zeile (3) ===
+    ok      313/M-141 meldung_nennt_die_datei vorbedingung: Messdaten, Editor, Knopf  [Daten ja]
+    ok      313/M-141 meldung_nennt_die_datei (1) neu: die Meldung nennt die entstandene Datei  [Festgehalten (Vergleichslinie + Datei): C:\Users\phili\AppData\Local\Temp\nak313e7-shot-5464-m141\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005.json]
+    ok      313/M-141 meldung_nennt_die_datei (2) abgelehnt: in dieser Sekunde gibt es schon die Datei, nichts gespeichert  [Festhalten nicht möglich — in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-shot-5464-m141\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005.json; nichts gespeichert.]
+=== B15 nach der Ruecknahme: gefallene Pruefungen 0 ===

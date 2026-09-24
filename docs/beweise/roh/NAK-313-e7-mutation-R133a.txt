@@ -1,0 +1,92 @@
+NAK-313 Etappe 7 - Mutationslauf R133a: M-133 (a): die Injektion des Testordners uebergangen
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R133a - M-133 (a): die Injektion des Testordners uebergangen - 25.09.2026 01:38:56 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R133a-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+Mutation ab Zeile 1463 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+  vorher:
+    |    f.ordner      = testzugang::snapshotOrdnerFuerTest();
+  nachher:
+    |    // MUTATION M-133 (a): die Injektion des Testordners uebergangen
+Mutiert 25.09.2026 01:38:56: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 9400777c21ff074a607392306210f9b938289b8ffd64004bb7fa7ad0f8e0b3e9 (git diff --numstat: 1	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+Kette (R-313-11): ohne testzugang bleibt die Vorgabe des Testbaus, die Schranke -> jeder Export endet mit fehler (kein Zielordner) statt neu; kein Dateizugriff, die Ablage bleibt unberuehrt.
+Lauf unter der Mutation:
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R133a-mutiert.log)
+    EqCopBriefkastenTest: 01:39:02.263
+  B30e7: Binaer 01:39:02.263, Quelle 01:38:56.249, Binaer juenger: ja
+  B30e7: Exit 1, Fehlzeilen 30, 12 s, Rohausgabe R133a-mutiert-B30e7.txt
+Ruecknahme 25.09.2026 01:39:14: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+  Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R133a-zurueck.log)
+    EqCopBriefkastenTest: 01:39:20.251
+  B30e7: Binaer 01:39:20.251, Quelle 01:39:14.199, Binaer juenger: ja
+  B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R133a-zurueck-B30e7.txt
+Erwartete Pruefungen unter der Mutation:
+  B30e7: '313/M-134 doppelklick_gleiche_sekunde: erster neu' gefallen: JA
+  B30e7: 'M-39 festhalten_bytegleich' gefallen: JA
+  B30e7: '313/M-133 nie_in_der_nutzerablage M-134' gruen geblieben: JA
+  B30e7: '313/M-133 nie_in_der_nutzerablage ohne Testordner' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B30e7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+git diff --stat: (leer)
+
+=== B30e7 unter der Mutation: gefallene Pruefungen (30) ===
+  [ROT] M-39 festhalten_bytegleich [Buehne: der Knopfweg schrieb nicht: kein Zielordner]
+  [ROT] 313/M-134 doppelklick_gleiche_sekunde: erster neu [fehler grund=kein Zielordner]
+  [ROT] 313/M-134 doppelklick_gleiche_sekunde: zweiter abgelehnt, vorhanden ist die erste Datei [fehler grund=kein Zielordner]
+  [ROT] 313/M-134 doppelklick_gleiche_sekunde: die erste Datei bytegleich, keine zweite Datei [Dateien 0]
+  [ROT] 313/M-134 doppelklick_gleiche_sekunde: keine Temp-Datei bleibt (die eigene entfernt, loeschungen + 1) [Existenz 0, Lese 0, Bytes 0, Anlegen 0, Schreib 0, Groesse 0, Umbenennen 0, Ordner 0, Loesch 0]
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: genau einer neu, der andere abgelehnt [erster fehler grund=kein Zielordner | zweiter fehler grund=kein Zielordner]
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-135 zwei_instanzen_gleicher_name: Name snapshot-20260925-120005-Bass.json
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: genau einer neu, der andere abgelehnt [erster fehler grund=kein Zielordner | zweiter fehler grund=kein Zielordner]
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-136 leeres_label_gleiche_sekunde: Name snapshot-20260925-120005.json
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: genau einer neu, der andere abgelehnt [erster fehler grund=kein Zielordner | zweiter fehler grund=kein Zielordner]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: Name snapshot-20260925-120005-Bass.json
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: genau einer neu, der andere abgelehnt [erster fehler grund=kein Zielordner | zweiter fehler grund=kein Zielordner]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id , Dateien 0]
+  [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: Name snapshot-20260925-120005-Bass.json
+  [ROT] 313/M-138 uhr_zurueckgestellt: neu, neu, abgelehnt [fehler grund=kein Zielordner | fehler grund=kein Zielordner | fehler grund=kein Zielordner]
+  [ROT] 313/M-138 uhr_zurueckgestellt: die erste Datei bleibt bytegleich [Dateien 0]
+  [ROT] 313/M-139 sekundengrenze (a) 05,000 und 05,999: Kollision, abgelehnt [fehler grund=kein Zielordner | fehler grund=kein Zielordner]
+  [ROT] 313/M-139 sekundengrenze (a) 05,000 und 05,999: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 2, created_utc ]
+  [ROT] 313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu [fehler grund=kein Zielordner | fehler grund=kein Zielordner]
+  [ROT] 313/M-139 sekundengrenze (b) 05,999 und 06,000: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 2, created_utc  / ]
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (1) schreiben meldet Fehler [fehler grund=kein Zielordner, Loeschungen 0, Temp-Dateien 0]
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (2) spuelen meldet Fehler [fehler grund=kein Zielordner, Loeschungen 0, Temp-Dateien 0]
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (3) Groesse weicht ab [fehler grund=kein Zielordner, Loeschungen 0, Temp-Dateien 0]
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (4) umbenennen scheitert, Zielname fehlt [fehler grund=kein Zielordner, Loeschungen 0, Temp-Dateien 0]
+  [ROT] 313/M-140 teilschreibfehler_ist_fehler (5) wie (1), loesche scheitert [fehler grund=kein Zielordner, Loeschungen 0, Temp-Dateien 0]
+  [ROT] 313/M-142 export_mit_uebergebenem_snapshot: Gen ohne Messdaten, m mit Daten - neu, die Datei traegt m [fehler grund=kein Zielordner, Engine leer ja]
+  [ROT] 313/M-144 ergebnistyp_vollstaendig: vier Arten, jedes Ergebnis mit Pfad oder Grund, ersetzt null Mal [neu 0, ersetzt 0, abgelehnt 0, fehler 29, ohne Pfad oder Grund 0]
+=== B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (16) ===
+  [ok]  313/M-133 vorbedingung: ein Gen mit Messdaten
+  [ok]  313/M-133 nie_in_der_nutzerablage ohne Testordner: fehler, bevor das Dateisystem beruehrt wird [fehler grund=kein Zielordner, Aufrufe 0]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-134: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-2-m134]
+  [ok]  313/M-133 nie_in_der_nutzerablage zwei_instanzen_gleicher_name: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-3-m135]
+  [ok]  313/M-133 nie_in_der_nutzerablage leeres_label_gleiche_sekunde: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-4-m136]
+  [ok]  313/M-133 nie_in_der_nutzerablage gleich_nach_bereinigung Bass/bass: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-5-m137a]
+  [ok]  313/M-133 nie_in_der_nutzerablage gleich_nach_bereinigung Bass!/Bass?: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-6-m137b]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-138: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-7-m138]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-139 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-8-m139a]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-139 (b): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-9-m139b]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (1) schreiben meldet Fehler: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-10-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (2) spuelen meldet Fehler: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-11-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (3) Groesse weicht ab: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-12-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (4) umbenennen scheitert, Zielname fehlt: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-13-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-140 (5) wie (1), loesche scheitert: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-14-m140]
+  [ok]  313/M-133 nie_in_der_nutzerablage M-142 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-245956-15-m142a]
+=== B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===

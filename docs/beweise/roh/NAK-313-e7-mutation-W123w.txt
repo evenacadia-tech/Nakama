@@ -1,0 +1,57 @@
+NAK-313 Etappe 7 - Mutationslauf W123w: M-123 Wache der uebrigen neun Bits: float64_processing im Schreiber auf supported
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W123w - M-123 Wache der uebrigen neun Bits: float64_processing im Schreiber auf supported - 25.09.2026 01:29:39 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+SHA-256 vorher 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\W123w-Intern.h (SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322)
+Mutation ab Zeile 386 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+  vorher:
+    |           "\"float64_processing\":\"unsupported\","
+  nachher:
+    |           "\"float64_processing\":\"supported\","   // MUTATION M-123: Wache der neun Bits
+Mutiert 25.09.2026 01:29:39: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert 9492c20ef33e6344872d5b06e32d7ef9c42fc2da6c2d8fff1e67c313f7ddde87 (git diff --numstat: 1	1	eq-copilot/plugin/core/ipc/controlclient/Intern.h)
+Kette (R-313-11): Paar 8 meldet supported statt unsupported -> der Zehnervergleich faellt an Paar 8; 313/M-124 float64_processing faellt mit.
+Lauf unter der Mutation:
+  Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W123w-mutiert.log)
+    EqCopIpcTest: 01:30:47.982
+  B10e7: Binaer 01:30:47.982, Quelle 01:29:39.848, Binaer juenger: ja
+  B10e7: Exit 1, Fehlzeilen 3, 0 s, Rohausgabe W123w-mutiert-B10e7.txt
+Ruecknahme 25.09.2026 01:30:48: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 9e1de92b306edf6e00b111ba1b774afda2c3ed35dc40702d2bdc14f3206d9322 - gleich dem Stand vor der Mutation
+  Bau EqCopIpcTest: Exit 0 (BAU Exit 0, 68 s, Ziele EqCopIpcTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-W123w-zurueck.log)
+    EqCopIpcTest: 01:31:56.279
+  B10e7: Binaer 01:31:56.279, Quelle 01:30:48.458, Binaer juenger: ja
+  B10e7: Exit 0, Fehlzeilen 0, 0 s, Rohausgabe W123w-zurueck-B10e7.txt
+Erwartete Pruefungen unter der Mutation:
+  B10e7: '313/M-123 binary_telemetry_supported Paar 8: float64_processing=unsupported' gefallen: JA
+  B10e7: '313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B10e7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/plugin/core/ipc/controlclient/Intern.h: (leer)
+git diff --stat: (leer)
+
+=== B10e7 unter der Mutation: gefallene Pruefungen (3) ===
+    FEHLER  313/M-123 binary_telemetry_supported Paar 8: float64_processing=unsupported  [float64_processing=supported]
+    FEHLER  313/M-124 bericht_gleich_schreiber float64_processing: Bericht und Schreiber gleich  [Schreiber supported, Bericht unsupported]
+  FEHLER — 23 Pruefungen, 2 Fehler
+=== B10e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (10) ===
+    ok      313/M-123 binary_telemetry_supported: capabilitiesJson() ist streng lesbar und traegt zehn Schluessel  [10 Schluessel]
+    ok      313/M-123 binary_telemetry_supported Paar 1: host_context_presence=supported  [host_context_presence=supported]
+    ok      313/M-123 binary_telemetry_supported Paar 2: project_time_samples=supported  [project_time_samples=supported]
+    ok      313/M-123 binary_telemetry_supported Paar 3: sample_accurate_automation=unsupported  [sample_accurate_automation=unsupported]
+    ok      313/M-123 binary_telemetry_supported Paar 4: presentation_latency=unsupported  [presentation_latency=unsupported]
+    ok      313/M-123 binary_telemetry_supported Paar 5: aux_compare_pre=unsupported  [aux_compare_pre=unsupported]
+    ok      313/M-123 binary_telemetry_supported Paar 6: aux_priority_sidechain=unsupported  [aux_priority_sidechain=unsupported]
+    ok      313/M-123 binary_telemetry_supported Paar 7: contribution_aux=unsupported  [contribution_aux=unsupported]
+    ok      313/M-123 binary_telemetry_supported Paar 9: binary_telemetry=supported  [binary_telemetry=supported]
+    ok      313/M-123 binary_telemetry_supported Paar 10: remote_control=unsupported  [remote_control=unsupported]
+=== B10e7 nach der Ruecknahme: gefallene Pruefungen 0 ===

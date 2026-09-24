@@ -1,0 +1,176 @@
+NAK-313 Etappe 7 - Rotbeweis M-139 (Manifest docs/beweise/NAK-313.md §6.6, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits der Etappe 7); Mutationslaeufe je Lauf mit HEAD in seiner Mutationsdatei; Gegenprobe am
+Basisstand 25.09.2026 gegen den Produktcode von 4aee3eec (NAK-313-e7-basisstand.txt).
+
+Matrixzeile M-139 - T3-14-04 - R-313-10 - Kalendersekunde
+Zustand: (a) 05,000 und 05,999; (b) 05,999 und 06,000
+Ereignis: je zwei Exporte
+Zusage: (a) abgelehnt; (b) zwei neu; je Export Name und created_utc aus derselben Ablesung
+Bein: B30: 313/M-139 sekundengrenze <Fall>
+
+--- Haelfte 1: (a) - Etikett: heute rot (gelesen) ---
+Am Basisstand: rot: die zweite Datei ersetzt die erste (Analyse.cpp:1451)
+  Mutation R134 (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-R134.txt):
+    Rotlauf R134 - M-134 (und M-135 bis M-139 (a), wie M-134): umbenennen mit Ersetzen (Ziel loeschen, dann umbenennen) - 25.09.2026 01:40:09 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+    SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R134-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+    Mutation ab Zeile 1585 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+      vorher:
+        |    else if (fs.benenneUmOhneErsetzen (temp, ziel))
+      nachher:
+        |    else if ((void) fs.loesche (ziel), fs.benenneUmOhneErsetzen (temp, ziel))   // MUTATION M-134: umbenennen mit Ersetzen
+    Mutiert 25.09.2026 01:40:09: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 745682e8543141ad6b6a3ec7293da072890f8d4b3e01ec60be0b2567de1aef85 (git diff --numstat: 1	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+    Kette (R-313-11): vor dem Umbenennen wird das Ziel geloescht -> der zweite Export derselben Sekunde ersetzt die erste Datei und endet neu -> abgelehnt und die Bytegleichheit der ersten Datei fallen in M-134, M-135, M-136, M-137, M-138 und M-139 (a).
+    Lauf unter der Mutation:
+      Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R134-mutiert.log)
+        EqCopBriefkastenTest: 01:40:16.130
+      B30e7: Binaer 01:40:16.130, Quelle 01:40:09.654, Binaer juenger: ja
+      B30e7: Exit 1, Fehlzeilen 16, 12 s, Rohausgabe R134-mutiert-B30e7.txt
+    Ruecknahme 25.09.2026 01:40:28: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+      Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R134-zurueck.log)
+        EqCopBriefkastenTest: 01:40:34.174
+      B30e7: Binaer 01:40:34.174, Quelle 01:40:28.109, Binaer juenger: ja
+      B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R134-zurueck-B30e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B30e7: '313/M-134 doppelklick_gleiche_sekunde: zweiter abgelehnt' gefallen: JA
+      B30e7: '313/M-134 doppelklick_gleiche_sekunde: die erste Datei bytegleich' gefallen: JA
+      B30e7: '313/M-135 zwei_instanzen_gleicher_name: genau einer neu' gefallen: JA
+      B30e7: '313/M-136 leeres_label_gleiche_sekunde: genau einer neu' gefallen: JA
+      B30e7: '313/M-137 gleich_nach_bereinigung Bass/bass: genau einer neu' gefallen: JA
+      B30e7: '313/M-137 gleich_nach_bereinigung Bass!/Bass?: genau einer neu' gefallen: JA
+      B30e7: '313/M-138 uhr_zurueckgestellt: neu, neu, abgelehnt' gefallen: JA
+      B30e7: '313/M-139 sekundengrenze (a) 05,000 und 05,999: Kollision, abgelehnt' gefallen: JA
+      B30e7: '313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B30e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+    git diff --stat: (leer)
+    === B30e7 unter der Mutation: gefallene Pruefungen (16) ===
+      [ROT] 313/M-134 doppelklick_gleiche_sekunde: zweiter abgelehnt, vorhanden ist die erste Datei [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ROT] 313/M-134 doppelklick_gleiche_sekunde: die erste Datei bytegleich, keine zweite Datei [Dateien 1]
+      [ROT] 313/M-135 zwei_instanzen_gleicher_name: genau einer neu, der andere abgelehnt [erster neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-3-m135\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | zweiter neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-3-m135\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ROT] 313/M-135 zwei_instanzen_gleicher_name: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7b2, Dateien 1]
+      [ROT] 313/M-136 leeres_label_gleiche_sekunde: genau einer neu, der andere abgelehnt [erster neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-4-m136\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005.json | zweiter neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-4-m136\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005.json]
+      [ROT] 313/M-136 leeres_label_gleiche_sekunde: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7b2, Dateien 1]
+      [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: genau einer neu, der andere abgelehnt [erster neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-5-m137a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | zweiter neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-5-m137a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-bass.json]
+      [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7b2, Dateien 1]
+      [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: genau einer neu, der andere abgelehnt [erster neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-6-m137b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | zweiter neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-6-m137b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: die Datei des Gewinners bytegleich zu seinem Snapshot [sensor_id e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7b2, Dateien 1]
+      [ROT] 313/M-138 uhr_zurueckgestellt: neu, neu, abgelehnt [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120007-Bass.json | neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ROT] 313/M-138 uhr_zurueckgestellt: die erste Datei bleibt bytegleich [Dateien 2]
+      [ROT] 313/M-139 sekundengrenze (a) 05,000 und 05,999: Kollision, abgelehnt [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ROT] 313/M-139 sekundengrenze (a) 05,000 und 05,999: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 2, created_utc 2026-09-25T12:00:05.999+02:00]
+      [ROT] 313/M-140 teilschreibfehler_ist_fehler (4) umbenennen scheitert, Zielname fehlt [fehler grund=Umbenennen fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-87372-13-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json, Loeschungen 2, Temp-Dateien 0]
+      [ROT] 313/M-144 ergebnistyp_vollstaendig: vier Arten, jedes Ergebnis mit Pfad oder Grund, ersetzt null Mal [neu 23, ersetzt 0, abgelehnt 0, fehler 6, ohne Pfad oder Grund 0]
+    === B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (12) ===
+      [ok]  313/M-134 doppelklick_gleiche_sekunde: erster neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ok]  313/M-134 doppelklick_gleiche_sekunde: keine Temp-Datei bleibt (die eigene entfernt, loeschungen + 1) [Existenz 3, Lese 0, Bytes 0, Anlegen 1, Schreib 1, Groesse 1, Umbenennen 1, Ordner 0, Loesch 1]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-134: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-87372-2-m134]
+      [ok]  313/M-135 zwei_instanzen_gleicher_name: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-87372-3-m135\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ok]  313/M-136 leeres_label_gleiche_sekunde: Name snapshot-20260925-120005.json [C:\Users\phili\AppData\Local\Temp\nak313e7-87372-4-m136\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005.json]
+      [ok]  313/M-137 gleich_nach_bereinigung Bass/bass: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-87372-5-m137a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ok]  313/M-137 gleich_nach_bereinigung Bass!/Bass?: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-87372-6-m137b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-138: jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-87372-7-m138]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-139 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-87372-8-m139a]
+      [ok]  313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-87372-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120006-Bass.json]
+      [ok]  313/M-139 sekundengrenze (b) 05,999 und 06,000: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 2, created_utc 2026-09-25T12:00:05.999+02:00 / 2026-09-25T12:00:06.000+02:00]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-139 (b): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-87372-9-m139b]
+    === B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: (b) - Etikett: Regressionswache ---
+Am Basisstand: gruen: verschiedene Sekunden, verschiedene Namen
+  Mutation R139s (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-R139s.txt):
+    Rotlauf R139s - M-139 (b): die Sekunde im Namen auf 00 - 25.09.2026 01:42:02 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+    SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R139s-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+    Mutation ab Zeile 1667 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+      vorher:
+        |    v.name = ("snapshot-" + zeit.formatted ("%Y%m%d-%H%M%S")
+      nachher:
+        |    v.name = ("snapshot-" + zeit.formatted ("%Y%m%d-%H%M00")   // MUTATION M-139 (b): Sekunde auf 00
+    Mutiert 25.09.2026 01:42:02: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 656d6888ae6a9b7448a5dcef01ba5fcdd1cd0e19f616d79ad79bc78e681dfa01 (git diff --numstat: 1	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+    Kette (R-313-11): 05,999 und 06,000 ergeben denselben Namen ...-120000 -> der zweite Export wird abgelehnt -> (b) zwei neu faellt.
+    Lauf unter der Mutation:
+      Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 7 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R139s-mutiert.log)
+        EqCopBriefkastenTest: 01:42:09.187
+      B30e7: Binaer 01:42:09.187, Quelle 01:42:02.383, Binaer juenger: ja
+      B30e7: Exit 1, Fehlzeilen 11, 12 s, Rohausgabe R139s-mutiert-B30e7.txt
+    Ruecknahme 25.09.2026 01:42:21: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+      Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R139s-zurueck.log)
+        EqCopBriefkastenTest: 01:42:27.171
+      B30e7: Binaer 01:42:27.171, Quelle 01:42:21.144, Binaer juenger: ja
+      B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R139s-zurueck-B30e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B30e7: '313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B30e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+    git diff --stat: (leer)
+    === B30e7 unter der Mutation: gefallene Pruefungen (11) ===
+      [ROT] 313/M-134 doppelklick_gleiche_sekunde: erster neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json]
+      [ROT] 313/M-134 doppelklick_gleiche_sekunde: zweiter abgelehnt, vorhanden ist die erste Datei [abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-383680-2-m134\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json; nichts gespeichert.]
+      [ROT] 313/M-135 zwei_instanzen_gleicher_name: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-383680-3-m135\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json]
+      [ROT] 313/M-136 leeres_label_gleiche_sekunde: Name snapshot-20260925-120005.json [C:\Users\phili\AppData\Local\Temp\nak313e7-383680-4-m136\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000.json]
+      [ROT] 313/M-137 gleich_nach_bereinigung Bass/bass: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-383680-5-m137a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json]
+      [ROT] 313/M-137 gleich_nach_bereinigung Bass!/Bass?: Name snapshot-20260925-120005-Bass.json [C:\Users\phili\AppData\Local\Temp\nak313e7-383680-6-m137b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json]
+      [ROT] 313/M-138 uhr_zurueckgestellt: neu, neu, abgelehnt [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-383680-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json; nichts gespeichert. | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-383680-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json; nichts gespeichert.]
+      [ROT] 313/M-138 uhr_zurueckgestellt: die erste Datei bleibt bytegleich [Dateien 1]
+      [ROT] 313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-383680-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json; nichts gespeichert.]
+      [ROT] 313/M-139 sekundengrenze (b) 05,999 und 06,000: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 2, created_utc 2026-09-25T12:00:05.999+02:00 / ]
+      [ROT] 313/M-140 teilschreibfehler_ist_fehler (5) wie (1), loesche scheitert [fehler rest=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-14-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json.tmp-383680 grund=Schreiben fehlgeschlagen: C:\Users\phili\AppData\Local\Temp\nak313e7-383680-14-m140\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json.tmp-383680, Loeschungen 1, Temp-Dateien 1]
+    === B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+      [ok]  313/M-139 sekundengrenze (a) 05,000 und 05,999: Kollision, abgelehnt [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-383680-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-383680-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120000-Bass.json; nichts gespeichert.]
+      [ok]  313/M-139 sekundengrenze (a) 05,000 und 05,999: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 2, created_utc 2026-09-25T12:00:05.000+02:00]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-139 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-383680-8-m139a]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-139 (b): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-383680-9-m139b]
+    === B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 3: eine Ablesung - Etikett: heute nicht messbar ---
+Am Basisstand: nicht messbar: keine Testuhr; am Basis-SHA zwei Ablesungen (Analyse.cpp:1430, :1447)
+  Mutation R139u (Protokoll und alle Pruefzeilen: NAK-313-e7-mutation-R139u.txt):
+    Rotlauf R139u - M-139 eine Ablesung: created_utc aus einer zweiten Uhrablesung - 25.09.2026 01:42:39 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+    Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+    SHA-256 vorher 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\R139u-Analyse.cpp (SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e)
+    Mutation ab Zeile 1669 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+      vorher:
+        |    v.bytes = snapshotBytes (snapshotObjektBauen (m, zeit.toISO8601 (true)));
+      nachher:
+        |    v.bytes = snapshotBytes (snapshotObjektBauen (m, juce::Time (f.uhr->jetztUtcMs()).toISO8601 (true)));   // MUTATION M-139: zweite Ablesung
+    Mutiert 25.09.2026 01:42:39: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 58af0952f93072c3498e3fb0c78217a94bf6d149f2e1033cebbb3165636c4bbf (git diff --numstat: 1	1	eq-copilot/plugin/src/prozessor/Analyse.cpp)
+    Kette (R-313-11): je Export zwei Ablesungen -> die Testuhr liefert fuer created_utc den naechsten Wert -> Name und created_utc stammen aus verschiedenen Ablesungen, die Ablesungen sind 4 statt 2 -> die Pruefung faellt in (a) und (b).
+    Lauf unter der Mutation:
+      Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R139u-mutiert.log)
+        EqCopBriefkastenTest: 01:42:45.903
+      B30e7: Binaer 01:42:45.903, Quelle 01:42:39.484, Binaer juenger: ja
+      B30e7: Exit 1, Fehlzeilen 4, 12 s, Rohausgabe R139u-mutiert-B30e7.txt
+    Ruecknahme 25.09.2026 01:42:58: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 395e451ba12df828280b86f97ec88dc933ef1923ec18ede7b17a52fb2afe800e - gleich dem Stand vor der Mutation
+      Bau EqCopBriefkastenTest: Exit 0 (BAU Exit 0, 6 s, Ziele EqCopBriefkastenTest, Log C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\bau-R139u-zurueck.log)
+        EqCopBriefkastenTest: 01:43:04.528
+      B30e7: Binaer 01:43:04.528, Quelle 01:42:58.017, Binaer juenger: ja
+      B30e7: Exit 0, Fehlzeilen 0, 12 s, Rohausgabe R139u-zurueck-B30e7.txt
+    Erwartete Pruefungen unter der Mutation:
+      B30e7: '313/M-139 sekundengrenze (a) 05,000 und 05,999: Name und created_utc aus derselben Ablesung' gefallen: JA
+      B30e7: '313/M-139 sekundengrenze (b) 05,999 und 06,000: Name und created_utc aus derselben Ablesung' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B30e7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-F128a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R129.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R130b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R132n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R133b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R134t.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R136n.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R139s.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+    git diff --stat -- eq-copilot/plugin/src/prozessor/Analyse.cpp: (leer)
+    git diff --stat: (leer)
+    === B30e7 unter der Mutation: gefallene Pruefungen (4) ===
+      [ROT] 313/M-138 uhr_zurueckgestellt: neu, neu, abgelehnt [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-381688-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json; nichts gespeichert. | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-381688-7-m138\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json; nichts gespeichert.]
+      [ROT] 313/M-138 uhr_zurueckgestellt: die erste Datei bleibt bytegleich [Dateien 1]
+      [ROT] 313/M-139 sekundengrenze (a) 05,000 und 05,999: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 4, created_utc 2026-09-25T12:00:05.999+02:00]
+      [ROT] 313/M-139 sekundengrenze (b) 05,999 und 06,000: Name und created_utc aus derselben Ablesung, genau eine je Export [Ablesungen 4, created_utc 2026-09-25T12:00:06.000+02:00 / 2026-09-25T12:00:06.000+02:00]
+    === B30e7 unter der Mutation: gruen gebliebene Pruefungen der Zeile (4) ===
+      [ok]  313/M-139 sekundengrenze (a) 05,000 und 05,999: Kollision, abgelehnt [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | abgelehnt vorhanden=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json grund=in dieser Sekunde gibt es schon C:\Users\phili\AppData\Local\Temp\nak313e7-381688-8-m139a\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json; nichts gespeichert.]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-139 (a): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-381688-8-m139a]
+      [ok]  313/M-139 sekundengrenze (b) 05,999 und 06,000: zwei neu [neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120005-Bass.json | neu datei=C:\Users\phili\AppData\Local\Temp\nak313e7-381688-9-m139b\evenacadia\EQ-Copilot\snapshots\snapshot-20260925-120006-Bass.json]
+      [ok]  313/M-133 nie_in_der_nutzerablage M-139 (b): jeder Zugriff und jeder gemeldete Pfad unter dem Testordner [ausserhalb 0, Testordner C:\Users\phili\AppData\Local\Temp\nak313e7-381688-9-m139b]
+    === B30e7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+Ergebnis: 3 Rotlaeufe an den Haelften mit Lauf, faellt an der Zusagezeile: JA

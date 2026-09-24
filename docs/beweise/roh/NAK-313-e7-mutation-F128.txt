@@ -1,0 +1,40 @@
+NAK-313 Etappe 7 - Mutationslauf F128: M-128: ein Wiretext (steady) der Byteinstanz bleibt auf unsupported
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf F128 - M-128: ein Wiretext (steady) der Byteinstanz bleibt auf unsupported - 25.09.2026 01:36:38 - HEAD d64680cf700ba04e42f51234980a912f24a5b121
+Datei eq-copilot/fixtures/v3/heartbeat-wire-v1.json (LF)
+SHA-256 vorher 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\2fdbd2d8\tmp\rot\sicherung\F128-heartbeat-wire-v1.json (SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e)
+Mutation ab Zeile 47 in eq-copilot/fixtures/v3/heartbeat-wire-v1.json (Stand vor der Mutation):
+  vorher:
+    |\"binary_telemetry\":\"supported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+  nachher:
+    |\"binary_telemetry\":\"unsupported\",\"remote_control\":\"unsupported\"},\"zaehler\":{\"frames_dropped\":0,\"parse_errors\":0,\"queue_overflows\":0}}"
+Mutiert 25.09.2026 01:36:38: eq-copilot/fixtures/v3/heartbeat-wire-v1.json, SHA-256 mutiert c75fde0befecf9e73571900259c83ba2f2b55a4dab5f09b7b7db1afe0c32b8d2 (git diff --numstat: 1	1	eq-copilot/fixtures/v3/heartbeat-wire-v1.json)
+Kette (R-313-11): der Schreiber sagt supported, der Wiretext steady unsupported -> der Bytevergleich steady faellt.
+Lauf unter der Mutation:
+  A3: Exit 1, Fehlzeilen 1, 8 s, Rohausgabe F128-mutiert-A3.txt
+Ruecknahme 25.09.2026 01:36:46: eq-copilot/fixtures/v3/heartbeat-wire-v1.json SHA-256 2605750fe7ad91c612ff5bace8adb9f4ba4b5f3c177aec100eb1fa97d03fa43e - gleich dem Stand vor der Mutation
+  A3: Exit 0, Fehlzeilen 0, 8 s, Rohausgabe F128-zurueck-A3.txt
+Erwartete Pruefungen unter der Mutation:
+  A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/steady' gefallen: JA
+  A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/bestaetigt_neutral' gruen geblieben: JA
+  A3: 'heartbeat_ist_bytegleich_zur_dritten_instanz/unbekannt' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A3: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e7-basisstand.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R125b.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126d.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126k.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R126r.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-R127.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123a.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W123w.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W124.txt | ?? docs/beweise/roh/NAK-313-e7-mutation-W125c.txt | ?? nimbalyst-local/
+git diff --stat -- eq-copilot/fixtures/v3/heartbeat-wire-v1.json: (leer)
+git diff --stat: (leer)
+
+=== A3 unter der Mutation: gefallene Pruefungen (1) ===
+    FEHLER  B04: heartbeat_ist_bytegleich_zur_dritten_instanz/steady - der VOLLSTAENDIGE Text stimmt, nicht nur das Interventionsfeld (R3a)  [gebaut:   {"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1111111111-2222222222-3333333333-1001","project_binding_id":"11111111111111111111111111111111","session_epoch":"22222222222222222222222222222222","instance_id":"33333333333333333333333333333333","runtime_nonce":"44444444444444444444444444444444"},"sequence":91,"state_revision":12,"capabilities":{"host_context_presence":"supported","project_time_samples":"supported","sample_accurate_automation":"unsupported","presentation_latency":"unsupported","aux_compare_pre":"unsupported","aux_priority_sidechain":"unsupported","contribution_aux":"unsupported","float64_processing":"unsupported","binary_telemetry":"supported","remote_control":"unsupported"},"zaehler":{"frames_dropped":0,"parse_errors":0,"queue_overflows":0}}
+=== A3 unter der Mutation: gruen gebliebene Pruefungen der Zeile (0) ===
+=== A3 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -1,0 +1,128 @@
+NAK-313 Etappe 4 - Rotbeweis M-47 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-47 - T3-03-04 - R-313-6 - C++-Vertragsleser B3c
+Zustand: Fixturekorpus mit der Klasse parser_lehnt_ab.
+Ereignis: Korpusschleife fahreKorpus.
+Zusage: Jedes parser_lehnt_ab-Fixture faellt am strengen Lauf ueber dieselben Rohbytes und erreicht die Engine nie; alle uebrigen Urteile und Verletzungsmengen unveraendert, auch das tiefste gueltige Fixture.
+Bein: B3c (EqCopSchemaTest), eq-copilot/plugin/tests/SchemaTestMain.cpp: 313/M-47 korpus_parser_lehnt_ab <Fixture>; 'Korpus klassifiziert wie das Manifest'.
+
+--- Haelfte 1: parser_lehnt_ab - Etikett: heute rot ---
+Pruefung: 313/M-47 korpus_parser_lehnt_ab je Fixture
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === B3c EqCopSchemaTest (Exit 1; Korpuslauf wie vor der Etappe) ===
+  [ROT]  ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-nachspann.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-schlusskomma.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-type-doppelt-fremd-zuletzt.json: Verletzungsmenge weicht ab
+  [ROT]  ungueltig/parser-type-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-type-escape-alias.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-unbekanntes-escape.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-zweites-dokument.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  -> am Basisstand: rot (Korpuslauf wie vor der Etappe: die Engine sagt gueltig)
+  Mutation B3 (eq-copilot/plugin/tests/SchemaTestMain.cpp - in der Korpusschleife von B3c den strengen Lauf entfernt), Stand 0fce3f26; Bein B3c (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-B3.txt):
+    Rotlauf B3 - in der Korpusschleife von B3c den strengen Lauf entfernt - 24.09.2026 09:47:02 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/tests/SchemaTestMain.cpp (LF)
+    SHA-256 vorher a107362396982c6c2e195139304e03670bb6fab3b9b5ceeb8bd44390adb3ef25; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\B3-SchemaTestMain.cpp (SHA-256 a107362396982c6c2e195139304e03670bb6fab3b9b5ceeb8bd44390adb3ef25)
+    Mutation 1 ab Zeile 572 (Stand vor der Mutation):
+      vorher:
+        |         const bool strengGelesen = nakama::kanon::lies (
+        |             juce::String::fromUTF8 (static_cast<const char*> (rohbytes.getData()),
+        |                                     static_cast<int> (rohbytes.getSize())),
+        |             streng, strengGrund);
+        | 
+      nachher:
+        |         const bool strengGelesen = true; (void) streng;   // MUTATION B3 (M-47): der strenge Lauf entfernt
+        | 
+    Mutiert 24.09.2026 09:47:02, SHA-256 mutiert b1e775616c0141f073c8312f790828bb2d237c26138f3409992b38d3280c828d
+    Kette (R-313-11): Ohne den strengen Lauf gilt jedes Fixture als gelesen -> kein parser_lehnt_ab-Fixture faellt am Tor -> die Pruefung 313/M-47 korpus_parser_lehnt_ab ist fuer jedes der elf Fixtures rot.
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 09:47:05.702, Quelle 09:47:02.211, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 11, Rohausgabe rot-B3-mutiert-B3c.txt
+    Ruecknahme 24.09.2026 09:47:06: SHA-256 a107362396982c6c2e195139304e03670bb6fab3b9b5ceeb8bd44390adb3ef25 - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 09:47:09.745, Quelle 09:47:06.232, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-B3-zurueck-B3c.txt
+      B3c: '[ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-nachspann.json' in der Ausgabe: JA
+      B3c: '[ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-passend-zuletzt.json' in der Ausgabe: JA
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (313/M-47 korpus_parser_lehnt_ab je Fixture):
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-nachspann.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-schlusskomma.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-fremd-zuletzt.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-passend-zuletzt.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-escape-alias.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-unbekanntes-escape.json
+      gefallen: [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-zweites-dokument.json
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (0 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: 162 bestanden, 11 gescheitert)
+    nach der Ruecknahme: B3c 173 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+--- Haelfte 2: uebrige Urteile - Etikett: Regressionswache ---
+Pruefung: Korpus klassifiziert wie das Manifest
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === B3c EqCopSchemaTest (Exit 1; Korpuslauf wie vor der Etappe) ===
+  [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [11 Abweichungen]
+  -> am Basisstand: rot am Basisstand nur wegen der neuen Fixtures; die bestehenden Urteile gruen
+  Mutation K4 (eq-copilot/plugin/state/NakamaKanon.cpp - die Tiefengrenze des Objektzweigs in kanon::lies auf 4), Stand 0fce3f26; Bein B3c (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-K4.txt):
+    Rotlauf K4 - die Tiefengrenze des Objektzweigs in kanon::lies auf 4 - 24.09.2026 09:47:10 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/state/NakamaKanon.cpp (LF)
+    SHA-256 vorher aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\K4-NakamaKanon.cpp (SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c)
+    Mutation 1 ab Zeile 350 (Stand vor der Mutation):
+      vorher:
+        |             if (++tiefe > 64) return fehl ("zu tief verschachtelt");
+        |             aus = Wert::leeresObjekt();
+        | 
+      nachher:
+        |             if (++tiefe > 4) return fehl ("zu tief verschachtelt");   // MUTATION K4 (M-47): Grenze 4
+        |             aus = Wert::leeresObjekt();
+        | 
+    Mutiert 24.09.2026 09:47:10, SHA-256 mutiert 2e933d983ab8818de8d31594dd498eee06f0532bf8ccc50867fe0375e6707584
+    Kette (R-313-11): Mit der Grenze 4 faellt jedes Dokument mit einem Objekt auf der fuenften Ebene am Tor: gueltig/session_snapshot.json (Wurzel, mitglieder, Mitglied, probe_descriptor, adresse) -> 'der strenge Lauf lehnt ein Fixture ab' -> Abweichung -> 'Korpus klassifiziert wie das Manifest' rot.
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 09:47:13.343, Quelle 09:47:10.540, Binaer juenger: ja
+      B3c: Exit 1, Fehlzeilen 83, Rohausgabe rot-K4-mutiert-B3c.txt
+    Ruecknahme 24.09.2026 09:47:13: SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 09:47:16.842, Quelle 09:47:13.857, Binaer juenger: ja
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-K4-zurueck-B3c.txt
+      B3c: '[ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab' in der Ausgabe: JA
+      B3c: '[ROT]  Korpus klassifiziert wie das Manifest' in der Ausgabe: JA
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Korpus klassifiziert wie das Manifest):
+      gefallen: [ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      gefallen: [ROT]  Korpus klassifiziert wie das Manifest (333 Fixtures)  [81 Abweichungen]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (81 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - [ROT]  gueltig/finding-33-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/finding-64-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/finding-ausschlussgrund-master-duplikat-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/finding-ausschlussgrund-screening-ueberboten-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/pair-id-64-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/probe-host-bus-name-codepointgetreu.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/probe-host-context-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/probe-host-context-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-active-probe-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-legacy-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-main-insert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-p2-reject.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-snapshot-finding-more-data-herabgesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-snapshot-finding-ohne-optionales.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      - [ROT]  gueltig/session-snapshot-mit-experimenten-und-paaren.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+      ... und 66 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: 171 bestanden, 2 gescheitert)
+    nach der Ruecknahme: B3c 173 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

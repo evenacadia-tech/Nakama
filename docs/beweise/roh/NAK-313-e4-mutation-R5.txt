@@ -1,0 +1,74 @@
+NAK-313 Etappe 4 - Mutationslauf R5: broker/src/transport/bootstrap.rs - im Bootstrap serde_json::from_str statt json_streng
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf R5 - im Bootstrap serde_json::from_str statt json_streng - 24.09.2026 09:51:32 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei broker/src/transport/bootstrap.rs (LF)
+SHA-256 vorher 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R5-bootstrap.rs (SHA-256 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f)
+Mutation 1 ab Zeile 225 (Stand vor der Mutation):
+  vorher:
+    |     let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
+    | 
+  nachher:
+    |     let wert: serde_json::Value = serde_json::from_str(roh).map_err(|e| BootstrapFehler::KeinJson(e.to_string()))?; // MUTATION R5 (M-45)
+    | 
+Mutiert 24.09.2026 09:51:32, SHA-256 mutiert 1cc6a29085fbfcaea831f5badade17eb2c5950527d7ab7569e3b8d2dea9f93df
+Kette (R-313-11): Mit from_str in einen Value verschwindet das Duplikat im Wert (letzter gewinnt), die typisierte Uebernahme per from_value sieht es nicht mehr -> V3Control fuer logon_sid mit kanonischem letzten Wert, type hello zuletzt und den Alias; die uebrigen enden an der Feldregel statt als KeinJson mit Marke.
+Lauf unter der Mutation:
+  A4-lib: Exit 101, Fehlzeilen 12, Rohausgabe rot-R5-mutiert-A4-lib.txt
+    Summe: error: test failed, to rerun pass `--lib`
+    Summe: error: 1 target failed:
+    Summe: `--lib`
+Ruecknahme 24.09.2026 09:51:36: SHA-256 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f - gleich dem Stand vor der Mutation
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R5-zurueck-A4-lib.txt
+    Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... ok
+    Summe: test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+Erwartete Pruefungen unter der Mutation:
+  A4-lib: 'nak313_m45_doppelter_schluessel_im_hello ... FAILED' in der Ausgabe: JA
+  A4-lib: 'PE-052: Urteil/Stufe' in der Ausgabe: JA
+  A4-lib: 'PE-056: Urteil/Stufe' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A4-lib] test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+  [A4-lib] ---- transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello stdout ----
+  [A4-lib] thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (211404) panicked at src\transport\bootstrap.rs:753:9:
+  [A4-lib] PE-052: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bind
+  [A4-lib] PE-052: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+  [A4-lib] PE-053: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", project_binding_id: "111111111111111111111111111
+  [A4-lib] PE-053: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", project_binding_id: "11111111111111111111111111111111", session_epoch: "222222222222
+  [A4-lib] PE-054: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bind
+  [A4-lib] PE-054: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+  [A4-lib] PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+  [A4-lib] PE-056: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bind
+  [A4-lib] PE-056: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+Nach der Ruecknahme:
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (11) und Summenzeilen ===
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+  thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (211404) panicked at src\transport\bootstrap.rs:753:9:
+  PE-052: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", insta
+  PE-052: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", instance_id: "333333333333333333333333333
+  PE-053: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", instance_id: "333333333333333333333333333
+  PE-053: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", instance_id: "33333333333333333333333333333333", runtime_nonce: "444444444444
+  PE-054: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", insta
+  PE-054: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", instance_id: "333333333333333333333333333
+  PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+  PE-056: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", insta
+  PE-056: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "11111111111111111111111111111111", session_epoch: "22222222222222222222222222222222", instance_id: "333333333333333333333333333
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+=== A4-lib nach der Ruecknahme: Summenzeilen ===
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+gefallene Pruefungen nach der Ruecknahme: 0
+

@@ -1,0 +1,101 @@
+NAK-313 Etappe 4 - Mutationslauf S2: eq-copilot/plugin/src/SourcesModel.cpp - im Ruecknahme-Leser des Quellenmodells den strengen Lauf entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf S2 - im Ruecknahme-Leser des Quellenmodells den strengen Lauf entfernt - 24.09.2026 09:50:34 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei eq-copilot/plugin/src/SourcesModel.cpp (CRLF)
+SHA-256 vorher 4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\S2-SourcesModel.cpp (SHA-256 4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28)
+Mutation 1 ab Zeile 1502 (Stand vor der Mutation):
+  vorher:
+    |     if (! nakama::kanon::lies (text, streng, strengGrund))
+    |     {
+    |         fehler = "evidence_invalidate parser: " + strengGrund;
+    |         return RuecknahmeErgebnis::ungueltig;
+    |     }
+    | 
+  nachher:
+    |     (void) streng; (void) strengGrund;   // MUTATION S2 (M-40): der strenge Lauf entfernt
+    | 
+Mutiert 24.09.2026 09:50:34, SHA-256 mutiert 6fa431c209eb9bc222d57e3445bc8417a02176d21b56ac095644719fd5e1e487
+Kette (R-313-11): Ohne den strengen Lauf liest JUCE die Ruecknahme: Syntaxvarianten, passende Duplikate und Alias werden uebernommen (evidenzRuecknahmen + 1), type fremd ignoriert; die Wachen grund unbekannt (PE-020) und art ohne Bereichsfelder (PE-022) bleiben ungueltig, aber am Feldleser -> Stufe feldregel statt duplikat.
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 09:50:39.306, Quelle 09:50:34.294, Binaer juenger: ja
+  B13: Exit 1, Fehlzeilen 20, Rohausgabe rot-S2-mutiert-B13.txt
+    Summe: ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Bef
+    Summe: ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+    Summe: ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+    Summe: SONDE-012 SourcesModel: 129/149 gruen
+Ruecknahme 24.09.2026 09:50:39: SHA-256 4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest: Exit 0
+  B13: Binaer 09:50:44.123, Quelle 09:50:39.586, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe rot-S2-zurueck-B13.txt
+    Summe: ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Bef
+    Summe: ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+    Summe: ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+    Summe: SONDE-012 SourcesModel: 149/149 gruen
+Erwartete Pruefungen unter der Mutation:
+  B13: 'FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)' in der Ausgabe: JA
+  B13: 'FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)' in der Ausgabe: JA
+  B13: 'FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)' in der Ausgabe: JA
+  B13: 'FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ignoriert/, soll ungueltig/duplikat]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - evidence_invalidate reason is unknown to this reader version]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - evidence_invalidate sample range is not ordered]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (20) und Summenzeilen ===
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ignoriert/, soll ungueltig/duplikat]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - evidence_invalidate reason is unknown to this reader version]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - evidence_invalidate sample range is not ordered]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+SONDE-012 SourcesModel: 129/149 gruen
+=== B13 nach der Ruecknahme: Summenzeilen ===
+SONDE-012 SourcesModel: 149/149 gruen
+gefallene Pruefungen nach der Ruecknahme: 0
+

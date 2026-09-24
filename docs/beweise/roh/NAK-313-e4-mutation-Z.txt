@@ -1,0 +1,57 @@
+NAK-313 Etappe 4 - Mutationslauf Z: tools/eq-copilot/pruefe_v3_vertrag.py - im Tabellenlauf von A5 einen Eintrag uebersprungen
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf Z - im Tabellenlauf von A5 einen Eintrag uebersprungen - 24.09.2026 09:38:43 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+SHA-256 vorher 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\Z-pruefe_v3_vertrag.py (SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb)
+Mutation 1 ab Zeile 2033 (Stand vor der Mutation):
+  vorher:
+    |         if fall["fassung"] != "v3":
+    |             continue
+    |         gefahren += 1
+    | 
+  nachher:
+    |         if fall["fassung"] != "v3" or fall["id"] == "PE-042":  # MUTATION Z (M-49): Eintrag uebersprungen
+    |             continue
+    |         gefahren += 1
+    | 
+Mutiert 24.09.2026 09:38:43, SHA-256 mutiert 096998b7c6b9ef4424be33595ad11a8839f3d2afd3c208dbf6fdfcbb076219e9
+Kette (R-313-11): Faehrt das Bein einen Eintrag nicht, zaehlt es 46 statt der 47 v3-Eintraege des Kopfes -> Zaehlpruefung rot.
+Lauf unter der Mutation:
+  A5: Exit 2, Fehlzeilen 1, Rohausgabe rot-Z-mutiert-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+Ruecknahme 24.09.2026 09:38:46: SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb - gleich dem Stand vor der Mutation
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-Z-zurueck-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+Erwartete Pruefungen unter der Mutation:
+  A5: 'ROT: Produkteingaenge: 46 v3-Eintraege gefahren, der Kopf nennt 47' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A5] ROT: Produkteingaenge: 46 v3-Eintraege gefahren, der Kopf nennt 47
+Nach der Ruecknahme:
+  A5: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A5 unter der Mutation: gefallene Pruefungen (1) und Summenzeilen ===
+  ROT: Produkteingaenge: 46 v3-Eintraege gefahren, der Kopf nennt 47
+Produkteingaenge: 46 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 690 bestanden, 1 gescheitert
+ROT: Produkteingaenge: 46 v3-Eintraege gefahren, der Kopf nennt 47
+=== A5 nach der Ruecknahme: Summenzeilen ===
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 692 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

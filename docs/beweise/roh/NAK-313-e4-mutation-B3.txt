@@ -1,0 +1,80 @@
+NAK-313 Etappe 4 - Mutationslauf B3: eq-copilot/plugin/tests/SchemaTestMain.cpp - in der Korpusschleife von B3c den strengen Lauf entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf B3 - in der Korpusschleife von B3c den strengen Lauf entfernt - 24.09.2026 09:47:02 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/tests/SchemaTestMain.cpp (LF)
+SHA-256 vorher a107362396982c6c2e195139304e03670bb6fab3b9b5ceeb8bd44390adb3ef25; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\B3-SchemaTestMain.cpp (SHA-256 a107362396982c6c2e195139304e03670bb6fab3b9b5ceeb8bd44390adb3ef25)
+Mutation 1 ab Zeile 572 (Stand vor der Mutation):
+  vorher:
+    |         const bool strengGelesen = nakama::kanon::lies (
+    |             juce::String::fromUTF8 (static_cast<const char*> (rohbytes.getData()),
+    |                                     static_cast<int> (rohbytes.getSize())),
+    |             streng, strengGrund);
+    | 
+  nachher:
+    |         const bool strengGelesen = true; (void) streng;   // MUTATION B3 (M-47): der strenge Lauf entfernt
+    | 
+Mutiert 24.09.2026 09:47:02, SHA-256 mutiert b1e775616c0141f073c8312f790828bb2d237c26138f3409992b38d3280c828d
+Kette (R-313-11): Ohne den strengen Lauf gilt jedes Fixture als gelesen -> kein parser_lehnt_ab-Fixture faellt am Tor -> die Pruefung 313/M-47 korpus_parser_lehnt_ab ist fuer jedes der elf Fixtures rot.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 09:47:05.702, Quelle 09:47:02.211, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 11, Rohausgabe rot-B3-mutiert-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 162 bestanden, 11 gescheitert
+Ruecknahme 24.09.2026 09:47:06: SHA-256 a107362396982c6c2e195139304e03670bb6fab3b9b5ceeb8bd44390adb3ef25 - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 09:47:09.745, Quelle 09:47:06.232, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-B3-zurueck-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 173 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: '[ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-nachspann.json' in der Ausgabe: JA
+  B3c: '[ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-passend-zuletzt.json' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-nachspann.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-schlusskomma.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-fremd-zuletzt.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-passend-zuletzt.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-escape-alias.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-unbekanntes-escape.json
+  [B3c] [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-zweites-dokument.json
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (11) und Summenzeilen ===
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-nachspann.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-schlusskomma.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-fremd-zuletzt.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-doppelt-passend-zuletzt.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-type-escape-alias.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-unbekanntes-escape.json
+  [ROT]  313/M-47 korpus_parser_lehnt_ab ungueltig/parser-zweites-dokument.json
+162 bestanden, 11 gescheitert
+=== B3c nach der Ruecknahme: Summenzeilen ===
+173 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

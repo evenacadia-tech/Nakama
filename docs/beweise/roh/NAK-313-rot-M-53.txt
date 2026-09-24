@@ -1,0 +1,81 @@
+NAK-313 Etappe 4 - Rotbeweis M-53 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-53 - T3-03-01 - R-313-7 - Negativfixture
+Zustand: Erzeuger.
+Ereignis: erzeuge_v3_fixtures.py.
+Zusage: ungueltig/evidence-local-monotonic-project-sample-start-null.json mit der Verletzung #/$defs/transportstempel/properties/project_sample_start/type an /transport/project_sample_start; B3c und A4 bestaetigen Urteil und Menge, A5 das Urteil.
+Bein: A8, A5, B3c, A4 (Korpus).
+
+--- Haelfte 1: Fixture mit der Verletzung an der gemeinsamen Eigenschaft - Etikett: heute nicht messbar ---
+Pruefung: Verletzungsmenge in B3c und A4
+  -> am Basisstand: nicht messbar (Fixture fehlte)
+  Mutation G2 (tools/eq-copilot/erzeuge_v3_fixtures.py - im Erzeuger 0 statt null ins Negativfixture gesetzt und neu erzeugt), Stand 2af21673; Bein B3c (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-G2.txt):
+    Rotlauf G2 - im Erzeuger 0 statt null ins Negativfixture gesetzt und neu erzeugt - 24.09.2026 09:52:00 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei tools/eq-copilot/erzeuge_v3_fixtures.py (LF)
+    SHA-256 vorher 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\G2-erzeuge_v3_fixtures.py (SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e)
+    Mutation 1 ab Zeile 3777 (Stand vor der Mutation):
+      vorher:
+        |             neu["project_sample_start"] = None
+        | 
+      nachher:
+        |             neu["project_sample_start"] = 0  # MUTATION G2 (M-53): 0 statt null
+        | 
+    Mutiert 24.09.2026 09:52:00, SHA-256 mutiert 9307cf3969b74d8d710ff78e0bae542c985447eb5b4ba83fdf9640c3b162b224
+    Kette (R-313-11): Mit 0 statt null erfuellt der Wert die gemeinsame Eigenschaft (integer), verletzt aber den Zweig local_monotonic (oneOf/1, type null) -> die Verletzung liegt am Zweig statt an der gemeinsamen Eigenschaft -> B3c und A4 melden 'Verletzungsmenge weicht ab'; A5 vergleicht nur das Urteil (bleibt gruen), A8 ist nach der Neuerzeugung bytegleich.
+      nach der Mutation: ['py', '-3.13', 'tools/eq-copilot/erzeuge_v3_fixtures.py'] - Exit 0
+      B3c: Binaer 09:50:52.455, Quelle 09:52:00.041, Binaer juenger: NEIN
+      B3c: Exit 1, Fehlzeilen 2, Rohausgabe rot-G2-mutiert-B3c.txt
+    Ruecknahme 24.09.2026 09:52:06: SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e - gleich dem Stand vor der Mutation
+      nach der Ruecknahme: ['py', '-3.13', 'tools/eq-copilot/erzeuge_v3_fixtures.py'] - Exit 0
+      beobachtet eq-copilot/fixtures/v3/ungueltig/evidence-local-monotonic-project-sample-start-null.json: SHA-256 gleich (ea0c8b141416d351)
+      beobachtet eq-copilot/fixtures/v3/MANIFEST.json: SHA-256 gleich (f5a1db4ee09ea855)
+      beobachtet eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json: SHA-256 gleich (d8fdff0652758227)
+      B3c: Binaer 09:50:52.455, Quelle 09:52:06.842, Binaer juenger: NEIN
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-zurueck-B3c.txt
+      B3c: '[ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab' in der Ausgabe: JA
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Verletzungsmenge in B3c und A4):
+      gefallen: [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (1 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [1 Abweichungen]
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab | 172 bestanden, 1 gescheitert)
+    nach der Ruecknahme: B3c 173 bestanden, 0 gescheitert; gefallene Pruefungen 0
+  Mutation G2 (tools/eq-copilot/erzeuge_v3_fixtures.py - im Erzeuger 0 statt null ins Negativfixture gesetzt und neu erzeugt), Stand 2af21673; Bein A4-korpus (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-G2.txt):
+    Rotlauf G2 - im Erzeuger 0 statt null ins Negativfixture gesetzt und neu erzeugt - 24.09.2026 09:52:00 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei tools/eq-copilot/erzeuge_v3_fixtures.py (LF)
+    SHA-256 vorher 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\G2-erzeuge_v3_fixtures.py (SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e)
+    Mutation 1 ab Zeile 3777 (Stand vor der Mutation):
+      vorher:
+        |             neu["project_sample_start"] = None
+        | 
+      nachher:
+        |             neu["project_sample_start"] = 0  # MUTATION G2 (M-53): 0 statt null
+        | 
+    Mutiert 24.09.2026 09:52:00, SHA-256 mutiert 9307cf3969b74d8d710ff78e0bae542c985447eb5b4ba83fdf9640c3b162b224
+    Kette (R-313-11): Mit 0 statt null erfuellt der Wert die gemeinsame Eigenschaft (integer), verletzt aber den Zweig local_monotonic (oneOf/1, type null) -> die Verletzung liegt am Zweig statt an der gemeinsamen Eigenschaft -> B3c und A4 melden 'Verletzungsmenge weicht ab'; A5 vergleicht nur das Urteil (bleibt gruen), A8 ist nach der Neuerzeugung bytegleich.
+      nach der Mutation: ['py', '-3.13', 'tools/eq-copilot/erzeuge_v3_fixtures.py'] - Exit 0
+      A4-korpus: Exit 101, Fehlzeilen 3, Rohausgabe rot-G2-mutiert-A4-korpus.txt
+    Ruecknahme 24.09.2026 09:52:06: SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e - gleich dem Stand vor der Mutation
+      nach der Ruecknahme: ['py', '-3.13', 'tools/eq-copilot/erzeuge_v3_fixtures.py'] - Exit 0
+      beobachtet eq-copilot/fixtures/v3/ungueltig/evidence-local-monotonic-project-sample-start-null.json: SHA-256 gleich (ea0c8b141416d351)
+      beobachtet eq-copilot/fixtures/v3/MANIFEST.json: SHA-256 gleich (f5a1db4ee09ea855)
+      beobachtet eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json: SHA-256 gleich (d8fdff0652758227)
+      A4-korpus: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-zurueck-A4-korpus.txt
+      A4-korpus: 'ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab' in der Ausgabe: JA
+      A4-korpus: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Verletzungsmenge in B3c und A4):
+      gefallen: ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (2 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test korpus_klassifiziert_wie_das_manifest ... FAILED
+      - thread 'korpus_klassifiziert_wie_das_manifest' (43328) panicked at tests\contract_cross_language.rs:132:5:
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab | test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s)
+    nach der Ruecknahme: A4-korpus test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.31s; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

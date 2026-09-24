@@ -1,0 +1,263 @@
+NAK-313 Etappe 4 - Rotbeweis M-54 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-54 - Etappe 4 - Grenze und Audio
+Zustand: Endstand der Etappe 4.
+Ereignis: voller Kanon und git diff gegen den Basisstand der Etappe.
+Zusage: Audio unberuehrt; strenge Laeufe nur auf IPC-, Timer- und Workerthreads; Evidenzwriter im Worker der Sonde; keine neue v3-Vertragsversion, Schema bytegleich; A1, A16 bitidentisch; Identitaet unveraendert.
+Bein: voller Kanon; A1, A4, A4b, A5, A8, A11, A16, B1, B3c, B13, B16 einzeln.
+
+--- Haelfte 1: Schema bytegleich - Etikett: Regressionswache ---
+Pruefung: git diff (Lesemass) und Einzelbruch
+  -> am Basisstand: gruen (Lesemass unten)
+  Mutation SCH (eq-copilot/schemas/v3/eq-ipc-v3.schema.json - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet), Stand 2af21673; Bein A5 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-SCH.txt):
+    Rotlauf SCH - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet - 24.09.2026 09:52:12 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei eq-copilot/schemas/v3/eq-ipc-v3.schema.json (CRLF)
+    SHA-256 vorher 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\SCH-eq-ipc-v3.schema.json (SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f)
+    Mutation 1 ab Zeile 360 (Stand vor der Mutation):
+      vorher:
+        |         "project_sample_start": { "type": "integer" },
+        | 
+      nachher:
+        |         "project_sample_start": { "type": ["integer", "null"] },
+        | 
+    Mutiert 24.09.2026 09:52:12, SHA-256 mutiert 699c02d81da4b4e4ffbfed0425559eacff3a489da41fe849c6b1c4cf53b92299
+    Kette (R-313-11): Weitet das Schema die gemeinsame Eigenschaft auf integer oder null, erfuellt project_sample_start null beide Stellen -> das Negativfixture aus M-53 wird gueltig -> A5, B3c und der Korpusteil von A4 rot.
+      Bau EqCopSchemaTest: Exit 0
+      A5: Exit 2, Fehlzeilen 2, Rohausgabe rot-SCH-mutiert-A5.txt
+    Ruecknahme 24.09.2026 09:52:19: SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-SCH-zurueck-A5.txt
+      A5: 'ungueltig/evidence-local-monotonic-project-sample-start-null.json' in der Ausgabe: JA
+      A5: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (git diff (Lesemass) und Einzelbruch):
+      gefallen: ROT: ungueltig/evidence-local-monotonic-project-sample-start-null.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (1 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - ROT: PE-051 rust_p1 M-53: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/schema
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 690 bestanden, 2 gescheitert)
+    nach der Ruecknahme: A5 Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 692 bestanden, 0 gescheitert; gefallene Pruefungen 0
+  Mutation SCH (eq-copilot/schemas/v3/eq-ipc-v3.schema.json - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet), Stand 2af21673; Bein B3c (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-SCH.txt):
+    Rotlauf SCH - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet - 24.09.2026 09:52:12 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei eq-copilot/schemas/v3/eq-ipc-v3.schema.json (CRLF)
+    SHA-256 vorher 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\SCH-eq-ipc-v3.schema.json (SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f)
+    Mutation 1 ab Zeile 360 (Stand vor der Mutation):
+      vorher:
+        |         "project_sample_start": { "type": "integer" },
+        | 
+      nachher:
+        |         "project_sample_start": { "type": ["integer", "null"] },
+        | 
+    Mutiert 24.09.2026 09:52:12, SHA-256 mutiert 699c02d81da4b4e4ffbfed0425559eacff3a489da41fe849c6b1c4cf53b92299
+    Kette (R-313-11): Weitet das Schema die gemeinsame Eigenschaft auf integer oder null, erfuellt project_sample_start null beide Stellen -> das Negativfixture aus M-53 wird gueltig -> A5, B3c und der Korpusteil von A4 rot.
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 09:50:52.455, Quelle 09:52:12.150, Binaer juenger: NEIN
+      B3c: Exit 1, Fehlzeilen 2, Rohausgabe rot-SCH-mutiert-B3c.txt
+    Ruecknahme 24.09.2026 09:52:19: SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      B3c: Binaer 09:50:52.455, Quelle 09:52:19.849, Binaer juenger: NEIN
+      B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-SCH-zurueck-B3c.txt
+      B3c: '[ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json' in der Ausgabe: JA
+      B3c: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (git diff (Lesemass) und Einzelbruch):
+      gefallen: [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Urteil ungueltig erwartet, Engine sagt gueltig
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (1 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [1 Abweichungen]
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: 172 bestanden, 1 gescheitert)
+    nach der Ruecknahme: B3c 173 bestanden, 0 gescheitert; gefallene Pruefungen 0
+  Mutation SCH (eq-copilot/schemas/v3/eq-ipc-v3.schema.json - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet), Stand 2af21673; Bein A4-korpus (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-SCH.txt):
+    Rotlauf SCH - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet - 24.09.2026 09:52:12 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei eq-copilot/schemas/v3/eq-ipc-v3.schema.json (CRLF)
+    SHA-256 vorher 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\SCH-eq-ipc-v3.schema.json (SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f)
+    Mutation 1 ab Zeile 360 (Stand vor der Mutation):
+      vorher:
+        |         "project_sample_start": { "type": "integer" },
+        | 
+      nachher:
+        |         "project_sample_start": { "type": ["integer", "null"] },
+        | 
+    Mutiert 24.09.2026 09:52:12, SHA-256 mutiert 699c02d81da4b4e4ffbfed0425559eacff3a489da41fe849c6b1c4cf53b92299
+    Kette (R-313-11): Weitet das Schema die gemeinsame Eigenschaft auf integer oder null, erfuellt project_sample_start null beide Stellen -> das Negativfixture aus M-53 wird gueltig -> A5, B3c und der Korpusteil von A4 rot.
+      Bau EqCopSchemaTest: Exit 0
+      A4-korpus: Exit 101, Fehlzeilen 3, Rohausgabe rot-SCH-mutiert-A4-korpus.txt
+    Ruecknahme 24.09.2026 09:52:19: SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f - gleich dem Stand vor der Mutation
+      Bau EqCopSchemaTest: Exit 0
+      A4-korpus: Exit 0, Fehlzeilen 0, Rohausgabe rot-SCH-zurueck-A4-korpus.txt
+      A4-korpus: 'ungueltig/evidence-local-monotonic-project-sample-start-null.json' in der Ausgabe: JA
+      A4-korpus: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (git diff (Lesemass) und Einzelbruch):
+      gefallen: ungueltig/evidence-local-monotonic-project-sample-start-null.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (2 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test korpus_klassifiziert_wie_das_manifest ... FAILED
+      - thread 'korpus_klassifiziert_wie_das_manifest' (89512) panicked at tests\contract_cross_language.rs:132:5:
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s)
+    nach der Ruecknahme: A4-korpus Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.33s; gefallene Pruefungen 0
+
+--- Haelfte 2: kein strenger Lauf im Callback - Etikett: Regressionswache ---
+Pruefung: Lesemass git diff
+  -> am Basisstand: gruen (Lesemass unten)
+
+--- Haelfte 3: Evidenzwriter im Worker - Etikett: Regressionswache ---
+Pruefung: Lesemass git diff
+  -> am Basisstand: gruen (Lesemass unten)
+
+--- Haelfte 4: A1 bitidentisch - Etikett: Regressionswache ---
+Pruefung: A1 NULLTEST
+  -> am Basisstand: gruen (Kanon vorher)
+  Mutation A1 (eq-copilot/plugin/src/PluginProcessor.cpp - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)), Stand 0fce3f26; Bein A1 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-A1.txt):
+    Rotlauf A1 - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 24.09.2026 09:47:36 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+    SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+    Mutation 1 ab Zeile 641 (Stand vor der Mutation):
+      vorher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        | 
+      nachher:
+        |     if (n == 0 || kanaele == 0)
+        |         return;
+        |     buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-54 A1: 1 LSB
+        | 
+    Mutiert 24.09.2026 09:47:36, SHA-256 mutiert 855d2bfd7dd6377fc9fc0ee86cfe70901c9789548578588b4db7e3e3d75fa44e
+    Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Gen-Callback bricht die Bitidentitaet des Passthrough -> A1 rot.
+      Bau EqCopNullTest: Exit 0
+      A1: Binaer 09:47:43.336, Quelle 09:47:36.883, Binaer juenger: ja
+      A1: Exit 1, Fehlzeilen 2, Rohausgabe rot-A1-mutiert-A1.txt
+    Ruecknahme 24.09.2026 09:47:43: SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+      Bau EqCopNullTest: Exit 0
+      A1: Binaer 09:47:49.315, Quelle 09:47:43.548, Binaer juenger: ja
+      A1: Exit 0, Fehlzeilen 0, Rohausgabe rot-A1-zurueck-A1.txt
+      A1: 'NULLTEST FEHLGESCHLAGEN' in der Ausgabe: JA
+      A1: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (A1 NULLTEST):
+      gefallen: FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (1 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: NULLTEST FEHLGESCHLAGEN)
+    nach der Ruecknahme: A1 NULLTEST OK; gefallene Pruefungen 0
+
+--- Haelfte 5: A16 bitidentisch - Etikett: Regressionswache ---
+Pruefung: A16 SONDE-NULLTEST
+  -> am Basisstand: gruen (Kanon vorher)
+  Mutation A16 (eq-copilot/plugin/sonde/SondeProcessor.cpp - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter)), Stand 0fce3f26; Bein A16 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-A16.txt):
+    Rotlauf A16 - im Probeeq-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 24.09.2026 09:47:49 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/sonde/SondeProcessor.cpp (CRLF)
+    SHA-256 vorher 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\A16-SondeProcessor.cpp (SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b)
+    Mutation 1 ab Zeile 510 (Stand vor der Mutation):
+      vorher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+        | 
+      nachher:
+        |     const nakama::dsp::RtWache::Bereich wache;
+        |     verarbeiteBlock (puffer, false);
+        |     if (puffer.getNumSamples() > 0 && puffer.getNumChannels() > 0)   // MUTATION M-54 A16: 1 LSB
+        |         puffer.getWritePointer (0)[0] = std::nextafter (puffer.getSample (0, 0), 2.0f);
+        | 
+    Mutiert 24.09.2026 09:47:49, SHA-256 mutiert df5cb695133b816dbd1ebf7803f047a9f0b05dcebc8971d2e1d3a7b52a3a47e3
+    Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Probeeq-Callback bricht die Bitidentitaet -> A16 rot.
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16: Binaer 09:47:55.948, Quelle 09:47:49.994, Binaer juenger: ja
+      A16: Exit 1, Fehlzeilen 37, Rohausgabe rot-A16-mutiert-A16.txt
+    Ruecknahme 24.09.2026 09:47:56: SHA-256 0e7385c369633cc975cdc3663a8345e9f26287d47dfe0a4b71139742493a265b - gleich dem Stand vor der Mutation
+      Bau EqCopProbeeqNullTest: Exit 0
+      A16: Binaer 09:48:02.447, Quelle 09:47:56.780, Binaer juenger: ja
+      A16: Exit 0, Fehlzeilen 0, Rohausgabe rot-A16-zurueck-A16.txt
+      A16: 'SONDE-NULLTEST FEHLGESCHLAGEN' in der Ausgabe: JA
+      A16: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (A16 SONDE-NULLTEST):
+      gefallen: FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 48000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (36 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 44100 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 96000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      - FEHLER  default_ist_bitidentisch_ueber_1000_bloecke bei 192000 Hz, Bloecke 1 bis 2048 Samples  [460000 Samples, 1000 abweichend]
+      - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 44100 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 48000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 96000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      - FEHLER  nulltest_bleibt_bitidentisch_mit_host_reset (M-34) bei 192000 Hz: reset() vor jedem dritten Block, Bloecke 1 bis 2048 Samples, kein Zaehler bewegt sich  [460000 Samples, 1000 abweichend, Zaehler 0/0/0]
+      - FEHLER    im Hard-Bypass: bitgleich mit reset() vor jedem dritten Block; NaN, +Inf und -Inf kommen zwischen zwei reset() bitgleich heraus, kein Zaehler steigt  [460000 Samples, 1000 abweichend, NaN/Inf roh nein]
+      - FEHLER  kein_tail_im_passthrough: nach Rauschen bleibt Stille bitgenau still - ausgeschaltet und im Hard-Bypass
+      - FEHLER  passthrough_sanitisiert_nichts: NaN, +Inf und -Inf kommen bitgleich heraus, ausgeschaltet und im Hard-Bypass; kein Zaehler steigt  [Zaehler 0]
+      - FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 44100 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+      - FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 44100 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+      - FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 48000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+      - FEHLER  311/M-10 bitmuster_ab_sample_512_bytegleich bei 48000 Hz: Subnormals, +-0 und kleinste Normale kommen im engagiert-neutralen Kern bytegleich heraus  [995 von 13352 Musterstellen veraendert]
+      - FEHLER  eq_an_bypass_aus_alles_neutral_ist_bitidentisch bei 96000 Hz - samt Engagier-Fade, durch Trims, M/S und Filterbank  [460000 Samples, 5 abweichend, aktive Bank 0]
+      ... und 21 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe) | FEHLER  311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 5 abweichend (ab Sample 512: 0), Muster 995 von 13352 veraendert] | FEHLER  311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 5 abweichend (ab Sample 512: 0), Muster 995 von 13352 veraendert] | SONDE-NULLTEST FEHLGESCHLAGEN - 108 Pruefungen ok, 37 Fehler)
+    nach der Ruecknahme: A16 SONDE-NULLTEST - nakama-sonde-testschale (Produktklasse active_probe) | ok      311/M-11 Teilfall M-15 ausgeschaltet_bleibt_alles_bytegleich: Rauschen, Bitmuster, Wachmarke, NaN und +-Inf, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert] | ok      311/M-11 Teilfall M-16 hard_bypass_bleibt_alles_bytegleich: +12-dB-Bell und Width 1,7 dahinter, kein Zaehler steigt  [nicht endlich 0 von 6 veraendert, 3 Wachmarken bytegleich, 0 endlich heraus, Tap 0,0 an 0, Zaehler 0; Rauschen 0 abweichend (ab Sample 512: 0), Muster 0 von 13352 veraendert] | SONDE-NULLTEST OK - 145 Pruefungen ok, 0 Fehler; gefallene Pruefungen 0
+
+--- Haelfte 6: Identitaet - Etikett: Regressionswache ---
+Pruefung: B1
+  -> am Basisstand: gruen (Kanon vorher)
+  Mutation ID (eq-copilot/plugin/CMakeLists.txt - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau)), Stand 0fce3f26; Bein B1 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-ID.txt):
+    Rotlauf ID - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau) - 24.09.2026 09:48:03 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/CMakeLists.txt (LF)
+    SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+    Mutation 1 ab Zeile 123 (Stand vor der Mutation):
+      vorher:
+        |     PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+        | 
+      nachher:
+        |     PLUGIN_CODE Eqcq
+        | 
+    Mutiert 24.09.2026 09:48:03, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+    Kette (R-313-11): Ein literaler PLUGIN_CODE statt des Manifestwerts bricht die eingefrorene Identitaetskette -> B1 rot.
+      B1: Exit 1, Fehlzeilen 3, Rohausgabe rot-ID-mutiert-B1.txt
+    Ruecknahme 24.09.2026 09:48:03: Aenderungszeit auf den Stand vor der Mutation (04:17:56.551) zurueckgesetzt
+    Ruecknahme 24.09.2026 09:48:03: SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation
+      B1: Exit 0, Fehlzeilen 0, Rohausgabe rot-ID-zurueck-B1.txt
+      B1: 'FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest' in der Ausgabe: JA
+      B1: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (B1):
+      gefallen: FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (2 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 8:27:02am vs 24 Sep 2026 9:48:03am]
+      - FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 8:27:28am vs 24 Sep 2026 9:48:03am]
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler)
+    nach der Ruecknahme: B1 IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler; gefallene Pruefungen 0
+
+Lesemasse (git diff 69ecbe95..HEAD):
+  git diff --stat -- eq-copilot/schemas/: eq-copilot/schemas/v3/README.md | 13 +++++++++++++ | 1 file changed, 13 insertions(+)
+  git diff --stat -- PluginProcessor.cpp, plugin/dsp, plugin/sonde, plugin/hostbridge: (leer)
+  hinzugefuegte Aufrufe von kanon::lies und json_streng (Datei: Zeile):
+    broker/src/coordinator/schema.rs: let wert = crate::vertrag::json_streng(payload).map_err(|g| {
+    broker/src/coordinator/schema.rs: assert!(json_streng(text.as_bytes()).is_ok(), "Tiefe {tiefe} ist die Grenze selbst");
+    broker/src/coordinator/schema.rs: let grund = json_streng(text.as_bytes()).expect_err("Tiefe 65 faellt");
+    broker/src/coordinator/schema.rs: assert!(json_streng(b"{}").is_ok() && json_streng(b"[]").is_ok());
+    broker/src/coordinator/schema.rs: assert!(json_streng(b"{\"a\":1} \r\n\t").is_ok(), "Nachspann aus Leerraum ist kein Nachspann");
+    broker/src/coordinator/schema.rs: let grund = json_streng(text).expect_err("RFC 8259 laesst es nicht zu");
+    broker/src/coordinator/schema.rs: let grund = json_streng(text).expect_err("derselbe dekodierte Name zweimal");
+    broker/src/coordinator/schema.rs: json_streng(b"{\"a\":{\"k\":1},\"b\":{\"k\":2}}").is_ok(),
+    broker/src/dto.rs: let wurzel: Value = match json_streng(roh) {
+    broker/src/dto.rs: let hart = json_streng(roh);
+    broker/src/dto.rs: let hart = json_streng(roh);
+    broker/src/transport/bootstrap.rs: let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
+    broker/src/vertrag.rs: pub fn json_streng(bytes: &[u8]) -> Result<Value, String> {
+    eq-copilot/plugin/src/PipeClient.cpp: if (! nakama::kanon::lies (text, streng, grund))
+    eq-copilot/plugin/src/SourcesModel.cpp: if (! nakama::kanon::lies (text, streng, strengGrund))
+    eq-copilot/plugin/src/SourcesModel.cpp: if (! nakama::kanon::lies (text, streng, strengGrund))
+    eq-copilot/plugin/tests/SchemaTestMain.cpp: const bool strengGelesen = nakama::kanon::lies (
+    eq-copilot/plugin/tests/Sonde013EventWireTest.cpp: if (! nakama::kanon::lies (text, streng, grund))
+  git diff --stat -- NakamaEvidenz.cpp: eq-copilot/plugin/vertrag/NakamaEvidenz.cpp | 16 +++++++++++----- | 1 file changed, 11 insertions(+), 5 deletions(-)
+  Hunks in NakamaEvidenz.cpp: @@ -204,5 +204,11 @@ bool transportJson (const Transportstempel& t, std::string& aus)
+  Aufrufer von evidenceSnapshotAlsJson im Produkt: eq-copilot/plugin/sonde/SondeProcessor.cpp:1079:    if (nakama::evidenz::evidenceSnapshotAlsJson (frame, kopf,
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

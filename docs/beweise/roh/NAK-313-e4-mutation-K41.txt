@@ -1,0 +1,455 @@
+NAK-313 Etappe 4 - Mutationslauf K41: eq-copilot/plugin/state/NakamaKanon.cpp - in kanon::lies die Namen dokumentweit statt je Objekt gesammelt (ein Namensspeicher je Leser)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf K41 - in kanon::lies die Namen dokumentweit statt je Objekt gesammelt (ein Namensspeicher je Leser) - 24.09.2026 09:50:44 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei eq-copilot/plugin/state/NakamaKanon.cpp (LF)
+SHA-256 vorher aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\K41-NakamaKanon.cpp (SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c)
+Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+  vorher:
+    |     juce::String fehler;
+    |     int tiefe = 0;
+    | 
+  nachher:
+    |     juce::String fehler;
+    |     int tiefe = 0;
+    |     juce::StringArray namenImDokument;   // MUTATION K41 (M-41): Namen dokumentweit
+    | 
+Mutation 2 ab Zeile 364 (Stand vor der Mutation):
+  vorher:
+    |                 if (! aus.objektSetze (schluessel, std::move (kind)))
+    |                     return fehl ("doppelter Schluessel: " + schluessel);
+    | 
+  nachher:
+    |                 if (namenImDokument.contains (schluessel) || ! aus.objektSetze (schluessel, std::move (kind)))
+    |                     return fehl ("doppelter Schluessel: " + schluessel);
+    |                 namenImDokument.add (schluessel);   // MUTATION K41 (M-41)
+    | 
+Mutiert 24.09.2026 09:50:44, SHA-256 mutiert a122d36c39e9d89e80b2f026c31472a1648d2402cd047bcdafb416088f17c2ba
+Kette (R-313-11): Sammelt der Leser die Namen dokumentweit, gilt jeder Name, der in einem zweiten Objekt wiederkehrt, als doppelt. Jeder session_snapshot wiederholt Namen (adresse und probe_descriptor.adresse tragen dieselben Felder), also faellt auch der Basis-Snapshot; PE-012 selbst faellt mit 'doppelter Schluessel' -> ungueltig statt uebernommen, keine zwei Mitglieder in der Sicht. B3c zeigt denselben Bruch am Korpus: gueltige Fixtures mit wiederkehrenden Namen fallen am Tor.
+Lauf unter der Mutation:
+  Bau EqCopSonde012SourcesModelTest, EqCopSchemaTest: Exit 0
+  B13: Binaer 09:50:47.447, Quelle 09:50:44.658, Binaer juenger: ja
+  B13: Exit 3221225477, Fehlzeilen 24, Rohausgabe rot-K41-mutiert-B13.txt
+    Summe: FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot pa
+    Summe: ok      313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 0]
+    Summe: ok      313/M-49 Zaehlpruefung B13: cpp_sources_snapshot  [12 gefahren, Kopf 12]
+    Summe: ok      313/M-49 Zaehlpruefung B13: cpp_sources_ruecknahme  [11 gefahren, Kopf 11]
+  B3c: Binaer 09:50:48.281, Quelle 09:50:44.658, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 240, Rohausgabe rot-K41-mutiert-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 168 bestanden, 5 gescheitert
+Ruecknahme 24.09.2026 09:50:48: SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c - gleich dem Stand vor der Mutation
+  Bau EqCopSonde012SourcesModelTest, EqCopSchemaTest: Exit 0
+  B13: Binaer 09:50:51.595, Quelle 09:50:48.656, Binaer juenger: ja
+  B13: Exit 0, Fehlzeilen 0, Rohausgabe rot-K41-zurueck-B13.txt
+    Summe: ok      NAK246_M30_vorbedingung_beide_modelle_tragen_alle_sieben_sitzungsgroessen  [1 Versuch(e), 2 Paar(e), 1 Befund(e), findingsOffen 1, Ruecknahmen 1 (routing_unbekannt, ganze_sitzung) / 1 Versuch(e), 2 Paar(e), 1 Bef
+    Summe: ok      NAK246_M30_reload_und_subscription_leeren_dieselbe_sitzungsmenge  [projektReload: keine (1 Zeile(n)) / beginneSubscription: keine (1 Zeile(n))]
+    Summe: ok      NAK246_M31_reload_behaelt_broker_unavailable_mit_handgriff_subscription_meldet_authenticating  [Broker unavailable +Handgriff / Authenticating]
+    Summe: SONDE-012 SourcesModel: 149/149 gruen
+  B3c: Binaer 09:50:52.455, Quelle 09:50:48.656, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-K41-zurueck-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 173 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B13: 'FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)' in der Ausgabe: JA
+  B13: 'FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist ungueltig/duplikat, soll gueltig/ - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Objektschluessel erwartet - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: unbekanntes Escape - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B13] FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  [B3c] [ROT]  gueltig/assistant-step-ohne-bezug.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/assistant-step-preview-bleibt-im-vertrag.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/assistant_step_update.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/draft-offer-keine-aenderung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [B3c] [ROT]  gueltig/draft-offer-mehr-daten.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [B3c] [ROT]  gueltig/draft_offer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [B3c] [ROT]  gueltig/evidence-abdeckung-raender.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-bandwerte-float32.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-bandwerte-q0p01-raender.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-bandwerte-q0p1-raender.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-cycle-nur-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-cycle-validiert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-ereignisse-leer-mit-verlust.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-ereignisse-voller-ring.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-grobes-gitter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-konfidenz-additiv.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-ohne-projektzeit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-snapshot-mit-ereignissen-und-stereo.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-snapshot-samples-nicht-endlich.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-stereo-ohne-kohaerenz.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-verteilung-additiv.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/evidence-volle-hostzeit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: input_presentation_latency
+  [B3c] [ROT]  gueltig/evidence_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/experiment-begin-mit-ziel.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/experiment-begin-nicht-endliche-samples-gezaehlt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/experiment-begin-nicht-endliche-samples-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/experiment-begin-passage-ohne-label.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/experiment-begin-unclear-alignment.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/experiment_begin.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/experiment_candidate.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  gueltig/finding-33-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/finding-64-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/finding-ausschlussgrund-master-duplikat-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/finding-ausschlussgrund-screening-ueberboten-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/intent-update-alle-fuenf-rollen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/intent-update-einzelne-fortschreibung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/intent-update-globaler-scope.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/intent-update-leerer-bestand-mit-marke.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/intent_update.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/pair-id-64-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/probe-host-bus-name-codepointgetreu.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/probe-host-context-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/probe-host-context-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-active-probe-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-command-falsche-epoche-vertragsform.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-command-fremdes-main-vertragsform.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-command-unbind.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-legacy-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-main-insert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-mitglied-unclassified.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-p2-reject.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-snapshot-finding-more-data-herabgesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-snapshot-finding-ohne-optionales.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-snapshot-mit-experimenten-und-paaren.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-snapshot-mit-findings.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session-snapshot-store-degraded.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session_command.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/subscribe_session.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  gueltig/transport-local-monotonic.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/transport-project-samples.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/validity-continuous-time-mit-wert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  gueltig/validity-cycle-bounds-mit-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/abdeckung-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/abdeckung-ueber-1.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/assistant-schritt-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/assistant-step-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/assistant-step-revision-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/aussageklasse-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/aussageklasse-fehlt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/baender-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/baender-ohne-bitmap.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/baender-ohne-encoding.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/baender-zu-viele.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-als-string.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-float32-als-string.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-q0p01-nicht-ganzzahlig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-q0p01-ueber-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-q0p01-unter-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-q0p1-nicht-ganzzahlig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-q0p1-ueber-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwert-q0p1-unter-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandwerte-saturated-als-string.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bandzahl-passt-nicht-zum-gitter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/beitrag-ohne-contribution-aux.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-active-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-legacy.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-main.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-passive-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/beitragsposition-beobachtend.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [B3c] [ROT]  ungueltig/bitmap-alphabet-fremd.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bitmap-fuellbits-gesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bitmap-fuellzeichen-vorn.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bitmap-grob-fuellbits-gesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/bitmap-laenge-passt-nicht.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/continuity-segment-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/cycle-bounds-invalid-mit-validated-block-mapping.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/cycle-bounds-valid-ohne-end-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/cycle-bounds-valid-ohne-start-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/cycle-ohne-active.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/derivation-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/derived-bounds-ohne-ende.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/draft-offer-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [B3c] [ROT]  ungueltig/dsp-neunte-klemmung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: id
+  [B3c] [ROT]  ungueltig/encoding-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-ereignis-bandzentrum-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-ereignis-ohne-peakbit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-ereignisse-ohne-verlustzaehler.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-ereignisse-ueber-64.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-ohne-verteilung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: metrics_version
+  [B3c] [ROT]  ungueltig/evidence-stereo-falsche-gitter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-stereo-ohne-freiheitsgrade.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-stereo-werte-ausserhalb.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/evidence-stereo-zusatzfeld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [B3c] [ROT]  ungueltig/experiment-begin-behauptet-wiederherstellbarkeit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  ungueltig/experiment-begin-fremder-execution-mode.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  ungueltig/experiment-begin-ohne-passage.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [B3c] [ROT]  ungueltig/experiment-begin-passage-abdeckung-ueber-eins.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+Nach der Ruecknahme:
+  B13: Exit 0, Fehlzeilen 0
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B13 unter der Mutation: gefallene Pruefungen (24) und Summenzeilen ===
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist ungueltig/duplikat, soll gueltig/ - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Objektschluessel erwartet - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: unbekanntes Escape - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: grund - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: art - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+  FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - evidence_invalidate parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+=== B13 nach der Ruecknahme: Summenzeilen ===
+SONDE-012 SourcesModel: 149/149 gruen
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== B3c unter der Mutation: gefallene Pruefungen (240) und Summenzeilen ===
+  [ROT]  gueltig/assistant-step-ohne-bezug.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/assistant-step-preview-bleibt-im-vertrag.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/assistant_step_update.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/draft-offer-keine-aenderung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  gueltig/draft-offer-mehr-daten.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  gueltig/draft_offer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  gueltig/evidence-abdeckung-raender.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-bandwerte-float32.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-bandwerte-q0p01-raender.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-bandwerte-q0p1-raender.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-cycle-nur-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-cycle-validiert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-ereignisse-leer-mit-verlust.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-ereignisse-voller-ring.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-grobes-gitter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-konfidenz-additiv.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-ohne-projektzeit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-snapshot-mit-ereignissen-und-stereo.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-snapshot-samples-nicht-endlich.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-stereo-ohne-kohaerenz.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-verteilung-additiv.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/evidence-volle-hostzeit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: input_presentation_latency
+  [ROT]  gueltig/evidence_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/experiment-begin-mit-ziel.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/experiment-begin-nicht-endliche-samples-gezaehlt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/experiment-begin-nicht-endliche-samples-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/experiment-begin-passage-ohne-label.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/experiment-begin-unclear-alignment.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/experiment_begin.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/experiment_candidate.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  gueltig/finding-33-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/finding-64-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/finding-ausschlussgrund-master-duplikat-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/finding-ausschlussgrund-screening-ueberboten-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/intent-update-alle-fuenf-rollen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/intent-update-einzelne-fortschreibung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/intent-update-globaler-scope.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/intent-update-leerer-bestand-mit-marke.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/intent_update.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/pair-id-64-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/probe-host-bus-name-codepointgetreu.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/probe-host-context-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/probe-host-context-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-active-probe-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-command-falsche-epoche-vertragsform.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-command-fremdes-main-vertragsform.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-command-unbind.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-legacy-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-main-insert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-mitglied-unclassified.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-p2-reject.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-snapshot-finding-more-data-herabgesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-snapshot-finding-ohne-optionales.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-snapshot-mit-experimenten-und-paaren.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-snapshot-mit-findings.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session-snapshot-store-degraded.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session_command.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/subscribe_session.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  gueltig/transport-local-monotonic.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/transport-project-samples.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/validity-continuous-time-mit-wert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  gueltig/validity-cycle-bounds-mit-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/abdeckung-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/abdeckung-ueber-1.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/assistant-schritt-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/assistant-step-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/assistant-step-revision-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/aussageklasse-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/aussageklasse-fehlt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/baender-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/baender-ohne-bitmap.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/baender-ohne-encoding.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/baender-zu-viele.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-als-string.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-float32-als-string.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-q0p01-nicht-ganzzahlig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-q0p01-ueber-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-q0p01-unter-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-q0p1-nicht-ganzzahlig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-q0p1-ueber-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwert-q0p1-unter-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandwerte-saturated-als-string.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bandzahl-passt-nicht-zum-gitter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/beitrag-ohne-contribution-aux.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/beitrag-plugin-kind-active-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/beitrag-plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/beitrag-plugin-kind-legacy.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/beitrag-plugin-kind-main.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/beitrag-plugin-kind-passive-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/beitragsposition-beobachtend.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/bitmap-alphabet-fremd.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bitmap-fuellbits-gesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bitmap-fuellzeichen-vorn.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bitmap-grob-fuellbits-gesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/bitmap-laenge-passt-nicht.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/continuity-segment-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/cycle-bounds-invalid-mit-validated-block-mapping.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/cycle-bounds-valid-ohne-end-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/cycle-bounds-valid-ohne-start-ppq.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/cycle-ohne-active.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/derivation-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/derived-bounds-ohne-ende.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/draft-offer-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/dsp-neunte-klemmung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: id
+  [ROT]  ungueltig/encoding-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-ereignis-bandzentrum-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-ereignis-ohne-peakbit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-ereignisse-ohne-verlustzaehler.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-ereignisse-ueber-64.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-ohne-verteilung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: metrics_version
+  [ROT]  ungueltig/evidence-stereo-falsche-gitter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-stereo-ohne-freiheitsgrade.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-stereo-werte-ausserhalb.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/evidence-stereo-zusatzfeld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/experiment-begin-behauptet-wiederherstellbarkeit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-fremder-execution-mode.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-ohne-passage.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-passage-abdeckung-ueber-eins.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-passage-fremde-messpunktklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-passage-leeres-label.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-passage-ohne-fingerprint.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-passage-ohne-grenzen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-begin-passage-ohne-transportepoche.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-candidate-blindreihenfolge-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-candidate-ohne-blindreihenfolge.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-referenz-bruchzahl-nicht-endliche-samples.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-referenz-fingerprint-zu-kurz.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-referenz-fremde-alignmentklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-referenz-fremde-messpunktklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-referenz-negative-nicht-endliche-samples.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-referenz-ohne-match-gain.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-ziel-band-ueber-dem-rand.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/experiment-ziel-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: version
+  [ROT]  ungueltig/finding-65-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-aussageklasse-vierte.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-ausschluss-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-ausschlussgrund-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-band-hz-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-belegtext-statt-zone.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-beobachtung-ohne-bit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-konfidenz-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-maskierung-band-unter-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-maskierung-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-naechster-test-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-ohne-evidenz-ids.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-pre-post-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-rang-ohne-komponente.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-sicherheitsklasse-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-ursachenklasse-achte.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-vierte-anzeigezeile.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-zielmetrik-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/finding-zustand-vierter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/frische-ohne-stale.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/gitter-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/host-bus-name-121-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-bus-name-c0-steuerzeichen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-bus-name-c1-steuerzeichen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-bus-name-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-bus-name-nur-whitespace.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-mixer-index-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-mixer-index-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/host-mixer-namespace-drittes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/insert-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-band-ueber-dem-gitterrand.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-beziehung-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-beziehungsart-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-herkunft-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-konfidenz-ueber-eins.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-revision-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-rolle-sechster-wert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-schutz-eigenschaft-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-update-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/intent-update-ohne-vollstaendigkeitsmarke.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/konfidenz-klasse-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/konfidenz-ueber-maxproperties.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/label-als-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/label-zu-lang.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/messposition-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/mitglied-unvollstaendig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/mitglieder-zu-viele.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/pair-id-65-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/pair-id-als-zahl.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/pair-id-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/playing-als-zahl.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: gitter_id
+  [ROT]  ungueltig/plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/post-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/pre-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/probe-descriptor-main-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/probe-descriptor-main-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: session_epoch
+  [ROT]  ungueltig/proposal-aktion-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-execution-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-grenzen-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-ohne-grenzen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-ohne-passage.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-ohne-rueckweg.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-ohne-stopbedingung.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  [ROT]  ungueltig/proposal-parameter-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: doppelter Schluessel: base_revision
+  ... und 40 weitere
+168 bestanden, 5 gescheitert
+=== B3c nach der Ruecknahme: Summenzeilen ===
+173 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

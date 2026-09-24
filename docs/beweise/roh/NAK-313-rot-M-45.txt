@@ -1,0 +1,108 @@
+NAK-313 Etappe 4 - Rotbeweis M-45 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-45 - T3-03-09 - R-313-6 - NAK-310 M-77, Alternative abgelehnt - Produktleser Rust-Bootstrap
+Zustand: Control-Hello mit doppeltem logon_sid (beide Reihenfolgen), doppeltem type (hello und fremd zuletzt) und Alias fuer protocol (PE-052 bis PE-056), mit Laengenpraefix.
+Ereignis: bootstrap_lesen.
+Zusage: Jede Variante BootstrapFehler::KeinJson mit der Marke nakama:doppelter-schluessel (Stufe duplikat); kein V3Control.
+Bein: A4, Modultest broker/src/transport/bootstrap.rs tests::nak313_m45_doppelter_schluessel_im_hello.
+
+--- Haelfte 1: kein V3Control - Etikett: Regressionswache ---
+Pruefung: Wirkung ablehnung aller fuenf Eintraege
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 korpus_klassifiziert_wie_das_manifest, Modultests (Exit 101) ===
+  PE-052: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `logon_sid` at line 9 column 15")))
+  PE-053: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `logon_sid` at line 9 column 15")))
+  PE-054: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `type` at line 3 column 8")))
+  PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+  PE-056: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `protocol` at line 5 column 12")))
+  -> am Basisstand: gruen fuer die Wirkung (heute KeinHello; die Zeilen am Basisstand melden nur die Stufe)
+  Mutation R5 (broker/src/transport/bootstrap.rs - im Bootstrap serde_json::from_str statt json_streng), Stand 2af21673; Bein A4-lib (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-R5.txt):
+    Rotlauf R5 - im Bootstrap serde_json::from_str statt json_streng - 24.09.2026 09:51:32 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R5-bootstrap.rs (SHA-256 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f)
+    Mutation 1 ab Zeile 225 (Stand vor der Mutation):
+      vorher:
+        |     let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
+        | 
+      nachher:
+        |     let wert: serde_json::Value = serde_json::from_str(roh).map_err(|e| BootstrapFehler::KeinJson(e.to_string()))?; // MUTATION R5 (M-45)
+        | 
+    Mutiert 24.09.2026 09:51:32, SHA-256 mutiert 1cc6a29085fbfcaea831f5badade17eb2c5950527d7ab7569e3b8d2dea9f93df
+    Kette (R-313-11): Mit from_str in einen Value verschwindet das Duplikat im Wert (letzter gewinnt), die typisierte Uebernahme per from_value sieht es nicht mehr -> V3Control fuer logon_sid mit kanonischem letzten Wert, type hello zuletzt und den Alias; die uebrigen enden an der Feldregel statt als KeinJson mit Marke.
+      A4-lib: Exit 101, Fehlzeilen 12, Rohausgabe rot-R5-mutiert-A4-lib.txt
+    Ruecknahme 24.09.2026 09:51:36: SHA-256 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R5-zurueck-A4-lib.txt
+      A4-lib: 'nak313_m45_doppelter_schluessel_im_hello ... FAILED' in der Ausgabe: JA
+      A4-lib: 'PE-052: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: 'PE-056: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Wirkung ablehnung aller fuenf Eintraege):
+      gefallen: PE-052: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      gefallen: PE-054: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      gefallen: PE-056: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_binding_id: "111111111111111111111111111
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (8 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+      - thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (211404) panicked at src\transport\bootstrap.rs:753:9:
+      - PE-052: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adr
+      - PE-053: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adr
+      - PE-053: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", proj
+      - PE-054: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adr
+      - PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+      - PE-056: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adr
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s)
+    nach der Ruecknahme: A4-lib Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s; gefallene Pruefungen 0
+
+--- Haelfte 2: KeinJson mit Marke (Stufe duplikat) - Etikett: heute rot ---
+Pruefung: Urteil/Stufe aller fuenf Eintraege
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 korpus_klassifiziert_wie_das_manifest, Modultests (Exit 101) ===
+  PE-052: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `logon_sid` at line 9 column 15")))
+  PE-053: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `logon_sid` at line 9 column 15")))
+  PE-054: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `type` at line 3 column 8")))
+  PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+  PE-056: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `protocol` at line 5 column 12")))
+  -> am Basisstand: rot
+  Mutation R5 (broker/src/transport/bootstrap.rs - im Bootstrap serde_json::from_str statt json_streng), Stand 2af21673; Bein A4-lib (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-R5.txt):
+    Rotlauf R5 - im Bootstrap serde_json::from_str statt json_streng - 24.09.2026 09:51:32 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/transport/bootstrap.rs (LF)
+    SHA-256 vorher 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R5-bootstrap.rs (SHA-256 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f)
+    Mutation 1 ab Zeile 225 (Stand vor der Mutation):
+      vorher:
+        |     let wert = crate::vertrag::json_streng(roh.as_bytes()).map_err(BootstrapFehler::KeinJson)?;
+        | 
+      nachher:
+        |     let wert: serde_json::Value = serde_json::from_str(roh).map_err(|e| BootstrapFehler::KeinJson(e.to_string()))?; // MUTATION R5 (M-45)
+        | 
+    Mutiert 24.09.2026 09:51:32, SHA-256 mutiert 1cc6a29085fbfcaea831f5badade17eb2c5950527d7ab7569e3b8d2dea9f93df
+    Kette (R-313-11): Mit from_str in einen Value verschwindet das Duplikat im Wert (letzter gewinnt), die typisierte Uebernahme per from_value sieht es nicht mehr -> V3Control fuer logon_sid mit kanonischem letzten Wert, type hello zuletzt und den Alias; die uebrigen enden an der Feldregel statt als KeinJson mit Marke.
+      A4-lib: Exit 101, Fehlzeilen 12, Rohausgabe rot-R5-mutiert-A4-lib.txt
+    Ruecknahme 24.09.2026 09:51:36: SHA-256 63d0a15962d74b037d2424c1e0d6259c671a5a5f295569a1de0d35b5f2f77e3f - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R5-zurueck-A4-lib.txt
+      A4-lib: 'nak313_m45_doppelter_schluessel_im_hello ... FAILED' in der Ausgabe: JA
+      A4-lib: 'PE-052: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: 'PE-056: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Urteil/Stufe aller fuenf Eintraege):
+      gefallen: PE-052: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bind
+      gefallen: PE-053: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", project_binding_id: "111111111111111111111111111
+      gefallen: PE-054: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bind
+      gefallen: PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+      gefallen: PE-056: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat")) (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-1111111111-2222222222-3333333333-1001", project_bind
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (6 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+      - thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (211404) panicked at src\transport\bootstrap.rs:753:9:
+      - PE-052: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-11111111
+      - PE-053: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-9", proj
+      - PE-054: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-11111111
+      - PE-056: Wirkung ablehnung nicht gehalten (Ok((V3Control(HelloControl { typ: "hello", connection_kind: "control", protocol: 3, plugin_version: "0.4.0", plugin_kind: "main", adresse: Adresse { logon_sid: "S-1-5-21-11111111
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s)
+    nach der Ruecknahme: A4-lib Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

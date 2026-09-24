@@ -1,0 +1,73 @@
+NAK-313 Etappe 4 - Mutationslauf R3: broker/src/coordinator/schema.rs - in der Lesefunktion Parserfehler als schema eingeordnet
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf R3 - in der Lesefunktion Parserfehler als schema eingeordnet - 24.09.2026 09:51:20 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei broker/src/coordinator/schema.rs (LF)
+SHA-256 vorher 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R3-schema.rs (SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129)
+Mutation 1 ab Zeile 470 (Stand vor der Mutation):
+  vorher:
+    |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+    | 
+  nachher:
+    |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Schema }, g) // MUTATION R3 (M-43)
+    | 
+Mutiert 24.09.2026 09:51:20, SHA-256 mutiert 2831f62554e487a4c7fbcc403f08f165ab97f392ff48c3d0eee13e604aa022fa
+Kette (R-313-11): Ordnet die Lesefunktion Parserfehler als schema ein, melden Schlusskomma und \q (die serde_json selbst ablehnt) die Stufe schema statt parser -> Stufenpruefung rot.
+Lauf unter der Mutation:
+  A4-lib: Exit 101, Fehlzeilen 12, Rohausgabe rot-R3-mutiert-A4-lib.txt
+    Summe: error: test failed, to rerun pass `--lib`
+    Summe: error: 1 target failed:
+    Summe: `--lib`
+Ruecknahme 24.09.2026 09:51:23: SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129 - gleich dem Stand vor der Mutation
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R3-zurueck-A4-lib.txt
+    Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... ok
+    Summe: test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+Erwartete Pruefungen unter der Mutation:
+  A4-lib: 'nak313_m43_p0_parser_lehnt_ab ... FAILED' in der Ausgabe: JA
+  A4-lib: 'PE-040: Urteil/Stufe' in der Ausgabe: JA
+  A4-lib: 'PE-041: Urteil/Stufe' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A4-lib] test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  [A4-lib] test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  [A4-lib] ---- coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab stdout ----
+  [A4-lib] thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (346592) panicked at src\coordinator\schema.rs:985:9:
+  [A4-lib] PE-038: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  [A4-lib] PE-039: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  [A4-lib] PE-040: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  [A4-lib] PE-041: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  [A4-lib] PE-043: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  [A4-lib] ---- coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf stdout ----
+  [A4-lib] thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (40988) panicked at src\coordinator\senke.rs:402:9:
+  [A4-lib] PE-049: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+Nach der Ruecknahme:
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (10) und Summenzeilen ===
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (346592) panicked at src\coordinator\schema.rs:985:9:
+  PE-038: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  PE-039: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  PE-040: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  PE-041: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  PE-043: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+  thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (40988) panicked at src\coordinator\senke.rs:402:9:
+  PE-049: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("parser"))
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+=== A4-lib nach der Ruecknahme: Summenzeilen ===
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+gefallene Pruefungen nach der Ruecknahme: 0
+

@@ -1,0 +1,98 @@
+NAK-313 Etappe 4 - Rotbeweis M-50 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-50 - T3-03-09 - Vertragstext Parserstufe (Abweichung A-2)
+Zustand: Endstand der Etappe 4.
+Ereignis: Lesen von eq-copilot/schemas/v3/README.md.
+Zusage: Ein Abschnitt 'Der strenge Parselauf' nennt Nachspann, zweites Dokument, Schlusskomma, unbekannte Escapes, Tiefe ueber 64 und doppelte dekodierte Namen als ungueltig vor dem Schema, den Gegenfall als gueltig und die Klasse parser_lehnt_ab.
+Bein: Lesen; tragend wie M-49.
+
+--- Haelfte 1: Text - Etikett: heute rot ---
+Pruefung: Diff des README
+  -> am Basisstand: rot (das README kannte vor dem Schema nur den Textriegel)
+  Anmerkung: Beleg ist die gelesene Stelle im Diff (unten), kein Rotlauf.
+
+--- Haelfte 2: Regel - Etikett: heute rot ---
+Pruefung: M-39 bis M-49
+  -> am Basisstand: rot in M-39 bis M-49
+  Anmerkung: Rotbeweis der Regel: den strengen Lauf entfernen -> M-39 rot (Mutation S1).
+  Mutation S1 (eq-copilot/plugin/src/SourcesModel.cpp - im Snapshot-Leser des Quellenmodells den strengen Lauf entfernt), Stand 2af21673; Bein B13 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-S1.txt):
+    Rotlauf S1 - im Snapshot-Leser des Quellenmodells den strengen Lauf entfernt - 24.09.2026 09:50:24 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei eq-copilot/plugin/src/SourcesModel.cpp (CRLF)
+    SHA-256 vorher 4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\S1-SourcesModel.cpp (SHA-256 4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28)
+    Mutation 1 ab Zeile 743 (Stand vor der Mutation):
+      vorher:
+        |     if (! nakama::kanon::lies (text, streng, strengGrund))
+        |     {
+        |         fehler = "session_snapshot parser: " + strengGrund;
+        |         return SnapshotErgebnis::ungueltig;
+        |     }
+        | 
+      nachher:
+        |     (void) streng; (void) strengGrund;   // MUTATION S1 (M-39): der strenge Lauf entfernt
+        | 
+    Mutiert 24.09.2026 09:50:24, SHA-256 mutiert 9dd7c84fe6e6dc0dea81146e303d4811e874d352869593923b6fd5004b7c09a9
+    Kette (R-313-11): Ohne den strengen Lauf liest JUCE die Bytes: Nachspann, zweites Dokument, Schlusskomma und \q nimmt es an, bei doppeltem Namen gilt der letzte Wert -> Syntaxvarianten, passende Duplikate und Alias uebernommen, type fremd ignoriert; die Wache session_epoch fremd (PE-008) bleibt ungueltig, aber an der Feldregel 'belongs to another session' -> Stufe feldregel statt duplikat.
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 09:50:28.718, Quelle 09:50:24.087, Binaer juenger: ja
+      B13: Exit 1, Fehlzeilen 21, Rohausgabe rot-S1-mutiert-B13.txt
+    Ruecknahme 24.09.2026 09:50:28: SHA-256 4c5cc2b2359adcc0f88409b92044f631922520ce887f7794785e5f4959917b28 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest: Exit 0
+      B13: Binaer 09:50:33.552, Quelle 09:50:28.977, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe rot-S1-zurueck-B13.txt
+      B13: 'FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)' in der Ausgabe: JA
+      B13: 'FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)' in der Ausgabe: JA
+      B13: 'FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)' in der Ausgabe: JA
+      B13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (M-39 bis M-49):
+      gefallen: FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (20 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, quelle 0, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ignoriert/, soll ungueltig/duplikat]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - session_snapshot belongs to another session]
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+      ... und 5 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: SONDE-012 SourcesModel: 128/149 gruen)
+    nach der Ruecknahme: B13 SONDE-012 SourcesModel: 149/149 gruen; gefallene Pruefungen 0
+
+Diff des README (69ecbe95..HEAD):
+  diff --git a/eq-copilot/schemas/v3/README.md b/eq-copilot/schemas/v3/README.md
+  index 045e0e6f..d775f9a9 100644
+  --- a/eq-copilot/schemas/v3/README.md
+  +++ b/eq-copilot/schemas/v3/README.md
+  @@ -159,6 +159,19 @@ Fixtures, die an dieser Stufe fallen, tragen im Manifest
+   Schema nie, und eine erfundene Menge waere eine Luege ueber den Ort der
+   Ablehnung.
+   
+  +## Der strenge Parselauf — die Stufe NACH dem Textriegel
+  +
+  +Jeder Leser liest ein v3-Dokument genau einmal streng nach RFC 8259: kein
+  +Nachspann und kein zweites Dokument, kein Schlusskomma, nur die Escapes aus
+  +RFC 8259 §7, und in keinem Objekt zweimal derselbe dekodierte Name — auch
+  +nicht als Escape-Alias wie `typ\u0065` neben `type`, auch nicht für
+  +Discriminator und Adressfelder. Ein Verstoß ist ungültig, bevor das Schema
+  +ihn sieht; ebenso eine Verschachtelung tiefer als 64 Ebenen (Objekte und
+  +Listen zusammen gezählt), dieselbe Grenze in allen drei Sprachen. Das
+  +Manifest kennzeichnet solche Fixtures mit `parser_lehnt_ab: true` und ohne
+  +Verletzungsmenge. Derselbe Name in zwei verschiedenen Objekten ist gültig.
+  +(NAK-313 R-313-6, 24.09.2026.)
+  +
+   ## Die Engine-Teilmenge
+   
+   Beide eigenen Engines implementieren **genau** diese Schluesselwoerter:
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

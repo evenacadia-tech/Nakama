@@ -1,0 +1,78 @@
+NAK-313 Etappe 4 - Rotbeweis M-41 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-41 - T3-03-09 - R-313-6 - Gegenfall gleicher Schluessel in zwei Objekten - Produktleser SourcesModel Snapshot
+Zustand: gueltiger session_snapshot mit zwei Mitgliedern, deren Adressen je logon_sid tragen (PE-012).
+Ereignis: uebernehmeSessionSnapshot.
+Zusage: uebernommen, beide Mitglieder in der Sicht.
+Bein: B13, 313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe) und (Wirkung).
+
+--- Haelfte 1: uebernommen, beide Mitglieder in der Sicht - Etikett: Regressionswache ---
+Pruefung: (Urteil, Stufe) und (Wirkung) von PE-012
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === B13 EqCopSonde012SourcesModelTest (Exit 1) ===
+  ok      313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  ok      313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: revision 2 -> 3, quellen 1 -> 2, Zeilen 2]
+  -> am Basisstand: gruen
+  Mutation K41 (eq-copilot/plugin/state/NakamaKanon.cpp - in kanon::lies die Namen dokumentweit statt je Objekt gesammelt (ein Namensspeicher je Leser)), Stand 2af21673; Bein B13 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-K41.txt):
+    Rotlauf K41 - in kanon::lies die Namen dokumentweit statt je Objekt gesammelt (ein Namensspeicher je Leser) - 24.09.2026 09:50:44 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei eq-copilot/plugin/state/NakamaKanon.cpp (LF)
+    SHA-256 vorher aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\K41-NakamaKanon.cpp (SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c)
+    Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+      vorher:
+        |     juce::String fehler;
+        |     int tiefe = 0;
+        | 
+      nachher:
+        |     juce::String fehler;
+        |     int tiefe = 0;
+        |     juce::StringArray namenImDokument;   // MUTATION K41 (M-41): Namen dokumentweit
+        | 
+    Mutation 2 ab Zeile 364 (Stand vor der Mutation):
+      vorher:
+        |                 if (! aus.objektSetze (schluessel, std::move (kind)))
+        |                     return fehl ("doppelter Schluessel: " + schluessel);
+        | 
+      nachher:
+        |                 if (namenImDokument.contains (schluessel) || ! aus.objektSetze (schluessel, std::move (kind)))
+        |                     return fehl ("doppelter Schluessel: " + schluessel);
+        |                 namenImDokument.add (schluessel);   // MUTATION K41 (M-41)
+        | 
+    Mutiert 24.09.2026 09:50:44, SHA-256 mutiert a122d36c39e9d89e80b2f026c31472a1648d2402cd047bcdafb416088f17c2ba
+    Kette (R-313-11): Sammelt der Leser die Namen dokumentweit, gilt jeder Name, der in einem zweiten Objekt wiederkehrt, als doppelt. Jeder session_snapshot wiederholt Namen (adresse und probe_descriptor.adresse tragen dieselben Felder), also faellt auch der Basis-Snapshot; PE-012 selbst faellt mit 'doppelter Schluessel' -> ungueltig statt uebernommen, keine zwei Mitglieder in der Sicht. B3c zeigt denselben Bruch am Korpus: gueltige Fixtures mit wiederkehrenden Namen fallen am Tor.
+      Bau EqCopSonde012SourcesModelTest, EqCopSchemaTest: Exit 0
+      B13: Binaer 09:50:47.447, Quelle 09:50:44.658, Binaer juenger: ja
+      B13: Exit 3221225477, Fehlzeilen 24, Rohausgabe rot-K41-mutiert-B13.txt
+    Ruecknahme 24.09.2026 09:50:48: SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c - gleich dem Stand vor der Mutation
+      Bau EqCopSonde012SourcesModelTest, EqCopSchemaTest: Exit 0
+      B13: Binaer 09:50:51.595, Quelle 09:50:48.656, Binaer juenger: ja
+      B13: Exit 0, Fehlzeilen 0, Rohausgabe rot-K41-zurueck-B13.txt
+      B13: 'FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)' in der Ausgabe: JA
+      B13: 'FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)' in der Ausgabe: JA
+      B13: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung ((Urteil, Stufe) und (Wirkung) von PE-012):
+      gefallen: FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist ungueltig/duplikat, soll gueltig/ - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot parser: doppelter Schluessel: session_epoch]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (23 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot 
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot 
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot 
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/parser - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapshot 
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser:
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser:
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapsho
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: session_epoch - Basis nicht uebernommen: session_snapsho
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session_snapshot pa
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: logon_sid - Basis nicht uebernommen: session_snapshot pa
+      - FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - session_snapshot parser: doppelter Schluessel: type - Basis nicht uebernommen: session_snapshot parser:
+      - FEHLER  313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: keine, Zeilen 0]
+      - FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session_snapshot parser: do
+      - FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Text nach dem Dokument - Basis nicht uebernommen: session_snapshot parser: do
+      - FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - evidence_invalidate parser: Objektschluessel erwartet - Basis nicht uebernommen: session_snapshot parser:
+      ... und 8 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: )
+    nach der Ruecknahme: B13 SONDE-012 SourcesModel: 149/149 gruen; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

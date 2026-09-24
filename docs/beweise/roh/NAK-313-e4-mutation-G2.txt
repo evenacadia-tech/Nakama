@@ -1,0 +1,115 @@
+NAK-313 Etappe 4 - Mutationslauf G2: tools/eq-copilot/erzeuge_v3_fixtures.py - im Erzeuger 0 statt null ins Negativfixture gesetzt und neu erzeugt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf G2 - im Erzeuger 0 statt null ins Negativfixture gesetzt und neu erzeugt - 24.09.2026 09:52:00 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei tools/eq-copilot/erzeuge_v3_fixtures.py (LF)
+SHA-256 vorher 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\G2-erzeuge_v3_fixtures.py (SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e)
+Mutation 1 ab Zeile 3777 (Stand vor der Mutation):
+  vorher:
+    |             neu["project_sample_start"] = None
+    | 
+  nachher:
+    |             neu["project_sample_start"] = 0  # MUTATION G2 (M-53): 0 statt null
+    | 
+Mutiert 24.09.2026 09:52:00, SHA-256 mutiert 9307cf3969b74d8d710ff78e0bae542c985447eb5b4ba83fdf9640c3b162b224
+Kette (R-313-11): Mit 0 statt null erfuellt der Wert die gemeinsame Eigenschaft (integer), verletzt aber den Zweig local_monotonic (oneOf/1, type null) -> die Verletzung liegt am Zweig statt an der gemeinsamen Eigenschaft -> B3c und A4 melden 'Verletzungsmenge weicht ab'; A5 vergleicht nur das Urteil (bleibt gruen), A8 ist nach der Neuerzeugung bytegleich.
+Lauf unter der Mutation:
+  nach der Mutation: ['py', '-3.13', 'tools/eq-copilot/erzeuge_v3_fixtures.py'] - Exit 0
+  B3c: Binaer 09:50:52.455, Quelle 09:52:00.041, Binaer juenger: NEIN
+  B3c: Exit 1, Fehlzeilen 2, Rohausgabe rot-G2-mutiert-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 172 bestanden, 1 gescheitert
+  A4-korpus: Exit 101, Fehlzeilen 3, Rohausgabe rot-G2-mutiert-A4-korpus.txt
+    Summe: error: test failed, to rerun pass `--test contract_cross_language`
+    Summe: error: 1 target failed:
+    Summe: `--test contract_cross_language`
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-mutiert-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+  A8: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-mutiert-A8.txt
+    Summe: 112 gueltige, 302 ungueltige Fixtures
+    Summe: bytegleich: 420 Dateien, MANIFEST sha256=f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b
+Ruecknahme 24.09.2026 09:52:06: SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e - gleich dem Stand vor der Mutation
+  nach der Ruecknahme: ['py', '-3.13', 'tools/eq-copilot/erzeuge_v3_fixtures.py'] - Exit 0
+  beobachtet eq-copilot/fixtures/v3/ungueltig/evidence-local-monotonic-project-sample-start-null.json: SHA-256 gleich (ea0c8b141416d351)
+  beobachtet eq-copilot/fixtures/v3/MANIFEST.json: SHA-256 gleich (f5a1db4ee09ea855)
+  beobachtet eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json: SHA-256 gleich (d8fdff0652758227)
+  B3c: Binaer 09:50:52.455, Quelle 09:52:06.842, Binaer juenger: NEIN
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-zurueck-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 173 bestanden, 0 gescheitert
+  A4-korpus: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-zurueck-A4-korpus.txt
+    Summe: test korpus_klassifiziert_wie_das_manifest ... ok
+    Summe: test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.31s
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-zurueck-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+  A8: Exit 0, Fehlzeilen 0, Rohausgabe rot-G2-zurueck-A8.txt
+    Summe: 112 gueltige, 302 ungueltige Fixtures
+    Summe: bytegleich: 420 Dateien, MANIFEST sha256=f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b
+Erwartete Pruefungen unter der Mutation:
+  B3c: '[ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab' in der Ausgabe: JA
+  A4-korpus: 'ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B3c] [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+  [B3c] [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [1 Abweichungen]
+  [A4-korpus] test korpus_klassifiziert_wie_das_manifest ... FAILED
+  [A4-korpus] ---- korpus_klassifiziert_wie_das_manifest stdout ----
+  [A4-korpus] thread 'korpus_klassifiziert_wie_das_manifest' (43328) panicked at tests\contract_cross_language.rs:132:5:
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+  A4-korpus: Exit 0, Fehlzeilen 0
+  A5: Exit 0, Fehlzeilen 0
+  A8: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (2) und Summenzeilen ===
+  [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+  [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [1 Abweichungen]
+[ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+172 bestanden, 1 gescheitert
+=== B3c nach der Ruecknahme: Summenzeilen ===
+173 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== A4-korpus unter der Mutation: gefallene Pruefungen (3) und Summenzeilen ===
+  test korpus_klassifiziert_wie_das_manifest ... FAILED
+  thread 'korpus_klassifiziert_wie_das_manifest' (43328) panicked at tests\contract_cross_language.rs:132:5:
+  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+ungueltig/evidence-local-monotonic-project-sample-start-null.json: Verletzungsmenge weicht ab
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s
+=== A4-korpus nach der Ruecknahme: Summenzeilen ===
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.31s
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== A5 unter der Mutation: gefallene Pruefungen (0) und Summenzeilen ===
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 692 bestanden, 0 gescheitert
+=== A5 nach der Ruecknahme: Summenzeilen ===
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 692 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== A8 unter der Mutation: gefallene Pruefungen (0) und Summenzeilen ===
+bytegleich: 420 Dateien, MANIFEST sha256=f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b
+=== A8 nach der Ruecknahme: Summenzeilen ===
+bytegleich: 420 Dateien, MANIFEST sha256=f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b
+gefallene Pruefungen nach der Ruecknahme: 0
+

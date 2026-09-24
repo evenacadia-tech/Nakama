@@ -1,0 +1,186 @@
+NAK-313 Etappe 4 - Rotbeweis M-46 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-46 - T3-03-09 - R-313-6 - Python-Referenzbein
+Zustand: Fixturekorpus mit der Klasse parser_lehnt_ab und die v3-Eintraege der Tabelle.
+Ereignis: A5: pruefe_fixtures und pruefe_produkteingaenge.
+Zusage: json_laden_strikt lehnt doppelte dekodierte Namen ueber den Hook mit eigener Ausnahmeklasse ab; die Stufe folgt der Ausnahmeklasse; jedes parser_lehnt_ab-Fixture faellt beim Laden ohne Verletzungsmenge; jeder Tabelleneintrag liefert Urteil und Stufe aus vertrag.
+Bein: A5 (tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung); A11 nutzt denselben strengen Lauf.
+
+--- Haelfte 1: Duplikate und Alias - Etikett: heute rot ---
+Pruefung: Ladezweig der Duplikat-Fixtures und die Duplikateintraege der Tabelle
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A5 pruefe_v3_vertrag.py --abdeckung (Exit 2) ===
+  ROT: ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: ungueltig/parser-type-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: ungueltig/parser-type-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: ungueltig/parser-type-escape-alias.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+  ROT: PE-005 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-006 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-007 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-008 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-009 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-010 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-011 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-017 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-018 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-019 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-020 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-021 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-022 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-023 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-033 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-034 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-035 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-036 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-037 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-044 rust_p1 M-44: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-045 rust_p1 M-44: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-046 rust_p1 M-44: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-047 rust_p1 M-44: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-052 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-053 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-054 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  ROT: PE-055 rust_bootstrap M-45: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+  ROT: PE-056 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  -> am Basisstand: rot
+  Mutation PY1 (tools/eq-copilot/pruefe_v3_vertrag.py - json_laden_strikt ohne object_pairs_hook), Stand 0fce3f26; Bein A5 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-PY1.txt):
+    Rotlauf PY1 - json_laden_strikt ohne object_pairs_hook - 24.09.2026 09:38:23 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+    SHA-256 vorher 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\PY1-pruefe_v3_vertrag.py (SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb)
+    Mutation 1 ab Zeile 194 (Stand vor der Mutation):
+      vorher:
+        |     wert = json.loads(quelle, parse_constant=json_konstante_ablehnen,
+        |                       object_pairs_hook=objekt_ohne_duplikat)
+        | 
+      nachher:
+        |     wert = json.loads(quelle, parse_constant=json_konstante_ablehnen)  # MUTATION PY1 (M-46): Hook entfernt
+        | 
+    Mutiert 24.09.2026 09:38:23, SHA-256 mutiert 44bcfd6e9d8ecc42c2902efcbcb6818e66284b4b8908953b4510135f6a252fee
+    Kette (R-313-11): Ohne Hook baut json.loads ein dict, der letzte Wert eines doppelten Namens gewinnt still -> die Duplikat- und Alias-Fixtures werden gelesen (A5: 'parser_lehnt_ab, aber der strenge Parselauf nimmt es an'), und die Duplikateintraege der Tabelle liefern gueltig oder schema statt duplikat (A5 v3, A11 v2).
+      A5: Exit 2, Fehlzeilen 35, Rohausgabe rot-PY1-mutiert-A5.txt
+    Ruecknahme 24.09.2026 09:38:26: SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb - gleich dem Stand vor der Mutation
+      A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-PY1-zurueck-A5.txt
+      A5: 'ungueltig/parser-type-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an' in der Ausgabe: JA
+      A5: 'ROT: PE-005 cpp_sources_snapshot M-39: Vertragsurteil und Stufe' in der Ausgabe: JA
+      A5: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Ladezweig der Duplikat-Fixtures und die Duplikateintraege der Tabelle):
+      gefallen: ROT: ungueltig/parser-type-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      gefallen: ROT: PE-005 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (33 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - ROT: ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      - ROT: ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      - ROT: ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      - ROT: ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      - ROT: ungueltig/parser-type-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      - ROT: ungueltig/parser-type-escape-alias.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+      - ROT: PE-006 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+      - ROT: PE-007 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      - ROT: PE-008 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      - ROT: PE-009 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      - ROT: PE-010 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      - ROT: PE-011 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      - ROT: PE-017 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      - ROT: PE-018 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+      - ROT: PE-019 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+      ... und 18 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 657 bestanden, 35 gescheitert)
+    nach der Ruecknahme: A5 Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 692 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+--- Haelfte 2: Nachspann, zweites Dokument, Schlusskomma, \q - Etikett: Regressionswache ---
+Pruefung: Ladezweig der Syntax-Fixtures (json.loads lehnt ab)
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A5 pruefe_v3_vertrag.py --abdeckung (Exit 2) ===
+  -> am Basisstand: gruen (keine ROT-Zeile fuer die Syntax-Fixtures)
+  Anmerkung: Einzelbruch PY2: JSONDecodeError als duplikat eingeordnet - die Stufenpruefung der Syntaxeintraege faellt.
+  Mutation PY2 (tools/eq-copilot/pruefe_v3_vertrag.py - JSONDecodeError als duplikat eingeordnet), Stand 0fce3f26; Bein A5 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-PY2.txt):
+    Rotlauf PY2 - JSONDecodeError als duplikat eingeordnet - 24.09.2026 09:38:30 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+    SHA-256 vorher 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\PY2-pruefe_v3_vertrag.py (SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb)
+    Mutation 1 ab Zeile 178 (Stand vor der Mutation):
+      vorher:
+        |     return "duplikat" if isinstance(fehler, DoppelterSchluessel) else "parser"
+        | 
+      nachher:
+        |     return "duplikat" if isinstance(fehler, (DoppelterSchluessel, json.JSONDecodeError)) else "parser"  # MUTATION PY2 (M-46)
+        | 
+    Mutiert 24.09.2026 09:38:30, SHA-256 mutiert b02e25d2f3e0a897b9bd009b9c8a9ff539510a269429bdb61d6f4abda832e1a4
+    Kette (R-313-11): Ordnet die Stufe json.JSONDecodeError als duplikat ein, melden Nachspann, zweites Dokument, Schlusskomma und \q die Stufe duplikat statt parser -> Stufenpruefung der Syntaxeintraege rot.
+      A5: Exit 2, Fehlzeilen 12, Rohausgabe rot-PY2-mutiert-A5.txt
+    Ruecknahme 24.09.2026 09:38:33: SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb - gleich dem Stand vor der Mutation
+      A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-PY2-zurueck-A5.txt
+      A5: 'ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe' in der Ausgabe: JA
+      A5: 'ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe' in der Ausgabe: JA
+      A5: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Ladezweig der Syntax-Fixtures (json.loads lehnt ab)):
+      gefallen: ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      gefallen: ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (10 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - ROT: PE-002 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-003 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-004 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-013 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-014 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-015 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-016 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-039 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-040 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-041 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 680 bestanden, 12 gescheitert)
+    nach der Ruecknahme: A5 Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 692 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+--- Haelfte 3: Stufe - Etikett: heute nicht messbar ---
+Pruefung: Stufe der Tabelleneintraege
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A5 pruefe_v3_vertrag.py --abdeckung (Exit 2) ===
+  Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+  -> am Basisstand: am Basisstand mit dem neuen Tabellenlauf gemessen: die Syntaxeintraege trugen schon parser (Ausnahmeklasse der Gegenprobe)
+  Mutation PY2 (tools/eq-copilot/pruefe_v3_vertrag.py - JSONDecodeError als duplikat eingeordnet), Stand 0fce3f26; Bein A5 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-PY2.txt):
+    Rotlauf PY2 - JSONDecodeError als duplikat eingeordnet - 24.09.2026 09:38:30 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+    SHA-256 vorher 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\PY2-pruefe_v3_vertrag.py (SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb)
+    Mutation 1 ab Zeile 178 (Stand vor der Mutation):
+      vorher:
+        |     return "duplikat" if isinstance(fehler, DoppelterSchluessel) else "parser"
+        | 
+      nachher:
+        |     return "duplikat" if isinstance(fehler, (DoppelterSchluessel, json.JSONDecodeError)) else "parser"  # MUTATION PY2 (M-46)
+        | 
+    Mutiert 24.09.2026 09:38:30, SHA-256 mutiert b02e25d2f3e0a897b9bd009b9c8a9ff539510a269429bdb61d6f4abda832e1a4
+    Kette (R-313-11): Ordnet die Stufe json.JSONDecodeError als duplikat ein, melden Nachspann, zweites Dokument, Schlusskomma und \q die Stufe duplikat statt parser -> Stufenpruefung der Syntaxeintraege rot.
+      A5: Exit 2, Fehlzeilen 12, Rohausgabe rot-PY2-mutiert-A5.txt
+    Ruecknahme 24.09.2026 09:38:33: SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb - gleich dem Stand vor der Mutation
+      A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-PY2-zurueck-A5.txt
+      A5: 'ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe' in der Ausgabe: JA
+      A5: 'ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe' in der Ausgabe: JA
+      A5: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Stufe der Tabelleneintraege):
+      gefallen: ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      gefallen: ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (10 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - ROT: PE-002 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-003 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-004 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-013 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-014 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-015 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-016 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-039 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-040 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+      - ROT: PE-041 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 680 bestanden, 12 gescheitert)
+    nach der Ruecknahme: A5 Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47) | Pruefungen: 692 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

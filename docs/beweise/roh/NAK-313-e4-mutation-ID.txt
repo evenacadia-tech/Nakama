@@ -1,0 +1,55 @@
+NAK-313 Etappe 4 - Mutationslauf ID: eq-copilot/plugin/CMakeLists.txt - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf ID - PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau) - 24.09.2026 09:48:03 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/CMakeLists.txt (LF)
+SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+Mutation 1 ab Zeile 123 (Stand vor der Mutation):
+  vorher:
+    |     PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+    | 
+  nachher:
+    |     PLUGIN_CODE Eqcq
+    | 
+Mutiert 24.09.2026 09:48:03, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+Kette (R-313-11): Ein literaler PLUGIN_CODE statt des Manifestwerts bricht die eingefrorene Identitaetskette -> B1 rot.
+Lauf unter der Mutation:
+  B1: Exit 1, Fehlzeilen 3, Rohausgabe rot-ID-mutiert-B1.txt
+    Summe: ok      M-83: ein Assistentenschritt liegt im MainProject
+    Summe: ok      M-83: auch mit gesetztem Assistentenschritt bleiben es null  [0]
+    Summe: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+Ruecknahme 24.09.2026 09:48:03: Aenderungszeit auf den Stand vor der Mutation (04:17:56.551) zurueckgesetzt
+Ruecknahme 24.09.2026 09:48:03: SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation
+  B1: Exit 0, Fehlzeilen 0, Rohausgabe rot-ID-zurueck-B1.txt
+    Summe: ok      M-83: ein Assistentenschritt liegt im MainProject
+    Summe: ok      M-83: auch mit gesetztem Assistentenschritt bleiben es null  [0]
+    Summe: IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B1: 'FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B1] FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  [B1] FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 8:27:02am vs 24 Sep 2026 9:48:03am]
+  [B1] FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 8:27:28am vs 24 Sep 2026 9:48:03am]
+Nach der Ruecknahme:
+  B1: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B1 unter der Mutation: gefallene Pruefungen (3) und Summenzeilen ===
+  FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 8:27:02am vs 24 Sep 2026 9:48:03am]
+  FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 8:27:28am vs 24 Sep 2026 9:48:03am]
+IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+=== B1 nach der Ruecknahme: Summenzeilen ===
+IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+gefallene Pruefungen nach der Ruecknahme: 0
+

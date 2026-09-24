@@ -1,0 +1,236 @@
+NAK-313 Etappe 4 - Rotbeweis M-44 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-44 - T3-03-09 - R-313-6, R-313-15 - Produktleser Rust P1 (Weiche)
+Zustand: Link der Art und Adresse aus dem Register (evidence_snapshot: passive_probe, intent_update: main), angemeldet mit Heartbeatkontakt; je Eintrag von rust_p1 eine Nachricht.
+Ereignis: Senke::p1_mit_minor (die echte Weiche); Laufzaehler laeufe::ueber(bytes) unmittelbar danach.
+Zusage: Abgelehnt vor der Weiche und vor dem Schema (Stufe duplikat); kein Intent- und kein Evidenzeffekt; je P1-Nachricht genau ein strenger Lauf.
+Bein: A4, Modultest broker/src/coordinator/senke.rs nak313_tests::nak313_m44_p1_weiche_ein_lauf (cfg(all(test, windows))).
+
+--- Haelfte 1: Urteil und Wirkung: Duplikate mit passendem letzten Wert (PE-044, PE-046) - Etikett: heute rot ---
+Pruefung: Urteil/Stufe und Wirkung von PE-044, PE-046
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 korpus_klassifiziert_wie_das_manifest, Modultests (Exit 101) ===
+  PE-044: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-044: Wirkung ablehnung nicht gehalten ((0, 0, false, 0, 0) -> (1, 0, true, 0, 0))
+  PE-044: Wirkung keine_teilmutation nicht gehalten ((0, 0, false, 0, 0) -> (1, 0, true, 0, 0))
+  PE-046: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-046: Wirkung ablehnung nicht gehalten ((0, 0, false, 0, 0) -> (0, 1, false, 4, 1))
+  PE-046: Wirkung keine_teilmutation nicht gehalten ((0, 0, false, 0, 0) -> (0, 1, false, 4, 1))
+  -> am Basisstand: rot
+  Mutation R1 (broker/src/coordinator/schema.rs - in der Lesefunktion serde_json::from_slice statt json_streng), Stand 2af21673; Bein A4-lib (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-R1.txt):
+    Rotlauf R1 - in der Lesefunktion serde_json::from_slice statt json_streng - 24.09.2026 09:51:05 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/coordinator/schema.rs (LF)
+    SHA-256 vorher 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R1-schema.rs (SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129)
+    Mutation 1 ab Zeile 468 (Stand vor der Mutation):
+      vorher:
+        |     let wert = crate::vertrag::json_streng(payload).map_err(|g| {
+        |         let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+        |     })?;
+        | 
+      nachher:
+        |     // MUTATION R1 (M-43, M-44): serde_json::from_slice statt json_streng
+        |     let wert: Value = serde_json::from_slice(payload).map_err(|e| {
+        |         let g = e.to_string();
+        |         let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+        |     })?;
+        | 
+    Mutiert 24.09.2026 09:51:05, SHA-256 mutiert b6bef83e11bcbb18f2acf525065a2a986063fbb7e58a4a48527d1291c778796c
+    Kette (R-313-11): Mit from_slice in einen Value gewinnt bei doppeltem Namen der letzte Wert -> passende Duplikate und Alias werden gelesen und angenommen (P0 antwortet, P1 nimmt Evidenz und Intent an); fremde enden am Schema oder an der Feldregel statt an duplikat; die Weiche liest nicht mehr ueber json_streng -> Laufzaehler 0.
+      A4-lib: Exit 101, Fehlzeilen 43, Rohausgabe rot-R1-mutiert-A4-lib.txt
+    Ruecknahme 24.09.2026 09:51:10: SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129 - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R1-zurueck-A4-lib.txt
+      A4-lib: 'nak313_m43_p0_parser_lehnt_ab ... FAILED' in der Ausgabe: JA
+      A4-lib: 'nak313_m44_p1_weiche_ein_lauf ... FAILED' in der Ausgabe: JA
+      A4-lib: 'PE-033: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: 'PE-044: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Urteil/Stufe und Wirkung von PE-044, PE-046):
+      gefallen: PE-044: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      gefallen: PE-046: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (39 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+      - test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+      - thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (275220) panicked at src\coordinator\schema.rs:987:9:
+      - PE-033: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-033: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-033: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-033: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-034: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("duplikat"))
+      - PE-035: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-035: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-035: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-035: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-036: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat"))
+      - PE-037: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-037: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      ... und 24 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.04s)
+    nach der Ruecknahme: A4-lib Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s; gefallene Pruefungen 0
+
+--- Haelfte 2: Wachen: fremder letzter Wert (PE-045, PE-047) - Etikett: Regressionswache ---
+Pruefung: Urteil und Wirkung von PE-045, PE-047
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 korpus_klassifiziert_wie_das_manifest, Modultests (Exit 101) ===
+  -> am Basisstand: gruen (keine Abweichung gemeldet)
+  Anmerkung: Einzelbruch R1: die fremden enden am Schema beziehungsweise an der Feldregel statt an duplikat.
+  Mutation R1 (broker/src/coordinator/schema.rs - in der Lesefunktion serde_json::from_slice statt json_streng), Stand 2af21673; Bein A4-lib (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-R1.txt):
+    Rotlauf R1 - in der Lesefunktion serde_json::from_slice statt json_streng - 24.09.2026 09:51:05 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/coordinator/schema.rs (LF)
+    SHA-256 vorher 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R1-schema.rs (SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129)
+    Mutation 1 ab Zeile 468 (Stand vor der Mutation):
+      vorher:
+        |     let wert = crate::vertrag::json_streng(payload).map_err(|g| {
+        |         let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+        |     })?;
+        | 
+      nachher:
+        |     // MUTATION R1 (M-43, M-44): serde_json::from_slice statt json_streng
+        |     let wert: Value = serde_json::from_slice(payload).map_err(|e| {
+        |         let g = e.to_string();
+        |         let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+        |     })?;
+        | 
+    Mutiert 24.09.2026 09:51:05, SHA-256 mutiert b6bef83e11bcbb18f2acf525065a2a986063fbb7e58a4a48527d1291c778796c
+    Kette (R-313-11): Mit from_slice in einen Value gewinnt bei doppeltem Namen der letzte Wert -> passende Duplikate und Alias werden gelesen und angenommen (P0 antwortet, P1 nimmt Evidenz und Intent an); fremde enden am Schema oder an der Feldregel statt an duplikat; die Weiche liest nicht mehr ueber json_streng -> Laufzaehler 0.
+      A4-lib: Exit 101, Fehlzeilen 43, Rohausgabe rot-R1-mutiert-A4-lib.txt
+    Ruecknahme 24.09.2026 09:51:10: SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129 - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R1-zurueck-A4-lib.txt
+      A4-lib: 'nak313_m43_p0_parser_lehnt_ab ... FAILED' in der Ausgabe: JA
+      A4-lib: 'nak313_m44_p1_weiche_ein_lauf ... FAILED' in der Ausgabe: JA
+      A4-lib: 'PE-033: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: 'PE-044: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Urteil und Wirkung von PE-045, PE-047):
+      gefallen: PE-045: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("duplikat"))
+      gefallen: PE-047: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat"))
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (39 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+      - test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+      - thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (275220) panicked at src\coordinator\schema.rs:987:9:
+      - PE-033: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-033: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-033: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-033: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-034: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("duplikat"))
+      - PE-035: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-035: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-035: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-035: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-036: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat"))
+      - PE-037: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-037: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      ... und 24 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.04s)
+    nach der Ruecknahme: A4-lib Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s; gefallene Pruefungen 0
+
+--- Haelfte 3: Stufe und Laufzahl - Etikett: heute nicht messbar ---
+Pruefung: Urteil/Stufe und Laufzaehler aller Eintraege
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A4 cargo test -- nak313 korpus_klassifiziert_wie_das_manifest, Modultests (Exit 101) ===
+  PE-033: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-035: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-037: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-043: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-044: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-046: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-049: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  -> am Basisstand: nicht messbar (zwei Laeufe ohne Stufe am Basisstand)
+  Anmerkung: Die Laufzahl ist an den angenommenen Eintraegen PE-048 und PE-050 messbar (abgelehnte enden an der Weiche nach einem Lauf).
+  Mutation R1 (broker/src/coordinator/schema.rs - in der Lesefunktion serde_json::from_slice statt json_streng), Stand 2af21673; Bein A4-lib (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-R1.txt):
+    Rotlauf R1 - in der Lesefunktion serde_json::from_slice statt json_streng - 24.09.2026 09:51:05 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/coordinator/schema.rs (LF)
+    SHA-256 vorher 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R1-schema.rs (SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129)
+    Mutation 1 ab Zeile 468 (Stand vor der Mutation):
+      vorher:
+        |     let wert = crate::vertrag::json_streng(payload).map_err(|g| {
+        |         let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+        |     })?;
+        | 
+      nachher:
+        |     // MUTATION R1 (M-43, M-44): serde_json::from_slice statt json_streng
+        |     let wert: Value = serde_json::from_slice(payload).map_err(|e| {
+        |         let g = e.to_string();
+        |         let doppelt = g.contains(crate::vertrag::MARKE_DOPPELT);
+        |         ablehnung(if doppelt { Stufe::Duplikat } else { Stufe::Parser }, g)
+        |     })?;
+        | 
+    Mutiert 24.09.2026 09:51:05, SHA-256 mutiert b6bef83e11bcbb18f2acf525065a2a986063fbb7e58a4a48527d1291c778796c
+    Kette (R-313-11): Mit from_slice in einen Value gewinnt bei doppeltem Namen der letzte Wert -> passende Duplikate und Alias werden gelesen und angenommen (P0 antwortet, P1 nimmt Evidenz und Intent an); fremde enden am Schema oder an der Feldregel statt an duplikat; die Weiche liest nicht mehr ueber json_streng -> Laufzaehler 0.
+      A4-lib: Exit 101, Fehlzeilen 43, Rohausgabe rot-R1-mutiert-A4-lib.txt
+    Ruecknahme 24.09.2026 09:51:10: SHA-256 93837e1d74a3a5e41822f55cd238ce134fd89d6836547b5c93bb90f4bd0bd129 - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R1-zurueck-A4-lib.txt
+      A4-lib: 'nak313_m43_p0_parser_lehnt_ab ... FAILED' in der Ausgabe: JA
+      A4-lib: 'nak313_m44_p1_weiche_ein_lauf ... FAILED' in der Ausgabe: JA
+      A4-lib: 'PE-033: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: 'PE-044: Urteil/Stufe' in der Ausgabe: JA
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Urteil/Stufe und Laufzaehler aller Eintraege):
+      gefallen: PE-045: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("duplikat"))
+      gefallen: PE-047: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat"))
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (39 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+      - test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+      - thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (275220) panicked at src\coordinator\schema.rs:987:9:
+      - PE-033: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-033: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-033: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-033: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-034: Urteil/Stufe ("ungueltig", Some("schema")), soll ("ungueltig", Some("duplikat"))
+      - PE-035: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-035: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-035: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-035: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+      - PE-036: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat"))
+      - PE-037: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("duplikat"))
+      - PE-037: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+      ... und 24 weitere
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.04s)
+    nach der Ruecknahme: A4-lib Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s; gefallene Pruefungen 0
+  Mutation R4 (broker/src/coordinator/senke.rs - die P1-Weiche reicht dem Evidenzleser die Bytes statt des Werts), Stand 2af21673; Bein A4-lib (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-R4.txt):
+    Rotlauf R4 - die P1-Weiche reicht dem Evidenzleser die Bytes statt des Werts - 24.09.2026 09:51:26 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/coordinator/senke.rs (LF)
+    SHA-256 vorher 282d776934c58bd6da3c03ba1408dc5e0e62d956743e6f9904ab0ab66def0d0f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R4-senke.rs (SHA-256 282d776934c58bd6da3c03ba1408dc5e0e62d956743e6f9904ab0ab66def0d0f)
+    Mutation 1 ab Zeile 117 (Stand vor der Mutation):
+      vorher:
+        |                 let _ = self.evidence_snapshot_json_mit_minor_wert(link_id, wert);
+        | 
+      nachher:
+        |                 let _ = self.evidence_snapshot_json_mit_minor(link_id, payload, schema_minor); // MUTATION R4 (M-44)
+        | 
+    Mutiert 24.09.2026 09:51:26, SHA-256 mutiert d9229e75e4d20db7ed805665820932c2ddaf301074073c75128d454ca5dc2f41
+    Kette (R-313-11): Bekommt der Evidenzleser die Bytes, liest seine Bytehuelle sie ein zweites Mal ueber die Lesefunktion -> fuer jede angenommene Evidenz zwei strenge Laeufe ueber dieselben Bytes -> Laufzaehler 2.
+      A4-lib: Exit 101, Fehlzeilen 5, Rohausgabe rot-R4-mutiert-A4-lib.txt
+    Ruecknahme 24.09.2026 09:51:29: SHA-256 282d776934c58bd6da3c03ba1408dc5e0e62d956743e6f9904ab0ab66def0d0f - gleich dem Stand vor der Mutation
+      A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R4-zurueck-A4-lib.txt
+      A4-lib: 'nak313_m44_p1_weiche_ein_lauf ... FAILED' in der Ausgabe: JA
+      A4-lib: 'PE-048: 2 strenge Laeufe' in der Ausgabe: JA
+      A4-lib: 'PE-050: 2 strenge Laeufe' in der Ausgabe: JA
+      A4-lib: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (Urteil/Stufe und Laufzaehler aller Eintraege):
+      gefallen: PE-048: 2 strenge Laeufe ueber dieselben Bytes, zugesagt ist genau einer
+      gefallen: PE-050: 2 strenge Laeufe ueber dieselben Bytes, zugesagt ist genau einer
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (2 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+      - thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (194200) panicked at src\coordinator\senke.rs:402:9:
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s)
+    nach der Ruecknahme: A4-lib Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

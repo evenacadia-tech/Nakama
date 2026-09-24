@@ -1,0 +1,105 @@
+NAK-313 Etappe 4 - Rotbeweis M-51 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-51 - T3-03-01 - R-313-7 - Evidenzwriter, schreiben und lesen
+Zustand: echter FeatureFrame ueber den Speiser ohne kFlagZeitGueltig (local_monotonic), Transportzahlen aus eingabe der Byteinstanz evidenz-lokal-wire-v1.json.
+Ereignis: evidenceSnapshotAlsJson.
+Zusage: Kein project_sample_start im Transportblock; Textriegel und Engine gueltig; Transportblock bytegleich wire_transport.
+Bein: B16 (EqCopSonde013EventWireTest), Abschnitt NAK-313 M-51 lokaler_transport_ohne_startwert.
+
+--- Haelfte 1: kein Feld und Engine-Urteil - Etikett: heute rot ---
+Pruefung: 'kein project_sample_start im Block', 'dieselbe Engine wie B3c nimmt ihn an'
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === B16 EqCopSonde013EventWireTest (Exit 1) ===
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an  [/transport/project_sample_start | #/$defs/transportstempel/properties/project_sample_start/type | type]
+  -> am Basisstand: rot
+  Mutation W1 (eq-copilot/plugin/vertrag/NakamaEvidenz.cpp - der Evidenzwriter schreibt ohne Startwert wieder project_sample_start null), Stand 0fce3f26; Bein B16 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-W1.txt):
+    Rotlauf W1 - der Evidenzwriter schreibt ohne Startwert wieder project_sample_start null - 24.09.2026 09:47:27 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/vertrag/NakamaEvidenz.cpp (CRLF)
+    SHA-256 vorher 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\W1-NakamaEvidenz.cpp (SHA-256 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1)
+    Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+      vorher:
+        |     if (t.project_sample_start_gesetzt)
+        |     {
+        |         aus += ",\"project_sample_start\":";
+        |         aus += std::to_string (t.project_sample_start);
+        |     }
+        | 
+      nachher:
+        |     aus += ",\"project_sample_start\":";   // MUTATION W1 (M-51): null wieder geschrieben
+        |     aus += t.project_sample_start_gesetzt
+        |          ? std::to_string (t.project_sample_start) : std::string ("null");
+        | 
+    Mutiert 24.09.2026 09:47:27, SHA-256 mutiert 01e4e9f5e2312d9b3d734a3b6ca0951974b98cdb0220eb278974abc5a32c4ba5
+    Kette (R-313-11): Schreibt der Writer ohne Startwert wieder null, traegt der Transportblock project_sample_start:null -> er weicht von wire_transport ab, das Feld steht im Block, und die gemeinsame Eigenschaft (integer) meldet #/$defs/transportstempel/properties/project_sample_start/type.
+      Bau EqCopSonde013EventWireTest: Exit 0
+      B16: Binaer 09:47:30.123, Quelle 09:47:27.294, Binaer juenger: ja
+      B16: Exit 1, Fehlzeilen 3, Rohausgabe rot-W1-mutiert-B16.txt
+    Ruecknahme 24.09.2026 09:47:31: SHA-256 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde013EventWireTest: Exit 0
+      B16: Binaer 09:47:34.774, Quelle 09:47:31.920, Binaer juenger: ja
+      B16: Exit 0, Fehlzeilen 0, Rohausgabe rot-W1-zurueck-B16.txt
+      B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich' in der Ausgabe: JA
+      B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block' in der Ausgabe: JA
+      B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an' in der Ausgabe: JA
+      B16: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung ('kein project_sample_start im Block', 'dieselbe Engine wie B3c nimmt ihn an'):
+      gefallen: [ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+      gefallen: [ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an  [/transport/project_sample_start | #/$defs/transportstempel/properties/project_sample_start/type | type]
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (1 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - [ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: 192 bestanden, 3 gescheitert)
+    nach der Ruecknahme: B16 195 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+--- Haelfte 2: Bytegleichheit - Etikett: heute nicht messbar ---
+Pruefung: 'der Transportblock ist bytegleich wire_transport der Byteinstanz'
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === B16 EqCopSonde013EventWireTest (Exit 1) ===
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis":"local_monotonic","project_sample_start":null,"sample_count":512,"sample_rate":48000,"playing":true,"recording":false,"validity":{"project_time":false,"play_state":true,"record_s
+  -> am Basisstand: rot gemessen (die Byteinstanz lag der Gegenprobe schon vor)
+  Mutation W1 (eq-copilot/plugin/vertrag/NakamaEvidenz.cpp - der Evidenzwriter schreibt ohne Startwert wieder project_sample_start null), Stand 0fce3f26; Bein B16 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-W1.txt):
+    Rotlauf W1 - der Evidenzwriter schreibt ohne Startwert wieder project_sample_start null - 24.09.2026 09:47:27 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei eq-copilot/plugin/vertrag/NakamaEvidenz.cpp (CRLF)
+    SHA-256 vorher 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\W1-NakamaEvidenz.cpp (SHA-256 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1)
+    Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+      vorher:
+        |     if (t.project_sample_start_gesetzt)
+        |     {
+        |         aus += ",\"project_sample_start\":";
+        |         aus += std::to_string (t.project_sample_start);
+        |     }
+        | 
+      nachher:
+        |     aus += ",\"project_sample_start\":";   // MUTATION W1 (M-51): null wieder geschrieben
+        |     aus += t.project_sample_start_gesetzt
+        |          ? std::to_string (t.project_sample_start) : std::string ("null");
+        | 
+    Mutiert 24.09.2026 09:47:27, SHA-256 mutiert 01e4e9f5e2312d9b3d734a3b6ca0951974b98cdb0220eb278974abc5a32c4ba5
+    Kette (R-313-11): Schreibt der Writer ohne Startwert wieder null, traegt der Transportblock project_sample_start:null -> er weicht von wire_transport ab, das Feld steht im Block, und die gemeinsame Eigenschaft (integer) meldet #/$defs/transportstempel/properties/project_sample_start/type.
+      Bau EqCopSonde013EventWireTest: Exit 0
+      B16: Binaer 09:47:30.123, Quelle 09:47:27.294, Binaer juenger: ja
+      B16: Exit 1, Fehlzeilen 3, Rohausgabe rot-W1-mutiert-B16.txt
+    Ruecknahme 24.09.2026 09:47:31: SHA-256 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde013EventWireTest: Exit 0
+      B16: Binaer 09:47:34.774, Quelle 09:47:31.920, Binaer juenger: ja
+      B16: Exit 0, Fehlzeilen 0, Rohausgabe rot-W1-zurueck-B16.txt
+      B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich' in der Ausgabe: JA
+      B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block' in der Ausgabe: JA
+      B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an' in der Ausgabe: JA
+      B16: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung ('der Transportblock ist bytegleich wire_transport der Byteinstanz'):
+      gefallen: [ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis":"local_monotonic","project_sample_start":null,"sample_count":512,"sample_rate"
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (2 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - [ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+      - [ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an  [/transport/project_sample_start | #/$defs/transportstempel/properties/project_sample_start/type | type]
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: 192 bestanden, 3 gescheitert)
+    nach der Ruecknahme: B16 195 bestanden, 0 gescheitert; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

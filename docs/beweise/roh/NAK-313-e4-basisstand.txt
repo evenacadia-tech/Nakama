@@ -1,0 +1,282 @@
+NAK-313 Etappe 4 - Gegenprobe am Basisstand (Manifest docs/beweise/NAK-313.md §8.1, R-313-12)
+Gemessen 24.09.2026, 09:11 bis 09:15 Uhr, HEAD 75cad33de73855cacd0ae0e4aa4f6aa1e70bb397 (Basis 69ecbe95 plus Kanon-vorher-Commit 75cad33d, Produktcode unveraendert).
+
+Reihenfolge: (1) Erzeuger erweitert, A8 VOR dem Erzeugen gefahren (Exit 2, 'MANIFEST.json weicht ab'), Dateien
+erzeugt, A8 danach Exit 0 (420 Dateien bytegleich); (2) die neuen Faelle geschrieben, der PRODUKTCODE blieb der
+von 69ecbe95; (3) nur die betroffenen Beine gebaut und gefahren. Dieser Stand wurde nicht committet.
+
+Basisstand-Varianten (nur hier, nicht committet): Die Rust-Modultests laufen ohne die Stufe und ohne den
+Laufzaehler, weil die Lesefunktion am Basisstand `Option` liefert und `json_streng` fehlt (Stufe und Laufzahl
+heute nicht messbar); der Bootstrap-Test nennt die Marke als Wort, weil `crate::vertrag::MARKE_DOPPELT` noch
+privat in dto.rs steht. vertrag.rs traegt nur den Testzugang `produkteingaenge` (cfg(test)). Das Python-Bein A5
+hat die neuen Faelle und die Ausnahmeklasse, `json_laden_strikt` aber OHNE Hook und Tiefenpruefung (der Stand
+vor der Etappe). Die C++-Tests B13, A4b, B16 sind die committeten Fassungen; B3c blieb unveraendert (sein
+Leser ist Testcode: die Gegenprobe ist der alte Korpuslauf mit den neuen Fixtures).
+
+SHA-256 des unveraenderten Produktcodes:
+  eq-copilot/plugin/src/SourcesModel.cpp  93e64d5f4eb3ef76e5a9492b94ad1035f9069c3a70b5909d7fc216113b2336e3
+  eq-copilot/plugin/src/PipeClient.cpp  fd73276c56b15a81393d50f4e05ab630da937803ed9b34539ca2294e8adcf788
+  eq-copilot/plugin/vertrag/NakamaEvidenz.cpp  60c74d100fea32410d79bba809258ca101b43ca8c061ea2a802ef5fbbf417c8a
+  eq-copilot/plugin/state/NakamaKanon.cpp  aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c
+  broker/src/dto.rs  cdae64a0e23568f76834efc56402ee0949956318b71b8d008db8d0f2d39a6c74
+  broker/src/coordinator/befehl.rs  62059dc2644c90aed5480e315b137d289703bf4df090a9d70658d5f69a146f7b
+  broker/src/coordinator/evidenz.rs  b4409f82fc881106744520450e82dcc270cdc469678d3a82a9fa539209472111
+  broker/src/coordinator/intent.rs  d86da481b7e229763f22e504752295c7f2216f84c879225dfdde40b998689910
+  broker/src/coordinator/liveness.rs  40392599f7ffe9240b8eea75a57730e71b8a3703545de699309f4fb815f64ab0
+  broker/src/coordinator/assistent.rs  c5b586515d12ff93a9ff8fec1aded59d0897ff7810c6dd7369acfd17375e21f3
+  broker/src/coordinator/subscription.rs  57aa3d2fe7244143b8cefd623c77e3e6f188479c9bcf7c66542f9643e47ac655
+SHA-256 der Test- und Fixturedateien der Gegenprobe:
+  eq-copilot/plugin/tests/Sonde012SourcesModelTest.cpp  0f76a9d37c90ed9cc44d39b2b0a69450832e8ed95944ad9db60d59a7a03da1ce
+  eq-copilot/plugin/tests/PipeClientLifecycleTestMain.cpp  4ce78b682317e958359f9834364031c2040ba3f9c9651534e029a30e6a0b8885
+  eq-copilot/plugin/tests/Sonde013EventWireTest.cpp  a3da18a39d734aca78bd574fa3fece2e420db9aae7182bdf0cf4192a179c62b1
+  eq-copilot/plugin/tests/SchemaTestMain.cpp  7ab9397708830fb0c196164066189eaa6d6df20d57162f083931dbc6b8219437
+  broker/src/vertrag.rs  ac0d22228e124f9189ecdfede9c91eb51a4e32a88227b301c71023fc4900d711
+  broker/src/coordinator/schema.rs  7de997116ea25efba130140a153a6632ff807561bf6ed14c905692b667504419
+  broker/src/coordinator/senke.rs  9eff2e0f889aaf09d14ee075ba021ff3576325a3d69b96e973380e7a0c690a7f
+  broker/src/transport/bootstrap.rs  bbc63c55b4bd23582b1f34f32a5b3820197a217277018d7b97e52d1efaeb6b66
+  broker/tests/sonde013_verdrahtung.rs  1ce90b7a6a07c4431adc834c34cb5c0f64dff34c6186a3f3593c7a4a5bbf131c
+  broker/tests/contract_cross_language.rs  8ff7c9229eb07cbfd49c5c8c39b5ea864ec4a5f1e5f828de5ad9ff200653574d
+  tools/eq-copilot/pruefe_v3_vertrag.py  651b162c0973b90da9edf642e53b2271b4867b88503f9f27222e4c1c1510b800
+  tools/eq-copilot/pruefe_v2_schemas.py  935c49d5a1e742b55f8fdad9166644b21794c7e4e57b59023b776fd490e9ee7e
+  tools/eq-copilot/erzeuge_v3_fixtures.py  7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e
+  eq-copilot/fixtures/v3/MANIFEST.json  f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b
+  eq-copilot/fixtures/v3/PRODUKTEINGAENGE-FAELLE.json  d8fdff06527582276aa7f25dd8035c4898bdd5391ce7334106f8a0ab1fc2c688
+  eq-copilot/fixtures/v3/evidenz-lokal-wire-v1.json  e9644d9dfc62d65ed87e4d13bcd8ee80903ee2448f3e2f987be1f0f71396200e
+
+=== B13 EqCopSonde012SourcesModelTest (Exit 1) ===
+    ok      313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-001 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-002 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-003 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-004 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, quelle 0, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-005 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Urteil, Stufe)  [ist ignoriert/, soll ungueltig/duplikat]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-006 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-007 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-008 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - session_snapshot belongs to another session]
+    ok      313/M-39 snapshot_parser_lehnt_ab PE-008 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-009 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-010 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-39 snapshot_parser_lehnt_ab PE-011 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, Zeilen 1]
+    ok      313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+    ok      313/M-41 gleicher_schluessel_zwei_objekte_gueltig PE-012 (Wirkung)  [annahme - Sicht: revision 2 -> 3, quellen 1 -> 2, Zeilen 2]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-013 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-014 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-015 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-016 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-017 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Urteil, Stufe)  [ist ignoriert/, soll ungueltig/duplikat]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-018 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-019 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - evidence_invalidate reason is unknown to this reader version]
+    ok      313/M-40 ruecknahme_parser_lehnt_ab PE-020 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-021 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - evidence_invalidate sample range is not ordered]
+    ok      313/M-40 ruecknahme_parser_lehnt_ab PE-022 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: keine, Zeilen 1]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat]
+    FEHLER  313/M-40 ruecknahme_parser_lehnt_ab PE-023 (Wirkung)  [ablehnung, keine_teilmutation - Sicht: revision 2 -> 3, evidenzRuecknahmen, ruecknahmeGrund, ruecknahmeUmfang, Zeilen 1]
+    ok      313/M-49 Zaehlpruefung B13: cpp_sources_snapshot  [12 gefahren, Kopf 12]
+    ok      313/M-49 Zaehlpruefung B13: cpp_sources_ruecknahme  [11 gefahren, Kopf 11]
+  Summe: SONDE-012 SourcesModel: 108/149 gruen
+
+=== A4b EqCopPipeClientTest (Exit 1) ===
+    ok      313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-028 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+    ok      313/M-42 v2_parser_lehnt_ab PE-028 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-030 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+    ok      313/M-42 v2_parser_lehnt_ab PE-030 (Wirkung)  [ablehnung, keine_teilmutation - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 2/1, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Heartbeats 2/1, letzterFehler '']
+    FEHLER  313/M-42 v2_parser_lehnt_ab PE-032 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+    ok      313/M-42 v2_parser_lehnt_ab PE-032 (Wirkung)  [ablehnung, kein_ack - Status getrennt, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+    ok      313/M-49 Zaehlpruefung A4b: cpp_v2_client  [9 gefahren, Kopf 9]
+  Summe: PIPECLIENT-LIFECYCLE-TEST
+  Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 15 Fehler
+
+=== B16 EqCopSonde013EventWireTest (Exit 1) ===
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: die Byteinstanz liegt im Korpus
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der echte Frame ist local_monotonic ohne Startwert
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der Snapshot wird gebaut
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis":"local_monotonic","project_sample_start":null,"sample_count":512,"sample_rate":48000,"playing":true,"recording":false,"validity":{"project_time":false,"play_state":true,"record_s
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+  [ok]   313/M-51 lokaler_transport_ohne_startwert: der Snapshot passiert den Textriegel
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an  [/transport/project_sample_start | #/$defs/transportstempel/properties/project_sample_start/type | type]
+  [ok]   313/M-49 PRODUKTEINGAENGE-FAELLE.json liegt im Korpus
+  [ok]   313/M-49 v3-Schema laedt
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-044 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - doppelter Schluessel: type]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-045 (Urteil, Stufe)  [ist ungueltig/duplikat, soll ungueltig/duplikat - doppelter Schluessel: type]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-048 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-049 (Urteil, Stufe)  [ist ungueltig/parser, soll ungueltig/parser - zu tief verschachtelt]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-050 (Urteil, Stufe)  [ist gueltig/, soll gueltig/]
+  [ok]   313/M-49 evidence_snapshot_vertragsweg PE-051 (Urteil, Stufe)  [ist ungueltig/schema, soll ungueltig/schema]
+  [ok]   313/M-49 Zaehlpruefung B16: evidence_snapshot  [6 gefahren, Kopf 6]
+  Summe: 192 bestanden, 3 gescheitert
+
+=== B3c EqCopSchemaTest (Exit 1; Korpuslauf wie vor der Etappe) ===
+  [ROT]  ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-nachspann.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-schlusskomma.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-type-doppelt-fremd-zuletzt.json: Verletzungsmenge weicht ab
+  [ROT]  ungueltig/parser-type-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-type-escape-alias.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-unbekanntes-escape.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  ungueltig/parser-zweites-dokument.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [11 Abweichungen]
+  Summe: 161 bestanden, 1 gescheitert
+
+=== A4 cargo test -- nak313 korpus_klassifiziert_wie_das_manifest, Modultests (Exit 101) ===
+  test transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello ... FAILED
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  thread 'transport::bootstrap::tests::nak313_m45_doppelter_schluessel_im_hello' (113324) panicked at src\transport\bootstrap.rs:748:9:
+  rust_bootstrap weicht von `produkt` ab:
+  PE-052: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `logon_sid` at line 9 column 15")))
+  PE-053: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `logon_sid` at line 9 column 15")))
+  PE-054: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `type` at line 3 column 8")))
+  PE-055: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("type != hello")))
+  PE-056: Urteil/Stufe ("ungueltig", Some("feldregel")), soll ("ungueltig", Some("duplikat")) (Err(KeinHello("duplicate field `protocol` at line 5 column 12")))
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (383248) panicked at src\coordinator\schema.rs:914:9:
+  rust_p0 weicht von `produkt` ab:
+  PE-033: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-033: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-033: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-033: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-035: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-035: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-035: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-035: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-037: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-037: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-037: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-037: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-043: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-043: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-043: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-043: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (216444) panicked at src\coordinator\senke.rs:373:9:
+  rust_p1 weicht von `produkt` ab:
+  PE-044: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-044: Wirkung ablehnung nicht gehalten ((0, 0, false, 0, 0) -> (1, 0, true, 0, 0))
+  PE-044: Wirkung keine_teilmutation nicht gehalten ((0, 0, false, 0, 0) -> (1, 0, true, 0, 0))
+  PE-046: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-046: Wirkung ablehnung nicht gehalten ((0, 0, false, 0, 0) -> (0, 1, false, 4, 1))
+  PE-046: Wirkung keine_teilmutation nicht gehalten ((0, 0, false, 0, 0) -> (0, 1, false, 4, 1))
+  PE-049: Urteil gueltig, soll ungueltig (Stufe heute nicht messbar)
+  PE-049: Wirkung ablehnung nicht gehalten ((0, 0, false, 0, 0) -> (1, 0, true, 0, 0))
+  PE-049: Wirkung keine_teilmutation nicht gehalten ((0, 0, false, 0, 0) -> (1, 0, true, 0, 0))
+  test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+  Summe: test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+
+=== A4 cargo test --test sonde013_verdrahtung --test contract_cross_language (Exit 101) ===
+  test fb_korpus_klassifiziert_wie_das_manifest ... ok
+  test envelope_korpus_klassifiziert_wie_das_manifest ... ok
+  test dto_korpus_klassifiziert_wie_das_manifest ... ok
+  test korpus_klassifiziert_wie_das_manifest ... FAILED
+  thread 'korpus_klassifiziert_wie_das_manifest' (71048) panicked at tests\contract_cross_language.rs:119:5:
+  11 von 414 Fixtures weichen ab:
+  ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+  ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+  ungueltig/parser-nachspann.json: nicht lesbar: trailing characters at line 55 column 1
+  ungueltig/parser-schlusskomma.json: nicht lesbar: trailing comma at line 54 column 1
+  ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+  ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+  ungueltig/parser-type-doppelt-fremd-zuletzt.json: Verletzungsmenge weicht ab
+  ungueltig/parser-type-doppelt-passend-zuletzt.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+  ungueltig/parser-type-escape-alias.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+  ungueltig/parser-unbekanntes-escape.json: nicht lesbar: invalid escape at line 33 column 27
+  ungueltig/parser-zweites-dokument.json: nicht lesbar: trailing characters at line 55 column 1
+  test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s
+  test nak313_m52_lokale_evidenz_ohne_startwert ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.01s
+  Summe: test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s
+  Summe: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.01s
+
+=== A5 pruefe_v3_vertrag.py --abdeckung (Exit 2) ===
+  Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+    ROT: ungueltig/parser-logon-sid-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: ungueltig/parser-logon-sid-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: ungueltig/parser-session-epoch-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: ungueltig/parser-session-epoch-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: ungueltig/parser-type-doppelt-fremd-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: ungueltig/parser-type-doppelt-passend-zuletzt.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: ungueltig/parser-type-escape-alias.json: parser_lehnt_ab, aber der strenge Parselauf nimmt es an
+    ROT: PE-005 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-006 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-007 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-008 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-009 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-010 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-011 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-017 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-018 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-019 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-020 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-021 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-022 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-023 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-033 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-034 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-035 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-036 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-037 rust_p0 M-43: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-043 rust_p0 M-49: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/parser
+    ROT: PE-044 rust_p1 M-44: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-045 rust_p1 M-44: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-046 rust_p1 M-44: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-047 rust_p1 M-44: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-049 rust_p1 M-49: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/parser
+    ROT: PE-052 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-053 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-054 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+    ROT: PE-055 rust_bootstrap M-45: Vertragsurteil und Stufe — ist ungueltig/schema, soll ungueltig/duplikat
+    ROT: PE-056 rust_bootstrap M-45: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/duplikat
+  Summe: Pruefungen: 655 bestanden, 37 gescheitert
+
+=== A11 pruefe_v2_schemas.py (Exit 2) ===
+  ok   PE-024 cpp_v2_client welcome M-42: ist ungueltig/parser, soll ungueltig/parser
+  ok   PE-025 cpp_v2_client welcome M-42: ist ungueltig/parser, soll ungueltig/parser
+  ok   PE-026 cpp_v2_client welcome M-42: ist ungueltig/parser, soll ungueltig/parser
+  ROT  PE-027 cpp_v2_client welcome M-42: ist gueltig/None, soll ungueltig/duplikat
+  ROT  PE-028 cpp_v2_client welcome M-42: ist ungueltig/schema, soll ungueltig/duplikat
+  ROT  PE-029 cpp_v2_client welcome M-42: ist gueltig/None, soll ungueltig/duplikat
+  ROT  PE-030 cpp_v2_client welcome M-42: ist gueltig/None, soll ungueltig/duplikat
+  ROT  PE-031 cpp_v2_client heartbeat_ack M-42: ist gueltig/None, soll ungueltig/duplikat
+  ROT  PE-032 cpp_v2_client heartbeat_ack M-42: ist gueltig/None, soll ungueltig/duplikat
+  Produkteingaenge: 9 v2-Eintraege gefahren, der Kopf nennt 9
+    - PE-027 cpp_v2_client welcome M-42: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'duplikat')
+    - PE-028 cpp_v2_client welcome M-42: Vertragsurteil ('ungueltig', 'schema'), erwartet ('ungueltig', 'duplikat')
+    - PE-029 cpp_v2_client welcome M-42: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'duplikat')
+    - PE-030 cpp_v2_client welcome M-42: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'duplikat')
+    - PE-031 cpp_v2_client heartbeat_ack M-42: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'duplikat')
+    - PE-032 cpp_v2_client heartbeat_ack M-42: Vertragsurteil ('gueltig', None), erwartet ('ungueltig', 'duplikat')
+  Summe: ROT — 6 Befund(e):
+

@@ -1,0 +1,94 @@
+NAK-313 Etappe 4 - Mutationslauf P: eq-copilot/plugin/src/PipeClient.cpp - im v2-Client den strengen Lauf entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf P - im v2-Client den strengen Lauf entfernt - 24.09.2026 09:44:34 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/src/PipeClient.cpp (CRLF)
+SHA-256 vorher 4e07b607d1f06659b85785d302f96ff076d36f99d9c64ece76aa68a400b613c9; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\P-PipeClient.cpp (SHA-256 4e07b607d1f06659b85785d302f96ff076d36f99d9c64ece76aa68a400b613c9)
+Mutation 1 ab Zeile 717 (Stand vor der Mutation):
+  vorher:
+    |     if (! nakama::kanon::lies (text, streng, grund))
+    |     {
+    |         fehler = "eingehender Pipe-Frame: " + grund;
+    |         return false;
+    |     }
+    | 
+  nachher:
+    |     (void) streng; (void) grund;   // MUTATION P (M-42): der strenge Lauf entfernt
+    | 
+Mutiert 24.09.2026 09:44:34, SHA-256 mutiert 88aabddf5a907a962ff37489819ed6d25927ccd6e72ca73d4af4ad3e7b5a40e6
+Kette (R-313-11): Ohne den strengen Lauf liest JUCE den Frame: Nachspann, Schlusskomma und \q werden angenommen, bei doppeltem Namen gilt der letzte Wert -> der Client verbindet und sendet den ersten Heartbeat beziehungsweise bestaetigt ihn; die Wachen mit fremdem letzten Wert (PE-028, PE-030, PE-032) enden an der Feldregel ('unerwartete Antwort auf hello', 'ungueltiges heartbeat_ack') -> Stufe feldregel statt duplikat.
+Lauf unter der Mutation:
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 09:44:37.809, Quelle 09:44:34.792, Binaer juenger: ja
+  A4b: Exit 1, Fehlzeilen 15, Rohausgabe rot-P-mutiert-A4b.txt
+    Summe: ok      konfliktende_wartet_auf_ack_ohne_konflikt/erstes_ack_mit_konflikt  [verbunden/v2/Versuche 1/bestaetigt 5/konflikt ja -> verbunden/v2/Versuche 1/bestaetigt 6/konflikt ja: erwartet kein Konfliktende, Praedikat sagt
+    Summe: ok      konfliktende_wartet_auf_ack_ohne_konflikt/folgendes_ack_ohne_konflikt  [verbunden/v2/Versuche 1/bestaetigt 5/konflikt ja -> verbunden/v2/Versuche 1/bestaetigt 7/konflikt nein: erwartet Konfliktende, Praedikat sag
+    Summe: ok      probe_main_wartet_auf_konfliktende_praedikat  [Reihenfolge Stopp < Stand < Praedikat < Meldung < Exit 1 < OK ja, Stand direkt nach dem Stopp ja, altes Flagpraedikat entfernt ja]
+    Summe: PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 15 Fehler
+Ruecknahme 24.09.2026 09:45:53: SHA-256 4e07b607d1f06659b85785d302f96ff076d36f99d9c64ece76aa68a400b613c9 - gleich dem Stand vor der Mutation
+  Bau EqCopPipeClientTest: Exit 0
+  A4b: Binaer 09:45:56.003, Quelle 09:45:53.143, Binaer juenger: ja
+  A4b: Exit 0, Fehlzeilen 0, Rohausgabe rot-P-zurueck-A4b.txt
+    Summe: ok      konfliktende_wartet_auf_ack_ohne_konflikt/erstes_ack_mit_konflikt  [verbunden/v2/Versuche 1/bestaetigt 5/konflikt ja -> verbunden/v2/Versuche 1/bestaetigt 6/konflikt ja: erwartet kein Konfliktende, Praedikat sagt
+    Summe: ok      konfliktende_wartet_auf_ack_ohne_konflikt/folgendes_ack_ohne_konflikt  [verbunden/v2/Versuche 1/bestaetigt 5/konflikt ja -> verbunden/v2/Versuche 1/bestaetigt 7/konflikt nein: erwartet Konfliktende, Praedikat sag
+    Summe: ok      probe_main_wartet_auf_konfliktende_praedikat  [Reihenfolge Stopp < Stand < Praedikat < Meldung < Exit 1 < OK ja, Stand direkt nach dem Stopp ja, altes Flagpraedikat entfernt ja]
+    Summe: PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  A4b: 'FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Urteil, Stufe)' in der Ausgabe: JA
+  A4b: 'FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Urteil, Stufe)' in der Ausgabe: JA
+  A4b: 'FEHLER  313/M-42 v2_parser_lehnt_ab PE-028 (Urteil, Stufe)' in der Ausgabe: JA
+  A4b: 'FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Urteil, Stufe)' in der Ausgabe: JA
+  A4b: 'FEHLER  313/M-42 v2_parser_lehnt_ab PE-032 (Urteil, Stufe)' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-028 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-030 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 2/1, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Heartbeats 2/1, letzterFehler '']
+  [A4b] FEHLER  313/M-42 v2_parser_lehnt_ab PE-032 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+Nach der Ruecknahme:
+  A4b: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4b unter der Mutation: gefallene Pruefungen (15) und Summenzeilen ===
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-024 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-025 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-026 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-027 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-028 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-029 (Wirkung)  [ablehnung, keine_teilmutation - Status nicht getrennt, Heartbeats 1/0, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-030 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 0/0, letzterFehler 'unerwartete Antwort auf hello']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/duplikat - Status nicht getrennt, Heartbeats 2/1, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-031 (Wirkung)  [ablehnung, kein_ack - Status nicht getrennt, Heartbeats 2/1, letzterFehler '']
+  FEHLER  313/M-42 v2_parser_lehnt_ab PE-032 (Urteil, Stufe)  [ist ungueltig/feldregel, soll ungueltig/duplikat - Status getrennt, Heartbeats 1/0, letzterFehler 'ungueltiges heartbeat_ack']
+PIPECLIENT-LIFECYCLE-TEST
+PIPECLIENT-LIFECYCLE-TEST FEHLGESCHLAGEN - 15 Fehler
+=== A4b nach der Ruecknahme: Summenzeilen ===
+PIPECLIENT-LIFECYCLE-TEST
+PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
+gefallene Pruefungen nach der Ruecknahme: 0
+

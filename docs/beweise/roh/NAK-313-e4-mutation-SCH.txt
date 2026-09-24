@@ -1,0 +1,103 @@
+NAK-313 Etappe 4 - Mutationslauf SCH: eq-copilot/schemas/v3/eq-ipc-v3.schema.json - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf SCH - die gemeinsame Eigenschaft project_sample_start im v3-Schema auf [integer, null] geweitet - 24.09.2026 09:52:12 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei eq-copilot/schemas/v3/eq-ipc-v3.schema.json (CRLF)
+SHA-256 vorher 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\SCH-eq-ipc-v3.schema.json (SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f)
+Mutation 1 ab Zeile 360 (Stand vor der Mutation):
+  vorher:
+    |         "project_sample_start": { "type": "integer" },
+    | 
+  nachher:
+    |         "project_sample_start": { "type": ["integer", "null"] },
+    | 
+Mutiert 24.09.2026 09:52:12, SHA-256 mutiert 699c02d81da4b4e4ffbfed0425559eacff3a489da41fe849c6b1c4cf53b92299
+Kette (R-313-11): Weitet das Schema die gemeinsame Eigenschaft auf integer oder null, erfuellt project_sample_start null beide Stellen -> das Negativfixture aus M-53 wird gueltig -> A5, B3c und der Korpusteil von A4 rot.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  A5: Exit 2, Fehlzeilen 2, Rohausgabe rot-SCH-mutiert-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+  B3c: Binaer 09:50:52.455, Quelle 09:52:12.150, Binaer juenger: NEIN
+  B3c: Exit 1, Fehlzeilen 2, Rohausgabe rot-SCH-mutiert-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 172 bestanden, 1 gescheitert
+  A4-korpus: Exit 101, Fehlzeilen 3, Rohausgabe rot-SCH-mutiert-A4-korpus.txt
+    Summe: error: test failed, to rerun pass `--test contract_cross_language`
+    Summe: error: 1 target failed:
+    Summe: `--test contract_cross_language`
+Ruecknahme 24.09.2026 09:52:19: SHA-256 804b92054952295866e271d11c600622fa3c93924395c8fc2d20d25882b45b2f - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-SCH-zurueck-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+  B3c: Binaer 09:50:52.455, Quelle 09:52:19.849, Binaer juenger: NEIN
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-SCH-zurueck-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 173 bestanden, 0 gescheitert
+  A4-korpus: Exit 0, Fehlzeilen 0, Rohausgabe rot-SCH-zurueck-A4-korpus.txt
+    Summe: test korpus_klassifiziert_wie_das_manifest ... ok
+    Summe: test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.33s
+Erwartete Pruefungen unter der Mutation:
+  A5: 'ungueltig/evidence-local-monotonic-project-sample-start-null.json' in der Ausgabe: JA
+  B3c: '[ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json' in der Ausgabe: JA
+  A4-korpus: 'ungueltig/evidence-local-monotonic-project-sample-start-null.json' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A5] ROT: ungueltig/evidence-local-monotonic-project-sample-start-null.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+  [A5] ROT: PE-051 rust_p1 M-53: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/schema
+  [B3c] [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [B3c] [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [1 Abweichungen]
+  [A4-korpus] test korpus_klassifiziert_wie_das_manifest ... FAILED
+  [A4-korpus] ---- korpus_klassifiziert_wie_das_manifest stdout ----
+  [A4-korpus] thread 'korpus_klassifiziert_wie_das_manifest' (89512) panicked at tests\contract_cross_language.rs:132:5:
+Nach der Ruecknahme:
+  A5: Exit 0, Fehlzeilen 0
+  B3c: Exit 0, Fehlzeilen 0
+  A4-korpus: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A5 unter der Mutation: gefallene Pruefungen (2) und Summenzeilen ===
+  ROT: ungueltig/evidence-local-monotonic-project-sample-start-null.json: jsonschema sagt gueltig, Manifest erwartet ungueltig
+  ROT: PE-051 rust_p1 M-53: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/schema
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 690 bestanden, 2 gescheitert
+=== A5 nach der Ruecknahme: Summenzeilen ===
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 692 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== B3c unter der Mutation: gefallene Pruefungen (2) und Summenzeilen ===
+  [ROT]  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Urteil ungueltig erwartet, Engine sagt gueltig
+  [ROT]  Korpus klassifiziert wie das Manifest (414 Fixtures)  [1 Abweichungen]
+172 bestanden, 1 gescheitert
+=== B3c nach der Ruecknahme: Summenzeilen ===
+173 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== A4-korpus unter der Mutation: gefallene Pruefungen (3) und Summenzeilen ===
+  test korpus_klassifiziert_wie_das_manifest ... FAILED
+  thread 'korpus_klassifiziert_wie_das_manifest' (89512) panicked at tests\contract_cross_language.rs:132:5:
+  ungueltig/evidence-local-monotonic-project-sample-start-null.json: Urteil ungueltig erwartet, Engine sagt gueltig ([])
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.30s
+=== A4-korpus nach der Ruecknahme: Summenzeilen ===
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.33s
+gefallene Pruefungen nach der Ruecknahme: 0
+

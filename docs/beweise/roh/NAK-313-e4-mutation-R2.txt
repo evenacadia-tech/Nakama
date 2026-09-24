@@ -1,0 +1,77 @@
+NAK-313 Etappe 4 - Mutationslauf R2: broker/src/vertrag.rs - im strengen Lauf Deserializer::end() weggelassen
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf R2 - im strengen Lauf Deserializer::end() weggelassen - 24.09.2026 09:51:14 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei broker/src/vertrag.rs (LF)
+SHA-256 vorher c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R2-vertrag.rs (SHA-256 c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1)
+Mutation 1 ab Zeile 587 (Stand vor der Mutation):
+  vorher:
+    |     de.end().map_err(|e| e.to_string())?;
+    | 
+  nachher:
+    |     // MUTATION R2 (M-43): de.end() weggelassen
+    | 
+Mutiert 24.09.2026 09:51:14, SHA-256 mutiert 3e6c8de96ed07a7efa1f882c6df25b65c7a3b271f91124100cdc037591972633
+Kette (R-313-11): Ohne end() liest der Deserializer das erste Dokument und prueft den Rest nicht -> Nachspann und zweites Dokument werden angenommen, der Heartbeat bekommt ein ACK.
+Lauf unter der Mutation:
+  A4-lib: Exit 101, Fehlzeilen 14, Rohausgabe rot-R2-mutiert-A4-lib.txt
+    Summe: error: test failed, to rerun pass `--lib`
+    Summe: error: 1 target failed:
+    Summe: `--lib`
+Ruecknahme 24.09.2026 09:51:17: SHA-256 c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1 - gleich dem Stand vor der Mutation
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R2-zurueck-A4-lib.txt
+    Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... ok
+    Summe: test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+Erwartete Pruefungen unter der Mutation:
+  A4-lib: 'nak313_m43_p0_parser_lehnt_ab ... FAILED' in der Ausgabe: JA
+  A4-lib: 'PE-038: Urteil/Stufe' in der Ausgabe: JA
+  A4-lib: 'PE-039: Urteil/Stufe' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A4-lib] test coordinator::schema::nak313_tests::nak313_strenger_lauf_raender ... FAILED
+  [A4-lib] test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  [A4-lib] ---- coordinator::schema::nak313_tests::nak313_strenger_lauf_raender stdout ----
+  [A4-lib] thread 'coordinator::schema::nak313_tests::nak313_strenger_lauf_raender' (369712) panicked at src\coordinator\schema.rs:1020:43:
+  [A4-lib] ---- coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab stdout ----
+  [A4-lib] thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (223880) panicked at src\coordinator\schema.rs:985:9:
+  [A4-lib] PE-038: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("parser"))
+  [A4-lib] PE-038: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  [A4-lib] PE-038: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  [A4-lib] PE-038: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  [A4-lib] PE-039: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("parser"))
+  [A4-lib] PE-039: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  [A4-lib] PE-039: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  [A4-lib] PE-039: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+Nach der Ruecknahme:
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (12) und Summenzeilen ===
+  test coordinator::schema::nak313_tests::nak313_strenger_lauf_raender ... FAILED
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  thread 'coordinator::schema::nak313_tests::nak313_strenger_lauf_raender' (369712) panicked at src\coordinator\schema.rs:1020:43:
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (223880) panicked at src\coordinator\schema.rs:985:9:
+  PE-038: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("parser"))
+  PE-038: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-038: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-038: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-039: Urteil/Stufe ("gueltig", None), soll ("ungueltig", Some("parser"))
+  PE-039: Wirkung ablehnung nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-039: Wirkung kein_ack nicht gehalten (ACK true, erster Heartbeat Some(true))
+  PE-039: Wirkung keine_teilmutation nicht gehalten (ACK true, erster Heartbeat Some(true))
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+=== A4-lib nach der Ruecknahme: Summenzeilen ===
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+gefallene Pruefungen nach der Ruecknahme: 0
+

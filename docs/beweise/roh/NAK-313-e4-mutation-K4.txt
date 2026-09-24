@@ -1,0 +1,223 @@
+NAK-313 Etappe 4 - Mutationslauf K4: eq-copilot/plugin/state/NakamaKanon.cpp - die Tiefengrenze des Objektzweigs in kanon::lies auf 4
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf K4 - die Tiefengrenze des Objektzweigs in kanon::lies auf 4 - 24.09.2026 09:47:10 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/state/NakamaKanon.cpp (LF)
+SHA-256 vorher aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\K4-NakamaKanon.cpp (SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c)
+Mutation 1 ab Zeile 350 (Stand vor der Mutation):
+  vorher:
+    |             if (++tiefe > 64) return fehl ("zu tief verschachtelt");
+    |             aus = Wert::leeresObjekt();
+    | 
+  nachher:
+    |             if (++tiefe > 4) return fehl ("zu tief verschachtelt");   // MUTATION K4 (M-47): Grenze 4
+    |             aus = Wert::leeresObjekt();
+    | 
+Mutiert 24.09.2026 09:47:10, SHA-256 mutiert 2e933d983ab8818de8d31594dd498eee06f0532bf8ccc50867fe0375e6707584
+Kette (R-313-11): Mit der Grenze 4 faellt jedes Dokument mit einem Objekt auf der fuenften Ebene am Tor: gueltig/session_snapshot.json (Wurzel, mitglieder, Mitglied, probe_descriptor, adresse) -> 'der strenge Lauf lehnt ein Fixture ab' -> Abweichung -> 'Korpus klassifiziert wie das Manifest' rot.
+Lauf unter der Mutation:
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 09:47:13.343, Quelle 09:47:10.540, Binaer juenger: ja
+  B3c: Exit 1, Fehlzeilen 83, Rohausgabe rot-K4-mutiert-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 171 bestanden, 2 gescheitert
+Ruecknahme 24.09.2026 09:47:13: SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c - gleich dem Stand vor der Mutation
+  Bau EqCopSchemaTest: Exit 0
+  B3c: Binaer 09:47:16.842, Quelle 09:47:13.857, Binaer juenger: ja
+  B3c: Exit 0, Fehlzeilen 0, Rohausgabe rot-K4-zurueck-B3c.txt
+    Summe: [ok]   N-18d: und nimmt die gewoehnliche Samplerate an
+    Summe: [ok]   N-18d: auch eine nichtganzzahlige, die der Riegel traegt
+    Summe: -----------------------------------------
+    Summe: 173 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B3c: '[ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab' in der Ausgabe: JA
+  B3c: '[ROT]  Korpus klassifiziert wie das Manifest' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B3c] [ROT]  gueltig/finding-33-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/finding-64-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/finding-ausschlussgrund-master-duplikat-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/finding-ausschlussgrund-screening-ueberboten-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/pair-id-64-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/probe-host-bus-name-codepointgetreu.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/probe-host-context-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/probe-host-context-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-active-probe-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-legacy-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-main-insert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-p2-reject.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-snapshot-finding-more-data-herabgesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-snapshot-finding-ohne-optionales.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-snapshot-mit-experimenten-und-paaren.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-snapshot-mit-findings.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session-snapshot-store-degraded.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/aussageklasse-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/aussageklasse-fehlt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitrag-ohne-contribution-aux.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-active-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-legacy.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-main.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitrag-plugin-kind-passive-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/beitragsposition-beobachtend.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-65-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-aussageklasse-vierte.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-ausschluss-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-ausschlussgrund-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-band-hz-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-belegtext-statt-zone.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-beobachtung-ohne-bit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-konfidenz-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-maskierung-band-unter-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-maskierung-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-naechster-test-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-ohne-evidenz-ids.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-pre-post-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-rang-ohne-komponente.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-sicherheitsklasse-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-ursachenklasse-achte.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-vierte-anzeigezeile.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-zielmetrik-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/finding-zustand-vierter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/frische-ohne-stale.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-bus-name-121-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-bus-name-c0-steuerzeichen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-bus-name-c1-steuerzeichen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-bus-name-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-bus-name-nur-whitespace.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-mixer-index-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-mixer-index-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/host-mixer-namespace-drittes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/insert-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/label-als-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/label-zu-lang.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/messposition-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/mitglied-unvollstaendig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/mitglieder-zu-viele.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/pair-id-65-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/pair-id-als-zahl.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/pair-id-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/post-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/pre-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/probe-descriptor-main-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/probe-descriptor-main-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/reserviertes-feld-session-snapshot-contribution-inputs.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-experiment-blindreihenfolge-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-experiment-ereignis-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-experiment-hoerurteil-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-experiment-ohne-offen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-experiment-urteil-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-experiment-vergleichbarkeit-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-p2-reject-freitext.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-p2-reject-zaehler-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-paar-ausschluss-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-paar-kettenbefund-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  ungueltig/session-snapshot-store-degraded-false.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [B3c] [ROT]  Korpus klassifiziert wie das Manifest (333 Fixtures)  [81 Abweichungen]
+  [B3c] [ROT]  Manifestzahlen passen zur Fixtureliste
+Nach der Ruecknahme:
+  B3c: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B3c unter der Mutation: gefallene Pruefungen (83) und Summenzeilen ===
+  [ROT]  gueltig/finding-33-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/finding-64-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/finding-ausschlussgrund-master-duplikat-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/finding-ausschlussgrund-screening-ueberboten-in-fassung-3.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/pair-id-64-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/probe-host-bus-name-codepointgetreu.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/probe-host-context-maximum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/probe-host-context-minimum.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-active-probe-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-legacy-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-main-insert.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-p2-reject.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-snapshot-finding-more-data-herabgesetzt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-snapshot-finding-ohne-optionales.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-snapshot-mit-experimenten-und-paaren.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-snapshot-mit-findings.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session-snapshot-store-degraded.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  gueltig/session_snapshot.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/aussageklasse-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/aussageklasse-fehlt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitrag-ohne-contribution-aux.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitrag-plugin-kind-active-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitrag-plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitrag-plugin-kind-legacy.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitrag-plugin-kind-main.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitrag-plugin-kind-passive-probe.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/beitragsposition-beobachtend.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-65-ausschluesse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-aussageklasse-vierte.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-ausschluss-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-ausschlussgrund-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-band-hz-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-belegtext-statt-zone.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-beobachtung-ohne-bit.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-konfidenz-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-maskierung-band-unter-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-maskierung-fremdes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-naechster-test-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-ohne-evidenz-ids.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-pre-post-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-rang-ohne-komponente.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-sicherheitsklasse-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-ursachenklasse-achte.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-vierte-anzeigezeile.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-zielmetrik-unbekannt.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/finding-zustand-vierter.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/frische-ohne-stale.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-bus-name-121-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-bus-name-c0-steuerzeichen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-bus-name-c1-steuerzeichen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-bus-name-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-bus-name-nur-whitespace.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-mixer-index-negativ.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-mixer-index-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/host-mixer-namespace-drittes-feld.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/insert-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/label-als-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/label-zu-lang.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/messposition-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/mitglied-unvollstaendig.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/mitglieder-zu-viele.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/pair-id-65-codepoints.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/pair-id-als-zahl.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/pair-id-leer.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/plugin-kind-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/post-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/pre-mit-beitragsklasse.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/probe-descriptor-main-post.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/probe-descriptor-main-pre.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/reserviertes-feld-session-snapshot-contribution-inputs.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-experiment-blindreihenfolge-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-experiment-ereignis-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-experiment-hoerurteil-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-experiment-ohne-offen.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-experiment-urteil-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-experiment-vergleichbarkeit-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-p2-reject-freitext.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-p2-reject-zaehler-null.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-paar-ausschluss-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-paar-kettenbefund-erfunden.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  ungueltig/session-snapshot-store-degraded-false.json: der strenge Lauf lehnt ein Fixture ab, das er passieren lassen muss: zu tief verschachtelt
+  [ROT]  Korpus klassifiziert wie das Manifest (333 Fixtures)  [81 Abweichungen]
+  [ROT]  Manifestzahlen passen zur Fixtureliste
+171 bestanden, 2 gescheitert
+=== B3c nach der Ruecknahme: Summenzeilen ===
+173 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

@@ -1,0 +1,102 @@
+NAK-313 Etappe 4 - Mutationslauf PY2: tools/eq-copilot/pruefe_v3_vertrag.py - JSONDecodeError als duplikat eingeordnet
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf PY2 - JSONDecodeError als duplikat eingeordnet - 24.09.2026 09:38:30 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+SHA-256 vorher 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\PY2-pruefe_v3_vertrag.py (SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb)
+Mutation 1 ab Zeile 178 (Stand vor der Mutation):
+  vorher:
+    |     return "duplikat" if isinstance(fehler, DoppelterSchluessel) else "parser"
+    | 
+  nachher:
+    |     return "duplikat" if isinstance(fehler, (DoppelterSchluessel, json.JSONDecodeError)) else "parser"  # MUTATION PY2 (M-46)
+    | 
+Mutiert 24.09.2026 09:38:30, SHA-256 mutiert b02e25d2f3e0a897b9bd009b9c8a9ff539510a269429bdb61d6f4abda832e1a4
+Kette (R-313-11): Ordnet die Stufe json.JSONDecodeError als duplikat ein, melden Nachspann, zweites Dokument, Schlusskomma und \q die Stufe duplikat statt parser -> Stufenpruefung der Syntaxeintraege rot.
+Lauf unter der Mutation:
+  A5: Exit 2, Fehlzeilen 12, Rohausgabe rot-PY2-mutiert-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+  A11: Exit 2, Fehlzeilen 4, Rohausgabe rot-PY2-mutiert-A11.txt
+    Summe: ROT — 3 Befund(e):
+    Summe: - PE-024 cpp_v2_client welcome M-42: Vertragsurteil ('ungueltig', 'duplikat'), erwartet ('ungueltig', 'parser')
+    Summe: - PE-025 cpp_v2_client welcome M-42: Vertragsurteil ('ungueltig', 'duplikat'), erwartet ('ungueltig', 'parser')
+    Summe: - PE-026 cpp_v2_client welcome M-42: Vertragsurteil ('ungueltig', 'duplikat'), erwartet ('ungueltig', 'parser')
+Ruecknahme 24.09.2026 09:38:33: SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb - gleich dem Stand vor der Mutation
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-PY2-zurueck-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+  A11: Exit 0, Fehlzeilen 0, Rohausgabe rot-PY2-zurueck-A11.txt
+    Summe: ok   PE-032 cpp_v2_client heartbeat_ack M-42: ist ungueltig/duplikat, soll ungueltig/duplikat
+    Summe: Produkteingaenge: 9 v2-Eintraege gefahren, der Kopf nennt 9
+    Summe: GRUEN — 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren; v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert und gezaehlt.
+Erwartete Pruefungen unter der Mutation:
+  A5: 'ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe' in der Ausgabe: JA
+  A5: 'ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe' in der Ausgabe: JA
+  A11: 'ROT  PE-024 cpp_v2_client welcome M-42' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A5] ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-002 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-003 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-004 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-013 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-014 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-015 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-016 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-039 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-040 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A5] ROT: PE-041 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  [A11] ROT  PE-024 cpp_v2_client welcome M-42: ist ungueltig/duplikat, soll ungueltig/parser
+  [A11] ROT  PE-025 cpp_v2_client welcome M-42: ist ungueltig/duplikat, soll ungueltig/parser
+  [A11] ROT  PE-026 cpp_v2_client welcome M-42: ist ungueltig/duplikat, soll ungueltig/parser
+  [A11] ROT — 3 Befund(e):
+Nach der Ruecknahme:
+  A5: Exit 0, Fehlzeilen 0
+  A11: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A5 unter der Mutation: gefallene Pruefungen (12) und Summenzeilen ===
+  ROT: PE-001 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-002 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-003 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-004 cpp_sources_snapshot M-39: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-013 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-014 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-015 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-016 cpp_sources_ruecknahme M-40: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-038 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-039 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-040 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+  ROT: PE-041 rust_p0 M-43: Vertragsurteil und Stufe — ist ungueltig/duplikat, soll ungueltig/parser
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 680 bestanden, 12 gescheitert
+=== A5 nach der Ruecknahme: Summenzeilen ===
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 692 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+
+=== A11 unter der Mutation: gefallene Pruefungen (4) und Summenzeilen ===
+  ROT  PE-024 cpp_v2_client welcome M-42: ist ungueltig/duplikat, soll ungueltig/parser
+  ROT  PE-025 cpp_v2_client welcome M-42: ist ungueltig/duplikat, soll ungueltig/parser
+  ROT  PE-026 cpp_v2_client welcome M-42: ist ungueltig/duplikat, soll ungueltig/parser
+  ROT — 3 Befund(e):
+Produkteingaenge: 9 v2-Eintraege gefahren, der Kopf nennt 9
+ROT — 3 Befund(e):
+=== A11 nach der Ruecknahme: Summenzeilen ===
+Produkteingaenge: 9 v2-Eintraege gefahren, der Kopf nennt 9
+GRUEN — 5 v2-Vertraege: gueltiges JSON, gueltiges Schema, $id eingefroren; v2-Eintraege der Produkteingangstabelle wie `vertrag` klassifiziert und gezaehlt.
+gefallene Pruefungen nach der Ruecknahme: 0
+

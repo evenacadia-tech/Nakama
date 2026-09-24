@@ -1,0 +1,51 @@
+NAK-313 Etappe 4 - Rotbeweis M-52 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-52 - T3-03-01 - R-313-7 - Produktleser Rust P1 (echter Empfaenger)
+Zustand: Probe-Link mit Adresse aus dem wire_snapshot der Byteinstanz, Evidenz offen.
+Ereignis: P1-Weiche -> evidence_snapshot_json_mit_minor_wert.
+Zusage: Angenommen: evidenz_sicht(instance_id) liefert den Stand mit project_sample_start None.
+Bein: A4, broker/tests/sonde013_verdrahtung.rs nak313_m52_lokale_evidenz_ohne_startwert.
+
+--- Haelfte 1: angenommen, ohne Startwert - Etikett: Regressionswache ---
+Pruefung: nak313_m52_lokale_evidenz_ohne_startwert
+Am Basisstand (Produktcode von 69ecbe95, Tests der Gegenprobe):
+  === A4 cargo test --test sonde013_verdrahtung --test contract_cross_language (Exit 101) ===
+  test nak313_m52_lokale_evidenz_ohne_startwert ... ok
+  -> am Basisstand: gruen
+  Mutation E1 (broker/src/coordinator/evidenz.rs - der Evidenzempfaenger weist nach dem Adresslesen einen Snapshot ohne project_sample_start ab), Stand 2af21673; Bein A4-m52 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-E1.txt):
+    Rotlauf E1 - der Evidenzempfaenger weist nach dem Adresslesen einen Snapshot ohne project_sample_start ab - 24.09.2026 09:51:52 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+    Datei broker/src/coordinator/evidenz.rs (CRLF)
+    SHA-256 vorher 162e49b31ef76adb243d0c2a84d1e209ad2c7b0c954a624dd7d8c01ccabd29d3; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\E1-evidenz.rs (SHA-256 162e49b31ef76adb243d0c2a84d1e209ad2c7b0c954a624dd7d8c01ccabd29d3)
+    Mutation 1 ab Zeile 139 (Stand vor der Mutation):
+      vorher:
+        |         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
+        |             return false;
+        |         };
+        | 
+      nachher:
+        |         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
+        |             return false;
+        |         };
+        |         if wert["transport"].get("project_sample_start").is_none() {
+        |             return false; // MUTATION E1 (M-52)
+        |         }
+        | 
+    Mutiert 24.09.2026 09:51:52, SHA-256 mutiert 9f787806ef94073d9133d7bf45a964136b0eed6ba9f7f4d62801ff94b9d7b9be
+    Kette (R-313-11): Weist der Empfaenger einen Snapshot ohne project_sample_start ab, bleibt die Evidenzsicht der Instanz leer -> die Annahme des wire_snapshot der Byteinstanz faellt.
+      A4-m52: Exit 101, Fehlzeilen 3, Rohausgabe rot-E1-mutiert-A4-m52.txt
+    Ruecknahme 24.09.2026 09:51:56: SHA-256 162e49b31ef76adb243d0c2a84d1e209ad2c7b0c954a624dd7d8c01ccabd29d3 - gleich dem Stand vor der Mutation
+      A4-m52: Exit 0, Fehlzeilen 0, Rohausgabe rot-E1-zurueck-A4-m52.txt
+      A4-m52: 'nak313_m52_lokale_evidenz_ohne_startwert ... FAILED' in der Ausgabe: JA
+      A4-m52: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (nak313_m52_lokale_evidenz_ohne_startwert):
+      gefallen: test nak313_m52_lokale_evidenz_ohne_startwert ... FAILED
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (1 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+      - thread 'nak313_m52_lokale_evidenz_ohne_startwert' (45804) panicked at tests\sonde013_verdrahtung.rs:506:10:
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.01s)
+    nach der Ruecknahme: A4-m52 Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker) | test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.01s; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

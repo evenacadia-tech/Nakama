@@ -1,0 +1,56 @@
+NAK-313 Etappe 4 - Mutationslauf PY3: tools/eq-copilot/pruefe_v3_vertrag.py - die Tiefenpruefung nach dem Python-Laden entfernt
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf PY3 - die Tiefenpruefung nach dem Python-Laden entfernt - 24.09.2026 09:38:37 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei tools/eq-copilot/pruefe_v3_vertrag.py (LF)
+SHA-256 vorher 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\PY3-pruefe_v3_vertrag.py (SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb)
+Mutation 1 ab Zeile 196 (Stand vor der Mutation):
+  vorher:
+    |     tiefe_pruefen(wert)
+    |     return wert
+    | 
+  nachher:
+    |     return wert  # MUTATION PY3 (M-49): Tiefenpruefung entfernt
+    | 
+Mutiert 24.09.2026 09:38:37, SHA-256 mutiert 090d88341fa46a32b107fba0d35e4f59045ff36ec209b59dcd31a03a14ba64a5
+Kette (R-313-11): Ohne Tiefenpruefung liest Pythons json die 65 Ebenen, und das Schema laesst die additiven Objekte zu -> gueltig statt ungueltig/parser.
+Lauf unter der Mutation:
+  A5: Exit 2, Fehlzeilen 2, Rohausgabe rot-PY3-mutiert-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+Ruecknahme 24.09.2026 09:38:40: SHA-256 7dd0eddd5ba34447cd6dce243a71a11e2e1e142adfbe60c8c907d4a4b692e0fb - gleich dem Stand vor der Mutation
+  A5: Exit 0, Fehlzeilen 0, Rohausgabe rot-PY3-zurueck-A5.txt
+    Summe: required                 70 / 451
+    Summe: type                     15 / 328
+    Summe: $defs ohne Negativfixture: keine
+Erwartete Pruefungen unter der Mutation:
+  A5: 'ROT: PE-043 rust_p0 M-49: Vertragsurteil und Stufe' in der Ausgabe: JA
+  A5: 'ROT: PE-049 rust_p1 M-49: Vertragsurteil und Stufe' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A5] ROT: PE-043 rust_p0 M-49: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/parser
+  [A5] ROT: PE-049 rust_p1 M-49: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/parser
+Nach der Ruecknahme:
+  A5: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A5 unter der Mutation: gefallene Pruefungen (2) und Summenzeilen ===
+  ROT: PE-043 rust_p0 M-49: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/parser
+  ROT: PE-049 rust_p1 M-49: Vertragsurteil und Stufe — ist gueltig/None, soll ungueltig/parser
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 690 bestanden, 2 gescheitert
+=== A5 nach der Ruecknahme: Summenzeilen ===
+Produkteingaenge: 47 v3-Eintraege gegen `vertrag` gefahren (Kopf: 47)
+Pruefungen: 692 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

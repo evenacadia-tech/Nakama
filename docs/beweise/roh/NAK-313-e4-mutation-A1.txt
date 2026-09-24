@@ -1,0 +1,61 @@
+NAK-313 Etappe 4 - Mutationslauf A1: eq-copilot/plugin/src/PluginProcessor.cpp - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf A1 - im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 24.09.2026 09:47:36 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+Mutation 1 ab Zeile 641 (Stand vor der Mutation):
+  vorher:
+    |     if (n == 0 || kanaele == 0)
+    |         return;
+    | 
+  nachher:
+    |     if (n == 0 || kanaele == 0)
+    |         return;
+    |     buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-54 A1: 1 LSB
+    | 
+Mutiert 24.09.2026 09:47:36, SHA-256 mutiert 855d2bfd7dd6377fc9fc0ee86cfe70901c9789548578588b4db7e3e3d75fa44e
+Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Gen-Callback bricht die Bitidentitaet des Passthrough -> A1 rot.
+Lauf unter der Mutation:
+  Bau EqCopNullTest: Exit 0
+  A1: Binaer 09:47:43.336, Quelle 09:47:36.883, Binaer juenger: ja
+  A1: Exit 1, Fehlzeilen 2, Rohausgabe rot-A1-mutiert-A1.txt
+    Summe: ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+    Summe: ok      Save/Load: Sensor-ID bleibt stabil
+    Summe: ok      Save/Load: Rolle und Paar-ID bleiben
+    Summe: NULLTEST FEHLGESCHLAGEN
+Ruecknahme 24.09.2026 09:47:43: SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+  Bau EqCopNullTest: Exit 0
+  A1: Binaer 09:47:49.315, Quelle 09:47:43.548, Binaer juenger: ja
+  A1: Exit 0, Fehlzeilen 0, Rohausgabe rot-A1-zurueck-A1.txt
+    Summe: ok      5.1 wird klar abgelehnt (kein stilles Downmixen)
+    Summe: ok      Save/Load: Sensor-ID bleibt stabil
+    Summe: ok      Save/Load: Rolle und Paar-ID bleiben
+    Summe: NULLTEST OK
+Erwartete Pruefungen unter der Mutation:
+  A1: 'NULLTEST FEHLGESCHLAGEN' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A1] FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  [A1] FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+Nach der Ruecknahme:
+  A1: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A1 unter der Mutation: gefallene Pruefungen (2) und Summenzeilen ===
+  FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+NULLTEST FEHLGESCHLAGEN
+=== A1 nach der Ruecknahme: Summenzeilen ===
+NULLTEST OK
+gefallene Pruefungen nach der Ruecknahme: 0
+

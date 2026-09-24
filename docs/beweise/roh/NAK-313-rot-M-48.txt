@@ -1,0 +1,51 @@
+NAK-313 Etappe 4 - Rotbeweis M-48 (Manifest docs/beweise/NAK-313.md §6.3, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits 8e2e0bc1 bis 0fce3f26, dazu 2af21673: Reihenfolge der B13-Faelle); jeder Mutationslauf nennt seinen HEAD (0fce3f26 oder 2af21673 - sie unterscheiden sich allein in der Reihenfolge der B13-Faelle); Mutationslaeufe 24.09.2026, 09:38 bis 09:52 Uhr (Start des ersten und des letzten Laufs); Gegenprobe am Basisstand 24.09.2026, 09:11 bis 09:15 Uhr gegen den Produktcode von 69ecbe95 (NAK-313-e4-basisstand.txt).
+
+Matrixzeile M-48 - T3-03-04 - R-313-6 - Manifestklasse
+Zustand: Erzeuger tools/eq-copilot/erzeuge_v3_fixtures.py.
+Ereignis: --pruefen (A8).
+Zusage: Neue Fixtures ungueltig/parser-*.json als Rohbytes mit parser_lehnt_ab und leerer Verletzungsmenge; MANIFEST erklaert den Schluessel; A8 bytegleich.
+Bein: A8; A5, B3c und der Korpusteil von A4 erwarten die Ablehnung.
+
+--- Haelfte 1: Rohbytes, Klasse, A8 bytegleich - Etikett: heute nicht messbar ---
+Pruefung: A8 --pruefen
+  -> am Basisstand: nicht messbar (Klasse fehlt); der erweiterte Erzeuger gegen die alten Dateien: A8 Exit 2 'MANIFEST.json weicht ab'
+  Mutation G1 (tools/eq-copilot/erzeuge_v3_fixtures.py - im Erzeuger ein parser_lehnt_ab-Fixture ueber als_text statt als Rohbytes geschrieben), Stand 0fce3f26; Bein A8 (Protokoll und alle Pruefzeilen: NAK-313-e4-mutation-G1.txt):
+    Rotlauf G1 - im Erzeuger ein parser_lehnt_ab-Fixture ueber als_text statt als Rohbytes geschrieben - 24.09.2026 09:38:50 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+    Datei tools/eq-copilot/erzeuge_v3_fixtures.py (LF)
+    SHA-256 vorher 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\G1-erzeuge_v3_fixtures.py (SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e)
+    Mutation 1 ab Zeile 4181 (Stand vor der Mutation):
+      vorher:
+        |         if pfad in dateien or pfad in rohdateien:
+        |             raise SystemExit(f"doppelter Fixturename: {pfad}")
+        |         rohdateien[pfad] = roh
+        |         eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
+        |                           "verletzungen": [], "parser_lehnt_ab": True})
+        | 
+      nachher:
+        |         if pfad in dateien or pfad in rohdateien:
+        |             raise SystemExit(f"doppelter Fixturename: {pfad}")
+        |         if name == "type-doppelt-passend-zuletzt":  # MUTATION G1 (M-48): ueber als_text
+        |             dateien[pfad] = json.loads(roh)
+        |         else:
+        |             rohdateien[pfad] = roh
+        |         eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
+        |                           "verletzungen": [], "parser_lehnt_ab": True})
+        | 
+    Mutiert 24.09.2026 09:38:50, SHA-256 mutiert 9a48bf68f12a6d02a57dd39a41113e5c74585d70f6f1f9e4804e7804922520c2
+    Kette (R-313-11): Geht das Fixture durch json.loads und als_text, verschwindet das Duplikat (letzter Wert gewinnt) -> die erzeugten Bytes weichen von der committeten Datei ab -> A8 'weicht ab'.
+      A8: Exit 2, Fehlzeilen 1, Rohausgabe rot-G1-mutiert-A8.txt
+    Ruecknahme 24.09.2026 09:38:50: SHA-256 7cd8a3bc7ba97979dde9a494d5584120e5438aeba17b86eb0f8cc734e15a6d2e - gleich dem Stand vor der Mutation
+      A8: Exit 0, Fehlzeilen 0, Rohausgabe rot-G1-zurueck-A8.txt
+      A8: 'parser-type-doppelt-passend-zuletzt.json weicht ab' in der Ausgabe: JA
+      A8: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Zusagepruefung (A8 --pruefen):
+      gefallen: ROT: eq-copilot\fixtures\v3\ungueltig\parser-type-doppelt-passend-zuletzt.json weicht ab
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    ebenfalls gefallen unter derselben Mutation (0 Zeilen; Zusagepruefungen anderer Haelften oder Zeilen, Folgezeilen der Panik; alle in der Mutationsdatei):
+    gruen geblieben: alle uebrigen Pruefungen des Beins (Summen: ROT: eq-copilot\fixtures\v3\ungueltig\parser-type-doppelt-passend-zuletzt.json weicht ab)
+    nach der Ruecknahme: A8 bytegleich: 420 Dateien, MANIFEST sha256=f5a1db4ee09ea8558803656fd471b852b2023b00b532bda4782acbe9e5c67a0b; gefallene Pruefungen 0
+
+Ergebnis: jede Zusagepruefung der Rotbeweise faellt an der erwarteten Stelle.

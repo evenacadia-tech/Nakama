@@ -1,0 +1,65 @@
+NAK-313 Etappe 4 - Mutationslauf K65: eq-copilot/plugin/state/NakamaKanon.cpp - die Tiefengrenze in kanon::lies auf 65 gehoben (Objekt- und Listenzweig)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf K65 - die Tiefengrenze in kanon::lies auf 65 gehoben (Objekt- und Listenzweig) - 24.09.2026 09:47:17 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/state/NakamaKanon.cpp (LF)
+SHA-256 vorher aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\K65-NakamaKanon.cpp (SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c)
+Mutation 1 ab Zeile 350 (Stand vor der Mutation):
+  vorher:
+    |             if (++tiefe > 64) return fehl ("zu tief verschachtelt");
+    |             aus = Wert::leeresObjekt();
+    | 
+  nachher:
+    |             if (++tiefe > 65) return fehl ("zu tief verschachtelt");   // MUTATION K65 (M-49): Grenze 65
+    |             aus = Wert::leeresObjekt();
+    | 
+Mutation 2 ab Zeile 378 (Stand vor der Mutation):
+  vorher:
+    |             if (++tiefe > 64) return fehl ("zu tief verschachtelt");
+    |             aus = Wert::leereListe();
+    | 
+  nachher:
+    |             if (++tiefe > 65) return fehl ("zu tief verschachtelt");   // MUTATION K65 (M-49): Grenze 65
+    |             aus = Wert::leereListe();
+    | 
+Mutiert 24.09.2026 09:47:17, SHA-256 mutiert 8e59577d8d5f3ba3db1ca8574fdd7cb28a33f4d1e83ede243fd9bbb9d6c2c184
+Kette (R-313-11): Mit der Grenze 65 passiert der evidence_snapshot mit 65 Ebenen (Listen in der additiven konfidenz) den strengen Lauf, und das Schema laesst das additive Objekt zu -> gueltig statt ungueltig/parser.
+Lauf unter der Mutation:
+  Bau EqCopSonde013EventWireTest: Exit 0
+  B16: Binaer 09:47:20.470, Quelle 09:47:17.685, Binaer juenger: ja
+  B16: Exit 1, Fehlzeilen 1, Rohausgabe rot-K65-mutiert-B16.txt
+    Summe: [ok]   NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [64: -5.919 dBTP; 512: -5.919 dBTP; 1
+    Summe: -----------------------------------------
+    Summe: 194 bestanden, 1 gescheitert
+Ruecknahme 24.09.2026 09:47:22: SHA-256 aa45c45c84ee9f3f44d383bc8164ba93ec512160728b7da08eba4446adaa8d6c - gleich dem Stand vor der Mutation
+  Bau EqCopSonde013EventWireTest: Exit 0
+  B16: Binaer 09:47:25.037, Quelle 09:47:22.276, Binaer juenger: ja
+  B16: Exit 0, Fehlzeilen 0, Rohausgabe rot-K65-zurueck-B16.txt
+    Summe: [ok]   NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [64: -5.919 dBTP; 512: -5.919 dBTP; 1
+    Summe: -----------------------------------------
+    Summe: 195 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B16: '[ROT]  313/M-49 evidence_snapshot_vertragsweg PE-049 (Urteil, Stufe)' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B16] [ROT]  313/M-49 evidence_snapshot_vertragsweg PE-049 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+Nach der Ruecknahme:
+  B16: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B16 unter der Mutation: gefallene Pruefungen (1) und Summenzeilen ===
+  [ROT]  313/M-49 evidence_snapshot_vertragsweg PE-049 (Urteil, Stufe)  [ist gueltig/, soll ungueltig/parser]
+194 bestanden, 1 gescheitert
+=== B16 nach der Ruecknahme: Summenzeilen ===
+195 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

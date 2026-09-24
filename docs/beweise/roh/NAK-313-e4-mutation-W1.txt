@@ -1,0 +1,66 @@
+NAK-313 Etappe 4 - Mutationslauf W1: eq-copilot/plugin/vertrag/NakamaEvidenz.cpp - der Evidenzwriter schreibt ohne Startwert wieder project_sample_start null
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf W1 - der Evidenzwriter schreibt ohne Startwert wieder project_sample_start null - 24.09.2026 09:47:27 - HEAD 0fce3f2606e24e6555debb326f1e07b679ada98b
+Datei eq-copilot/plugin/vertrag/NakamaEvidenz.cpp (CRLF)
+SHA-256 vorher 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\W1-NakamaEvidenz.cpp (SHA-256 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1)
+Mutation 1 ab Zeile 210 (Stand vor der Mutation):
+  vorher:
+    |     if (t.project_sample_start_gesetzt)
+    |     {
+    |         aus += ",\"project_sample_start\":";
+    |         aus += std::to_string (t.project_sample_start);
+    |     }
+    | 
+  nachher:
+    |     aus += ",\"project_sample_start\":";   // MUTATION W1 (M-51): null wieder geschrieben
+    |     aus += t.project_sample_start_gesetzt
+    |          ? std::to_string (t.project_sample_start) : std::string ("null");
+    | 
+Mutiert 24.09.2026 09:47:27, SHA-256 mutiert 01e4e9f5e2312d9b3d734a3b6ca0951974b98cdb0220eb278974abc5a32c4ba5
+Kette (R-313-11): Schreibt der Writer ohne Startwert wieder null, traegt der Transportblock project_sample_start:null -> er weicht von wire_transport ab, das Feld steht im Block, und die gemeinsame Eigenschaft (integer) meldet #/$defs/transportstempel/properties/project_sample_start/type.
+Lauf unter der Mutation:
+  Bau EqCopSonde013EventWireTest: Exit 0
+  B16: Binaer 09:47:30.123, Quelle 09:47:27.294, Binaer juenger: ja
+  B16: Exit 1, Fehlzeilen 3, Rohausgabe rot-W1-mutiert-B16.txt
+    Summe: [ok]   NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [64: -5.919 dBTP; 512: -5.919 dBTP; 1
+    Summe: -----------------------------------------
+    Summe: 192 bestanden, 3 gescheitert
+Ruecknahme 24.09.2026 09:47:31: SHA-256 0e55070531b53fb1591e8e855aef889189118722304c6878d66c932e332bbba1 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde013EventWireTest: Exit 0
+  B16: Binaer 09:47:34.774, Quelle 09:47:31.920, Binaer juenger: ja
+  B16: Exit 0, Fehlzeilen 0, Rohausgabe rot-W1-zurueck-B16.txt
+    Summe: [ok]   NAK-283 M-74: passagenmaximum_gleicht_dem_isolierten_lauf_bei_jeder_blockgroesse - jeder Blockgroessenlauf gleicht dem isoliert ab Fensteranfang verarbeiteten Lauf (+-0,1 dB)  [64: -5.919 dBTP; 512: -5.919 dBTP; 1
+    Summe: -----------------------------------------
+    Summe: 195 bestanden, 0 gescheitert
+Erwartete Pruefungen unter der Mutation:
+  B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich' in der Ausgabe: JA
+  B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block' in der Ausgabe: JA
+  B16: '[ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [B16] [ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis":"local_monotonic","project_sample_start":null,"sample_count":512,"sample_rate"
+  [B16] [ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+  [B16] [ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an  [/transport/project_sample_start | #/$defs/transportstempel/properties/project_sample_start/type | type]
+Nach der Ruecknahme:
+  B16: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B16 unter der Mutation: gefallene Pruefungen (3) und Summenzeilen ===
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: der Transportblock ist bytegleich wire_transport der Byteinstanz  [{"transport_epoch":17,"continuity_segment":3,"sequence":8241,"process_context_present":true,"time_basis":"local_monotonic","project_sample_start":null,"sample_count":512,"sample_rate":48000,"playing":true,"recording":false,"validity":{"project_time":false,"play_state":true,"record_s
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: kein project_sample_start im Block
+  [ROT]  313/M-51 lokaler_transport_ohne_startwert: dieselbe Engine wie B3c nimmt ihn an  [/transport/project_sample_start | #/$defs/transportstempel/properties/project_sample_start/type | type]
+192 bestanden, 3 gescheitert
+=== B16 nach der Ruecknahme: Summenzeilen ===
+195 bestanden, 0 gescheitert
+gefallene Pruefungen nach der Ruecknahme: 0
+

@@ -1,0 +1,74 @@
+NAK-313 Etappe 4 - Mutationslauf R7: broker/src/vertrag.rs - die Rust-Tiefengrenze auf 63 (Vergleich >= statt >)
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen und die Aenderungszeit
+auf jetzt setzen; nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config Release
+--target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt) und die
+Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung zuruecknehmen,
+SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die Rohausgaben der
+Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen der gemessenen Beine.
+
+=== Protokoll ===
+Rotlauf R7 - die Rust-Tiefengrenze auf 63 (Vergleich >= statt >) - 24.09.2026 09:51:46 - HEAD 2af21673eb0b6cab1e81fc79c2410389d5c3bd9b
+Datei broker/src/vertrag.rs (LF)
+SHA-256 vorher c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\1fc43e46\tmp\rot-sicherung\R7-vertrag.rs (SHA-256 c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1)
+Mutation 1 ab Zeile 614 (Stand vor der Mutation):
+  vorher:
+    |         if tiefe > MAX_TIEFE {
+    | 
+  nachher:
+    |         if tiefe >= MAX_TIEFE { // MUTATION R7 (M-49): Grenze 63
+    | 
+Mutiert 24.09.2026 09:51:46, SHA-256 mutiert 478f3a4c9a23c41fce443d40277054e6a9ee55eb5dd657475e96d3039c4228a5
+Kette (R-313-11): Mit der Grenze 63 faellt schon das Dokument mit 64 Ebenen am strengen Lauf -> der gueltige Tiefe-64-Eintrag wird abgelehnt.
+Lauf unter der Mutation:
+  A4-lib: Exit 101, Fehlzeilen 13, Rohausgabe rot-R7-mutiert-A4-lib.txt
+    Summe: error: test failed, to rerun pass `--lib`
+    Summe: error: 1 target failed:
+    Summe: `--lib`
+Ruecknahme 24.09.2026 09:51:49: SHA-256 c94624404a74ec37623316bc8bccb3918cdd6b97b933263922c5e35f60e4a7f1 - gleich dem Stand vor der Mutation
+  A4-lib: Exit 0, Fehlzeilen 0, Rohausgabe rot-R7-zurueck-A4-lib.txt
+    Summe: test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... ok
+    Summe: test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+Erwartete Pruefungen unter der Mutation:
+  A4-lib: 'PE-042: Urteil/Stufe' in der Ausgabe: JA
+  A4-lib: 'PE-048: Urteil/Stufe' in der Ausgabe: JA
+  A4-lib: 'nak313_strenger_lauf_raender ... FAILED' in der Ausgabe: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Gefallene Zeilen unter der Mutation:
+  [A4-lib] test coordinator::schema::nak313_tests::nak313_strenger_lauf_raender ... FAILED
+  [A4-lib] test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  [A4-lib] test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  [A4-lib] ---- coordinator::schema::nak313_tests::nak313_strenger_lauf_raender stdout ----
+  [A4-lib] thread 'coordinator::schema::nak313_tests::nak313_strenger_lauf_raender' (223632) panicked at src\coordinator\schema.rs:1003:13:
+  [A4-lib] ---- coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab stdout ----
+  [A4-lib] thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (304696) panicked at src\coordinator\schema.rs:985:9:
+  [A4-lib] PE-042: Urteil/Stufe ("ungueltig", Some("parser")), soll ("gueltig", None)
+  [A4-lib] PE-042: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(false))
+  [A4-lib] ---- coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf stdout ----
+  [A4-lib] thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (91812) panicked at src\coordinator\senke.rs:402:9:
+  [A4-lib] PE-048: Urteil/Stufe ("ungueltig", Some("parser")), soll ("gueltig", None)
+  [A4-lib] PE-048: Wirkung annahme nicht gehalten ((0, 0, false, 0, 0) -> (0, 0, false, 0, 0))
+Nach der Ruecknahme:
+  A4-lib: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e4-basisstand.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4-lib unter der Mutation: gefallene Pruefungen (10) und Summenzeilen ===
+  test coordinator::schema::nak313_tests::nak313_strenger_lauf_raender ... FAILED
+  test coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab ... FAILED
+  test coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf ... FAILED
+  thread 'coordinator::schema::nak313_tests::nak313_strenger_lauf_raender' (223632) panicked at src\coordinator\schema.rs:1003:13:
+  thread 'coordinator::schema::nak313_tests::nak313_m43_p0_parser_lehnt_ab' (304696) panicked at src\coordinator\schema.rs:985:9:
+  PE-042: Urteil/Stufe ("ungueltig", Some("parser")), soll ("gueltig", None)
+  PE-042: Wirkung annahme nicht gehalten (ACK false, erster Heartbeat Some(false))
+  thread 'coordinator::senke::nak313_tests::nak313_m44_p1_weiche_ein_lauf' (91812) panicked at src\coordinator\senke.rs:402:9:
+  PE-048: Urteil/Stufe ("ungueltig", Some("parser")), soll ("gueltig", None)
+  PE-048: Wirkung annahme nicht gehalten ((0, 0, false, 0, 0) -> (0, 0, false, 0, 0))
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: FAILED. 1 passed; 3 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.03s
+=== A4-lib nach der Ruecknahme: Summenzeilen ===
+Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 284 filtered out; finished in 0.02s
+gefallene Pruefungen nach der Ruecknahme: 0
+

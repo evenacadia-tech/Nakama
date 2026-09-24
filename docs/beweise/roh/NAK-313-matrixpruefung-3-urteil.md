@@ -1,0 +1,7 @@
+# NAK-313 — Matrixprüfung 3, Rohurteil (Codex gpt-6-astra, Effort xhigh, lesend; Wiederprüfung nach Matrixnacharbeit 2)
+
+**Thread:** 01a0d0c6-496c-7080-86c3-4b9a6e13e840 · **HEAD vor und nach dem Lauf:** f7df2648a84067ab00d8a9b35209ff3760b35370 · **Lauf:** 24.09.2026, 02:17:30 bis 02:22:36 (+02:00, aus der Startdatei des Laufs `tools/dirigent/codex-lauf.ps1`, Kennung `nak313-mp3`) · **Prüfbereich:** git diff e965efd0...b4546c26 -- docs/beweise/NAK-313.md (Fixdiff der Matrixnacharbeit 2, Befundliste W1 und W2; Nachtrag der Belegzeilen zu D1 bis D11, D13 und D14 nach §15.3) · **Auftrag:** docs/beweise/roh/NAK-313-matrixpruefung-3-auftrag.txt · **Ablage:** letzte Nachricht des Prüfers (read-only-Sandbox), unverändert vom Dirigenten abgelegt. Der Lauf führte 18 lesende Kommandos aus (Diff, Manifest am ZIEL in Schleifen über die genannten Stellen, `broker/src/transport/bootstrap.rs`, `broker/src/vertrag.rs`, `eq-copilot/plugin/core/ipc/WireZahl.h`); die letzte Nachricht fasst das Urteil zusammen und listet die W- und D-Zeilen nicht einzeln (Beobachtung B-9, Manifest §15.3 und §18).
+
+---
+
+PASS: W1 (M-72/M-73, §7.1/7.3/8.5/8.6) und W2 (M-101) sind geschlossen; statisch am ZIEL nachgerechnet, kein neuer Bruch festgestellt und alle dreizehn Nachtragsbelege gefunden. Keine Tests ausgeführt; Produktdiff leer; HEAD Beginn: f7df2648a84067ab00d8a9b35209ff3760b35370; HEAD Ende: f7df2648a84067ab00d8a9b35209ff3760b35370. FERTIG Matrixprüfung 3, PASS, 0 offen, 0 gebrochen, 0 Lücken, 0 Härtungen

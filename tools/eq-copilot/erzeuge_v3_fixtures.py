@@ -3522,7 +3522,8 @@ MATRIX_ETAPPEN = [(1, 16, 2), (17, 38, 3), (39, 54, 4), (55, 97, 5),
 # Bootstrap die Stufe schema (das Tor, Manifest §8.6: Textriegel, strenger
 # Lauf, Hello-Pruefung des Schemas, Uebernahme); die flachen Leser behalten
 # ihre Kette, ihr parser traegt ab Etappe 6 UTF-8, Escapes und den
-# Grund-Ausgang.
+# Grund-Ausgang. Etappe 7 aendert keine Kette; ihre zwei Heartbeats (M-129)
+# messen gegen die Ketten der Etappe 6.
 _KETTEN_ETAPPE_4 = {
     "A5":  ["textriegel", "parser", "duplikat", "schema"],
     "A11": ["parser", "duplikat", "schema"],
@@ -3539,7 +3540,8 @@ _KETTEN_ETAPPE_4 = {
 }
 _KETTEN_ETAPPE_6 = {**_KETTEN_ETAPPE_4,
                     "rust_bootstrap": ["textriegel", "parser", "duplikat", "schema", "feldregel"]}
-LESERKETTEN = {leser: {"4": list(kette), "5": list(kette), "6": list(_KETTEN_ETAPPE_6[leser])}
+LESERKETTEN = {leser: {"4": list(kette), "5": list(kette), "6": list(_KETTEN_ETAPPE_6[leser]),
+                       "7": list(_KETTEN_ETAPPE_6[leser])}
                for leser, kette in _KETTEN_ETAPPE_4.items()}
 
 
@@ -4740,6 +4742,30 @@ def _faelle_handshake() -> list[dict]:
     return faelle
 
 
+def _faelle_binary_telemetry() -> list[dict]:
+    """M-129 (`rust_p0`): zwei gueltige Heartbeats mit `runtime`, einer meldet
+    `binary_telemetry` `supported`, einer `unsupported`.
+
+    Das Bit ist keine Transportzulassung (R-313-9): Vertrag und Produkt nehmen
+    beide an. Mit genau diesen Bytes koppelt der A4-Waechter
+    `nak313_m129_p2_ohne_bit_angenommen` eine Quelle, deren P2 in beiden
+    Laeufen angenommen wird; ohne `runtime` entstuende kein Deskriptor.
+    """
+    hb = _grundtext(GRUND["heartbeat"])
+    mit_runtime = _ersetze(hb, '"intervention_state_unknown": false\n}\n',
+                           '"intervention_state_unknown": false,\n  "runtime": {\n'
+                           '    "messpunkt": "insert",\n    "betrieb": "active"\n  }\n}\n')
+    faelle = []
+    for wert in ("supported", "unsupported"):
+        roh = _ersetze(mit_runtime, '"binary_telemetry": "supported"',
+                       f'"binary_telemetry": "{wert}"')
+        faelle.append(_pe("rust_p0", "v3", "heartbeat", roh,
+                          f"heartbeat mit runtime, binary_telemetry {wert}", None, ["annahme"],
+                          "M-129", "R-313-9: das Bit ist keine Transportzulassung - der "
+                          "Heartbeat ist mit beiden Werten gueltig"))
+    return faelle
+
+
 def _etappe_von(matrix: str) -> str:
     nummer = int(matrix.removeprefix("M-").rstrip("b"))
     for von, bis, etappe in MATRIX_ETAPPEN:
@@ -4854,7 +4880,7 @@ def produkteingaenge_tabelle() -> dict:
     faelle = (_faelle_quellenmodell() + _faelle_v2_client() + _faelle_rust()
               + _faelle_flacher_leser() + _faelle_quellenmodell_werte()
               + _faelle_v2_zahlen() + _faelle_rust_werte()
-              + _faelle_tor() + _faelle_handshake())
+              + _faelle_tor() + _faelle_handshake() + _faelle_binary_telemetry())
     anlegend: dict[str, str] = {}
     for i, f in enumerate(faelle, start=1):
         f["id"] = f"PE-{i:03d}"

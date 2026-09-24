@@ -142,6 +142,12 @@
         "parser",
         "duplikat",
         "schema"
+      ],
+      "7": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "schema"
       ]
     },
     "A11": {
@@ -156,6 +162,11 @@
         "schema"
       ],
       "6": [
+        "parser",
+        "duplikat",
+        "schema"
+      ],
+      "7": [
         "parser",
         "duplikat",
         "schema"
@@ -179,6 +190,12 @@
         "parser",
         "duplikat",
         "schema"
+      ],
+      "7": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "schema"
       ]
     },
     "cpp_control_handshake": {
@@ -193,6 +210,11 @@
         "feldregel"
       ],
       "6": [
+        "parser",
+        "duplikat",
+        "feldregel"
+      ],
+      "7": [
         "parser",
         "duplikat",
         "feldregel"
@@ -213,6 +235,11 @@
         "parser",
         "duplikat",
         "feldregel"
+      ],
+      "7": [
+        "parser",
+        "duplikat",
+        "feldregel"
       ]
     },
     "cpp_control_ack": {
@@ -227,6 +254,11 @@
         "feldregel"
       ],
       "6": [
+        "parser",
+        "duplikat",
+        "feldregel"
+      ],
+      "7": [
         "parser",
         "duplikat",
         "feldregel"
@@ -246,6 +278,12 @@
         "feldregel"
       ],
       "6": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "feldregel"
+      ],
+      "7": [
         "textriegel",
         "parser",
         "duplikat",
@@ -270,6 +308,12 @@
         "parser",
         "duplikat",
         "feldregel"
+      ],
+      "7": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "feldregel"
       ]
     },
     "cpp_v2_client": {
@@ -290,6 +334,12 @@
         "parser",
         "duplikat",
         "feldregel"
+      ],
+      "7": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "feldregel"
       ]
     },
     "rust_bootstrap": {
@@ -306,6 +356,13 @@
         "feldregel"
       ],
       "6": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "schema",
+        "feldregel"
+      ],
+      "7": [
         "textriegel",
         "parser",
         "duplikat",
@@ -334,6 +391,13 @@
         "duplikat",
         "schema",
         "feldregel"
+      ],
+      "7": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "schema",
+        "feldregel"
       ]
     },
     "rust_p1": {
@@ -357,6 +421,13 @@
         "duplikat",
         "schema",
         "feldregel"
+      ],
+      "7": [
+        "textriegel",
+        "parser",
+        "duplikat",
+        "schema",
+        "feldregel"
       ]
     }
   },
@@ -374,7 +445,7 @@
     "kein_ack",
     "kein_freigegebener_auftrag"
   ],
-  "anzahl": 197,
+  "anzahl": 199,
   "anzahl_je_eingang": {
     "cpp_control_handshake": 30,
     "cpp_telemetrie_handshake": 19,
@@ -383,18 +454,18 @@
     "cpp_sources_ruecknahme": 20,
     "cpp_v2_client": 25,
     "rust_bootstrap": 30,
-    "rust_p0": 21,
+    "rust_p0": 23,
     "rust_p1": 17
   },
   "anzahl_je_fassung": {
     "v2": 27,
-    "v3": 170
+    "v3": 172
   },
   "anzahl_je_nachricht": {
     "command_ack": 13,
     "evidence_invalidate": 20,
     "evidence_snapshot": 14,
-    "heartbeat": 21,
+    "heartbeat": 23,
     "heartbeat_ack": 5,
     "hello": 2,
     "hello_control": 28,
@@ -5824,6 +5895,58 @@
       "ub_bei_juce": false,
       "einspeisung": null,
       "warum": "der dekodierte Name ergebnis steht zweimal"
+    },
+    {
+      "id": "PE-198",
+      "eingang": "rust_p0",
+      "fassung": "v3",
+      "nachricht": "heartbeat",
+      "bytes_hex": "7b0a20202274797065223a2022686561727462656174222c0a20202261647265737365223a207b0a20202020226c6f676f6e5f736964223a2022532d312d352d32312d313131313131313131312d323232323232323232322d333333333333333333332d31303031222c0a202020202270726f6a6563745f62696e64696e675f6964223a20223131313131313131313131313131313131313131313131313131313131313131222c0a202020202273657373696f6e5f65706f6368223a20223232323232323232323232323232323232323232323232323232323232323232222c0a2020202022696e7374616e63655f6964223a20223333333333333333333333333333333333333333333333333333333333333333222c0a202020202272756e74696d655f6e6f6e6365223a20223434343434343434343434343434343434343434343434343434343434343434220a20207d2c0a20202273657175656e6365223a2039312c0a20202273746174655f7265766973696f6e223a2031322c0a2020226361706162696c6974696573223a207b0a2020202022686f73745f636f6e746578745f70726573656e6365223a2022737570706f72746564222c0a202020202270726f6a6563745f74696d655f73616d706c6573223a2022737570706f72746564222c0a202020202273616d706c655f61636375726174655f6175746f6d6174696f6e223a2022737570706f72746564222c0a202020202270726573656e746174696f6e5f6c6174656e6379223a2022756e737570706f72746564222c0a20202020226175785f636f6d706172655f707265223a2022737570706f72746564222c0a20202020226175785f7072696f726974795f73696465636861696e223a2022756e737570706f72746564222c0a2020202022636f6e747269627574696f6e5f617578223a2022737570706f72746564222c0a2020202022666c6f617436345f70726f63657373696e67223a2022756e737570706f72746564222c0a202020202262696e6172795f74656c656d65747279223a2022737570706f72746564222c0a202020202272656d6f74655f636f6e74726f6c223a2022756e737570706f72746564220a20207d2c0a2020227a6165686c6572223a207b0a20202020226672616d65735f64726f70706564223a20302c0a202020202270617273655f6572726f7273223a20302c0a202020202271756575655f6f766572666c6f7773223a20300a20207d2c0a202022696e74657276656e74696f6e5f73746174655f756e6b6e6f776e223a2066616c73652c0a20202272756e74696d65223a207b0a20202020226d65737370756e6b74223a2022696e73657274222c0a202020202262657472696562223a2022616374697665220a20207d0a7d0a",
+      "zeigetext": "heartbeat mit runtime, binary_telemetry supported",
+      "vertrag": {
+        "urteil": "gueltig",
+        "stufe": null
+      },
+      "produkt": {
+        "urteil": "gueltig",
+        "stufe": null
+      },
+      "abweichung": null,
+      "feld": null,
+      "wert": null,
+      "wirkung": [
+        "annahme"
+      ],
+      "matrix": "M-129",
+      "ub_bei_juce": false,
+      "einspeisung": null,
+      "warum": "R-313-9: das Bit ist keine Transportzulassung - der Heartbeat ist mit beiden Werten gueltig"
+    },
+    {
+      "id": "PE-199",
+      "eingang": "rust_p0",
+      "fassung": "v3",
+      "nachricht": "heartbeat",
+      "bytes_hex": "7b0a20202274797065223a2022686561727462656174222c0a20202261647265737365223a207b0a20202020226c6f676f6e5f736964223a2022532d312d352d32312d313131313131313131312d323232323232323232322d333333333333333333332d31303031222c0a202020202270726f6a6563745f62696e64696e675f6964223a20223131313131313131313131313131313131313131313131313131313131313131222c0a202020202273657373696f6e5f65706f6368223a20223232323232323232323232323232323232323232323232323232323232323232222c0a2020202022696e7374616e63655f6964223a20223333333333333333333333333333333333333333333333333333333333333333222c0a202020202272756e74696d655f6e6f6e6365223a20223434343434343434343434343434343434343434343434343434343434343434220a20207d2c0a20202273657175656e6365223a2039312c0a20202273746174655f7265766973696f6e223a2031322c0a2020226361706162696c6974696573223a207b0a2020202022686f73745f636f6e746578745f70726573656e6365223a2022737570706f72746564222c0a202020202270726f6a6563745f74696d655f73616d706c6573223a2022737570706f72746564222c0a202020202273616d706c655f61636375726174655f6175746f6d6174696f6e223a2022737570706f72746564222c0a202020202270726573656e746174696f6e5f6c6174656e6379223a2022756e737570706f72746564222c0a20202020226175785f636f6d706172655f707265223a2022737570706f72746564222c0a20202020226175785f7072696f726974795f73696465636861696e223a2022756e737570706f72746564222c0a2020202022636f6e747269627574696f6e5f617578223a2022737570706f72746564222c0a2020202022666c6f617436345f70726f63657373696e67223a2022756e737570706f72746564222c0a202020202262696e6172795f74656c656d65747279223a2022756e737570706f72746564222c0a202020202272656d6f74655f636f6e74726f6c223a2022756e737570706f72746564220a20207d2c0a2020227a6165686c6572223a207b0a20202020226672616d65735f64726f70706564223a20302c0a202020202270617273655f6572726f7273223a20302c0a202020202271756575655f6f766572666c6f7773223a20300a20207d2c0a202022696e74657276656e74696f6e5f73746174655f756e6b6e6f776e223a2066616c73652c0a20202272756e74696d65223a207b0a20202020226d65737370756e6b74223a2022696e73657274222c0a202020202262657472696562223a2022616374697665220a20207d0a7d0a",
+      "zeigetext": "heartbeat mit runtime, binary_telemetry unsupported",
+      "vertrag": {
+        "urteil": "gueltig",
+        "stufe": null
+      },
+      "produkt": {
+        "urteil": "gueltig",
+        "stufe": null
+      },
+      "abweichung": null,
+      "feld": null,
+      "wert": null,
+      "wirkung": [
+        "annahme"
+      ],
+      "matrix": "M-129",
+      "ub_bei_juce": false,
+      "einspeisung": null,
+      "warum": "R-313-9: das Bit ist keine Transportzulassung - der Heartbeat ist mit beiden Werten gueltig"
     }
   ]
 }

@@ -1,0 +1,110 @@
+NAK-313 Etappe 2, Fortsetzung (M-12b, E-313-18) - Mutationslauf P13: PluginEditor.cpp - den Zusatz in grenzMeldung weggelassen
+
+Ablauf nach Manifest §8.1 (Werkzeug rotlauf.py im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannte Stelle ersetzen (sie kommt genau einmal
+vor) und die Aenderungszeit auf jetzt setzen; nur EqCopShot bauen (cmake --build eq-copilot/build
+--config Release --target EqCopShot) und B15 direkt fahren (EqCopShot --sonde012-suite
+eq-copilot/build/sonde012-shots), Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, Aenderungszeit auf jetzt, neu bauen, B15 gruen; git status und
+git diff --stat. Die Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die
+Pruefzeilen des Panelabschnitts.
+
+=== Protokoll ===
+Rotlauf P13 - 24.09.2026 05:20:22 - HEAD 8aeac2dba9e3063e3c8bcba7f2f45ffb9f591d7c
+Titel: PluginEditor.cpp - den Zusatz in grenzMeldung weggelassen
+Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+SHA-256 vorher afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\88d5bf53\tmp\rot-sicherung\P13-PluginEditor.cpp (SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8)
+Mutation ab Zeile 716 (Stand vor der Mutation):
+  vorher:
+    |     if (rolleGetragen && ! meldung.isEmpty())
+    |         meldung.add ("The role change was not saved either.");
+  nachher:
+    |     (void) rolleGetragen;   // MUTATION P13: Zusatz weggelassen
+Mutiert 24.09.2026 05:20:22, SHA-256 mutiert 962c830647ece3271d06264392dc2de6cfa121026deebd0058e803e09385ff1c
+Lauf unter der Mutation:
+  Bau EqCopShot: Exit 0
+  B15 (EqCopShot): Binaer 05:20:27.944, Quelle 05:20:22.563, Binaer juenger: ja
+  B15: Exit 1, gefallene Pruefungen 1, Rohausgabe rot-P13-mutiert-B15.txt
+    Summe: SONDE-012 SHOTS 29/29 gruen
+    Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler
+    Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+    Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+    Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+    Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+  gefallen in B15:
+    - FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/12
+  erwartet gefallen: '313/M-12b rollenrueckfall_bei_abweisung (Meldung)': JA
+Ruecknahme 24.09.2026 05:20:34: SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8 - gleich dem Stand vor der Mutation
+Lauf nach der Ruecknahme:
+  Bau EqCopShot: Exit 0
+  B15 (EqCopShot): Binaer 05:20:40.032, Quelle 05:20:34.637, Binaer juenger: ja
+  B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P13-zurueck-B15.txt
+    Summe: SONDE-012 SHOTS 29/29 gruen
+    Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+    Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+    Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+    Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+    Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+  B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B15 unter der Mutation: Abschnitt Messpunkt-Panel (NAK-312, NAK-313), alle Pruefzeilen ===
+== NAK-312 Etappe 4 - das Messpunkt-Panel (312/M-35 bis 312/M-37, R-312-2) ==
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  ok      313/M-07 normaler_handgriff_ein_aufruf [NAK-312] M-36 (R-313-3): der Handgriff aus 312/M-36 ruft die Bindungs-API genau einmal  [Aufrufe 1, geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4']
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      313/M-09 (a) ohne_aenderung_kein_aufruf [NAK-312] M-37 (R-313-3 Satz 4): frischer Gen, das Panel ohne Aenderung geschlossen - kein Aufruf der Bindungs-API  [Aufrufe 0, geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+== NAK-313 Etappe 2 - das Panel schreibt nur Geaendertes (313/M-01 bis 313/M-16, R-313-3) ==
+  ok      313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0 Host-Dirty, Label und Paarname unveraendert, getStateInformation bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ'), Save bytegleich ja]
+  ok      313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte unveraendert  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert  [nach der Handlung: Aufrufe 0, Host-Dirty 0, Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Labelfeld 121 Codepunkte/121 Bytes, Paarfeld 61 Codepunkte/61 Bytes]
+  ok      313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe  [nach der Handlung: Aufrufe 0, Host-Dirty 0, Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Labelfeld 121 Codepunkte/121 Bytes, Paarfeld 61 Codepunkte/61 Bytes]
+  ok      313/M-04 rollenwahl_mit_langem_label_gelingt (R-313-3 Satz 3): geladen wie 313/M-01, Rollenwahl NACH dem EQ (id 4), schliessen - Rolle post, genau 1 Host-Dirty; die Rollenwahl gelingt, obwohl das Label ueber 120 Zeichen liegt  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen aus dem geladenen Stand  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Save 357 Bytes, bytegleich zum ersten ja]
+  ok      313/M-15 speichern_laden_mit_langem_label (Laden): der zweite Gen laedt geladen, nicht read-only, Rolle post; sein Save ist bytegleich zum Save des ersten nach 313/M-04  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Save 357 Bytes, bytegleich zum ersten ja]
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Teilfall von 313/M-04, R-313-3 Satz 2): Rollenwahl Sammelpunkt (id 2), schliessen - genau 1 Host-Dirty, Klasse main, project_binding_id hex32  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ'), main ja, Bindung '31a1fa83031642eb8af9f404e9d4f053']
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-06 paarname_bleibt_ohne_handgriff (R-313-3 Satz 2): geladen legacy/insert mit pair_id 'P' und Label 'Bass', das Label auf 'Bass 2' aendern, schliessen - genau 1 Host-Dirty, Label 'Bass 2'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 6 Codepunkte/6 Bytes (endet ' 2'), Paarname 1 Codepunkte/1 Bytes (endet 'P')]
+  ok      313/M-06 paarname_bleibt_ohne_handgriff (Paarname): 'P' bleibt  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 6 Codepunkte/6 Bytes (endet ' 2'), Paarname 1 Codepunkte/1 Bytes (endet 'P'), Paarname 'P']
+  ok      313/M-06 paarname_bleibt_ohne_handgriff (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 6 Codepunkte/6 Bytes (endet ' 2'), Paarname 1 Codepunkte/1 Bytes (endet 'P')]
+  ok      313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust (Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen nein (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 12 Codepunkte/12 Bytes (endet '08'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-08 fokus_dann_schliessen_ein_aufruf (Host-Dirty): genau 1 Host-Dirty, das Label ist uebernommen  [geoeffnet ja, Panel abgebaut ja, Stand geladen nein (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 12 Codepunkte/12 Bytes (endet '08'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation (121/61), keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-11 eingabegrenzen_120_60_in_codepunkten (R-313-3 Satz 3, E-313-15): geladen legacy/pre ohne Label und Paar, 121-mal U+10FFFF ins Labelfeld und 61-mal ins Paarfeld (insertTextAtCaret, der Weg des Tippens) - das Labelfeld haelt 120 Codepunkte (480 UTF-8-Bytes), das Paarfeld 60 (240)  [nach der Handlung: Aufrufe 0, Host-Dirty 0, Label 0 Codepunkte/0 Bytes, Paarname 0 Codepunkte/0 Bytes, Labelfeld 120 Codepunkte/480 Bytes, Paarfeld 60 Codepunkte/240 Bytes]
+  ok      313/M-11 eingabegrenzen_120_60_in_codepunkten (Stand): nach dem Schliessen Rolle pre, Label 120 und Paarname 60 Codepunkte, genau 1 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 60 Codepunkte/240 Bytes (endet '􏿿􏿿')]
+  ok      313/M-11 eingabegrenzen_120_60_in_codepunkten (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 60 Codepunkte/240 Bytes (endet '􏿿􏿿')]
+  ok      313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schliessen - die Bindungs-API lehnt den geaenderten Wert ab: 0 Host-Dirty, das Label bleibt die 125 Zeichen, die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 0 Codepunkte/0 Bytes (endet ''), Labelfeld 124 Codepunkte/124 Bytes, Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-16 panel_ohne_neues_element (Gate GRENZE, Designteil geparkt): das Panel hat genau 7 Kinder - 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor; Eingabegrenze und Statustext sitzen an vorhandenen Elementen  [Kinder 7 (Label 4, ComboBox 1, TextEditor 2)]
+  ok      313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loeschen (64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile sagt 'Pair name is longer than 60 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 65 Codepunkte/65 Bytes (endet 'uv'), Paarfeld 64 Codepunkte/64 Bytes, Status 'Pair name is longer than 60 characters and was not saved.']
+  ok      313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile nennt beide Grenzen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 65 Codepunkte/65 Bytes (endet 'uv'), Status 'Name is longer than 120 characters and was not saved. Pair name is longer than 60 characters and was not saved.']
+  ok      313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 0 Codepunkte/0 Bytes (endet ''), Save bytegleich ja; nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-13 (a) zahlenraender_text: frischer Gen, 120 x U+10FFFF in einem Einfuegen ins leere Labelfeld, schliessen - uebernommen: 120 Codepunkte zaehlen, nicht 480 Bytes; 1 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen nein (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-13 (b) zahlenraender_text: geladen legacy/insert mit Label 120 x U+10FFFF (480 Bytes), nichts aendern, schliessen - 0 Aufrufe, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'sensor', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-13 (c) zahlenraender_text: derselbe Stand, das Label leeren (clear), schliessen - das leere Label ist uebernommen (0 <= 120), 1 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 0 Codepunkte/0 Bytes (endet ''), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-14 panel_abbau_nach_prozessorende_mit_langem_label [NAK-312] M-35 (R-312-2, U57 unberuehrt): der Stand aus 313/M-01, das Label im Panel geaendert - Editor und Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: Marke 0, die Bindung bis zum Prozessorende unveraendert (121/61), 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle '', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler
+=== B15 unter der Mutation: Summenzeilen der uebrigen Abschnitte ===
+SONDE-012 SHOTS 29/29 gruen
+NAK-312 LABEL 15 geprueft, 0 Fehler
+NAK-312 ZIEL 11 geprueft, 0 Fehler
+NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+NAK-312 ANNAHME 19 geprueft, 0 Fehler
+=== B15 nach der Ruecknahme: Summenzeilen ===
+SONDE-012 SHOTS 29/29 gruen
+MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+NAK-312 LABEL 15 geprueft, 0 Fehler
+NAK-312 ZIEL 11 geprueft, 0 Fehler
+NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+NAK-312 ANNAHME 19 geprueft, 0 Fehler
+gefallene Pruefungen nach der Ruecknahme: 0

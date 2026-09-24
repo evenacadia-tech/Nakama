@@ -1,0 +1,306 @@
+NAK-313 Etappe 2, Fortsetzung - Rotbeweis M-12b (Manifest docs/beweise/NAK-313.md §6.1, §20 E-313-18, Ablauf §8.1, R-313-11, R-313-12)
+Stand: 8aeac2db (Reparatur E-313-18, Fall 313/M-12b, Behauptung B15); Mutationslaeufe 24.09.2026, 05:19:07 bis 05:21:40 Uhr; Gegenprobe am Produktcode von cd9c97a6, 24.09.2026, 05:12:32 bis 05:12:39 Uhr (vor der Reparatur).
+
+Matrixzeile M-12b - T3-02-04 - R-313-3 - E-313-18 - Luecke aus §19.6 (Dirigent, §20)
+Zustand: geladen legacy/insert (Rolle sensor, Auswahl id 1), Label 125 Zeichen ('n' x 120 + 'vwxyz', Fremdstand ueber nakama::state::speichere), kein Paarname; Popover offen; ein Zeichen des Labels loeschen (deleteBackwards (false) am Labelfeld) -> 124.
+Ereignis: Rollenwahl post (rolleWahl.setSelectedId (4, juce::sendNotificationSync)), bindungsaufrufeFuerTest() unmittelbar davor und danach gelesen; dann Panel schliessen.
+Zusage: die Bindungs-API lehnt den ganzen Aufruf ab (124 > 120, keine Teilmutation): Rueckgabe false, 0 Host-Dirty, holeLabel() bleibt die 125 Zeichen, die gespeicherte Rolle bleibt sensor, Save bytegleich zum geladenen Stand; die Rollenwahl loest genau einen Aufruf aus (Zaehlerdifferenz 1). Das Panel zeigt danach den ehrlichen Zustand: getSelectedId() = 1 (Rueckfall ohne Rueckruf), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen, statusMeldungFuerTest() = 'Name is longer than 120 characters and was not saved. The role change was not saved either.'
+Bein: B15, eq-copilot/plugin/tests/ShotTestMain.cpp, Fall 313/M-12b rollenrueckfall_bei_abweisung mit vier Pruefungen, je Haelfte eine. Das Bein liest Auswahl, Paarfeld, Rolle und Statuszeile nach der Handlung und vor dem Schliessen (das Schliessen uebernimmt erneut, siehe unten), den Aufrufzaehler unmittelbar vor und nach der Rollenwahl, Host-Dirty, Rolle, Label und Save beim Ende. 'Rueckgabe false' ist beobachtet ueber den Abweisungszweig: nur ein false-Ergebnis erreicht grenzMeldung und den Rueckfall (Haelften 2 und 4), dazu 0 Host-Dirty und der unveraenderte Zustand (Haelfte 1); jeder true-Ausgang von setzeBindungGeaendert zaehlt unmittelbar davor eine Reconnect-Anforderung (prozessor/State.cpp:430-435), und der Detailtext zeigt ueber beide Aufrufe 0 Reconnect-Anforderungen (ausgegeben, keine eigene Bedingung der Pruefung).
+
+--- Gegenprobe am Stand cd9c97a6 (vor der Reparatur) ---
+Produktcode: PluginEditor.cpp Blob 32e6e05c = cd9c97a6 (git hash-object gleich git rev-parse cd9c97a6:eq-copilot/plugin/src/PluginEditor.cpp; git diff --stat cd9c97a6 f7a2fa35 -- eq-copilot broker tools leer); Testdatei ShotTestMain.cpp mit dem Fall 313/M-12b, SHA-256 aa5e1db759bada5a2d183674e626a3f643c239ac5523894d05dee2002cd641f0 (gleich der in 8aeac2db committeten Datei). Kein Schalter NAK313_GEGENPROBE_BASISSTAND noetig: der Aufrufzaehler besteht seit Etappe 2.
+Bau EqCopShot: Exit 0; Binaer 05:12:32.578, Quelle ShotTestMain.cpp 05:12:25.775, Quelle PluginEditor.cpp 04:11:51.224, Binaer juenger: ja; B15 Exit 1.
+  ok      313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 0 Codepunkte/0 Bytes (endet ''), Save bytegleich ja; nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  Summen: SONDE-012 SHOTS 29/29 gruen; MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 2 Fehler; NAK-312 LABEL 15 geprueft, 0 Fehler; NAK-312 ZIEL 11 geprueft, 0 Fehler; NAK-312 KONFLIKT 4 geprueft, 0 Fehler; NAK-312 ANNAHME 19 geprueft, 0 Fehler
+  -> Rueckfall (Auswahl bleibt 4, Paarfeld aktiv) und Meldung (endet nach 'not saved.') halten am Stand cd9c97a6 nicht: heute rot bestaetigt. API-Ablehnung (0 Host-Dirty, Rolle sensor, Label 125, Save bytegleich) und Zaehlerdifferenz 1 halten: Regressionswachen (R-313-12). M-12 in allen drei Pruefungen gruen.
+
+--- Haelfte 1: die Bindungs-API lehnt den ganzen Aufruf ab, keine Teilmutation - Etikett: Regressionswache ---
+Pruefung: 313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18)
+Am Stand cd9c97a6: ok (Zeile oben). Einzelbruch dort, wo die Wache nach dem Bau allein traegt: die Grenzpruefung fuer geaenderte Werte (S5) und die Reihenfolge Pruefung vor Mutation (S6), beide in setzeBindungGeaendert.
+  Mutation S5 (prozessor/State.cpp - die Grenzpruefung fuer geaenderte Werte entfernt (dieselbe Mutation wie S2, neu gefahren fuer M-12b)), Stand 8aeac2db:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\88d5bf53\tmp\rot-sicherung\S5-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 363 (Stand vor der Mutation):
+      vorher:
+        |         if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+        |             return false;
+        |         if (paarId.has_value() && *paarId != zustand.common.pairId && paarId->length() > 60)
+        |             return false;
+      nachher:
+        |         // MUTATION S5: Grenzpruefung fuer geaenderte Werte entfernt (wie S2)
+    Mutiert 24.09.2026 05:20:53, SHA-256 mutiert c20f0948816b2b3677c14121d5b4c9825707e7f9c5dcd73828f77725fc184887
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:20:58.797, Quelle 05:20:53.832, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 6, Rohausgabe rot-S5-mutiert-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 6 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      erwartet gefallen: '313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18)': JA
+    Ruecknahme 24.09.2026 05:21:05: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+    Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:21:10.486, Quelle 05:21:05.506, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S5-zurueck-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Kette (R-313-11): ohne Grenzpruefung fuer geaenderte Werte nimmt die API (post, 124) an: zustand.common = neu, Host-Dirty - beobachtet Host-Dirty 1, Rolle post, Label 124, Save bytegleich NEIN
+    Zusagepruefung: 313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18)
+      gefallen: FEHLER  313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 124 Codepunkte/124 Bytes (endet 'xy'), Paarname 0 Codepunkte/0 Bytes (endet ''), Save bytegleich NEIN; nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 1, Rolle 'post', Label 124 Codepunkte/124 Bytes, Status ''; nach dem Schliessen: Status '']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - B15: 313/M-12b rollenrueckfall_bei_abweisung (Rueckfall) - Grund: der Aufruf gelingt, der Rueckfall steht nur im Abweisungszweig - Auswahl 4, Paarfeld aktiv
+      - B15: 313/M-12b rollenrueckfall_bei_abweisung (Meldung) - Grund: der Aufruf gelingt, die Statuszeile steht nur im Abweisungszweig - Status leer
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15) - Grund: dieselbe Wache der Etappe 2 (S2): 124 angenommen
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname) - Grund: dieselbe Wache der Etappe 2 (S2): Paarname 64 angenommen
+      - B15: 313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide) - Grund: dieselbe Wache der Etappe 2 (S2): 124/64 angenommen
+    gruen geblieben (Faelle 313/M-12b): 313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut
+    gruen geblieben sonst: alle uebrigen Pruefungen von B15 (Summen: SONDE-012 SHOTS 29/29 gruen; MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 6 Fehler; NAK-312 LABEL 15 geprueft, 0 Fehler; NAK-312 ZIEL 11 geprueft, 0 Fehler; NAK-312 KONFLIKT 4 geprueft, 0 Fehler; NAK-312 ANNAHME 19 geprueft, 0 Fehler; Einzelzeilen in NAK-313-e2-mutation-S5.txt)
+
+  Mutation S6 (prozessor/State.cpp - Teilmutation: Klasse und Position vor der Grenzpruefung in den Zustand geschrieben), Stand 8aeac2db:
+    Datei eq-copilot/plugin/src/prozessor/State.cpp (CRLF)
+    SHA-256 vorher c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\88d5bf53\tmp\rot-sicherung\S6-State.cpp (SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102)
+    Mutation ab Zeile 363 (Stand vor der Mutation):
+      vorher:
+        |         if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+        |             return false;
+      nachher:
+        |         zustand.common.klasse = klasse;       // MUTATION S6: Teilmutation vor der Grenzpruefung
+        |         zustand.common.position = position;
+        |         if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+        |             return false;
+    Mutiert 24.09.2026 05:21:24, SHA-256 mutiert 9254d01114ad27dcb3876a4531054591a272cfe5b6606f3be80cfee3fabb49ab
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:21:29.062, Quelle 05:21:24.095, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 2, Rohausgabe rot-S6-mutiert-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 2 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      erwartet gefallen: '313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18)': JA
+    Ruecknahme 24.09.2026 05:21:35: SHA-256 c022aa0b8a3ccde0fe57d429c6d27c1e8cc75c0c1e24f17368745779f39a4102 - gleich dem Stand vor der Mutation
+    Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:21:40.748, Quelle 05:21:35.750, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-S6-zurueck-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Kette (R-313-11): Klasse und Position der mitgeschickten Rolle stehen vor der Grenzpruefung im Zustand; die Pruefung weist 124 danach ab (false, keine Dirty-Meldung), die Rolle post bleibt stehen - beobachtet Host-Dirty 0 und Label 125 (diese Teile halten), Rolle post und Save bytegleich NEIN (die Teilmutation)
+    Zusagepruefung: 313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18)
+      gefallen: FEHLER  313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'post', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 0 Codepunkte/0 Bytes (endet ''), Save bytegleich NEIN; nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'post', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved. The role change was not saved either.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    mitgefallen (mit Grund):
+      - B15: 313/M-04 rollenwahl_mit_langem_label_gelingt (R-313-3 Satz 3) - Grund: die Mutation schreibt die Rolle auch bei einer reinen Rollenwahl vor dem Vergleich in den Zustand; neu == zustand.common, der Aufruf endet am Fruehausstieg mit false - Rolle post, Host-Dirty 0 statt 1
+    gruen geblieben (Faelle 313/M-12b): 313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users | 313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut | 313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'
+    gruen geblieben sonst: alle uebrigen Pruefungen von B15 (Summen: SONDE-012 SHOTS 29/29 gruen; MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 2 Fehler; NAK-312 LABEL 15 geprueft, 0 Fehler; NAK-312 ZIEL 11 geprueft, 0 Fehler; NAK-312 KONFLIKT 4 geprueft, 0 Fehler; NAK-312 ANNAHME 19 geprueft, 0 Fehler; Einzelzeilen in NAK-313-e2-mutation-S6.txt)
+
+--- Haelfte 2: Rueckfall der Auswahl auf die gemerkte Rolle, Paarfeld deaktiviert, Labelfeld behaelt den Text - Etikett: heute rot ---
+Pruefung: 313/M-12b rollenrueckfall_bei_abweisung (Rueckfall)
+Am Stand cd9c97a6: FEHLER (Zeile oben: Auswahl id 4, Paarfeld aktiv, Labelfeld 124) -> heute rot.
+  Mutation P11 (PluginEditor.cpp - den Rueckfall entfernt (setSelectedId in rolleZurueck)), Stand 8aeac2db:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\88d5bf53\tmp\rot-sicherung\P11-PluginEditor.cpp (SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8)
+    Mutation ab Zeile 826 (Stand vor der Mutation):
+      vorher:
+        |         void rolleZurueck() { rolleWahl.setSelectedId (gemerkteRollenId, juce::dontSendNotification); paarSichtbarkeit(); }
+      nachher:
+        |         void rolleZurueck() { /* MUTATION P11: Rueckfall entfernt */ paarSichtbarkeit(); }
+    Mutiert 24.09.2026 05:19:07, SHA-256 mutiert 8928478152fb5f7fb98f652eef8d3879c7b6c24eb6cc405398ca5a9588ee168d
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:19:12.727, Quelle 05:19:07.075, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 1, Rohausgabe rot-P11-mutiert-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      erwartet gefallen: '313/M-12b rollenrueckfall_bei_abweisung (Rueckfall)': JA
+    Ruecknahme 24.09.2026 05:19:19: SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8 - gleich dem Stand vor der Mutation
+    Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:19:24.861, Quelle 05:19:19.434, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P11-zurueck-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Kette (R-313-11): ohne setSelectedId in rolleZurueck ruft der Abweisungszweig nur paarSichtbarkeit() mit der weiter gewaehlten id 4 (Paarrolle) - beobachtet Auswahl id 4, Paarfeld aktiv; Zaehler 1 und Meldung mit Zusatz bleiben (grenzMeldung bekommt die getragene Rolle weiter)
+    Zusagepruefung: 313/M-12b rollenrueckfall_bei_abweisung (Rueckfall)
+      gefallen: FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved. The role change was not saved either.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved. The role change was not saved either.']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    gruen geblieben (Faelle 313/M-12b): 313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand | 313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut | 313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'
+    gruen geblieben sonst: alle uebrigen Pruefungen von B15 (Summen: SONDE-012 SHOTS 29/29 gruen; MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler; NAK-312 LABEL 15 geprueft, 0 Fehler; NAK-312 ZIEL 11 geprueft, 0 Fehler; NAK-312 KONFLIKT 4 geprueft, 0 Fehler; NAK-312 ANNAHME 19 geprueft, 0 Fehler; Einzelzeilen in NAK-313-e2-mutation-P11.txt)
+
+--- Haelfte 3: genau ein Aufruf um die Rollenwahl (Rueckfall ohne Rueckruf) - Etikett: Regressionswache ---
+Pruefung: 313/M-12b rollenrueckfall_bei_abweisung (Zaehler)
+Am Stand cd9c97a6: ok (Zeile oben: Aufrufe um die Rollenwahl 1; dort gibt es keinen Rueckfall). Nach dem Bau traegt sie allein dontSendNotification im Rueckfall.
+  Mutation P12 (PluginEditor.cpp - dontSendNotification im Rueckfall durch sendNotificationSync ersetzt), Stand 8aeac2db:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\88d5bf53\tmp\rot-sicherung\P12-PluginEditor.cpp (SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8)
+    Mutation ab Zeile 826 (Stand vor der Mutation):
+      vorher:
+        |         void rolleZurueck() { rolleWahl.setSelectedId (gemerkteRollenId, juce::dontSendNotification); paarSichtbarkeit(); }
+      nachher:
+        |         void rolleZurueck() { rolleWahl.setSelectedId (gemerkteRollenId, juce::sendNotificationSync); paarSichtbarkeit(); }
+    Mutiert 24.09.2026 05:19:41, SHA-256 mutiert ebdccbad6a55fbc8d4e2952eadd681699579e4501669b85e61d77f42f30a2dbb
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:19:46.928, Quelle 05:19:41.336, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 1, Rohausgabe rot-P12-mutiert-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      erwartet gefallen: '313/M-12b rollenrueckfall_bei_abweisung (Zaehler)': JA
+    Ruecknahme 24.09.2026 05:19:53: SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8 - gleich dem Stand vor der Mutation
+    Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:19:59.537, Quelle 05:19:53.905, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P12-zurueck-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Kette (R-313-11): mit sendNotificationSync stellt ComboBox::sendChange den Wechsel auf id 1 sofort zu (triggerAsyncUpdate, handleUpdateNowIfNeeded, juce_ComboBox.cpp:649-656): comboBoxChanged ruft verschachtelt uebernehmen(), das Label (124) weicht weiter ab, ein zweiter Aufruf nur mit dem Label wird abgewiesen - beobachtet Aufrufe um die Rollenwahl 2; Auswahl 1, Paarfeld deaktiviert und die Meldung mit Zusatz bleiben (der aeussere Aufruf setzt die Zeile zuletzt)
+    Zusagepruefung: 313/M-12b rollenrueckfall_bei_abweisung (Zaehler)
+      gefallen: FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut  [nach der Rollenwahl: Aufrufe um die Rollenwahl 2, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved. The role change was not saved either.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    gruen geblieben (Faelle 313/M-12b): 313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand | 313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users | 313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'
+    gruen geblieben sonst: alle uebrigen Pruefungen von B15 (Summen: SONDE-012 SHOTS 29/29 gruen; MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler; NAK-312 LABEL 15 geprueft, 0 Fehler; NAK-312 ZIEL 11 geprueft, 0 Fehler; NAK-312 KONFLIKT 4 geprueft, 0 Fehler; NAK-312 ANNAHME 19 geprueft, 0 Fehler; Einzelzeilen in NAK-313-e2-mutation-P12.txt)
+
+--- Haelfte 4: die Statuszeile nennt auch die nicht gespeicherte Rolle - Etikett: heute rot ---
+Pruefung: 313/M-12b rollenrueckfall_bei_abweisung (Meldung)
+Am Stand cd9c97a6: FEHLER (Zeile oben: Status 'Name is longer than 120 characters and was not saved.') -> heute rot.
+  Mutation P13 (PluginEditor.cpp - den Zusatz in grenzMeldung weggelassen), Stand 8aeac2db:
+    Datei eq-copilot/plugin/src/PluginEditor.cpp (LF)
+    SHA-256 vorher afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\88d5bf53\tmp\rot-sicherung\P13-PluginEditor.cpp (SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8)
+    Mutation ab Zeile 716 (Stand vor der Mutation):
+      vorher:
+        |     if (rolleGetragen && ! meldung.isEmpty())
+        |         meldung.add ("The role change was not saved either.");
+      nachher:
+        |     (void) rolleGetragen;   // MUTATION P13: Zusatz weggelassen
+    Mutiert 24.09.2026 05:20:22, SHA-256 mutiert 962c830647ece3271d06264392dc2de6cfa121026deebd0058e803e09385ff1c
+    Lauf unter der Mutation:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:20:27.944, Quelle 05:20:22.563, Binaer juenger: ja
+      B15: Exit 1, gefallene Pruefungen 1, Rohausgabe rot-P13-mutiert-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      erwartet gefallen: '313/M-12b rollenrueckfall_bei_abweisung (Meldung)': JA
+    Ruecknahme 24.09.2026 05:20:34: SHA-256 afa6b75e42a67d612af1ae575f0b8f4ce3068272e0e85fe9a716bdff9807d3c8 - gleich dem Stand vor der Mutation
+    Lauf nach der Ruecknahme:
+      Bau EqCopShot: Exit 0
+      B15 (EqCopShot): Binaer 05:20:40.032, Quelle 05:20:34.637, Binaer juenger: ja
+      B15: Exit 0, gefallene Pruefungen 0, Rohausgabe rot-P13-zurueck-B15.txt
+        Summe: SONDE-012 SHOTS 29/29 gruen
+        Summe: MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+        Summe: NAK-312 LABEL 15 geprueft, 0 Fehler
+        Summe: NAK-312 ZIEL 11 geprueft, 0 Fehler
+        Summe: NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+        Summe: NAK-312 ANNAHME 19 geprueft, 0 Fehler
+      B15 nach der Ruecknahme: Exit 0, gefallene Pruefungen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat: (leer)
+    Kette (R-313-11): grenzMeldung haengt den Zusatz nicht mehr an - beobachtet Status 'Name is longer than 120 characters and was not saved.'; Rueckfall, Zaehler und API-Haelfte bleiben, M-12 bleibt woertlich gruen
+    Zusagepruefung: 313/M-12b rollenrueckfall_bei_abweisung (Meldung)
+      gefallen: FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 1, Paarfeld deaktiviert, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+      Die Zusage faellt an der erwarteten Pruefung: JA
+    gruen geblieben (Faelle 313/M-12b): 313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand | 313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users | 313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut
+    gruen geblieben sonst: alle uebrigen Pruefungen von B15 (Summen: SONDE-012 SHOTS 29/29 gruen; MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 1 Fehler; NAK-312 LABEL 15 geprueft, 0 Fehler; NAK-312 ZIEL 11 geprueft, 0 Fehler; NAK-312 KONFLIKT 4 geprueft, 0 Fehler; NAK-312 ANNAHME 19 geprueft, 0 Fehler; Einzelzeilen in NAK-313-e2-mutation-P13.txt)
+
+--- Beobachtung zum Schliessen ---
+Nach dem Rueckfall ist die Auswahl gleich der gemerkten Rolle; der Aufruf beim Schliessen traegt nur das Label (124), wird abgewiesen und setzt die Statuszeile ohne Zusatz ('Name is longer than 120 characters and was not saved.'): die Regel E-313-18 (Zusatz nur bei getragener Rolle), gemessen im Detailtext jeder Pruefung ('nach dem Schliessen'). Aufrufe insgesamt 2, Host-Dirty 0, Rolle sensor. Am Stand cd9c97a6 trug auch der Schlussaufruf die Rolle (Auswahl 4).
+
+=== B15 der Gegenprobe am Stand cd9c97a6: Abschnitt Messpunkt-Panel (NAK-312, NAK-313), alle Pruefzeilen ===
+== NAK-312 Etappe 4 - das Messpunkt-Panel (312/M-35 bis 312/M-37, R-312-2) ==
+  ok      312/M-35 panel_abbau_nach_prozessorende_ist_wirkungslos (R-312-2, R-312-12): Legacy-Gen, Popover offen, im Panel eine echte Aenderung - Editor zerstoert, Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: sein Destruktor fasst weder Prozessor noch Editor an (Marke 0), die Bindung ist bis zum Ende des Prozessors unveraendert, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      312/M-36 normaler_handgriff_bleibt (Teilfall von 312/M-35, R-312-2 letzter Satz): das Panel schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-Meldung entsteht  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4', Bild nak312-messpunkt-panel.png]
+  ok      313/M-07 normaler_handgriff_ein_aufruf [NAK-312] M-36 (R-313-3): der Handgriff aus 312/M-36 ruft die Bindungs-API genau einmal  [Aufrufe 1, geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 1, Label vorher '', nach dem Panel 'NAK-312 Etappe 4', beim Ende 'NAK-312 Etappe 4']
+  ok      312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+  ok      313/M-09 (a) ohne_aenderung_kein_aufruf [NAK-312] M-37 (R-313-3 Satz 4): frischer Gen, das Panel ohne Aenderung geschlossen - kein Aufruf der Bindungs-API  [Aufrufe 0, geoeffnet ja, Panel abgebaut ja, Marke 0, Host-Dirty 0, Label vorher '', nach dem Panel '', beim Ende '']
+== NAK-313 Etappe 2 - das Panel schreibt nur Geaendertes (313/M-01 bis 313/M-16, R-313-3) ==
+  ok      313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0 Host-Dirty, Label und Paarname unveraendert, getStateInformation bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ'), Save bytegleich ja]
+  ok      313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, 0 Reconnect-Anforderungen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte unveraendert  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert  [nach der Handlung: Aufrufe 0, Host-Dirty 0, Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Labelfeld 121 Codepunkte/121 Bytes, Paarfeld 61 Codepunkte/61 Bytes]
+  ok      313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe  [nach der Handlung: Aufrufe 0, Host-Dirty 0, Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Labelfeld 121 Codepunkte/121 Bytes, Paarfeld 61 Codepunkte/61 Bytes]
+  ok      313/M-04 rollenwahl_mit_langem_label_gelingt (R-313-3 Satz 3): geladen wie 313/M-01, Rollenwahl NACH dem EQ (id 4), schliessen - Rolle post, genau 1 Host-Dirty; die Rollenwahl gelingt, obwohl das Label ueber 120 Zeichen liegt  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'post', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen aus dem geladenen Stand  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Save 357 Bytes, bytegleich zum ersten ja]
+  ok      313/M-15 speichern_laden_mit_langem_label (Laden): der zweite Gen laedt geladen, nicht read-only, Rolle post; sein Save ist bytegleich zum Save des ersten nach 313/M-04  [zweiter Gen: geladen ja, Grund '', Rolle 'post', Label 121 Codepunkte/121 Bytes, Paarname 61 Codepunkte/61 Bytes, Save 357 Bytes, bytegleich zum ersten ja]
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Teilfall von 313/M-04, R-313-3 Satz 2): Rollenwahl Sammelpunkt (id 2), schliessen - genau 1 Host-Dirty, Klasse main, project_binding_id hex32  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ'), main ja, Bindung 'b8dab14834a646f89f5cd18ca70e2f00']
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'hub', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-06 paarname_bleibt_ohne_handgriff (R-313-3 Satz 2): geladen legacy/insert mit pair_id 'P' und Label 'Bass', das Label auf 'Bass 2' aendern, schliessen - genau 1 Host-Dirty, Label 'Bass 2'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 6 Codepunkte/6 Bytes (endet ' 2'), Paarname 1 Codepunkte/1 Bytes (endet 'P')]
+  ok      313/M-06 paarname_bleibt_ohne_handgriff (Paarname): 'P' bleibt  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 6 Codepunkte/6 Bytes (endet ' 2'), Paarname 1 Codepunkte/1 Bytes (endet 'P'), Paarname 'P']
+  ok      313/M-06 paarname_bleibt_ohne_handgriff (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 6 Codepunkte/6 Bytes (endet ' 2'), Paarname 1 Codepunkte/1 Bytes (endet 'P')]
+  ok      313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust (Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen nein (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 12 Codepunkte/12 Bytes (endet '08'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-08 fokus_dann_schliessen_ein_aufruf (Host-Dirty): genau 1 Host-Dirty, das Label ist uebernommen  [geoeffnet ja, Panel abgebaut ja, Stand geladen nein (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 12 Codepunkte/12 Bytes (endet '08'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation (121/61), keine Dirty-Meldung  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+  ok      313/M-11 eingabegrenzen_120_60_in_codepunkten (R-313-3 Satz 3, E-313-15): geladen legacy/pre ohne Label und Paar, 121-mal U+10FFFF ins Labelfeld und 61-mal ins Paarfeld (insertTextAtCaret, der Weg des Tippens) - das Labelfeld haelt 120 Codepunkte (480 UTF-8-Bytes), das Paarfeld 60 (240)  [nach der Handlung: Aufrufe 0, Host-Dirty 0, Label 0 Codepunkte/0 Bytes, Paarname 0 Codepunkte/0 Bytes, Labelfeld 120 Codepunkte/480 Bytes, Paarfeld 60 Codepunkte/240 Bytes]
+  ok      313/M-11 eingabegrenzen_120_60_in_codepunkten (Stand): nach dem Schliessen Rolle pre, Label 120 und Paarname 60 Codepunkte, genau 1 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 60 Codepunkte/240 Bytes (endet '􏿿􏿿')]
+  ok      313/M-11 eingabegrenzen_120_60_in_codepunkten (Zaehler): genau 1 Aufruf  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'pre', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 60 Codepunkte/240 Bytes (endet '􏿿􏿿')]
+  ok      313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schliessen - die Bindungs-API lehnt den geaenderten Wert ab: 0 Host-Dirty, das Label bleibt die 125 Zeichen, die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 0 Codepunkte/0 Bytes (endet ''), Labelfeld 124 Codepunkte/124 Bytes, Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-16 panel_ohne_neues_element (Gate GRENZE, Designteil geparkt): das Panel hat genau 7 Kinder - 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor; Eingabegrenze und Statustext sitzen an vorhandenen Elementen  [Kinder 7 (Label 4, ComboBox 1, TextEditor 2)]
+  ok      313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label 125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loeschen (64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile sagt 'Pair name is longer than 60 characters and was not saved.'  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 65 Codepunkte/65 Bytes (endet 'uv'), Paarfeld 64 Codepunkte/64 Bytes, Status 'Pair name is longer than 60 characters and was not saved.']
+  ok      313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, die Statuszeile nennt beide Grenzen  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'pre', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 65 Codepunkte/65 Bytes (endet 'uv'), Status 'Name is longer than 120 characters and was not saved. Pair name is longer than 60 characters and was not saved.']
+  ok      313/M-12b rollenrueckfall_bei_abweisung (R-313-3, E-313-18): geladen legacy/sensor mit Label 125 Zeichen, ein Zeichen loeschen (124), Rollenwahl NACH dem EQ (id 4), schliessen - die Bindungs-API lehnt den ganzen Aufruf ab (keine Teilmutation): 0 Host-Dirty, Rolle sensor und Label 125 Zeichen bleiben, Save bytegleich zum geladenen Stand  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 2, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes (endet 'yz'), Paarname 0 Codepunkte/0 Bytes (endet ''), Save bytegleich ja; nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Rueckfall): nach der Abweisung zeigt die Auswahl wieder die gespeicherte Rolle (id 1), das Paarfeld ist wieder deaktiviert, das Labelfeld behaelt die 124 Zeichen des Users  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-12b rollenrueckfall_bei_abweisung (Zaehler): die Rollenwahl loest genau einen Aufruf aus - der Rueckfall ohne Rueckruf ruft nicht erneut  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  FEHLER  313/M-12b rollenrueckfall_bei_abweisung (Meldung): die vorhandene Statuszeile sagt 'Name is longer than 120 characters and was not saved. The role change was not saved either.'  [nach der Rollenwahl: Aufrufe um die Rollenwahl 1, Auswahl id 4, Paarfeld aktiv, Labelfeld 124 Codepunkte/124 Bytes, Host-Dirty 0, Rolle 'sensor', Label 125 Codepunkte/125 Bytes, Status 'Name is longer than 120 characters and was not saved.'; nach dem Schliessen: Status 'Name is longer than 120 characters and was not saved.']
+  ok      313/M-13 (a) zahlenraender_text: frischer Gen, 120 x U+10FFFF in einem Einfuegen ins leere Labelfeld, schliessen - uebernommen: 120 Codepunkte zaehlen, nicht 480 Bytes; 1 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen nein (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-13 (b) zahlenraender_text: geladen legacy/insert mit Label 120 x U+10FFFF (480 Bytes), nichts aendern, schliessen - 0 Aufrufe, 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle 'sensor', Label 120 Codepunkte/480 Bytes (endet '􏿿􏿿'), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-13 (c) zahlenraender_text: derselbe Stand, das Label leeren (clear), schliessen - das leere Label ist uebernommen (0 <= 120), 1 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 1, Reconnect-Anforderungen 1, Host-Dirty 1, Marke 0, Rolle 'sensor', Label 0 Codepunkte/0 Bytes (endet ''), Paarname 0 Codepunkte/0 Bytes (endet '')]
+  ok      313/M-14 panel_abbau_nach_prozessorende_mit_langem_label [NAK-312] M-35 (R-312-2, U57 unberuehrt): der Stand aus 313/M-01, das Label im Panel geaendert - Editor und Prozessor zerstoert, DANN baut die Nachrichtenschleife das Panel ab: Marke 0, die Bindung bis zum Prozessorende unveraendert (121/61), 0 Host-Dirty  [geoeffnet ja, Panel abgebaut ja, Stand geladen ja (Host-Dirty beim Laden 0), Aufrufe 0, Reconnect-Anforderungen 0, Host-Dirty 0, Marke 0, Rolle '', Label 121 Codepunkte/121 Bytes (endet 'aZ'), Paarname 61 Codepunkte/61 Bytes (endet 'pQ')]
+MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 2 Fehler
+=== B15 der Gegenprobe: Summenzeilen der uebrigen Abschnitte ===
+SONDE-012 SHOTS 29/29 gruen
+NAK-312 LABEL 15 geprueft, 0 Fehler
+NAK-312 ZIEL 11 geprueft, 0 Fehler
+NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+NAK-312 ANNAHME 19 geprueft, 0 Fehler

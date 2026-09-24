@@ -1,0 +1,127 @@
+NAK-313 Etappe 5b - Rotbeweis M-92 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-92 - T3-02-03 - Vertragstext Revisionsbereich (Praezisierung nach R-313-4)
+Zustand: Endstand der Etappe 5b
+Ereignis: Lesen von eq-copilot/schemas/state/nakama-state-v2.md
+Zusage: intent_revision_v1, source_intents_v1.revision, assistant_step_v1.revision, Dsp.state_revision und die Undo-Revision nennen den Bereich (Untergrenze 0 beziehungsweise 1, Obergrenze 2^53-1) mit datierter Praezisierung (Wortlaut §8.5); ein Stand darueber ist read-only; getragen von M-74 bis M-83
+Bein: Lesen (kein Bein liest nakama-state-v2.md); tragend B2 313/M-74 bis 313/M-78, B7 313/M-83
+
+--- Haelfte 1: Text - Etikett: heute rot ---
+Pruefung: gelesene Stelle im Diff (Commit 977a7fae), unten zitiert
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  -> am Basisstand: rot - der Vertrag nannte nur Untergrenzen (:29, :38, :184, :187 am Stand 062a98fc); Zeilen 323 -> 331, CRLF, sonst bytegleich
+
+--- Haelfte 2: Verhalten - Etikett: heute rot ---
+Pruefung: B2 313/M-74 bis 313/M-78, B7 313/M-83 (Rotbeweise in NAK-313-rot-M-74.txt bis NAK-313-rot-M-83.txt)
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  -> am Basisstand: rot in M-74 bis M-83 (siehe dort)
+  Mutation L74a: eq-copilot/plugin/state/NakamaState.cpp - M-74 Haelfte 2^53/int64max: Obergrenze des Lesers intent_revision_v1 entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-L74a.txt):
+    Rotlauf L74a - M-74 Haelfte 2^53/int64max: Obergrenze des Lesers intent_revision_v1 entfernt - 24.09.2026 17:40:29 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\L74a-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 2062 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |            if (mainIntentRevision > kRevisionMax)
+        |            {
+        |                grund = bestandName + ".intent_revision_v1 exceeds 2^53-1";
+        |                return false;
+        |            }
+      nachher:
+        |
+    Mutiert 24.09.2026 17:40:29: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 1812c8b084060f97d3e7466589e47973b20643334e2666a8422b13d5ea1fb4aa
+    Kette (R-313-11): Ohne die Obergrenze nimmt der Leser intent_revision_v1 2^53 und int64max an: der Stand laedt geladen statt nurLesen -> M-74 (2^53, int64max) rot; 2^53-1 bleibt geladen. M-79 (a) faellt mit: der Stand traegt auch die Assistentenrevision int64max, die zweite Sperre haelt ihn nurLesen, aber mit dem Grund assistant_step_v1 statt intent_revision_v1.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:40:34.532, Quelle 17:40:29.879, Binaer juenger: ja
+      B2: Exit 1, Fehlzeilen 6, Rohausgabe L74a-mutiert-B2.txt
+        Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 391 Pruefungen ok, 6 Fehler
+    Ruecknahme 24.09.2026 17:40:56: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:41:01.485, Quelle 17:40:56.171, Binaer juenger: ja
+      B2: Exit 0, Fehlzeilen 0, Rohausgabe L74a-zurueck-B2.txt
+        Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B2: '313/M-74 intent_revision_grenze MainProject 2^53:' gefallen: JA
+      B2: '313/M-74 intent_revision_grenze MainProject int64max:' gefallen: JA
+      B2: '313/M-74 intent_revision_grenze RetainedMainProject 2^53:' gefallen: JA
+      B2: '313/M-74 intent_revision_grenze RetainedMainProject int64max:' gefallen: JA
+      B2: '313/M-79 int64max_laedt_nurlesen' gefallen: JA
+      B2: '313/M-74 intent_revision_grenze MainProject 2^53-1:' gruen geblieben: JA
+      B2: '313/M-74 intent_revision_grenze RetainedMainProject 2^53-1:' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B2: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B2 unter der Mutation: gefallene Pruefungen (6) ===
+      FEHLER  313/M-74 intent_revision_grenze MainProject 2^53: nurLesen mit Originalbytes, Grund 'MainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+      FEHLER  313/M-74 intent_revision_grenze MainProject int64max: nurLesen mit Originalbytes, Grund 'MainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+      FEHLER  313/M-74 intent_revision_grenze RetainedMainProject 2^53: nurLesen mit Originalbytes, Grund 'RetainedMainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+      FEHLER  313/M-74 intent_revision_grenze RetainedMainProject int64max: nurLesen mit Originalbytes, Grund 'RetainedMainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+      FEHLER  313/M-79 int64max_laedt_nurlesen: Assistenten- und Bestandsrevision int64max - nurLesen mit Originalbytes, der Grund nennt MainProject.intent_revision_v1  [nurLesen, Grund 'MainProject.assistant_step_v1 revision exceeds 2^53-1', Save bytegleich]
+      FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+    === B2 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+=== Diff des Vertragstexts (git show 977a7fae -- eq-copilot/schemas/state/nakama-state-v2.md; CR entfernt) ===
+commit 977a7fae21f9a64cd280e1c51b2bc6a6e0fcc19a
+Author: evenacadia-tech <evenacadia@gmail.com>
+Date:   Thu Sep 24 17:31:29 2026 +0200
+
+    NAK-313 Etappe 5b: Vertragstext Revisionsbereich und NAK-283-Nachtrag (R-313-4; M-92)
+    
+    nakama-state-v2.md: Kurzform intent_revision_v1 und Dsp.state_revision sowie
+    die Tabellenzeilen source_intents_v1 und intent_revision_v1 nennen die
+    Obergrenze 2^53-1; nach der Tabelle die datierte Praezisierung (Wortlaut
+    Manifest §8.5). Zeilenzahl 323 -> 331, CRLF, sonst bytegleich.
+    
+    docs/beweise/NAK-283.md: datierter Nachtrag nach der Matrix §5.1 im Wortlaut
+    aus §8.5 (Rand von M-10 und M-11 jetzt 2^53-1), ergaenzt um einen Satz zu den
+    Grenzstaenden von M-07 bis M-09 und M-12.
+    
+    Co-Authored-By: Claude Opus <noreply@anthropic.com>
+
+diff --git a/eq-copilot/schemas/state/nakama-state-v2.md b/eq-copilot/schemas/state/nakama-state-v2.md
+index 982ff811..72204da2 100644
+--- a/eq-copilot/schemas/state/nakama-state-v2.md
++++ b/eq-copilot/schemas/state/nakama-state-v2.md
+@@ -26,7 +26,7 @@ NakamaState                               schema = 2  (int)
+ │     source_intents_v1      array  optional; flach [quelle_id, passage_id|"", rolle, revision, herkunft, konfidenz, ...], höchstens 256 Sechsergruppen (SONDE-014 M-02)
+ │     intent_protections_v1  array  optional; flach [quelle_id, eigenschaft, band_von, band_bis, ...], höchstens 256 Vierergruppen (SONDE-014 M-03)
+ │     intent_relations_v1    array  optional; flach [quelle_a, quelle_b, art, ...], höchstens 256 Dreiergruppen (SONDE-014 M-06)
+-│     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ab 1 (SONDE-014 M-86)
++│     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ≥ 1 und ≤ 2^53−1 (SONDE-014 M-86)
+ ├── RetainedMainProject                   schema = 1  (int)   nur plugin_kind = legacy, OPTIONAL (NAK-312, §2.0b)
+ │     dieselben Eigenschaften wie MainProject, mit denselben Formen, Deckeln und Regeln (ruhender Bestand)
+ ├── Parameters                            schema = 1  (int)   nur plugin_kind = active_probe (Pflicht dort)
+@@ -35,7 +35,7 @@ NakamaState                               schema = 2  (int)
+ │     109 bzw. 112 Eigenschaften mit den IDs aus nakama-parameter-v1.json bzw. nakama-parameter-v2.json,
+ │     in Vertragsreihenfolge · bool → bool · float → double (bit-exakt) · enum → string (Enumwort)
+ ├── Dsp                                   schema = 1  (int)   nur plugin_kind = active_probe, OPTIONAL (SONDE-015)
+-│     state_revision       int64    PFLICHT; ≥ 0, steigt mit jeder committeten Transaktion, sinkt nie
++│     state_revision       int64    PFLICHT; ≥ 0 und ≤ 2^53−1, steigt mit jeder committeten Transaktion, sinkt nie
+ │     occupied_v1          array    optional; flach [bool × 8] in Slotreihenfolge; fehlt = kein Slot belegt
+ │     schutz_zonen_v1      array    optional; flach [id, low_hz, high_hz, enabled, …], höchstens 8 Vierergruppen,
+ │                                   streng aufsteigend nach id
+@@ -181,10 +181,18 @@ neues Kind, keine Root-Versionierung. Entwurf §33.5 weist `SourceIntent` dem
+ 
+ | Eigenschaft | Form | Regeln |
+ |---|---|---|
+-| `source_intents_v1` | flaches Array aus Sechsergruppen | `quelle_id` hex32; `passage_id` hex32 **oder leer** (leer = globaler Scope); `rolle` aus der geschlossenen Menge `fuehrt`, `traegt`, `begleitet`, `geschuetzt`, `verschmolzen`; `revision` `int64` ≥ 1; `herkunft` aus `user`, `template`, `inferred`; `konfidenz` endlich in `[0,1]`. Genau **ein** Eintrag je (Quelle, Scope). Höchstens 256 Gruppen, sortiert nach Quelle, dann Scope. |
++| `source_intents_v1` | flaches Array aus Sechsergruppen | `quelle_id` hex32; `passage_id` hex32 **oder leer** (leer = globaler Scope); `rolle` aus der geschlossenen Menge `fuehrt`, `traegt`, `begleitet`, `geschuetzt`, `verschmolzen`; `revision` `int64` ≥ 1 und ≤ 2^53−1; `herkunft` aus `user`, `template`, `inferred`; `konfidenz` endlich in `[0,1]`. Genau **ein** Eintrag je (Quelle, Scope). Höchstens 256 Gruppen, sortiert nach Quelle, dann Scope. |
+ | `intent_protections_v1` | flaches Array aus Vierergruppen | `quelle_id` hex32; `eigenschaft` aus `attack`, `breite`, `ausklang`, `band`; bei `band` ein halboffenes Intervall `[band_von, band_bis)` im 221-Band-Evidenzgitter (`0 <= von < bis <= 221`), sonst **beide `-1`** — `0` ist ein gültiger Bandindex und taugt deshalb nicht als „kein Intervall". Höchstens 256 Gruppen. |
+ | `intent_relations_v1` | flaches Array aus Dreiergruppen | `quelle_a` und `quelle_b` hex32 und **verschieden**; `art` aus `fuehrt_vor`, `darf_verschmelzen`, `gleichrangig`. Genau eine Beziehung je geordnetem Paar. Der `fuehrt_vor`-Teilgraph ist **zyklenfrei**: ein Zyklus macht den Stand read-only (§37.4). Höchstens 256 Gruppen. |
+-| `intent_revision_v1` | `int64` ≥ 1 | Revision des **ganzen** Bestands, steigt bei jeder persistenten Änderung genau einmal. Fehlt sie, ist der Bestand nie beschrieben worden; **Inhalt ohne Revision** ist ein ungültiger Stand, weil die Vollständigkeitsmarke aus SONDE-014 M-86 dann keine Zahl hätte. |
++| `intent_revision_v1` | `int64` ≥ 1 und ≤ 2^53−1 | Revision des **ganzen** Bestands, steigt bei jeder persistenten Änderung genau einmal. Fehlt sie, ist der Bestand nie beschrieben worden; **Inhalt ohne Revision** ist ein ungültiger Stand, weil die Vollständigkeitsmarke aus SONDE-014 M-86 dann keine Zahl hätte. |
++
++Alle persistenten Revisionen (`intent_revision_v1`, `source_intents_v1.revision`,
++`assistant_step_v1.revision`, `Dsp.state_revision`, die Revision der
++Undo-Einträge) liegen höchstens bei 2^53−1, der größten Zahl, die jede
++Drahtform exakt trägt (v3-Textriegel Regel 2). Ein Stand darüber ist read-only
++mit Originalbytes; Mutatoren halten an der Grenze. *(Präzisiert am 24.09.2026,
++NAK-313 R-313-4. Bis dahin stand hier nur die Untergrenze; der Leser nahm Werte
++bis `int64max` an.)*
+ 
+ Die §37.1-Belegung (`prominence`, Funktionstag, Veto-Kennzeichen) wird aus der
+ Rolle **abgeleitet** und **nie** getrennt gespeichert: `fuehrt` → (`foreground`,

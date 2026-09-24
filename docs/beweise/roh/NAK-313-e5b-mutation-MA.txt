@@ -1,0 +1,81 @@
+NAK-313 Etappe 5b - Mutationslauf MA: M-79 (b) Assistentenhandgriff und M-82: Schranke in assistentenrevisionHeben auf int64max
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf MA - M-79 (b) Assistentenhandgriff und M-82: Schranke in assistentenrevisionHeben auf int64max - 24.09.2026 17:50:19 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\MA-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+Mutation 1 ab Zeile 2888 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (a.revision >= kRevisionMax)
+  nachher:
+    |    if (a.revision >= std::numeric_limits<juce::int64>::max())
+Mutiert 24.09.2026 17:50:19: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert afa8ebcf64f5620950410be40975451b5693c7b49c7b6575f50d0a72cdac5cd6
+Kette (R-313-11): Mit der Schranke bei int64max hebt der Handgriff am Rand 2^53-1 auf 2^53: B2 M-11 (a) und B27 M-10 (NAK-283, Nachtrag) sowie B29 313/M-82 rot.
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest EqCopSonde014IntentTest EqCopSonde014AssistentTest: Exit 0
+  B2: Binaer 17:50:26.314, Quelle 17:50:19.885, Binaer juenger: ja
+  B2: Exit 1, Fehlzeilen 6, Rohausgabe MA-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 391 Pruefungen ok, 6 Fehler
+  B27: Binaer 17:50:27.893, Quelle 17:50:19.885, Binaer juenger: ja
+  B27: Exit 1, Fehlzeilen 7, Rohausgabe MA-mutiert-B27.txt
+    Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 7 Fehler, 269 ok
+  B29: Binaer 17:50:38.355, Quelle 17:50:19.885, Binaer juenger: ja
+  B29: Exit 1, Fehlzeilen 4, Rohausgabe MA-mutiert-B29.txt
+    Summe: SONDE-014 AssistantStep: 199/203 gruen
+Ruecknahme 24.09.2026 17:51:12: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest EqCopSonde014IntentTest EqCopSonde014AssistentTest: Exit 0
+  B2: Binaer 17:51:17.192, Quelle 17:51:12.299, Binaer juenger: ja
+  B2: Exit 0, Fehlzeilen 0, Rohausgabe MA-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+  B27: Binaer 17:51:18.712, Quelle 17:51:12.299, Binaer juenger: ja
+  B27: Exit 0, Fehlzeilen 0, Rohausgabe MA-zurueck-B27.txt
+    Summe: SONDE-014-INTENT-TEST OK - 276 Pruefungen ok, 0 Fehler
+  B29: Binaer 17:51:20.345, Quelle 17:51:12.299, Binaer juenger: ja
+  B29: Exit 0, Fehlzeilen 0, Rohausgabe MA-zurueck-B29.txt
+    Summe: SONDE-014 AssistantStep: 203/203 gruen
+Erwartete Pruefungen unter der Mutation:
+  B2: 'M-11 (a): der Assistentenhandgriff wird abgewiesen' gefallen: JA
+  B27: 'M-10: `schrittAendern` weist ab' gefallen: JA
+  B27: 'M-10: auch der NEUE Schritt weist ab' gefallen: JA
+  B27: 'M-10: auch das Ergebnis weist ab' gefallen: JA
+  B29: '313/M-82 assistentenrevision_haelt_an_der_grenze (offen)' gefallen: JA
+  B29: '313/M-82 assistentenrevision_haelt_an_der_grenze (geschlossen)' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B2: Exit 0, Fehlzeilen 0
+  B27: Exit 0, Fehlzeilen 0
+  B29: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B2 unter der Mutation: gefallene Pruefungen (6) ===
+  FEHLER  M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt 2^53-1 - kein Schritt ueber den Rand  [9007199254740992]
+  FEHLER  M-11: kein abgewiesener Handgriff meldet Host-Dirty  [1]
+  FEHLER  M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  FEHLER  M-11: beide Revisionen kommen als 2^53-1 zurueck  [0 / 0]
+  FEHLER  M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [0 Eintrag/Eintraege]
+  FEHLER  == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+=== B2 nach der Ruecknahme: gefallene Pruefungen 0 ===
+=== B27 unter der Mutation: gefallene Pruefungen (7) ===
+  FEHLER  M-10: `schrittAendern` weist ab statt zu inkrementieren -
+  FEHLER  M-10: `a.revision` bleibt 2^53-1, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9007199254740992]
+  FEHLER  M-10: auch der NEUE Schritt weist ab -
+  FEHLER  M-10: `a.revision` bleibt 2^53-1, und die Schritt-Kennung ist unveraendert
+  FEHLER  M-10: auch das Ergebnis weist ab -
+  FEHLER  M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf 2^53-1 ausgefuehrt; kein Schritt ueber den Rand, kein negativer Folgewert, kein signed-integer-UB  [9007199254740992]
+  FEHLER  M-12 Host (Assistent): der Zweitaufruf steht jetzt AM Maximum, wird abgewiesen und meldet nichts - keine Revision, kein Dirty  [1 weiteres Dirty, Revision 9007199254740992]
+=== B27 nach der Ruecknahme: gefallene Pruefungen 0 ===
+=== B29 unter der Mutation: gefallene Pruefungen (4) ===
+  FEHLER  313/M-82 assistentenrevision_haelt_an_der_grenze (offen): Weiter und Antwort liefern false, Schritt, offen, Ergebnis und Revision 2^53-1 unveraendert, 0 Host-Dirty - Weiter angenommen, Antwort angenommen, Revision 9007199254740993, 2 Dirty
+  FEHLER  313/M-82 assistentenrevision_haelt_an_der_grenze (geschlossen): ein neuer Lauf liefert false, Schritt und Revision 2^53-1 unveraendert, 0 Host-Dirty - Start angenommen, Revision 9007199254740992, 1 Dirty
+  FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung): false, Revision 2^53-1, experimentId leer, 0 Host-Dirty - gestartet, Revision 9007199254740992, experimentId '7a8a6a7613f44609b47c11031b41df77', 1 Dirty
+  FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch): Slot leer, genau ein experiment_begin und danach genau ein experiment_abort mit derselben experiment_id und grund user_abbruch - 1 begin, 0 abort, Slot '7a8a6a7613f44609b47c11031b41df77'
+=== B29 nach der Ruecknahme: gefallene Pruefungen 0 ===

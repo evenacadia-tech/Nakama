@@ -1,0 +1,46 @@
+NAK-313 Etappe 5b - Mutationslauf A1: M-97 Audio Gen: im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf A1 - M-97 Audio Gen: im Gen-Callback das erste Sample um 1 LSB geaendert (std::nextafter) - 24.09.2026 18:03:36 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/src/PluginProcessor.cpp (CRLF)
+SHA-256 vorher 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\A1-PluginProcessor.cpp (SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48)
+Mutation 1 ab Zeile 641 in eq-copilot/plugin/src/PluginProcessor.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (n == 0 || kanaele == 0)
+    |        return;
+  nachher:
+    |    if (n == 0 || kanaele == 0)
+    |        return;
+    |    buffer.getWritePointer (0)[0] = std::nextafter (buffer.getSample (0, 0), 2.0f);   // MUTATION M-97 A1: 1 LSB
+Mutiert 24.09.2026 18:03:36: eq-copilot/plugin/src/PluginProcessor.cpp, SHA-256 mutiert 6fb755d9d5458f38baaa5ca76643f29e1df4d934ac65fdb0fed1eeafff9154af
+Kette (R-313-11): Ein um 1 LSB geaendertes Sample im Gen-Callback bricht die Bitidentitaet -> A1 rot.
+Lauf unter der Mutation:
+  Bau EqCopNullTest: Exit 0
+  A1: Binaer 18:03:48.625, Quelle 18:03:36.306, Binaer juenger: ja
+  A1: Exit 1, Fehlzeilen 2, Rohausgabe A1-mutiert-A1.txt
+    Summe: NULLTEST FEHLGESCHLAGEN
+Ruecknahme 24.09.2026 18:03:49: eq-copilot/plugin/src/PluginProcessor.cpp SHA-256 6d23ae41146030fff0cca8a9c3c853f13dc5e5b620e05904853c058e48d00f48 - gleich dem Stand vor der Mutation
+  Bau EqCopNullTest: Exit 0
+  A1: Binaer 18:03:56.872, Quelle 18:03:49.016, Binaer juenger: ja
+  A1: Exit 0, Fehlzeilen 0, Rohausgabe A1-zurueck-A1.txt
+    Summe: NULLTEST OK
+Erwartete Pruefungen unter der Mutation:
+  A1: '1000 Bloecke Rauschen: Ausgang bitgleich' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A1: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88d.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A1 unter der Mutation: gefallene Pruefungen (2) ===
+  FEHLER  1000 Bloecke Rauschen: Ausgang bitgleich (Nulltest)
+  FEHLER  NaN/Inf-Block: Ausgang bitgleich (nicht gefiltert)
+=== A1 nach der Ruecknahme: gefallene Pruefungen 0 ===

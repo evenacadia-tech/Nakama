@@ -1,0 +1,40 @@
+NAK-313 Etappe 5b - Mutationslauf ID: M-97 Identitaet: PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau; Aenderungszeit bei der Ruecknahme zurueck)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf ID - M-97 Identitaet: PLUGIN_CODE im Zielblock von EqCopilot literal auf Eqcq (B1 liest die Datei zur Laufzeit, kein Bau; Aenderungszeit bei der Ruecknahme zurueck) - 24.09.2026 18:04:18 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/CMakeLists.txt (LF)
+SHA-256 vorher 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\ID-CMakeLists.txt (SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170)
+Mutation 1 ab Zeile 123 in eq-copilot/plugin/CMakeLists.txt (Stand vor der Mutation):
+  vorher:
+    |    PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
+  nachher:
+    |    PLUGIN_CODE Eqcq
+Mutiert 24.09.2026 18:04:18: eq-copilot/plugin/CMakeLists.txt, SHA-256 mutiert 81d1de0cd29f37c0df3db5cf0e9fef4dbbfb8a010d8e45195577a7e2b15b50d1
+Kette (R-313-11): Ein literaler PLUGIN_CODE statt des Manifestwerts bricht die eingefrorene Identitaetskette -> B1 rot.
+Lauf unter der Mutation:
+  B1: Exit 1, Fehlzeilen 3, Rohausgabe ID-mutiert-B1.txt
+    Summe: IDENTITY-TEST FEHLGESCHLAGEN - 117 Pruefungen ok, 3 Fehler
+Ruecknahme 24.09.2026 18:04:18: eq-copilot/plugin/CMakeLists.txt SHA-256 80fff48f3bda8c132adeb4f2855b82e22071a80d7bb821e2e2ec71339c194170 - gleich dem Stand vor der Mutation (Aenderungszeit auf den Stand vor der Mutation zurueckgesetzt)
+  B1: Exit 0, Fehlzeilen 0, Rohausgabe ID-zurueck-B1.txt
+    Summe: IDENTITY-TEST OK - 120 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B1: 'CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B1: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88d.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B1 unter der Mutation: gefallene Pruefungen (3) ===
+  FEHLER  CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest
+  FEHLER  main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 3:12:08pm vs 24 Sep 2026 6:04:18pm]
+  FEHLER  active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [24 Sep 2026 3:12:38pm vs 24 Sep 2026 6:04:18pm]
+=== B1 nach der Ruecknahme: gefallene Pruefungen 0 ===

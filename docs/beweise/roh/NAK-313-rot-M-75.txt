@@ -1,0 +1,112 @@
+NAK-313 Etappe 5b - Rotbeweis M-75 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-75 - T3-02-03 - R-313-4 - Leser source_intents_v1-Revision
+Zustand: Stand mit source_intents_v1-Revision = 2^53-1, 2^53 und int64max, je im MainProject eines Main-Stands und im RetainedMainProject eines legacy-Stands
+Ereignis: lade
+Zusage: 2^53-1 -> geladen mit 9007199254740991, Save bytegleich; 2^53 und int64max -> nurLesen, Originalbytes, der Grund nennt <Knoten>.source_intents_v1 revision (exceeds 2^53-1)
+Bein: B2 eq-copilot/plugin/tests/StateMigrationTestMain.cpp 313/M-75 source_intent_revision_grenze <Knoten> <Wert>
+
+--- Haelfte 1: 2^53 und int64max - Etikett: heute rot ---
+Pruefung: 313/M-75 source_intent_revision_grenze ... 2^53 und ... int64max
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B2 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  FEHLER  313/M-75 source_intent_revision_grenze MainProject 2^53: nurLesen mit Originalbytes, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze MainProject int64max: nurLesen mit Originalbytes, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject 2^53: nurLesen mit Originalbytes, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject int64max: nurLesen mit Originalbytes, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  -> am Basisstand: rot (der Leser hat keine Obergrenze; beide Werte laden geladen ohne Grund)
+  Mutation L75a: eq-copilot/plugin/state/NakamaState.cpp - M-75 Haelfte 2^53/int64max: Obergrenze des Lesers source_intents_v1-Revision entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-L75a.txt):
+    Rotlauf L75a - M-75 Haelfte 2^53/int64max: Obergrenze des Lesers source_intents_v1-Revision entfernt - 24.09.2026 17:43:04 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\L75a-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 1902 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |                if (eintrag.revision > kRevisionMax)
+        |                {
+        |                    grund = bestandName + ".source_intents_v1 revision exceeds 2^53-1";
+        |                    return false;
+        |                }
+      nachher:
+        |
+    Mutiert 24.09.2026 17:43:04: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 9fef6755747e579b291ee7b761338ebdfebe83c8d91a966c754d9d1f56713e7e
+    Kette (R-313-11): Ohne die Obergrenze nimmt der Leser source_intents_v1-Revision 2^53 und int64max an: der Stand laedt geladen statt nurLesen -> M-75 (2^53, int64max) rot; 2^53-1 bleibt geladen.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:43:09.888, Quelle 17:43:04.634, Binaer juenger: ja
+      B2: Exit 1, Fehlzeilen 5, Rohausgabe L75a-mutiert-B2.txt
+        Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 392 Pruefungen ok, 5 Fehler
+    Ruecknahme 24.09.2026 17:43:32: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:43:37.286, Quelle 17:43:32.431, Binaer juenger: ja
+      B2: Exit 0, Fehlzeilen 0, Rohausgabe L75a-zurueck-B2.txt
+        Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B2: '313/M-75 source_intent_revision_grenze MainProject 2^53:' gefallen: JA
+      B2: '313/M-75 source_intent_revision_grenze MainProject int64max:' gefallen: JA
+      B2: '313/M-75 source_intent_revision_grenze RetainedMainProject 2^53:' gefallen: JA
+      B2: '313/M-75 source_intent_revision_grenze RetainedMainProject int64max:' gefallen: JA
+      B2: '313/M-75 source_intent_revision_grenze MainProject 2^53-1:' gruen geblieben: JA
+      B2: '313/M-75 source_intent_revision_grenze RetainedMainProject 2^53-1:' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B2: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B2 unter der Mutation: gefallene Pruefungen (5) ===
+      FEHLER  313/M-75 source_intent_revision_grenze MainProject 2^53: nurLesen mit Originalbytes, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+      FEHLER  313/M-75 source_intent_revision_grenze MainProject int64max: nurLesen mit Originalbytes, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+      FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject 2^53: nurLesen mit Originalbytes, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+      FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject int64max: nurLesen mit Originalbytes, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+      FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+    === B2 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: 2^53-1 - Etikett: Regressionswache ---
+Pruefung: 313/M-75 source_intent_revision_grenze ... 2^53-1
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B2 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-75 source_intent_revision_grenze MainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  ok      313/M-75 source_intent_revision_grenze RetainedMainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  -> am Basisstand: gruen (2^53-1 laedt geladen)
+  Mutation L75b: eq-copilot/plugin/state/NakamaState.cpp - M-75 Haelfte 2^53-1: Obergrenze des Lesers source_intents_v1-Revision um eins zu eng (>=) (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-L75b.txt):
+    Rotlauf L75b - M-75 Haelfte 2^53-1: Obergrenze des Lesers source_intents_v1-Revision um eins zu eng (>=) - 24.09.2026 17:43:58 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\L75b-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 1902 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |                if (eintrag.revision > kRevisionMax)
+      nachher:
+        |                if (eintrag.revision >= kRevisionMax)
+    Mutiert 24.09.2026 17:43:59: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 24c88208d00bb0239b22792db21f129d11899a51b4c87ef76e169322848e6f9c
+    Kette (R-313-11): Mit >= weist der Leser source_intents_v1-Revision schon 2^53-1 ab: der Randstand laedt nurLesen statt geladen -> M-75 (2^53-1) rot.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:44:03.649, Quelle 17:43:59.017, Binaer juenger: ja
+      B2: Exit 1, Fehlzeilen 9, Rohausgabe L75b-mutiert-B2.txt
+        Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 388 Pruefungen ok, 9 Fehler
+    Ruecknahme 24.09.2026 17:44:25: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:44:30.047, Quelle 17:44:25.094, Binaer juenger: ja
+      B2: Exit 0, Fehlzeilen 0, Rohausgabe L75b-zurueck-B2.txt
+        Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B2: '313/M-75 source_intent_revision_grenze MainProject 2^53-1:' gefallen: JA
+      B2: '313/M-75 source_intent_revision_grenze RetainedMainProject 2^53-1:' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B2: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B2 unter der Mutation: gefallene Pruefungen (9) ===
+      FEHLER  312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 1971 Bytes, Kinder Common,MainProject, Zeilen 0]
+      FEHLER  312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am Rand 2^53-1, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 138625 Bytes, Kinder Common,MainProject, Zeilen 0]
+      FEHLER  312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 115701 Bytes, Kinder Common,MainProject, Zeilen 0]
+      FEHLER  312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 116222 Bytes, Kinder Common,MainProject, Zeilen 0]
+      FEHLER  312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 71694 Bytes, Kinder Common,MainProject, Zeilen 0, leer 0, gefuellt 0]
+      FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+      FEHLER  313/M-75 source_intent_revision_grenze MainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [nurLesen, Wert 0, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1', Save bytegleich]
+      FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [nurLesen, Wert 0, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1', Save bytegleich]
+      FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+    === B2 nach der Ruecknahme: gefallene Pruefungen 0 ===

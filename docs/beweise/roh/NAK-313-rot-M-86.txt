@@ -1,0 +1,97 @@
+NAK-313 Etappe 5b - Rotbeweis M-86 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-86 - T3-02-01 - R-313-4 - R-313-15 - Grenze zwischen Vorpruefung und Inkrement
+Zustand: Einrichtung wie M-84 mit offenem Schritt der Revision 5; der Testhaken (nur im Testbau, NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3) setzt die Revision zwischen beginneVersuch und der Verknuepfung auf 2^53-1
+Ereignis: assistentVersuchStarten
+Zusage: Rueckgabe false; assistentVersuchVerknuepfen weist ab: Revision 9007199254740991, experimentId leer, 0 Host-Dirty; brichVersuchAb beendet den Versuch: laufenderVersuch() leer, genau ein experiment_begin und danach genau ein experiment_abort mit derselben experiment_id und grund user_abbruch
+Bein: B29 Sonde014AssistentTest.cpp 313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung) und (Abbruch)
+
+--- Haelfte 1: Mechanismus Abbruch - Etikett: heute nicht messbar ---
+Pruefung: 313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch)
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B29 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  --      313/M-86 grenze_nach_versuchsbeginn_bricht_ab  [Basisstand: Haken und Bibliotheksfunktion entstehen erst im Bau, nicht gewertet]
+  -> am Basisstand: nicht gewertet (Haken und Bibliotheksfunktion entstehen erst im Bau; die Gegenprobe uebersetzte den Fall unter NAK313_GEGENPROBE_BASISSTAND nicht)
+  Mutation V86a: eq-copilot/plugin/src/prozessor/Analyse.cpp - M-86 Haelfte Abbruch: brichVersuchAb nach abgewiesener Verknuepfung weggelassen (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-V86a.txt):
+    Rotlauf V86a - M-86 Haelfte Abbruch: brichVersuchAb nach abgewiesener Verknuepfung weggelassen - 24.09.2026 17:55:40 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+    SHA-256 vorher 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\V86a-Analyse.cpp (SHA-256 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512)
+    Mutation 1 ab Zeile 1335 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (! verknuepft)
+        |    {
+        |        brichVersuchAb();
+        |        return false;
+        |    }
+      nachher:
+        |    if (! verknuepft)
+        |    {
+        |        return false;
+        |    }
+    Mutiert 24.09.2026 17:55:40: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert cfa6ff1f7eff05d7b00d18906547ef30f4a52527bb8815b8bec14753e3f3c608
+    Kette (R-313-11): Ohne Abbruch bleibt der Slot belegt und kein experiment_abort erreicht den Server -> 313/M-86 (Abbruch) rot; die Verknuepfung bleibt abgewiesen.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:55:48.356, Quelle 17:55:40.542, Binaer juenger: ja
+      B29: Exit 1, Fehlzeilen 1, Rohausgabe V86a-mutiert-B29.txt
+        Summe: SONDE-014 AssistantStep: 202/203 gruen
+    Ruecknahme 24.09.2026 17:55:59: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:56:06.791, Quelle 17:55:59.878, Binaer juenger: ja
+      B29: Exit 0, Fehlzeilen 0, Rohausgabe V86a-zurueck-B29.txt
+        Summe: SONDE-014 AssistantStep: 203/203 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B29: '313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch)' gefallen: JA
+      B29: '313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung)' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B29: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B29 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch): Slot leer, genau ein experiment_begin und danach genau ein experiment_abort mit derselben experiment_id und grund user_abbruch - 1 begin, 0 abort, Slot '1826a29853ae4440b03348a18d37e621'
+    === B29 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Mechanismus Pruefung der Bibliotheksfunktion - Etikett: heute nicht messbar ---
+Pruefung: 313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung)
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  -> am Basisstand: nicht gewertet (wie Haelfte 1)
+  Mutation V86b: eq-copilot/plugin/state/NakamaState.cpp - M-86 Haelfte Verknuepfung: Pruefung in assistentVersuchVerknuepfen entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-V86b.txt):
+    Rotlauf V86b - M-86 Haelfte Verknuepfung: Pruefung in assistentVersuchVerknuepfen entfernt - 24.09.2026 17:56:09 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\V86b-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 3093 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (! assistentenrevisionHeben (a, grund))
+        |        return false;
+        |    a.experimentId = experimentId;
+      nachher:
+        |    a.revision += 1;   // MUTATION: Pruefung entfernt
+        |    a.experimentId = experimentId;
+    Mutiert 24.09.2026 17:56:09: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert c70484cc89db0932add37c97e1123fe48e7aac6a9bb8a6e835e32ffcb8d4ecc9
+    Kette (R-313-11): Ohne Pruefung hebt die Verknuepfung 2^53-1 auf 2^53 und setzt die Kennung, 1 Host-Dirty -> 313/M-86 (Verknuepfung) rot.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:56:15.267, Quelle 17:56:09.788, Binaer juenger: ja
+      B29: Exit 1, Fehlzeilen 2, Rohausgabe V86b-mutiert-B29.txt
+        Summe: SONDE-014 AssistantStep: 201/203 gruen
+    Ruecknahme 24.09.2026 17:56:26: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:56:31.619, Quelle 17:56:26.620, Binaer juenger: ja
+      B29: Exit 0, Fehlzeilen 0, Rohausgabe V86b-zurueck-B29.txt
+        Summe: SONDE-014 AssistantStep: 203/203 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B29: '313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung)' gefallen: JA
+      B29: '313/M-85 versuchsstart_unter_der_grenze' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B29: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B29 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung): false, Revision 2^53-1, experimentId leer, 0 Host-Dirty - gestartet, Revision 9007199254740992, experimentId 'a0f745ed03f6447db6518d3e23adff3f', 1 Dirty
+      FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch): Slot leer, genau ein experiment_begin und danach genau ein experiment_abort mit derselben experiment_id und grund user_abbruch - 1 begin, 0 abort, Slot 'a0f745ed03f6447db6518d3e23adff3f'
+    === B29 nach der Ruecknahme: gefallene Pruefungen 0 ===

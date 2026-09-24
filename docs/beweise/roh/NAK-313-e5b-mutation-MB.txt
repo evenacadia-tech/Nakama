@@ -1,0 +1,73 @@
+NAK-313 Etappe 5b - Mutationslauf MB: M-79 (b) entferneIntent und M-80 Abweisung: Schranke in bestandsrevisionHeben auf int64max
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf MB - M-79 (b) entferneIntent und M-80 Abweisung: Schranke in bestandsrevisionHeben auf int64max - 24.09.2026 17:51:46 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\MB-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+Mutation 1 ab Zeile 2417 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (z.intentBestandRevision >= kRevisionMax)
+  nachher:
+    |    if (z.intentBestandRevision >= std::numeric_limits<juce::int64>::max())
+Mutiert 24.09.2026 17:51:46: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 38d7b23e7de73a80145ac711470fa8da34e813435d847ffa1f641244431d05e4
+Kette (R-313-11): Mit der Schranke bei int64max hebt der Bestand am Rand 2^53-1 auf 2^53: der abgewiesene entferneIntent veraendert die Bytes (B2 M-11 b), der zweite Rollenwechsel wird angenommen (B27 313/M-80, Abweisung) -> rot.
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest EqCopSonde014IntentTest: Exit 0
+  B2: Binaer 17:51:51.119, Quelle 17:51:46.390, Binaer juenger: ja
+  B2: Exit 1, Fehlzeilen 6, Rohausgabe MB-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 391 Pruefungen ok, 6 Fehler
+  B27: Binaer 17:51:52.590, Quelle 17:51:46.390, Binaer juenger: ja
+  B27: Exit 1, Fehlzeilen 14, Rohausgabe MB-mutiert-B27.txt
+    Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 14 Fehler, 262 ok
+Ruecknahme 24.09.2026 17:52:14: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest EqCopSonde014IntentTest: Exit 0
+  B2: Binaer 17:52:20.484, Quelle 17:52:14.640, Binaer juenger: ja
+  B2: Exit 0, Fehlzeilen 0, Rohausgabe MB-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+  B27: Binaer 17:52:21.873, Quelle 17:52:14.640, Binaer juenger: ja
+  B27: Exit 0, Fehlzeilen 0, Rohausgabe MB-zurueck-B27.txt
+    Summe: SONDE-014-INTENT-TEST OK - 276 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B2: 'M-11 (b): der abgewiesene `entferneIntent`' gefallen: JA
+  B27: '313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-1' gefallen: JA
+  B27: '313/M-80 bestandsrevision_haelt_an_der_grenze (Bibliothek)' gefallen: JA
+  B27: '313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-2' gruen geblieben: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B2: Exit 0, Fehlzeilen 0
+  B27: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B2 unter der Mutation: gefallene Pruefungen (6) ===
+  FEHLER  M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [497 vs. 394 Bytes]
+  FEHLER  M-11: kein abgewiesener Handgriff meldet Host-Dirty  [1]
+  FEHLER  M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  FEHLER  M-11: beide Revisionen kommen als 2^53-1 zurueck  [0 / 0]
+  FEHLER  M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [0 Eintrag/Eintraege]
+  FEHLER  == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+=== B2 nach der Ruecknahme: gefallene Pruefungen 0 ===
+=== B27 unter der Mutation: gefallene Pruefungen (14) ===
+  FEHLER  M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` -
+  FEHLER  M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  FEHLER  M-07: der GANZE Zustand ist byteweise unveraendert
+  FEHLER  M-07: und die Bestandsrevision steht weiterhin am Maximum
+  FEHLER  M-08: der Handgriff liefert `false` mit gesetztem Grund -
+  FEHLER  M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  FEHLER  M-08: der GANZE Zustand ist byteweise unveraendert
+  FEHLER  M-09: der Handgriff liefert `false` mit gesetztem Grund -
+  FEHLER  M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  FEHLER  M-09: der GANZE Zustand ist byteweise unveraendert
+  FEHLER  M-08 Host: der Handgriff wird abgewiesen - die Schutzangabe steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [1 Dirty, 0 Angabe(n)]
+  FEHLER  M-09 Host: der Handgriff wird abgewiesen - die Kante steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [1 Dirty, 0 Kante(n)]
+  FEHLER  313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-1 Rueckgabe false, Bestand und Revision unveraendert, 0 Host-Dirty - kein Umklappen, keine Saettigung, keine 0  [angenommen, Revision 9007199254740992, 1 Dirty, 2 Intent(s)]
+  FEHLER  313/M-80 bestandsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent am Rand liefert false mit Grund, der Zustand bleibt bytegleich  [, Revision 9007199254740992]
+=== B27 nach der Ruecknahme: gefallene Pruefungen 0 ===

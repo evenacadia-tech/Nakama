@@ -1,0 +1,91 @@
+NAK-313 Etappe 5b - Rotbeweis M-83 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-83 - T3-02-03 - R-313-4 - Transaktionskern
+Zustand: Sonde mit bestaetigter state_revision 2^53-2 und 2^53-1; Ladestart mit 2^53
+Ereignis: Transaktion; Ladestart
+Zusage: bei 2^53-2 genau ein Commit auf 2^53-1; bei 2^53-1 scheitert die Transaktion in S4 mit revision_erschoepft ohne Nebenwirkung; ein Ladestart mit 2^53 wird mit state_revision abgewiesen
+Bein: B7 eq-copilot/plugin/tests/TransactionTestMain.cpp 313/M-83 transaktion_haelt_an_2hoch53
+
+--- Haelfte 1: Abbruch bei 2^53-1 und Ladestart mit 2^53 - Etikett: heute rot ---
+Pruefung: 313/M-83 ...: bei 2^53-1 scheitert ... und ...: ein Ladestart mit 2^53 ...
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B7 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert die Transaktion in S4 mit revision_erschoepft, ohne Nebenwirkung  [commit @S8 rev=9007199254740992 memo, r danach 9007199254740992]
+  FEHLER  313/M-83 transaktion_haelt_an_2hoch53: ein Ladestart mit 2^53 wird mit state_revision abgewiesen, der Kern bleibt, wie er war  [angenommen, Grund '', r 9007199254740992]
+  -> am Basisstand: rot (kHoechsteRevision = int64max: Commit auf 2^53, Ladestart angenommen)
+  Mutation M83a: eq-copilot/plugin/state/NakamaTransaktion.h - M-83 Haelfte Abbruch und Ladestart: kHoechsteRevision wieder int64max statt kRevisionMax (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-M83a.txt):
+    Rotlauf M83a - M-83 Haelfte Abbruch und Ladestart: kHoechsteRevision wieder int64max statt kRevisionMax - 24.09.2026 17:53:30 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaTransaktion.h (LF)
+    SHA-256 vorher 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\M83a-NakamaTransaktion.h (SHA-256 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba)
+    Mutation 1 ab Zeile 57 in eq-copilot/plugin/state/NakamaTransaktion.h (Stand vor der Mutation):
+      vorher:
+        |inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) state::kRevisionMax;
+      nachher:
+        |inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) std::numeric_limits<juce::int64>::max();
+    Mutiert 24.09.2026 17:53:30: eq-copilot/plugin/state/NakamaTransaktion.h, SHA-256 mutiert 6a6743cba03caa6cd62f16b1d4e5a39ab5c750b018e5343c8c3c93f2d911ff96
+    Kette (R-313-11): Mit kHoechsteRevision = int64max committet der Kern bei 2^53-1 auf 2^53, und der Ladestart nimmt 2^53 an -> 313/M-83 (2^53-1, Ladestart) rot.
+    Lauf unter der Mutation:
+      Bau EqCopTransactionTest: Exit 0
+      B7: Binaer 17:53:43.554, Quelle 17:53:30.156, Binaer juenger: ja
+      B7: Exit 1, Fehlzeilen 2, Rohausgabe M83a-mutiert-B7.txt
+        Summe: TRANSAKTION FEHLGESCHLAGEN
+    Ruecknahme 24.09.2026 17:53:46: eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba - gleich dem Stand vor der Mutation
+      Bau EqCopTransactionTest: Exit 0
+      B7: Binaer 17:53:59.553, Quelle 17:53:46.273, Binaer juenger: ja
+      B7: Exit 0, Fehlzeilen 0, Rohausgabe M83a-zurueck-B7.txt
+        Summe: TRANSAKTION OK
+    Erwartete Pruefungen unter der Mutation:
+      B7: '313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert' gefallen: JA
+      B7: '313/M-83 transaktion_haelt_an_2hoch53: ein Ladestart mit 2^53' gefallen: JA
+      B7: '313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B7 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert die Transaktion in S4 mit revision_erschoepft, ohne Nebenwirkung  [commit @S8 rev=9007199254740992 memo, r danach 9007199254740992]
+      FEHLER  313/M-83 transaktion_haelt_an_2hoch53: ein Ladestart mit 2^53 wird mit state_revision abgewiesen, der Kern bleibt, wie er war  [angenommen, Grund '', r 9007199254740992]
+    === B7 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Commit auf 2^53-1 - Etikett: Regressionswache ---
+Pruefung: 313/M-83 ...: bei 2^53-2 genau ein Commit auf 2^53-1
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B7 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit auf 2^53-1  [commit @S8 rev=9007199254740991 memo, Ladestart ok]
+  -> am Basisstand: gruen
+  Mutation M83b: eq-copilot/plugin/state/NakamaTransaktion.h - M-83 Haelfte Commit auf 2^53-1: kHoechsteRevision = 2^53-2 (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-M83b.txt):
+    Rotlauf M83b - M-83 Haelfte Commit auf 2^53-1: kHoechsteRevision = 2^53-2 - 24.09.2026 17:54:02 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaTransaktion.h (LF)
+    SHA-256 vorher 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\M83b-NakamaTransaktion.h (SHA-256 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba)
+    Mutation 1 ab Zeile 57 in eq-copilot/plugin/state/NakamaTransaktion.h (Stand vor der Mutation):
+      vorher:
+        |inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) state::kRevisionMax;
+      nachher:
+        |inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) (state::kRevisionMax - 1);
+    Mutiert 24.09.2026 17:54:02: eq-copilot/plugin/state/NakamaTransaktion.h, SHA-256 mutiert c871a55eb5be33993c79fc540ed49fb7fd004aac3a1ad0a62a6c440dff1d804a
+    Kette (R-313-11): Mit kHoechsteRevision = 2^53-2 scheitert schon die Transaktion bei 2^53-2 in S4 -> 313/M-83 (Commit auf 2^53-1) rot.
+    Lauf unter der Mutation:
+      Bau EqCopTransactionTest: Exit 0
+      B7: Binaer 17:54:16.293, Quelle 17:54:02.708, Binaer juenger: ja
+      B7: Exit 1, Fehlzeilen 2, Rohausgabe M83b-mutiert-B7.txt
+        Summe: TRANSAKTION FEHLGESCHLAGEN
+    Ruecknahme 24.09.2026 17:54:18: eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba - gleich dem Stand vor der Mutation
+      Bau EqCopTransactionTest: Exit 0
+      B7: Binaer 17:54:35.085, Quelle 17:54:18.889, Binaer juenger: ja
+      B7: Exit 0, Fehlzeilen 0, Rohausgabe M83b-zurueck-B7.txt
+        Summe: TRANSAKTION OK
+    Erwartete Pruefungen unter der Mutation:
+      B7: '313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B7: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B7 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit auf 2^53-1  [fehler @S4 rev=9007199254740990 nicht-memo grund=revision_erschoepft, Ladestart ok]
+      FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert die Transaktion in S4 mit revision_erschoepft, ohne Nebenwirkung  [fehler @S4 rev=9007199254740990 nicht-memo grund=revision_erschoepft, r danach 9007199254740990]
+    === B7 nach der Ruecknahme: gefallene Pruefungen 0 ===

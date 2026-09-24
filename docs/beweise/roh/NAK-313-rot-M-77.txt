@@ -1,0 +1,92 @@
+NAK-313 Etappe 5b - Rotbeweis M-77 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-77 - T3-02-03 - R-313-4 - Leser Dsp.state_revision (Kind Dsp, nur active_probe)
+Zustand: Stand mit Dsp.state_revision = 2^53-1, 2^53 und int64max, active_probe (das Kind Dsp wird nur dort gelesen)
+Ereignis: lade im Probe-Bundle
+Zusage: 2^53-1 -> geladen mit 9007199254740991, Save bytegleich; 2^53 und int64max -> nurLesen, Originalbytes, der Grund nennt Dsp.state_revision (exceeds 2^53-1)
+Bein: B2 eq-copilot/plugin/tests/StateMigrationTestMain.cpp 313/M-77 dsp_state_revision_grenze <Wert>
+
+--- Haelfte 1: 2^53 und int64max - Etikett: heute rot ---
+Pruefung: 313/M-77 dsp_state_revision_grenze ... 2^53 und ... int64max
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B2 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  FEHLER  313/M-77 dsp_state_revision_grenze 2^53: nurLesen mit Originalbytes, Grund 'Dsp.state_revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-77 dsp_state_revision_grenze int64max: nurLesen mit Originalbytes, Grund 'Dsp.state_revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  -> am Basisstand: rot (der Leser hat keine Obergrenze; beide Werte laden geladen ohne Grund)
+  Mutation L77a: eq-copilot/plugin/state/NakamaState.cpp - M-77 Haelfte 2^53/int64max: Obergrenze des Lesers Dsp.state_revision entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-L77a.txt):
+    Rotlauf L77a - M-77 Haelfte 2^53/int64max: Obergrenze des Lesers Dsp.state_revision entfernt - 24.09.2026 17:38:49 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\L77a-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 1488 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |        if (revision > kRevisionMax) { grund = "Dsp.state_revision exceeds 2^53-1"; return false; }
+      nachher:
+        |
+    Mutiert 24.09.2026 17:38:49: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 833136639a621985bd2e1c30e64279a8558f511ea088367e98e90936f1dd63f1
+    Kette (R-313-11): Ohne die Obergrenze nimmt der Leser Dsp.state_revision 2^53 und int64max an: der Stand laedt geladen statt nurLesen -> M-77 (2^53, int64max) rot; 2^53-1 bleibt geladen.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:39:30.764, Quelle 17:38:49.126, Binaer juenger: ja
+      B2: Exit 1, Fehlzeilen 3, Rohausgabe L77a-mutiert-B2.txt
+        Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 394 Pruefungen ok, 3 Fehler
+    Ruecknahme 24.09.2026 17:39:52: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:39:57.028, Quelle 17:39:52.150, Binaer juenger: ja
+      B2: Exit 0, Fehlzeilen 0, Rohausgabe L77a-zurueck-B2.txt
+        Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B2: '313/M-77 dsp_state_revision_grenze 2^53:' gefallen: JA
+      B2: '313/M-77 dsp_state_revision_grenze int64max:' gefallen: JA
+      B2: '313/M-77 dsp_state_revision_grenze 2^53-1:' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B2: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B2 unter der Mutation: gefallene Pruefungen (3) ===
+      FEHLER  313/M-77 dsp_state_revision_grenze 2^53: nurLesen mit Originalbytes, Grund 'Dsp.state_revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+      FEHLER  313/M-77 dsp_state_revision_grenze int64max: nurLesen mit Originalbytes, Grund 'Dsp.state_revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+      FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+    === B2 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: 2^53-1 - Etikett: Regressionswache ---
+Pruefung: 313/M-77 dsp_state_revision_grenze ... 2^53-1
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B2 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-77 dsp_state_revision_grenze 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  -> am Basisstand: gruen (2^53-1 laedt geladen)
+  Mutation L77b: eq-copilot/plugin/state/NakamaState.cpp - M-77 Haelfte 2^53-1: Obergrenze des Lesers Dsp.state_revision um eins zu eng (>=) (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-L77b.txt):
+    Rotlauf L77b - M-77 Haelfte 2^53-1: Obergrenze des Lesers Dsp.state_revision um eins zu eng (>=) - 24.09.2026 17:46:42 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\L77b-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 1488 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |        if (revision > kRevisionMax) { grund = "Dsp.state_revision exceeds 2^53-1"; return false; }
+      nachher:
+        |        if (revision >= kRevisionMax) { grund = "Dsp.state_revision exceeds 2^53-1"; return false; }
+    Mutiert 24.09.2026 17:46:42: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 9db177c495123af8beef318544ce9546c04d839e07cd01b4f99bb7b2e002cdcd
+    Kette (R-313-11): Mit >= weist der Leser Dsp.state_revision schon 2^53-1 ab: der Randstand laedt nurLesen statt geladen -> M-77 (2^53-1) rot.
+    Lauf unter der Mutation:
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:46:46.866, Quelle 17:46:42.211, Binaer juenger: ja
+      B2: Exit 1, Fehlzeilen 2, Rohausgabe L77b-mutiert-B2.txt
+        Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 395 Pruefungen ok, 2 Fehler
+    Ruecknahme 24.09.2026 17:47:08: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopStateMigrationTest: Exit 0
+      B2: Binaer 17:47:13.069, Quelle 17:47:08.228, Binaer juenger: ja
+      B2: Exit 0, Fehlzeilen 0, Rohausgabe L77b-zurueck-B2.txt
+        Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B2: '313/M-77 dsp_state_revision_grenze 2^53-1:' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B2: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B2 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-77 dsp_state_revision_grenze 2^53-1: geladen mit 9007199254740991, Save bytegleich  [nurLesen, Wert 0, Grund 'Dsp.state_revision exceeds 2^53-1', Save bytegleich]
+      FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+    === B2 nach der Ruecknahme: gefallene Pruefungen 0 ===

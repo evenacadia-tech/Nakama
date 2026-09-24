@@ -1,0 +1,57 @@
+NAK-313 Etappe 5b - Mutationslauf L74b: M-74 Haelfte 2^53-1: Obergrenze des Lesers intent_revision_v1 um eins zu eng (>=)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf L74b - M-74 Haelfte 2^53-1: Obergrenze des Lesers intent_revision_v1 um eins zu eng (>=) - 24.09.2026 17:42:09 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\L74b-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+Mutation 1 ab Zeile 2062 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+  vorher:
+    |            if (mainIntentRevision > kRevisionMax)
+  nachher:
+    |            if (mainIntentRevision >= kRevisionMax)
+Mutiert 24.09.2026 17:42:09: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert ddc1b259fd69b6fceb00fea1629b039e84581b956b9b05303303ccc0256dd670
+Kette (R-313-11): Mit >= weist der Leser intent_revision_v1 schon 2^53-1 ab: der Randstand laedt nurLesen statt geladen -> M-74 (2^53-1) rot.
+Lauf unter der Mutation:
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 17:42:15.317, Quelle 17:42:09.913, Binaer juenger: ja
+  B2: Exit 1, Fehlzeilen 15, Rohausgabe L74b-mutiert-B2.txt
+    Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 382 Pruefungen ok, 15 Fehler
+Ruecknahme 24.09.2026 17:42:36: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+  Bau EqCopStateMigrationTest: Exit 0
+  B2: Binaer 17:42:41.435, Quelle 17:42:36.080, Binaer juenger: ja
+  B2: Exit 0, Fehlzeilen 0, Rohausgabe L74b-zurueck-B2.txt
+    Summe: STATE-MIGRATION-TEST OK - 397 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B2: '313/M-74 intent_revision_grenze MainProject 2^53-1:' gefallen: JA
+  B2: '313/M-74 intent_revision_grenze RetainedMainProject 2^53-1:' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B2: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B2 unter der Mutation: gefallene Pruefungen (15) ===
+  FEHLER  M-11: der eigene Reader nimmt beide Revisionen am Rand 2^53-1 an (Vorbedingung der Zusage)  [0 / 0]
+  FEHLER  M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt 2^53-1 - kein Schritt ueber den Rand  [0]
+  FEHLER  M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  FEHLER  M-11: beide Revisionen kommen als 2^53-1 zurueck  [0 / 0]
+  FEHLER  M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [0 Eintrag/Eintraege]
+  FEHLER  == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+  FEHLER  312/M-121 (b) je_ein_eintrag: alle Werte wertgleich zurueck, zweites Speichern bytegleich  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 1971 Bytes, Kinder Common,MainProject, Zeilen 0]
+  FEHLER  312/M-121 (c) schemamaximum: 64 Mitglieder und 64 Passagen mit je 120 Codepoints ausserhalb der BMP, je 256 Intents, Schutzangaben und Beziehungen, Revision am Rand 2^53-1, Assistent gesetzt - wertgleich zurueck, zweites Speichern bytegleich, unter 16 MiB, schreibbar geladen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 138625 Bytes, Kinder Common,MainProject, Zeilen 0]
+  FEHLER  312/M-121 (d) 20_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 115701 Bytes, Kinder Common,MainProject, Zeilen 0]
+  FEHLER  312/M-121 (d) 21_mitglieder: der State traegt alle bytegleich, das Quellenmodell nach der Rueckkehr 20 Zeilen  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 116222 Bytes, Kinder Common,MainProject, Zeilen 0]
+  FEHLER  312/M-121 (e) leere_labels_bleiben_leer: kein fremder Name geht verloren, keiner entsteht  [0 Mitglieder, 0 Passagen, 0 Intents, 0 Schutzangaben, 0 Beziehungen, Revision 0, Assistent -, Legacy 71694 Bytes, Kinder Common,MainProject, Zeilen 0, leer 0, gefuellt 0]
+  FEHLER  == NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden
+  FEHLER  313/M-74 intent_revision_grenze MainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [nurLesen, Wert 0, Grund 'MainProject.intent_revision_v1 exceeds 2^53-1', Save bytegleich]
+  FEHLER  313/M-74 intent_revision_grenze RetainedMainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [nurLesen, Wert 0, Grund 'RetainedMainProject.intent_revision_v1 exceeds 2^53-1', Save bytegleich]
+  FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+=== B2 nach der Ruecknahme: gefallene Pruefungen 0 ===

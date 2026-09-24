@@ -1,0 +1,199 @@
+NAK-313 Etappe 5b - Gegenprobe am Basisstand (Manifest docs/beweise/NAK-313.md §8.1, R-313-12)
+Gemessen 24.09.2026: Bau der betroffenen Beine 17:04 bis 17:08 Uhr (138 s, Exit 0), Laeufe 17:09:01 bis
+17:09:34 Uhr, A4 17:10:06 Uhr; HEAD 062a98fca8cf917b373f2c972f9c7710dc1ccff8 (Basis der Teiletappe 5b),
+Produktcode unveraendert.
+Die Binaries der Laeufe entstanden 17:06:45 bis 17:08:30 Uhr (Zeit je Bein in der Kopfzeile unten), alle
+vor der ersten Aenderung am Produktcode (17:09:10 Uhr, NakamaState.h, laut Sitzungsprotokoll des Bauers);
+die Reparatur begann an den Quellen, waehrend die Laeufe die zuvor gebauten Binaries fuhren. A4 (17:10:06
+Uhr) baute den Broker neu; die Teiletappe 5b aendert keine Broker-Quelle, nur broker/tests.
+
+Reihenfolge: (1) Erzeuger um die Handinstanz intent-wire-v1.json erweitert: A8 am Basisstand Exit 0
+(420 Dateien bytegleich, MANIFEST sha256=f5a1db4e...), nach der Erweiterung und VOR dem Erzeugen Exit 2
+(MANIFEST weicht ab), erzeugt (421 Dateien), A8 danach Exit 0 (MANIFEST sha256=b99deec4...);
+(2) die neuen Faelle geschrieben: B2 Abschnitt G15 (313/M-74 bis 313/M-79) und NAK-283 M-11 mit kMax
+2^53-1; B7 313/M-83; B27 313/M-80, M-81, M-89 und die NAK-283-Faelle M-07 bis M-10 und M-12 an 2^53-1;
+B29 313/M-82, M-84 bis M-87 mit der Versuchsbuehne; B10 313/M-88 (--nak313-e5); A4
+nak313_m89_intent_revision_am_rand; der PRODUKTCODE blieb der von 062a98fc; (3) nur die
+betroffenen Beine gebaut und gefahren (C++ B2, B7, B27, B29, B10; Rust cargo test fuer A4). Dieser Stand
+wurde nicht committet; die Reparatur begann nach der Gegenprobe (Commits d2330ea3 bis 28e9d571).
+
+Basisstand-Variante (nur hier, nicht committet): Sonde014AssistentTest.cpp trug fuer diesen Lauf als erste
+Zeile '#define NAK313_GEGENPROBE_BASISSTAND   // BASIS-GEGENPROBE, nur fuer die Gegenprobe' (kein Bauziel
+setzt den Schalter, Muster Etappe 2 A-E2-6); nach dem Lauf wurde genau diese Zeile wieder entfernt (vorher
+geprueft, dass die Datei mit ihr beginnt). 313/M-86 wird unter dem Schalter nicht uebersetzt, weil
+Testhaken und assistentVersuchVerknuepfen am Basisstand fehlen, und meldet '--' (heute nicht messbar).
+Alle anderen Faelle liefen in der Fassung der Gegenprobe (SHA-256 unten; die Datei der Gegenprobe traegt
+die Schalterzeile). Seitdem geaendert: Sonde014AssistentTest.cpp (M-86 setzt den Haken als Element statt
+ueber einen Setter, zwei Kommentare), erzeuge_v3_fixtures.py (nur Kommentare; A8 bytegleich).
+
+Mitgefallen am Basisstand (erwartet): B27 NAK-283 M-07 bis M-09 und M-12 (Host) - ihre Grenzstaende
+stehen seit dieser Teiletappe an 2^53-1 beziehungsweise 2^53-2 (Nachtrag in docs/beweise/NAK-283.md);
+B29 313/M-87 als Folge von 313/M-84 (2^53 wird gespeichert und laedt am Basisstand geladen).
+
+SHA-256 der Testdateien und der Handinstanz zur Gegenprobe (aus dem Verlauf des Bauers):
+  eq-copilot/plugin/tests/StateMigrationTestMain.cpp  1baff478491dc5230b2d4578418f3a1666b76c7f7a479e5df8219788f4397c53
+  eq-copilot/plugin/tests/TransactionTestMain.cpp  a5e9d24ea0c88954f463318ff500c3a0afe2cf707c4d6660a2165db75e2e113c
+  eq-copilot/plugin/tests/Sonde014IntentTest.cpp  cdf07da5bb96fdb792a04a5b86ba8c82e4bc0f28e44e5cc307f6f1542bcf7912
+  eq-copilot/plugin/tests/Sonde014AssistentTest.cpp  d62353a89ccae29512150673191ae5a2e11d129457029a150b3722a9d0522921
+  eq-copilot/plugin/tests/IpcTestMain.cpp  3b563b2dd737a744b33478afb9243dccd28c2cba3db1a2e9f6d51f01c20a87d9
+  broker/tests/sonde014_verdrahtung.rs  ffd34ec40e9a5dc2812b5fd60961051eae4a73801cb5022c7721b3b9bf5f7c4e
+  eq-copilot/fixtures/v3/intent-wire-v1.json  672111c85015ee449095e88491da0c27306160917b5a4f005f65895fd00ab17e
+
+Blob-IDs des Produktcodes am Basisstand (git rev-parse 062a98fc:<pfad>):
+  eq-copilot/plugin/state/NakamaState.h  44d28fc3004ace57e9cf065bceece727d21a1e87
+  eq-copilot/plugin/state/NakamaState.cpp  e5b0208223c7d0551cc713fd717343a2b6ca6ed1
+  eq-copilot/plugin/state/NakamaTransaktion.h  f473d7864fae84c19aaca1627958043a41632c55
+  eq-copilot/plugin/state/NakamaTransaktion.cpp  f8af444582a4903cf3638ab894a7e2175d8ec917
+  eq-copilot/plugin/src/prozessor/Analyse.cpp  1a625286f9557f2af3f64f1bafa0a03b45ae85ad
+  eq-copilot/plugin/src/prozessor/Ipc.cpp  97562fefcba2b13b7b2f8ccb992fe43d99668e1b
+  eq-copilot/plugin/src/PluginProcessor.h  bafb08c3f766781030af2aabbe978ca684efea5b
+  eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp  f738864e26fe8003254a9e2c2d3bda1380195626
+  eq-copilot/plugin/core/ipc/controlclient/Intern.h  af82245419fa5dc84ec1920425ab9d5f9891a398
+  broker/src/coordinator/intent.rs  ec3055d5d554128767687aa586da95059835803d
+
+=== B2 EqCopStateMigrationTest (Exit 1, 24 FEHLER-Zeilen, 22 s, Start 17:09:01, Binaer 17:06:45.579) ===
+  ok      M-11 Aufbau: Main mit Bindung
+  ok      M-11 Aufbau: ein Intent ist gesetzt
+  ok      M-11 Aufbau: ein Assistentenschritt ist offen
+  ok      M-11: der eigene Reader nimmt beide Revisionen am Rand 2^53-1 an (Vorbedingung der Zusage)  [9007199254740991 / 9007199254740991]
+  FEHLER  M-11 (a): der Assistentenhandgriff wird abgewiesen, `a.revision` bleibt 2^53-1 - kein Schritt ueber den Rand  [9007199254740992]
+  FEHLER  M-11 (b): der abgewiesene `entferneIntent` laesst die gespeicherten Bytes BYTEGLEICH  [496 vs. 393 Bytes]
+  FEHLER  M-11: kein abgewiesener Handgriff meldet Host-Dirty  [2]
+  ok      M-11: revisionsmaximum_ueberlebt_save_load - der selbst erzeugte Stand laedt in einer neuen Instanz NORMAL, nicht read-only
+  FEHLER  M-11: beide Revisionen kommen als 2^53-1 zurueck  [9007199254740992 / 9007199254740992]
+  FEHLER  M-11: die neue Instanz laedt den Intent-Eintrag UNVERAENDERT - der abgewiesene Handgriff hat ihn nicht entfernt  [0 Eintrag/Eintraege]
+  FEHLER  == NAK-283 M-11: Revisionsmaximum ueberlebt Save/Load, abgewiesener Handgriff laesst die Bytes bytegleich
+  ok      == NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only
+  ok      313/M-74 intent_revision_grenze MainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  ok      313/M-75 source_intent_revision_grenze MainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  ok      313/M-76 assistent_revision_grenze MainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  FEHLER  313/M-74 intent_revision_grenze MainProject 2^53: nurLesen mit Originalbytes, Grund 'MainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze MainProject 2^53: nurLesen mit Originalbytes, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-76 assistent_revision_grenze MainProject 2^53: nurLesen mit Originalbytes, Grund 'MainProject.assistant_step_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-74 intent_revision_grenze MainProject int64max: nurLesen mit Originalbytes, Grund 'MainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze MainProject int64max: nurLesen mit Originalbytes, Grund 'MainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-76 assistent_revision_grenze MainProject int64max: nurLesen mit Originalbytes, Grund 'MainProject.assistant_step_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  ok      313/M-74 intent_revision_grenze RetainedMainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  ok      313/M-75 source_intent_revision_grenze RetainedMainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  ok      313/M-76 assistent_revision_grenze RetainedMainProject 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  FEHLER  313/M-74 intent_revision_grenze RetainedMainProject 2^53: nurLesen mit Originalbytes, Grund 'RetainedMainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject 2^53: nurLesen mit Originalbytes, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-76 assistent_revision_grenze RetainedMainProject 2^53: nurLesen mit Originalbytes, Grund 'RetainedMainProject.assistant_step_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-74 intent_revision_grenze RetainedMainProject int64max: nurLesen mit Originalbytes, Grund 'RetainedMainProject.intent_revision_v1 exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-75 source_intent_revision_grenze RetainedMainProject int64max: nurLesen mit Originalbytes, Grund 'RetainedMainProject.source_intents_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-76 assistent_revision_grenze RetainedMainProject int64max: nurLesen mit Originalbytes, Grund 'RetainedMainProject.assistant_step_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  ok      313/M-77 dsp_state_revision_grenze 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  ok      313/M-78 undo_revision_grenze 2^53-1: geladen mit 9007199254740991, Save bytegleich  [geladen, Wert 9007199254740991, Grund '', Save bytegleich]
+  FEHLER  313/M-77 dsp_state_revision_grenze 2^53: nurLesen mit Originalbytes, Grund 'Dsp.state_revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-78 undo_revision_grenze 2^53: nurLesen mit Originalbytes, Grund 'Dsp.undo_ring_v1 revision exceeds 2^53-1'  [geladen, Wert 9007199254740992, Grund '', Save bytegleich]
+  FEHLER  313/M-77 dsp_state_revision_grenze int64max: nurLesen mit Originalbytes, Grund 'Dsp.state_revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-78 undo_revision_grenze int64max: nurLesen mit Originalbytes, Grund 'Dsp.undo_ring_v1 revision exceeds 2^53-1'  [geladen, Wert 9223372036854775807, Grund '', Save bytegleich]
+  FEHLER  313/M-79 int64max_laedt_nurlesen: Assistenten- und Bestandsrevision int64max - nurLesen mit Originalbytes, der Grund nennt MainProject.intent_revision_v1  [geladen, Grund '', Save bytegleich]
+  FEHLER  == NAK-313 Etappe 5b: jede persistente Revision endet bei 2^53-1, darueber read-only mit Originalbytes
+  Summe: STATE-MIGRATION-TEST FEHLGESCHLAGEN - 373 Pruefungen ok, 24 Fehler
+
+=== B7 EqCopTransactionTest (Exit 1, 2 FEHLER-Zeilen, 3 s, Start 17:09:23, Binaer 17:06:55.624) ===
+  == ZE - NAK-313 Etappe 5b: der Transaktionskern haelt an 2^53-1 (313/M-83) ==
+  ok      313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit auf 2^53-1  [commit @S8 rev=9007199254740991 memo, Ladestart ok]
+  FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert die Transaktion in S4 mit revision_erschoepft, ohne Nebenwirkung  [commit @S8 rev=9007199254740992 memo, r danach 9007199254740992]
+  ok        Wachen I1/I2/I4 nach 313/M-83  [belegt 2 soll 2, r=9007199254740992 r0=9007199254740990]
+  FEHLER  313/M-83 transaktion_haelt_an_2hoch53: ein Ladestart mit 2^53 wird mit state_revision abgewiesen, der Kern bleibt, wie er war  [angenommen, Grund '', r 9007199254740992]
+  Summe: TRANSAKTION FEHLGESCHLAGEN
+
+=== B27 EqCopSonde014IntentTest (Exit 1, 23 FEHLER-Zeilen, 1 s, Start 17:09:26, Binaer 17:07:02.525) ===
+  == NAK-283 M-07 bis M-09  entfernen_an_der_revisionsobergrenze_mutiert_nichts ==
+  ok      M-07: der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-07: Vorbedingung - Bestandsrevision am Rand 2^53-1, ein Intent-Eintrag
+  FEHLER  M-07: der Handgriff liefert `false` mit gesetztem Grund und `veraendert == false` -
+  FEHLER  M-07: entferne_intent_an_der_revisionsobergrenze_mutiert_nichts - `z.sourceIntents` ist unveraendert, der Eintrag steht noch
+  FEHLER  M-07: der GANZE Zustand ist byteweise unveraendert
+  FEHLER  M-07: und die Bestandsrevision steht weiterhin am Maximum
+  ok      M-08: der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-08: Vorbedingung - eine Schutzangabe
+  FEHLER  M-08: der Handgriff liefert `false` mit gesetztem Grund -
+  FEHLER  M-08: entferne_schutzangabe_an_der_revisionsobergrenze_mutiert_nichts - `z.schutzangaben` ist unveraendert
+  FEHLER  M-08: der GANZE Zustand ist byteweise unveraendert
+  ok      M-09: der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-09: Vorbedingung - eine Beziehung
+  FEHLER  M-09: der Handgriff liefert `false` mit gesetztem Grund -
+  FEHLER  M-09: entferne_beziehung_an_der_revisionsobergrenze_mutiert_nichts - `z.intentBeziehungen` ist unveraendert
+  FEHLER  M-09: der GANZE Zustand ist byteweise unveraendert
+  == NAK-283 M-08/M-09 (Host)  ablehnung_am_maximum_meldet_kein_host_dirty ==
+  ok      M-08 Host: Vorbedingung - Bestandsrevision am Rand 2^53-1 IM Prozessor, eine Schutzangabe  [9007199254740991]
+  FEHLER  M-08 Host: der Handgriff wird abgewiesen - die Schutzangabe steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [1 Dirty, 0 Angabe(n)]
+  ok      M-09 Host: Vorbedingung - Bestandsrevision am Rand 2^53-1, eine Beziehung
+  FEHLER  M-09 Host: der Handgriff wird abgewiesen - die Kante steht noch, die Revision steht still, und NULL Host-Dirty-Meldungen  [1 Dirty, 0 Kante(n)]
+  == NAK-283 M-10  assistentenrevision_laeuft_nicht_ueber ==
+  ok      M-10 (schrittAendern): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-10: Vorbedingung - ein OFFENER Schritt mit `revision == 2^53-1`
+  FEHLER  M-10: `schrittAendern` weist ab statt zu inkrementieren -
+  FEHLER  M-10: `a.revision` bleibt 2^53-1, und weder `a.schritt` noch `a.offen` sind angefasst - die Schranke steht VOR der Zuweisung  [9007199254740992]
+  ok      M-10 (neuer Schritt): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-10: Vorbedingung - ein GESCHLOSSENER Schritt mit `revision == 2^53-1`
+  FEHLER  M-10: auch der NEUE Schritt weist ab -
+  FEHLER  M-10: `a.revision` bleibt 2^53-1, und die Schritt-Kennung ist unveraendert
+  ok      M-10 (Ergebnis): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  FEHLER  M-10: auch das Ergebnis weist ab -
+  FEHLER  M-10: assistentenrevision_laeuft_nicht_ueber - `a.revision += 1` wird an keiner der drei Stellen auf 2^53-1 ausgefuehrt; kein Schritt ueber den Rand, kein negativer Folgewert, kein signed-integer-UB  [9007199254740992]
+  == NAK-283 M-12 (Wache)  unter_der_grenze_aendert_sich_nichts ==
+  ok      M-12 (Intent): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-12: Vorbedingung - Bestandsrevision bei 2^53-2
+  ok      M-12: der Intent wird entfernt, und die Revision steigt um GENAU 1  [9007199254740991]
+  ok      M-12 (Schutz): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-12: die Schutzangabe wird entfernt, Revision +1
+  ok      M-12 (Beziehung): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-12: die Beziehung wird entfernt, Revision +1
+  ok      M-12 (Assistent): der Mutant laedt normal (der eigene Reader nimmt den Rand 2^53-1 an) -
+  ok      M-12: Vorbedingung - Assistentenrevision bei 2^53-2
+  ok      M-12: unter_der_grenze_aendert_sich_nichts - der Assistentenschritt wechselt, und die Revision steigt um GENAU 1  [9007199254740991]
+  ok      M-12 Host (Intent): Vorbedingung - der Grenzstand 2^53-2 liegt IM Prozessor, ein Intent-Eintrag  [9007199254740990]
+  ok      M-12 Host (Intent): bei 2^53-2 wird der Eintrag entfernt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [1 Dirty, Revision 9007199254740991]
+  ok      M-12 Host (Intent): der folgenlose Zweitaufruf schweigt - keine Revision, kein weiteres Dirty; der Riegel hat den No-op-Pfad nicht verschoben  [0 weiteres Dirty, Revision 9007199254740991]
+  ok      M-12 Host (Schutz): Vorbedingung - Grenzstand und eine Schutzangabe
+  ok      M-12 Host (Schutz): die Angabe wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [1 Dirty, Revision 9007199254740991]
+  ok      M-12 Host (Schutz): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9007199254740991]
+  ok      M-12 Host (Beziehung): Vorbedingung - Grenzstand und eine Beziehung
+  ok      M-12 Host (Beziehung): die Kante wird entfernt, Revision +1, und Host-Dirty GENAU EINMAL  [1 Dirty, Revision 9007199254740991]
+  ok      M-12 Host (Beziehung): der folgenlose Zweitaufruf schweigt  [0 weiteres Dirty, Revision 9007199254740991]
+  ok      M-12 Host (Assistent): Vorbedingung - ein OFFENER Schritt bei 2^53-2  [9007199254740990]
+  ok      M-12 Host (Assistent): der Schritt wechselt, die Revision steigt um GENAU 1, und Host-Dirty wird GENAU EINMAL gemeldet  [1 Dirty, Revision 9007199254740991]
+  FEHLER  M-12 Host (Assistent): der Zweitaufruf steht jetzt AM Maximum, wird abgewiesen und meldet nichts - keine Revision, kein Dirty  [1 weiteres Dirty, Revision 9007199254740992]
+  ok      M-12 Produktpfad: ein Intent wird gesetzt
+  ok      M-12 Produktpfad: derselbe Intent wird entfernt
+  ok      M-12 Produktpfad: GENAU eine Dirty-Meldung und GENAU eine Revision je persistenter Aenderung  [1]
+  ok      M-12 Produktpfad: der folgenlose Aufruf meldet Erfolg
+  ok      M-12 Produktpfad: und er schweigt - kein Dirty, keine Revision  [1]
+  ok      313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-2 genau ein Schritt auf 2^53-1, 1 Host-Dirty, Reload schreibbar  [9007199254740991, 1 Dirty, Reload schreibbar]
+  FEHLER  313/M-80 bestandsrevision_haelt_an_der_grenze: bei 2^53-1 Rueckgabe false, Bestand und Revision unveraendert, 0 Host-Dirty - kein Umklappen, keine Saettigung, keine 0  [angenommen, Revision 9007199254740992, 1 Dirty, 2 Intent(s)]
+  FEHLER  313/M-80 bestandsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent am Rand liefert false mit Grund, der Zustand bleibt bytegleich  [, Revision 9007199254740992]
+  FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze: Rueckgabe false vor jeder Zuweisung - Rolle, Eintragsrevision 2^53-1 und Bestandsrevision unveraendert, 0 Host-Dirty  [angenommen, Eintrag 9007199254740992, Bestand 2, 1 Dirty]
+  FEHLER  313/M-81 eintragsrevision_haelt_an_der_grenze (Bibliothek): setzeIntent liefert false mit Grund, der Zustand bleibt bytegleich
+  ok      313/M-89 intentwriter_revision_am_rand: der Writer schreibt bestand_revision 2^53-1 unveraendert, ab ,"bestand_revision": bytegleich zu wire_ausschnitt der Handinstanz  [,"bestand_revision":9007199254740991,"vollstaendig":true}]
+  Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 23 Fehler, 253 ok
+
+=== B29 EqCopSonde014AssistentTest (Exit 1, 4 FEHLER-Zeilen, 1 s, Start 17:09:27, Binaer 17:07:12.373) ===
+  FEHLER  313/M-82 assistentenrevision_haelt_an_der_grenze (offen): Weiter und Antwort liefern false, Schritt, offen, Ergebnis und Revision 2^53-1 unveraendert, 0 Host-Dirty - Weiter angenommen, Antwort angenommen, Revision 9007199254740993, 2 Dirty
+  FEHLER  313/M-82 assistentenrevision_haelt_an_der_grenze (geschlossen): ein neuer Lauf liefert false, Schritt und Revision 2^53-1 unveraendert, 0 Host-Dirty - Start angenommen, Revision 9007199254740992, 1 Dirty
+  ok      313/M-84 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel -
+  FEHLER  313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung: false, kein experiment_begin, Slot leer, Pegel nicht eingefroren, 0 Host-Dirty, Revision 2^53-1, experimentId leer - gestartet, 1 begin, Slot 'ff8dc7e82a6f4e89a2c98cb7b939b0c1', abgeglichen ja, 1 Dirty, Revision 9007199254740992, experimentId 'ff8dc7e82a6f4e89a2c98cb7b939b0c1'
+  FEHLER  313/M-87 (Teilfall von 313/M-84) versuchskennung_nicht_gespeichert: geladen mit Revision 2^53-1, offen, experimentId leer - geladen, Revision 9007199254740992, experimentId 'ff8dc7e82a6f4e89a2c98cb7b939b0c1'
+  ok      313/M-85 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel -
+  ok      313/M-85 versuchsstart_unter_der_grenze: true, genau ein experiment_begin, Slot und experimentId gleich dessen experiment_id, Revision 6, genau 1 Host-Dirty - 1 begin, id 'eec1a85bea144f9bbd0ce2f88315940a', Slot 'eec1a85bea144f9bbd0ce2f88315940a', Revision 6, 1 Dirty
+  --      313/M-86 grenze_nach_versuchsbeginn_bricht_ab  [Basisstand: Haken und Bibliotheksfunktion entstehen erst im Bau, nicht gewertet]
+  Summe: SONDE-014 AssistantStep: 196/200 gruen
+
+=== B10 EqCopIpcTest --nak313-e5 (Exit 1, 3 FEHLER-Zeilen, 6 s, Start 17:09:28, Binaer 17:08:30.338) ===
+  ok      313/M-88 sender_ohne_kappung heartbeat 2^53-1 steht als 9007199254740991  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740991,"capabilities"...
+  ok      313/M-88 sender_ohne_kappung state_report 2^53-1 steht als 9007199254740991  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":900719925474099...
+  FEHLER  313/M-88 sender_ohne_kappung heartbeat 2^53 steht als 9007199254740992  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740991,"capabilities":{...
+  FEHLER  313/M-88 sender_ohne_kappung state_report 2^53 steht als 9007199254740992  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":9007199254740991,...
+  FEHLER — 115 Pruefungen, 2 Fehler
+  Summe: FEHLER — 115 Pruefungen, 2 Fehler
+
+=== A4 cargo test --test sonde014_verdrahtung nak313_m89 (Exit 0) ===
+  Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
+  Finished `test` profile [unoptimized + debuginfo] target(s) in 7.68s
+  Running tests\sonde014_verdrahtung.rs (broker\target\debug\deps\sonde014_verdrahtung-8bef1bda6f3ed9e6.exe)
+  running 1 test
+  test nak313_m89_intent_revision_am_rand ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.00s

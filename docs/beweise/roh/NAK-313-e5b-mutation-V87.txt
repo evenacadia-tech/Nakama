@@ -1,0 +1,59 @@
+NAK-313 Etappe 5b - Mutationslauf V87: M-87: beide Sperren entfernt (Vorpruefung und Pruefung der Bibliotheksfunktion)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf V87 - M-87: beide Sperren entfernt (Vorpruefung und Pruefung der Bibliotheksfunktion) - 24.09.2026 17:56:34 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+SHA-256 vorher 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\V87-Analyse.cpp (SHA-256 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512)
+Mutation 1 ab Zeile 1306 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+  vorher:
+    |        if (zustand.assistent.revision >= nakama::state::kRevisionMax)
+    |            return false;
+  nachher:
+    |
+Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\V87-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+Mutation 2 ab Zeile 3093 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+  vorher:
+    |    if (! assistentenrevisionHeben (a, grund))
+    |        return false;
+    |    a.experimentId = experimentId;
+  nachher:
+    |    a.revision += 1;   // MUTATION: Pruefung entfernt
+    |    a.experimentId = experimentId;
+Mutiert 24.09.2026 17:56:35: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert c70484cc89db0932add37c97e1123fe48e7aac6a9bb8a6e835e32ffcb8d4ecc9
+Mutiert 24.09.2026 17:56:35: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 588a0ceaa15376d90694d62138a2726c8e2a629887838f60c78beaa69e5980b0
+Kette (R-313-11): Ohne beide Sperren wird 2^53 gespeichert; der Reload wird nurLesen (MainProject.assistant_step_v1) -> 313/M-87 rot.
+Lauf unter der Mutation:
+  Bau EqCopSonde014AssistentTest: Exit 0
+  B29: Binaer 17:56:45.567, Quelle 17:56:35.048, Binaer juenger: ja
+  B29: Exit 1, Fehlzeilen 4, Rohausgabe V87-mutiert-B29.txt
+    Summe: SONDE-014 AssistantStep: 199/203 gruen
+Ruecknahme 24.09.2026 17:56:55: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+Ruecknahme 24.09.2026 17:56:55: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde014AssistentTest: Exit 0
+  B29: Binaer 17:57:06.471, Quelle 17:56:55.791, Binaer juenger: ja
+  B29: Exit 0, Fehlzeilen 0, Rohausgabe V87-zurueck-B29.txt
+    Summe: SONDE-014 AssistantStep: 203/203 gruen
+Erwartete Pruefungen unter der Mutation:
+  B29: '313/M-87 (Teilfall von 313/M-84) versuchskennung_nicht_gespeichert' gefallen: JA
+  B29: '313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B29: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B29 unter der Mutation: gefallene Pruefungen (4) ===
+  FEHLER  313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung: false, kein experiment_begin, Slot leer, Pegel nicht eingefroren, 0 Host-Dirty, Revision 2^53-1, experimentId leer - gestartet, 1 begin, Slot '64045da7db80443086404449292fc811', abgeglichen ja, 1 Dirty, Revision 9007199254740992, experimentId '64045da7db80443086404449292fc811'
+  FEHLER  313/M-87 (Teilfall von 313/M-84) versuchskennung_nicht_gespeichert: geladen mit Revision 2^53-1, offen, experimentId leer - nicht geladen: MainProject.assistant_step_v1 revision exceeds 2^53-1, Revision 0, experimentId ''
+  FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Verknuepfung): false, Revision 2^53-1, experimentId leer, 0 Host-Dirty - gestartet, Revision 9007199254740992, experimentId '81cedd491bec40109f0d000e816921dd', 1 Dirty
+  FEHLER  313/M-86 grenze_nach_versuchsbeginn_bricht_ab (Abbruch): Slot leer, genau ein experiment_begin und danach genau ein experiment_abort mit derselben experiment_id und grund user_abbruch - 1 begin, 0 abort, Slot '81cedd491bec40109f0d000e816921dd'
+=== B29 nach der Ruecknahme: gefallene Pruefungen 0 ===

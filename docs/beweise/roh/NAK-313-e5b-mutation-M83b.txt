@@ -1,0 +1,43 @@
+NAK-313 Etappe 5b - Mutationslauf M83b: M-83 Haelfte Commit auf 2^53-1: kHoechsteRevision = 2^53-2
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf M83b - M-83 Haelfte Commit auf 2^53-1: kHoechsteRevision = 2^53-2 - 24.09.2026 17:54:02 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/state/NakamaTransaktion.h (LF)
+SHA-256 vorher 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\M83b-NakamaTransaktion.h (SHA-256 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba)
+Mutation 1 ab Zeile 57 in eq-copilot/plugin/state/NakamaTransaktion.h (Stand vor der Mutation):
+  vorher:
+    |inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) state::kRevisionMax;
+  nachher:
+    |inline constexpr std::uint64_t kHoechsteRevision = (std::uint64_t) (state::kRevisionMax - 1);
+Mutiert 24.09.2026 17:54:02: eq-copilot/plugin/state/NakamaTransaktion.h, SHA-256 mutiert c871a55eb5be33993c79fc540ed49fb7fd004aac3a1ad0a62a6c440dff1d804a
+Kette (R-313-11): Mit kHoechsteRevision = 2^53-2 scheitert schon die Transaktion bei 2^53-2 in S4 -> 313/M-83 (Commit auf 2^53-1) rot.
+Lauf unter der Mutation:
+  Bau EqCopTransactionTest: Exit 0
+  B7: Binaer 17:54:16.293, Quelle 17:54:02.708, Binaer juenger: ja
+  B7: Exit 1, Fehlzeilen 2, Rohausgabe M83b-mutiert-B7.txt
+    Summe: TRANSAKTION FEHLGESCHLAGEN
+Ruecknahme 24.09.2026 17:54:18: eq-copilot/plugin/state/NakamaTransaktion.h SHA-256 5f3454cf4ec0e900d4867302f81b8f4b9e2f9c591b8e4032fab39300cb65adba - gleich dem Stand vor der Mutation
+  Bau EqCopTransactionTest: Exit 0
+  B7: Binaer 17:54:35.085, Quelle 17:54:18.889, Binaer juenger: ja
+  B7: Exit 0, Fehlzeilen 0, Rohausgabe M83b-zurueck-B7.txt
+    Summe: TRANSAKTION OK
+Erwartete Pruefungen unter der Mutation:
+  B7: '313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B7 unter der Mutation: gefallene Pruefungen (2) ===
+  FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-2 genau ein Commit auf 2^53-1  [fehler @S4 rev=9007199254740990 nicht-memo grund=revision_erschoepft, Ladestart ok]
+  FEHLER  313/M-83 transaktion_haelt_an_2hoch53: bei 2^53-1 scheitert die Transaktion in S4 mit revision_erschoepft, ohne Nebenwirkung  [fehler @S4 rev=9007199254740990 nicht-memo grund=revision_erschoepft, r danach 9007199254740990]
+=== B7 nach der Ruecknahme: gefallene Pruefungen 0 ===

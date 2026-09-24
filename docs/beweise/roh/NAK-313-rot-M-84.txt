@@ -1,0 +1,51 @@
+NAK-313 Etappe 5b - Rotbeweis M-84 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-84 - T3-02-01 - R-313-4 - R-313-15 - assistentVersuchStarten an der Grenze
+Zustand: Main mit gueltiger Wire-Adresse am Probe-Testserver, geladen mit offenem Schritt der Revision 2^53-1; klassifizierte Quelle, TestPlayHead, gemerkte Passage mit gefuehrtem Fenster und Pegel mit genug Material; Host-Dirty ab dem Stand nach der Einrichtung
+Ereignis: assistentVersuchStarten
+Zusage: Rueckgabe false vor jeder Nebenwirkung: kein experiment_begin in p0Texte, laufenderVersuch() leer, versuchLautheitAbgeglichen() bleibt false, 0 Host-Dirty, Revision 9007199254740991, experimentId leer
+Bein: B29 Sonde014AssistentTest.cpp 313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung (Einrichtung 313/M-84 Einrichtung)
+
+--- Haelfte 1: Versuchsstart am Rand - Etikett: heute rot ---
+Pruefung: 313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B29 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-84 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel -
+  FEHLER  313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung: false, kein experiment_begin, Slot leer, Pegel nicht eingefroren, 0 Host-Dirty, Revision 2^53-1, experimentId leer - gestartet, 1 begin, Slot 'ff8dc7e82a6f4e89a2c98cb7b939b0c1', abgeglichen ja, 1 Dirty, Revision 9007199254740992, experimentId 'ff8dc7e82a6f4e89a2c98cb7b939b0c1'
+  -> am Basisstand: rot (beginneVersuch laeuft, experiment_begin beim Server, danach revision += 1 auf 2^53, 1 Host-Dirty)
+  Mutation V84: eq-copilot/plugin/src/prozessor/Analyse.cpp - M-84: Vorpruefung in assistentVersuchStarten entfernt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-V84.txt):
+    Rotlauf V84 - M-84: Vorpruefung in assistentVersuchStarten entfernt - 24.09.2026 17:55:04 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/src/prozessor/Analyse.cpp (CRLF)
+    SHA-256 vorher 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\V84-Analyse.cpp (SHA-256 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512)
+    Mutation 1 ab Zeile 1306 in eq-copilot/plugin/src/prozessor/Analyse.cpp (Stand vor der Mutation):
+      vorher:
+        |        if (zustand.assistent.revision >= nakama::state::kRevisionMax)
+        |            return false;
+      nachher:
+        |
+    Mutiert 24.09.2026 17:55:04: eq-copilot/plugin/src/prozessor/Analyse.cpp, SHA-256 mutiert 588a0ceaa15376d90694d62138a2726c8e2a629887838f60c78beaa69e5980b0
+    Kette (R-313-11): Ohne Vorpruefung laeuft beginneVersuch am Rand: experiment_begin erreicht den Server und der Pegel wird eingefroren, erst die Bibliotheksfunktion weist ab -> 313/M-84 rot; M-87 bleibt gruen (die Bibliotheksfunktion prueft selbst).
+    Lauf unter der Mutation:
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:55:12.566, Quelle 17:55:04.975, Binaer juenger: ja
+      B29: Exit 1, Fehlzeilen 1, Rohausgabe V84-mutiert-B29.txt
+        Summe: SONDE-014 AssistantStep: 202/203 gruen
+    Ruecknahme 24.09.2026 17:55:13: eq-copilot/plugin/src/prozessor/Analyse.cpp SHA-256 6326b2cba1963e73b56f4a727184b2132cf55653a802c34bd8d122a6d2bd8512 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:55:21.118, Quelle 17:55:13.837, Binaer juenger: ja
+      B29: Exit 0, Fehlzeilen 0, Rohausgabe V84-zurueck-B29.txt
+        Summe: SONDE-014 AssistantStep: 203/203 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B29: '313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung' gefallen: JA
+      B29: '313/M-87 (Teilfall von 313/M-84) versuchskennung_nicht_gespeichert' gruen geblieben: JA
+      B29: '313/M-85 versuchsstart_unter_der_grenze' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B29: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B29 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-84 versuchsstart_an_der_grenze_ohne_nebenwirkung: false, kein experiment_begin, Slot leer, Pegel nicht eingefroren, 0 Host-Dirty, Revision 2^53-1, experimentId leer - abgewiesen, 1 begin, Slot '', abgeglichen ja, 0 Dirty, Revision 9007199254740991, experimentId ''
+    === B29 nach der Ruecknahme: gefallene Pruefungen 0 ===

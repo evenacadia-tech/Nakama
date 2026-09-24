@@ -1,0 +1,40 @@
+NAK-313 Etappe 5b - Mutationslauf R89: M-89 Haelfte Broker: Ganzzahlhelfer fuer bestand_revision mit max 2^53-2
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf R89 - M-89 Haelfte Broker: Ganzzahlhelfer fuer bestand_revision mit max 2^53-2 - 24.09.2026 18:04:21 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei broker/src/coordinator/intent.rs (LF)
+SHA-256 vorher abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\R89-intent.rs (SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56)
+Mutation 1 ab Zeile 358 in broker/src/coordinator/intent.rs (Stand vor der Mutation):
+  vorher:
+    |crate::vertrag::ganzzahl(&wert["bestand_revision"], 0, crate::vertrag::GANZZAHL_MAX)
+  nachher:
+    |crate::vertrag::ganzzahl(&wert["bestand_revision"], 0, crate::vertrag::GANZZAHL_MAX - 1)
+Mutiert 24.09.2026 18:04:21: broker/src/coordinator/intent.rs, SHA-256 mutiert c5e092cec0fb81dd22cca7cece19451a54ea696e0e76496a040de7ce8d48a679
+Kette (R-313-11): Mit max 2^53-2 weist der Rust-Leser die Handinstanz (2^53-1) ab: kein Bestand, kein intent_updates-Delta -> nak313_m89_intent_revision_am_rand rot.
+Lauf unter der Mutation:
+  A4: Exit 101, Fehlzeilen 3, Rohausgabe R89-mutiert-A4.txt
+    Summe: error: test failed, to rerun pass `--test sonde014_verdrahtung`
+Ruecknahme 24.09.2026 18:04:33: broker/src/coordinator/intent.rs SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56 - gleich dem Stand vor der Mutation
+  A4: Exit 0, Fehlzeilen 0, Rohausgabe R89-zurueck-A4.txt
+    Summe: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.01s
+Erwartete Pruefungen unter der Mutation:
+  A4: 'nak313_m89_intent_revision_am_rand' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A4: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-G12.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88d.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A4 unter der Mutation: gefallene Pruefungen (3) ===
+  test nak313_m89_intent_revision_am_rand ... FAILED
+  ---- nak313_m89_intent_revision_am_rand stdout ----
+  thread 'nak313_m89_intent_revision_am_rand' (255480) panicked at tests\sonde014_verdrahtung.rs:4965:5:
+=== A4 nach der Ruecknahme: gefallene Pruefungen 0 ===

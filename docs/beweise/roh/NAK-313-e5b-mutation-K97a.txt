@@ -1,0 +1,43 @@
+NAK-313 Etappe 5b - Mutationslauf K97a: M-97 Commit-Punkt: Heap-Allokation hinter dem Commit-Punkt, Ergebnis entweicht in eine statische Variable
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf K97a - M-97 Commit-Punkt: Heap-Allokation hinter dem Commit-Punkt, Ergebnis entweicht in eine statische Variable - 24.09.2026 17:54:38 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/state/NakamaTransaktion.cpp (LF)
+SHA-256 vorher c520d51dc9e7cf018a26de25301fe09a978bff12e811d5a1f22fd364cea10639; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\K97a-NakamaTransaktion.cpp (SHA-256 c520d51dc9e7cf018a26de25301fe09a978bff12e811d5a1f22fd364cea10639)
+Mutation 1 ab Zeile 662 in eq-copilot/plugin/state/NakamaTransaktion.cpp (Stand vor der Mutation):
+  vorher:
+    |    const std::uint64_t e   = r + 1;   // S4 hat r < kHoechsteRevision gesichert
+  nachher:
+    |    const std::uint64_t e   = r + 1;   // S4 hat r < kHoechsteRevision gesichert
+    |    static std::uint64_t* k97 = nullptr; delete k97; k97 = new std::uint64_t (e);   // MUTATION M-97: alloziert je Commit
+Mutiert 24.09.2026 17:54:38: eq-copilot/plugin/state/NakamaTransaktion.cpp, SHA-256 mutiert 1e02c2a30a78411a7eeed3c5027bf35fc982ddbb6057b4a390c5a254877ff0b3
+Kette (R-313-11): Eine Allokation je Commit hinter dem Commit-Punkt, deren Ergebnis in einer statischen Variable weiterlebt, zaehlt der Allokationszaehler ab S8 -> hinter_dem_commit_punkt_wird_nicht_alloziert rot.
+Lauf unter der Mutation:
+  Bau EqCopTransactionTest: Exit 0
+  B7: Binaer 17:54:42.398, Quelle 17:54:38.516, Binaer juenger: ja
+  B7: Exit 1, Fehlzeilen 1, Rohausgabe K97a-mutiert-B7.txt
+    Summe: TRANSAKTION FEHLGESCHLAGEN
+Ruecknahme 24.09.2026 17:54:45: eq-copilot/plugin/state/NakamaTransaktion.cpp SHA-256 c520d51dc9e7cf018a26de25301fe09a978bff12e811d5a1f22fd364cea10639 - gleich dem Stand vor der Mutation
+  Bau EqCopTransactionTest: Exit 0
+  B7: Binaer 17:54:48.747, Quelle 17:54:45.200, Binaer juenger: ja
+  B7: Exit 0, Fehlzeilen 0, Rohausgabe K97a-zurueck-B7.txt
+    Summe: TRANSAKTION OK
+Erwartete Pruefungen unter der Mutation:
+  B7: 'hinter_dem_commit_punkt_wird_nicht_alloziert' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B7: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B7 unter der Mutation: gefallene Pruefungen (1) ===
+  FEHLER  hinter_dem_commit_punkt_wird_nicht_alloziert  [Allokationen ab S8: 47 ueber 47 Commits (40 Apply mit Ringueberlauf und Registerverdraengung, Undo, Undo, Redo, Remove, Neutralisieren, Revert, Preset)]
+=== B7 nach der Ruecknahme: gefallene Pruefungen 0 ===

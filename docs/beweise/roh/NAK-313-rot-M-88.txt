@@ -1,0 +1,164 @@
+NAK-313 Etappe 5b - Rotbeweis M-88 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-88 - T3-02-03 - R-313-4 - Sender Heartbeat und state_report, melden<->senden
+Zustand: ControlStatus mit stateRevision 2^53-1; Testaufbau mit 2^53 (von der Produkt-API nicht erreichbar)
+Ereignis: heartbeatAlsJson (controlclient/Vertrag.cpp), stateReportJson (controlclient/Intern.h)
+Zusage: 2^53-1 steht als 9007199254740991; 2^53 steht unveraendert als 9007199254740992 - nie still auf 2^53-1 gekappt
+Bein: B10 eq-copilot/plugin/tests/IpcTestMain.cpp --nak313-e5 313/M-88 sender_ohne_kappung <heartbeat|state_report> <Wert>
+
+--- Haelfte 1: 2^53 (je Sender) - Etikett: heute rot ---
+Pruefung: 313/M-88 sender_ohne_kappung heartbeat 2^53 und state_report 2^53
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B10 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  FEHLER  313/M-88 sender_ohne_kappung heartbeat 2^53 steht als 9007199254740992  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740991,"capabilities":{...
+  FEHLER  313/M-88 sender_ohne_kappung state_report 2^53 steht als 9007199254740992  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":9007199254740991,...
+  -> am Basisstand: rot (jsonSafe kappt 2^53 auf 9007199254740991)
+  Mutation S88a: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - M-88 Haelfte 2^53 (heartbeat): jsonSafe fuer state_revision zurueck (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-S88a.txt):
+    Rotlauf S88a - M-88 Haelfte 2^53 (heartbeat): jsonSafe fuer state_revision zurueck - 24.09.2026 17:57:09 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher 5d72c79060e2e160d560eabec23430b86d610a0b30cfcf0819837f644a990ada; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\S88a-Vertrag.cpp (SHA-256 5d72c79060e2e160d560eabec23430b86d610a0b30cfcf0819837f644a990ada)
+    Mutation 1 ab Zeile 165 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+      vorher:
+        |+ ",\"state_revision\":" + std::to_string (status.stateRevision)
+      nachher:
+        |+ ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+    Mutiert 24.09.2026 17:57:09: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert 1a530f23d16b1cd075ce04b2a4aa60d1221087da82fdbcc0f49c0e89aca2e733
+    Kette (R-313-11): jsonSafe kappt 2^53 still auf 2^53-1: der heartbeat-Text traegt 9007199254740991 -> 313/M-88 heartbeat 2^53 rot; der andere Sender bleibt gruen.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 17:57:13.356, Quelle 17:57:09.453, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 2, Rohausgabe S88a-mutiert-B10.txt
+        Summe: FEHLER — 115 Pruefungen, 1 Fehler
+    Ruecknahme 24.09.2026 17:57:19: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 5d72c79060e2e160d560eabec23430b86d610a0b30cfcf0819837f644a990ada - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 17:57:23.460, Quelle 17:57:19.314, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe S88a-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 115 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-88 sender_ohne_kappung heartbeat 2^53 steht' gefallen: JA
+      B10: '313/M-88 sender_ohne_kappung heartbeat 2^53-1 steht' gruen geblieben: JA
+      B10: '313/M-88 sender_ohne_kappung state_report 2^53 steht' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B10 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-88 sender_ohne_kappung heartbeat 2^53 steht als 9007199254740992  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740991,"capabilities":{"host_context_presence":"supported","project_time_samples":"supp]
+      FEHLER — 115 Pruefungen, 1 Fehler
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation S88b: eq-copilot/plugin/core/ipc/controlclient/Intern.h - M-88 Haelfte 2^53 (state_report): jsonSafe fuer state_revision zurueck (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-S88b.txt):
+    Rotlauf S88b - M-88 Haelfte 2^53 (state_report): jsonSafe fuer state_revision zurueck - 24.09.2026 17:57:52 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher 75e03d5d9a70ee276a441145a1bad5f275a9611b8257164f71aaf8fddc7df430; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\S88b-Intern.h (SHA-256 75e03d5d9a70ee276a441145a1bad5f275a9611b8257164f71aaf8fddc7df430)
+    Mutation 1 ab Zeile 429 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+      vorher:
+        |+ ",\"state_revision\":" + std::to_string (status.stateRevision)
+      nachher:
+        |+ ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+    Mutiert 24.09.2026 17:57:52: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert 6f42bf7653fb304e42393d9ffaf51c5dad998598afd1f8e967eea63be24a7349
+    Kette (R-313-11): jsonSafe kappt 2^53 still auf 2^53-1: der state_report-Text traegt 9007199254740991 -> 313/M-88 state_report 2^53 rot; der andere Sender bleibt gruen.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 17:59:11.278, Quelle 17:57:52.104, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 2, Rohausgabe S88b-mutiert-B10.txt
+        Summe: FEHLER — 115 Pruefungen, 1 Fehler
+    Ruecknahme 24.09.2026 17:59:17: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 75e03d5d9a70ee276a441145a1bad5f275a9611b8257164f71aaf8fddc7df430 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 18:00:35.871, Quelle 17:59:17.170, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe S88b-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 115 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-88 sender_ohne_kappung state_report 2^53 steht' gefallen: JA
+      B10: '313/M-88 sender_ohne_kappung state_report 2^53-1 steht' gruen geblieben: JA
+      B10: '313/M-88 sender_ohne_kappung heartbeat 2^53 steht' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B10 unter der Mutation: gefallene Pruefungen (2) ===
+      FEHLER  313/M-88 sender_ohne_kappung state_report 2^53 steht als 9007199254740992  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":9007199254740991,"state_hash":null,"record_state":{"valid":false,"recording":false}}]
+      FEHLER — 115 Pruefungen, 1 Fehler
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: 2^53-1 (je Sender) - Etikett: Regressionswache ---
+Pruefung: 313/M-88 sender_ohne_kappung heartbeat 2^53-1 und state_report 2^53-1
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B10 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-88 sender_ohne_kappung heartbeat 2^53-1 steht als 9007199254740991  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740991,"capabilities"...
+  ok      313/M-88 sender_ohne_kappung state_report 2^53-1 steht als 9007199254740991  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":900719925474099...
+  -> am Basisstand: gruen
+  Mutation S88c: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp - M-88 Haelfte 2^53-1 (heartbeat): an derselben Stelle auf 2^53-2 gekappt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-S88c.txt):
+    Rotlauf S88c - M-88 Haelfte 2^53-1 (heartbeat): an derselben Stelle auf 2^53-2 gekappt - 24.09.2026 17:57:30 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (CRLF)
+    SHA-256 vorher 5d72c79060e2e160d560eabec23430b86d610a0b30cfcf0819837f644a990ada; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\S88c-Vertrag.cpp (SHA-256 5d72c79060e2e160d560eabec23430b86d610a0b30cfcf0819837f644a990ada)
+    Mutation 1 ab Zeile 165 in eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp (Stand vor der Mutation):
+      vorher:
+        |+ ",\"state_revision\":" + std::to_string (status.stateRevision)
+      nachher:
+        |+ ",\"state_revision\":" + std::to_string (status.stateRevision > 9007199254740990ull ? 9007199254740990ull : status.stateRevision)
+    Mutiert 24.09.2026 17:57:30: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp, SHA-256 mutiert 4af40603c5d9774723f9d26670586da7cf7123fd0785997a0bff16d0dc5e47b7
+    Kette (R-313-11): Eine Kappung auf 2^53-2 schreibt 9007199254740990 statt 9007199254740991 -> 313/M-88 heartbeat 2^53-1 rot.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 17:57:35.348, Quelle 17:57:30.102, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 3, Rohausgabe S88c-mutiert-B10.txt
+        Summe: FEHLER — 115 Pruefungen, 2 Fehler
+    Ruecknahme 24.09.2026 17:57:41: eq-copilot/plugin/core/ipc/controlclient/Vertrag.cpp SHA-256 5d72c79060e2e160d560eabec23430b86d610a0b30cfcf0819837f644a990ada - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 17:57:45.395, Quelle 17:57:41.345, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe S88c-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 115 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-88 sender_ohne_kappung heartbeat 2^53-1 steht' gefallen: JA
+      B10: '313/M-88 sender_ohne_kappung state_report 2^53-1 steht' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B10 unter der Mutation: gefallene Pruefungen (3) ===
+      FEHLER  313/M-88 sender_ohne_kappung heartbeat 2^53-1 steht als 9007199254740991  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740990,"capabilities":{"host_context_presence":"supported","project_time_samples":"supp]
+      FEHLER  313/M-88 sender_ohne_kappung heartbeat 2^53 steht als 9007199254740992  [{"type":"heartbeat","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"sequence":1,"state_revision":9007199254740990,"capabilities":{"host_context_presence":"supported","project_time_samples":"supp]
+      FEHLER — 115 Pruefungen, 2 Fehler
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===
+  Mutation S88d: eq-copilot/plugin/core/ipc/controlclient/Intern.h - M-88 Haelfte 2^53-1 (state_report): an derselben Stelle auf 2^53-2 gekappt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-S88d.txt):
+    Rotlauf S88d - M-88 Haelfte 2^53-1 (state_report): an derselben Stelle auf 2^53-2 gekappt - 24.09.2026 18:00:42 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/core/ipc/controlclient/Intern.h (CRLF)
+    SHA-256 vorher 75e03d5d9a70ee276a441145a1bad5f275a9611b8257164f71aaf8fddc7df430; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\S88d-Intern.h (SHA-256 75e03d5d9a70ee276a441145a1bad5f275a9611b8257164f71aaf8fddc7df430)
+    Mutation 1 ab Zeile 429 in eq-copilot/plugin/core/ipc/controlclient/Intern.h (Stand vor der Mutation):
+      vorher:
+        |+ ",\"state_revision\":" + std::to_string (status.stateRevision)
+      nachher:
+        |+ ",\"state_revision\":" + std::to_string (status.stateRevision > 9007199254740990ull ? 9007199254740990ull : status.stateRevision)
+    Mutiert 24.09.2026 18:00:42: eq-copilot/plugin/core/ipc/controlclient/Intern.h, SHA-256 mutiert 4e9cfe64600f73754956a4e16100620deef75ea72d0209bd6408a9c349c1bc4f
+    Kette (R-313-11): Eine Kappung auf 2^53-2 schreibt 9007199254740990 statt 9007199254740991 -> 313/M-88 state_report 2^53-1 rot.
+    Lauf unter der Mutation:
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 18:02:01.567, Quelle 18:00:42.340, Binaer juenger: ja
+      B10: Exit 1, Fehlzeilen 3, Rohausgabe S88d-mutiert-B10.txt
+        Summe: FEHLER — 115 Pruefungen, 2 Fehler
+    Ruecknahme 24.09.2026 18:02:07: eq-copilot/plugin/core/ipc/controlclient/Intern.h SHA-256 75e03d5d9a70ee276a441145a1bad5f275a9611b8257164f71aaf8fddc7df430 - gleich dem Stand vor der Mutation
+      Bau EqCopIpcTest: Exit 0
+      B10: Binaer 18:03:29.741, Quelle 18:02:07.473, Binaer juenger: ja
+      B10: Exit 0, Fehlzeilen 0, Rohausgabe S88d-zurueck-B10.txt
+        Summe: ALLE PRUEFUNGEN GRUEN — 115 Pruefungen, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B10: '313/M-88 sender_ohne_kappung state_report 2^53-1 steht' gefallen: JA
+      B10: '313/M-88 sender_ohne_kappung heartbeat 2^53-1 steht' gruen geblieben: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B10: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B10 unter der Mutation: gefallene Pruefungen (3) ===
+      FEHLER  313/M-88 sender_ohne_kappung state_report 2^53-1 steht als 9007199254740991  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":9007199254740990,"state_hash":null,"record_state":{"valid":false,"recording":false}}]
+      FEHLER  313/M-88 sender_ohne_kappung state_report 2^53 steht als 9007199254740992  [{"type":"state_report","adresse":{"logon_sid":"S-1-5-21-1-2-3-1001","project_binding_id":"00000000000000000000000000000000","session_epoch":"11111111111111111111111111111111","instance_id":"22222222222222222222222222222222","runtime_nonce":"55555555555555555555555555555555"},"dsp_schema_version":1,"state_revision":9007199254740990,"state_hash":null,"record_state":{"valid":false,"recording":false}}]
+      FEHLER — 115 Pruefungen, 2 Fehler
+    === B10 nach der Ruecknahme: gefallene Pruefungen 0 ===

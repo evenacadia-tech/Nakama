@@ -1,0 +1,35 @@
+NAK-313 Etappe 5b - Mutationslauf G12: M-97 State-Goldens: ein Byte im Golden schema2/aus-schema1-sensor.bin gekippt (Byte 177, XOR 0x01)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf G12 - M-97 State-Goldens: ein Byte im Golden schema2/aus-schema1-sensor.bin gekippt (Byte 177, XOR 0x01) - 24.09.2026 18:04:19 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/fixtures/state/schema2/aus-schema1-sensor.bin (binaer)
+SHA-256 vorher 7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\G12-aus-schema1-sensor.bin (SHA-256 7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59)
+Mutation 1 an Byte 177 von eq-copilot/fixtures/state/schema2/aus-schema1-sensor.bin (178 Bytes): 0x00 -> 0x01 (XOR 0x01)
+Mutiert 24.09.2026 18:04:19: eq-copilot/fixtures/state/schema2/aus-schema1-sensor.bin, SHA-256 mutiert 911d59da91fd1e6dff86e09a447a99083046a885509b91c673553a51175c61e5
+Kette (R-313-11): Ein gekipptes Byte in einem State-Golden weicht vom Erzeuger ab -> A12 rot; keine neue State-Version haelt die Goldens bytegleich.
+Lauf unter der Mutation:
+  A12: Exit 2, Fehlzeilen 2, Rohausgabe G12-mutiert-A12.txt
+    Summe: STATE-FIXTURES ABWEICHEND (1)
+Ruecknahme 24.09.2026 18:04:20: eq-copilot/fixtures/state/schema2/aus-schema1-sensor.bin SHA-256 7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59 - gleich dem Stand vor der Mutation
+  A12: Exit 0, Fehlzeilen 0, Rohausgabe G12-zurueck-A12.txt
+    Summe: STATE-FIXTURES OK (71 Dateien bytegleich, keine verwaiste Datei)
+Erwartete Pruefungen unter der Mutation:
+  A12: 'ABWEICH' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  A12: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88d.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== A12 unter der Mutation: gefallene Pruefungen (2) ===
+  ABWEICHUNG: MANIFEST.json
+  STATE-FIXTURES ABWEICHEND (1)
+=== A12 nach der Ruecknahme: gefallene Pruefungen 0 ===

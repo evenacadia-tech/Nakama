@@ -1,0 +1,85 @@
+NAK-313 Etappe 5b - Rotbeweis M-89 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-89 - T3-02-03 - R-313-4 - E-313-14 - Sender Intent (echter Writer v3IntentUpdateJson), schreiben<->lesen
+Zustand: Main-Gen mit geladenem Stand: leerer Intent-Bestand, intent_revision_v1 = 9007199254740991; Handinstanz eq-copilot/fixtures/v3/intent-wire-v1.json (eingabe, wire_ausschnitt, wire; vom Erzeuger geschrieben, SHA-256 im MANIFEST unter handinstanzen)
+Ereignis: B27: v3IntentUpdateFuerTest (true); A4: wire ueber die P1-Weiche eines Links mit der Adresse aus eingabe
+Zusage: der Writertext traegt bestand_revision 9007199254740991 und ist ab ,"bestand_revision": bytegleich zu wire_ausschnitt; der Broker uebernimmt die Bestandsrevision 9007199254740991 unveraendert
+Bein: B27 Sonde014IntentTest.cpp 313/M-89 intentwriter_revision_am_rand; A4 broker/tests/sonde014_verdrahtung.rs nak313_m89_intent_revision_am_rand
+
+--- Haelfte 1: Writer bytegleich zur Handinstanz - Etikett: heute nicht messbar ---
+Pruefung: 313/M-89 intentwriter_revision_am_rand
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B27 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-89 intentwriter_revision_am_rand: der Writer schreibt bestand_revision 2^53-1 unveraendert, ab ,"bestand_revision": bytegleich zu wire_ausschnitt der Handinstanz  [,"bestand_revision":9007199254740991,"vollstaendig":true}]
+  -> am Basisstand: am Basis-SHA fehlten Handinstanz und Test (Etikett); mit Test und Handinstanz gegen den unveraenderten Writer gemessen: gruen (der Writer schreibt std::to_string ohne Kappung)
+  Mutation W89: eq-copilot/plugin/src/prozessor/Ipc.cpp - M-89 Haelfte Writer: bestand_revision gekappt geschrieben (std::min auf 2^53-2) (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-W89.txt):
+    Rotlauf W89 - M-89 Haelfte Writer: bestand_revision gekappt geschrieben (std::min auf 2^53-2) - 24.09.2026 17:53:12 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/src/prozessor/Ipc.cpp (CRLF)
+    SHA-256 vorher 02203ab9de71296ee5f83b9b639645a14030057d1b412650ece7ca09b02701d2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\W89-Ipc.cpp (SHA-256 02203ab9de71296ee5f83b9b639645a14030057d1b412650ece7ca09b02701d2)
+    Mutation 1 ab Zeile 586 in eq-copilot/plugin/src/prozessor/Ipc.cpp (Stand vor der Mutation):
+      vorher:
+        |+ ",\"bestand_revision\":" + std::to_string ((long long) revision)
+      nachher:
+        |+ ",\"bestand_revision\":" + std::to_string ((long long) std::min (revision, (juce::int64) 9007199254740990))
+    Mutiert 24.09.2026 17:53:12: eq-copilot/plugin/src/prozessor/Ipc.cpp, SHA-256 mutiert 08ac52bbc135bc06b9db0f5ff7c905dffc74a99c2fafe1d8a1a3f3fafca01703
+    Kette (R-313-11): Der gekappte Writer schreibt 9007199254740990: der Text weicht ab dem Feld bestand_revision vom wire_ausschnitt der Handinstanz ab -> 313/M-89 rot.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 17:53:19.780, Quelle 17:53:12.505, Binaer juenger: ja
+      B27: Exit 1, Fehlzeilen 1, Rohausgabe W89-mutiert-B27.txt
+        Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 1 Fehler, 275 ok
+    Ruecknahme 24.09.2026 17:53:20: eq-copilot/plugin/src/prozessor/Ipc.cpp SHA-256 02203ab9de71296ee5f83b9b639645a14030057d1b412650ece7ca09b02701d2 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014IntentTest: Exit 0
+      B27: Binaer 17:53:28.458, Quelle 17:53:20.737, Binaer juenger: ja
+      B27: Exit 0, Fehlzeilen 0, Rohausgabe W89-zurueck-B27.txt
+        Summe: SONDE-014-INTENT-TEST OK - 276 Pruefungen ok, 0 Fehler
+    Erwartete Pruefungen unter der Mutation:
+      B27: '313/M-89 intentwriter_revision_am_rand' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B27: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B27 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-89 intentwriter_revision_am_rand: der Writer schreibt bestand_revision 2^53-1 unveraendert, ab ,"bestand_revision": bytegleich zu wire_ausschnitt der Handinstanz  [,"bestand_revision":9007199254740990,"vollstaendig":true}]
+    === B27 nach der Ruecknahme: gefallene Pruefungen 0 ===
+
+--- Haelfte 2: Broker uebernimmt - Etikett: Regressionswache ---
+Pruefung: nak313_m89_intent_revision_am_rand
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === A4 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  test nak313_m89_intent_revision_am_rand ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.00s
+  -> am Basisstand: gruen (der Ganzzahlhelfer der 5a nimmt 2^53-1 an)
+  Mutation R89: broker/src/coordinator/intent.rs - M-89 Haelfte Broker: Ganzzahlhelfer fuer bestand_revision mit max 2^53-2 (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-R89.txt):
+    Rotlauf R89 - M-89 Haelfte Broker: Ganzzahlhelfer fuer bestand_revision mit max 2^53-2 - 24.09.2026 18:04:21 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei broker/src/coordinator/intent.rs (LF)
+    SHA-256 vorher abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\R89-intent.rs (SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56)
+    Mutation 1 ab Zeile 358 in broker/src/coordinator/intent.rs (Stand vor der Mutation):
+      vorher:
+        |crate::vertrag::ganzzahl(&wert["bestand_revision"], 0, crate::vertrag::GANZZAHL_MAX)
+      nachher:
+        |crate::vertrag::ganzzahl(&wert["bestand_revision"], 0, crate::vertrag::GANZZAHL_MAX - 1)
+    Mutiert 24.09.2026 18:04:21: broker/src/coordinator/intent.rs, SHA-256 mutiert c5e092cec0fb81dd22cca7cece19451a54ea696e0e76496a040de7ce8d48a679
+    Kette (R-313-11): Mit max 2^53-2 weist der Rust-Leser die Handinstanz (2^53-1) ab: kein Bestand, kein intent_updates-Delta -> nak313_m89_intent_revision_am_rand rot.
+    Lauf unter der Mutation:
+      A4: Exit 101, Fehlzeilen 3, Rohausgabe R89-mutiert-A4.txt
+        Summe: error: test failed, to rerun pass `--test sonde014_verdrahtung`
+    Ruecknahme 24.09.2026 18:04:33: broker/src/coordinator/intent.rs SHA-256 abccd0e2092a6fef7ba1a947f9bf28a802f4d844416935f54564c282f5c2db56 - gleich dem Stand vor der Mutation
+      A4: Exit 0, Fehlzeilen 0, Rohausgabe R89-zurueck-A4.txt
+        Summe: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.01s
+    Erwartete Pruefungen unter der Mutation:
+      A4: 'nak313_m89_intent_revision_am_rand' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      A4: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-A1.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-A16.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-G12.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-ID.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88c.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-S88d.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V86b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V87.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W85.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === A4 unter der Mutation: gefallene Pruefungen (3) ===
+      test nak313_m89_intent_revision_am_rand ... FAILED
+      ---- nak313_m89_intent_revision_am_rand stdout ----
+      thread 'nak313_m89_intent_revision_am_rand' (255480) panicked at tests\sonde014_verdrahtung.rs:4965:5:
+    === A4 nach der Ruecknahme: gefallene Pruefungen 0 ===

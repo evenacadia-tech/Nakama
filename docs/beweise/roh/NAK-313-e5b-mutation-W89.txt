@@ -1,0 +1,42 @@
+NAK-313 Etappe 5b - Mutationslauf W89: M-89 Haelfte Writer: bestand_revision gekappt geschrieben (std::min auf 2^53-2)
+
+Ablauf nach Manifest §8.1 (Werkzeug rot.ps1 im Job-Temp des Bauers): Datei sichern (Kopie
+ausserhalb des Repos) und SHA-256 messen; genau die genannten Stellen ersetzen (neu geschrieben,
+Aenderungszeit jetzt); nur die betroffenen Ziele bauen (cmake --build eq-copilot/build --config
+Release --target ...; Cargo baut die Rust-Tests selbst neu, die Python-Beine lesen die Quelle direkt)
+und die Beine direkt fahren, Binaerzeit gegen Quellzeit; dann bytegleich aus der Sicherung
+zuruecknehmen, SHA-256 vergleichen, neu bauen, Beine erneut, git status und git diff --stat. Die
+Rohausgaben der Laeufe lagen im Job-Temp; hier stehen das Protokoll und die Pruefzeilen.
+
+=== Protokoll ===
+Rotlauf W89 - M-89 Haelfte Writer: bestand_revision gekappt geschrieben (std::min auf 2^53-2) - 24.09.2026 17:53:12 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+Datei eq-copilot/plugin/src/prozessor/Ipc.cpp (CRLF)
+SHA-256 vorher 02203ab9de71296ee5f83b9b639645a14030057d1b412650ece7ca09b02701d2; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\W89-Ipc.cpp (SHA-256 02203ab9de71296ee5f83b9b639645a14030057d1b412650ece7ca09b02701d2)
+Mutation 1 ab Zeile 586 in eq-copilot/plugin/src/prozessor/Ipc.cpp (Stand vor der Mutation):
+  vorher:
+    |+ ",\"bestand_revision\":" + std::to_string ((long long) revision)
+  nachher:
+    |+ ",\"bestand_revision\":" + std::to_string ((long long) std::min (revision, (juce::int64) 9007199254740990))
+Mutiert 24.09.2026 17:53:12: eq-copilot/plugin/src/prozessor/Ipc.cpp, SHA-256 mutiert 08ac52bbc135bc06b9db0f5ff7c905dffc74a99c2fafe1d8a1a3f3fafca01703
+Kette (R-313-11): Der gekappte Writer schreibt 9007199254740990: der Text weicht ab dem Feld bestand_revision vom wire_ausschnitt der Handinstanz ab -> 313/M-89 rot.
+Lauf unter der Mutation:
+  Bau EqCopSonde014IntentTest: Exit 0
+  B27: Binaer 17:53:19.780, Quelle 17:53:12.505, Binaer juenger: ja
+  B27: Exit 1, Fehlzeilen 1, Rohausgabe W89-mutiert-B27.txt
+    Summe: SONDE-014-INTENT-TEST FEHLGESCHLAGEN - 1 Fehler, 275 ok
+Ruecknahme 24.09.2026 17:53:20: eq-copilot/plugin/src/prozessor/Ipc.cpp SHA-256 02203ab9de71296ee5f83b9b639645a14030057d1b412650ece7ca09b02701d2 - gleich dem Stand vor der Mutation
+  Bau EqCopSonde014IntentTest: Exit 0
+  B27: Binaer 17:53:28.458, Quelle 17:53:20.737, Binaer juenger: ja
+  B27: Exit 0, Fehlzeilen 0, Rohausgabe W89-zurueck-B27.txt
+    Summe: SONDE-014-INTENT-TEST OK - 276 Pruefungen ok, 0 Fehler
+Erwartete Pruefungen unter der Mutation:
+  B27: '313/M-89 intentwriter_revision_am_rand' gefallen: JA
+Die Zusage faellt an der erwarteten Pruefung: JA
+Nach der Ruecknahme:
+  B27: Exit 0, Fehlzeilen 0
+git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? nimbalyst-local/
+git diff --stat: (leer)
+
+=== B27 unter der Mutation: gefallene Pruefungen (1) ===
+  FEHLER  313/M-89 intentwriter_revision_am_rand: der Writer schreibt bestand_revision 2^53-1 unveraendert, ab ,"bestand_revision": bytegleich zu wire_ausschnitt der Handinstanz  [,"bestand_revision":9007199254740990,"vollstaendig":true}]
+=== B27 nach der Ruecknahme: gefallene Pruefungen 0 ===

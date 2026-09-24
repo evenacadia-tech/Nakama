@@ -1,0 +1,52 @@
+NAK-313 Etappe 5b - Rotbeweis M-85 (Manifest docs/beweise/NAK-313.md §6.4, Ablauf §8.1, R-313-11, R-313-12)
+Stand: Reparatur (Commits d2330ea3 bis 28e9d571; danach nur Kommentare in ce83e67c); Mutationslaeufe 24.09.2026, 17:38 bis 18:04 Uhr, je Lauf mit HEAD in seiner Mutationsdatei (28e9d571); Gegenprobe am Basisstand 24.09.2026, 17:09 bis 17:10 Uhr gegen den Produktcode von 062a98fc (NAK-313-e5b-basisstand.txt).
+
+Matrixzeile M-85 - T3-02-01 - R-313-4 - Gegenfall unter der Grenze
+Zustand: Einrichtung wie M-84, offener Schritt mit Revision 5
+Ereignis: assistentVersuchStarten
+Zusage: Rueckgabe true; genau ein experiment_begin; laufenderVersuch() = dessen experiment_id = experimentId des Schritts; Revision 6; genau 1 Host-Dirty
+Bein: B29 Sonde014AssistentTest.cpp 313/M-85 versuchsstart_unter_der_grenze
+
+--- Haelfte 1: Versuchsstart unter der Grenze - Etikett: Regressionswache ---
+Pruefung: 313/M-85 versuchsstart_unter_der_grenze
+Am Basisstand (Produktcode von 062a98fc, Tests der Gegenprobe):
+  === B29 (Rohausgabe der Gegenprobe, NAK-313-e5b-basisstand.txt) ===
+  ok      313/M-85 Einrichtung: Main am Probe-Server, Quelle, Passage, Fenster und Pegel -
+  ok      313/M-85 versuchsstart_unter_der_grenze: true, genau ein experiment_begin, Slot und experimentId gleich dessen experiment_id, Revision 6, genau 1 Host-Dirty - 1 begin, id 'eec1a85bea144f9bbd0ce2f88315940a', Slot 'eec1a85bea144f9bbd0ce2f88315940a', Revision 6, 1 Dirty
+  -> am Basisstand: gruen (5 -> 6, 1 Host-Dirty)
+  Mutation W85: eq-copilot/plugin/state/NakamaState.cpp - M-85: das Inkrement in assistentVersuchVerknuepfen doppelt ausgefuehrt (Protokoll und alle Pruefzeilen: NAK-313-e5b-mutation-W85.txt):
+    Rotlauf W85 - M-85: das Inkrement in assistentVersuchVerknuepfen doppelt ausgefuehrt - 24.09.2026 17:55:24 - HEAD 28e9d5716d115f4bf551c06dbba3dd46c087098a
+    Datei eq-copilot/plugin/state/NakamaState.cpp (LF)
+    SHA-256 vorher cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1; Sicherung ausserhalb des Repos C:\Users\phili\.claude\jobs\0a7ca668\tmp\rot\sicherung\W85-NakamaState.cpp (SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1)
+    Mutation 1 ab Zeile 3093 in eq-copilot/plugin/state/NakamaState.cpp (Stand vor der Mutation):
+      vorher:
+        |    if (! assistentenrevisionHeben (a, grund))
+        |        return false;
+        |    a.experimentId = experimentId;
+      nachher:
+        |    if (! assistentenrevisionHeben (a, grund) || ! assistentenrevisionHeben (a, grund))
+        |        return false;
+        |    a.experimentId = experimentId;
+    Mutiert 24.09.2026 17:55:24: eq-copilot/plugin/state/NakamaState.cpp, SHA-256 mutiert 9c3301905a51b9b6d5c2f1dbc49c6420006d2dcd5d204be090b500c5400a9d45
+    Kette (R-313-11): Ein doppeltes Inkrement hebt 5 auf 7 statt auf 6 -> 313/M-85 rot.
+    Lauf unter der Mutation:
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:55:30.114, Quelle 17:55:24.230, Binaer juenger: ja
+      B29: Exit 1, Fehlzeilen 1, Rohausgabe W85-mutiert-B29.txt
+        Summe: SONDE-014 AssistantStep: 202/203 gruen
+    Ruecknahme 24.09.2026 17:55:32: eq-copilot/plugin/state/NakamaState.cpp SHA-256 cdeeb89446602fa71a206f820cdf51ee0549538f84cb387cb67c3f9b728879e1 - gleich dem Stand vor der Mutation
+      Bau EqCopSonde014AssistentTest: Exit 0
+      B29: Binaer 17:55:37.503, Quelle 17:55:32.507, Binaer juenger: ja
+      B29: Exit 0, Fehlzeilen 0, Rohausgabe W85-zurueck-B29.txt
+        Summe: SONDE-014 AssistantStep: 203/203 gruen
+    Erwartete Pruefungen unter der Mutation:
+      B29: '313/M-85 versuchsstart_unter_der_grenze' gefallen: JA
+    Die Zusage faellt an der erwarteten Pruefung: JA
+    Nach der Ruecknahme:
+      B29: Exit 0, Fehlzeilen 0
+    git status --short: ?? briefing-hub/ | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-K97b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L74b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L75b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L76b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L77b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-L78b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83a.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-M83b.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MA.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MB.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-MC.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-SV.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-V84.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W80.txt | ?? docs/beweise/roh/NAK-313-e5b-mutation-W89.txt | ?? nimbalyst-local/
+    git diff --stat: (leer)
+
+    === B29 unter der Mutation: gefallene Pruefungen (1) ===
+      FEHLER  313/M-85 versuchsstart_unter_der_grenze: true, genau ein experiment_begin, Slot und experimentId gleich dessen experiment_id, Revision 6, genau 1 Host-Dirty - 1 begin, id 'b151383af067450288796f4571bd90f2', Slot 'b151383af067450288796f4571bd90f2', Revision 7, 1 Dirty
+    === B29 nach der Ruecknahme: gefallene Pruefungen 0 ===

@@ -196,6 +196,30 @@ struct DirtyZaehler final : public juce::AudioProcessorListener
     }
 };
 
+// NAK-313 Etappe 2 (R-313-3, R-313-12): der Reconnect-Zaehler der Bindungs-API
+// entsteht erst mit dem Bau der Etappe. Die Gegenprobe am Basisstand (Manifest
+// §8.1) uebersetzt dieses Bein mit NAK313_GEGENPROBE_BASISSTAND gegen den
+// unveraenderten Produktcode und wertet die Zaehlerhaelften nicht. Kein Bau des
+// Kanons setzt den Schalter.
+#if defined (NAK313_GEGENPROBE_BASISSTAND)
+constexpr bool kBindungszaehler = false;
+std::uint64_t bindungsReconnects() { return 0; }
+#else
+constexpr bool kBindungszaehler = true;
+std::uint64_t bindungsReconnects() { return eqcop::testzugang::bindungsReconnectsFuerTest(); }
+#endif
+
+void zaehlerPruefe (bool ok, const juce::String& name, const juce::String& zusatz = {})
+{
+    if (! kBindungszaehler)
+    {
+        std::cout << "  --      " << name.toRawUTF8()
+                  << "  [Basisstand: der Zaehler entsteht erst im Bau, nicht gewertet]" << std::endl;
+        return;
+    }
+    pruefe (ok, name, zusatz);
+}
+
 /** Baut einen gueltigen Schema-2-Baum fuer Experimente. */
 juce::ValueTree schema2Baum (const char* klasse, const char* position, bool mitMainProject)
 {
@@ -2813,6 +2837,73 @@ int main (int argc, char* argv[])
                 && ! p->setzeBindung ("pre", "ok", zuLangesPaar)
                 && dirty.nonParam == 2 && p->holeLabel() == "Leitstand",
                 "Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation");
+
+        // NAK-313 Etappe 2 (R-313-3; 313/M-04 API-Haelfte, 313/M-10): die
+        // Bindungs-API prueft 120/60 nur fuer Werte, die vom Zustand abweichen.
+        // Der Stand entsteht ueber den Writer (legacy/pre, Label 121, Paarname 61
+        // Zeichen; der Writer prueft keine Laengen) und wird ueber
+        // setStateInformation geladen; Host-Dirty und Reconnect-Anforderungen
+        // zaehlen ab dem Stand nach dem Laden.
+        {
+            juce::String lang121, lang61;
+            for (int i = 0; i < 120; ++i) lang121 += "a";
+            lang121 += "Z";
+            for (int i = 0; i < 60; ++i) lang61 += "p";
+            lang61 += "Q";
+            auto z = state::frisch ("0123456789abcdef0123456789abcdef");
+            z.common.position = state::Messposition::pre;
+            z.common.label = lang121;
+            z.common.pairId = lang61;
+            juce::MemoryBlock x;
+            state::speichere (z, x);
+
+            {
+                auto q = std::make_unique<EqCopilotProcessor>();
+                DirtyZaehler d;
+                q->addListener (&d);
+                q->setStateInformation (x.getData(), (int) x.getSize());
+                const int dirtyNachLaden = d.nonParam;
+                const auto reconnectsNachLaden = bindungsReconnects();
+                const bool rueckgabe = q->setzeBindung ("pre", lang121, lang61);
+                juce::MemoryBlock nach;
+                q->getStateInformation (nach);
+                const auto reconnects = bindungsReconnects() - reconnectsNachLaden;
+                q->removeListener (&d);
+                const auto text = "geladen " + juce::String (q->stateNurLesen() ? "read-only" : "ja")
+                                + ", Rueckgabe " + (rueckgabe ? "true" : "false") + ", Host-Dirty nach dem Laden "
+                                + juce::String (d.nonParam - dirtyNachLaden) + " (beim Laden "
+                                + juce::String (dirtyNachLaden) + "), Reconnect-Anforderungen "
+                                + (kBindungszaehler ? juce::String ((juce::int64) reconnects) : juce::String ("nicht messbar"))
+                                + ", Save bytegleich " + (gleich (nach, x) ? "ja" : "NEIN");
+                pruefe (! q->stateNurLesen() && ! rueckgabe && d.nonParam == dirtyNachLaden && gleich (nach, x)
+                            && q->holeLabel() == lang121 && q->holePaarId() == lang61,
+                        "313/M-10 api_ohne_aenderung_mit_langem_label (R-313-3 Satz 3): am geladenen Stand "
+                        "setzeBindung (pre, 121, 61) mit allen Werten gleich dem Zustand - Rueckgabe false, "
+                        "0 Host-Dirty, Zustand unveraendert, auch mit Werten ueber 120/60",
+                        text);
+                zaehlerPruefe (reconnects == 0,
+                               "313/M-10 api_ohne_aenderung_mit_langem_label (Zaehler): 0 Reconnect-Anforderungen",
+                               text);
+            }
+            {
+                auto q = std::make_unique<EqCopilotProcessor>();
+                DirtyZaehler d;
+                q->addListener (&d);
+                q->setStateInformation (x.getData(), (int) x.getSize());
+                const int dirtyNachLaden = d.nonParam;
+                const bool rueckgabe = q->setzeBindung ("post", lang121, lang61);
+                q->removeListener (&d);
+                pruefe (! q->stateNurLesen() && rueckgabe && d.nonParam - dirtyNachLaden == 1
+                            && q->holeRolle() == "post" && q->holeLabel() == lang121 && q->holePaarId() == lang61,
+                        "313/M-04 api_rolle_mit_unveraendert_langem_label (R-313-3 Satz 3): am geladenen Stand "
+                        "setzeBindung (post, 121, 61) - Rueckgabe true, genau 1 Host-Dirty, Rolle post, "
+                        "Label und Paarname 121/61 unveraendert",
+                        "Rueckgabe " + juce::String (rueckgabe ? "true" : "false") + ", Host-Dirty "
+                            + juce::String (d.nonParam - dirtyNachLaden) + ", Rolle '" + q->holeRolle()
+                            + "', Label " + juce::String (q->holeLabel().length()) + " Zeichen, Paarname "
+                            + juce::String (q->holePaarId().length()) + " Zeichen");
+            }
+        }
 
         // read-only verweigert ohne Meldung
         auto ro = schema2Baum ("legacy", "insert", false); ro.setProperty ("schema", 9, nullptr);

@@ -67,6 +67,22 @@ inline nakama::state::Bundle bundleVertrag()
     return nakama::state::Bundle::eqcp();
 }
 
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+namespace testzugang
+{
+/** NAK-313 Etappe 2 (R-313-3): prozessweite Zaehler der Bindungs-API, nur im
+    Testbau. `bindungsaufrufeFuerTest` zaehlt jeden Eintritt in
+    `setzeBindungGeaendert` - die dreistellige `setzeBindung` delegiert
+    dorthin, ein Aufruf der API zaehlt also genau einmal -,
+    `bindungsReconnectsFuerTest` jede Reconnect-Anforderung der Bindungs-API
+    unmittelbar vor `pipe.reconnect()`; der Ladeweg reconnectet ungezaehlt.
+    Beine lesen Differenzen ab ihrem eigenen Nullpunkt. Im Produkt gibt es sie
+    nicht. */
+std::uint64_t bindungsaufrufeFuerTest();
+std::uint64_t bindungsReconnectsFuerTest();
+} // namespace testzugang
+#endif
+
 // S10-11/SONDE-008: der Prozessor ist eine `Senke` der Hostbruecke. Bis hierher
 // war die Bruecke aus SONDE-003 im Produkt zwar uebersetzt, aber UNBENUTZT
 // (`plugin-wissen.md` §2.1: "im Produkt kompiliert, aber unbenutzt … Verbraucher
@@ -146,8 +162,19 @@ public:
     juce::String holePaarId() const;
     juce::String holeRuntimeNonce() const        { return instanceNonce; }
     // Setzt die Bindung; true = echte Aenderung (dann Host-Dirty + Reconnect).
-    // false: keine Aenderung, unbekannte Rolle oder read-only.
+    // false: keine Aenderung, unbekannte Rolle, read-only oder ein geaenderter
+    // Wert ueber seiner Grenze (Label 120, Paarname 60 Codepunkte). Die
+    // dreistellige Form gibt alle drei Werte und delegiert an
+    // `setzeBindungGeaendert`.
     bool setzeBindung (const juce::String& rolle, const juce::String& label, const juce::String& paarId);
+    // NAK-313 Etappe 2 (R-313-3): aendert nur die gegebenen Werte; ein fehlender
+    // kommt unter `bindungMutex` aus dem aktuellen Zustand (die Rolle ueber
+    // `v2Rolle`). Die Grenzen gelten nur Werten, die vom Zustand abweichen -
+    // eine Rollenwahl scheitert nicht an einem unveraendert geladenen langen
+    // Label. Rueckgabe wie `setzeBindung`.
+    bool setzeBindungGeaendert (const std::optional<juce::String>& rolle,
+                                const std::optional<juce::String>& label,
+                                const std::optional<juce::String>& paarId);
     // M2, Plan §8.4: sichtbare Antwort auf einen Kennungs-Konflikt — DIESE
     // Instanz bekommt eine frische Sensor-ID und meldet sich neu an (Host-Dirty).
     // false = read-only.

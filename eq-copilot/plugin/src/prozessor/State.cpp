@@ -16,7 +16,7 @@
 //   holeKlassifikation, spiegleKlassifikation, darfBrokerStarten
 //                        Lesende Sicht auf denselben Zustand, jeweils unter
 //                        `bindungMutex`.
-//   neueSensorId, setzeBindung
+//   neueSensorId, setzeBindung, setzeBindungGeaendert
 //                        Schreibende Wechsel an Identitaetsfeldern des States
 //                        (nicht an der eingefrorenen Bundle-Identitaet, die
 //                        liegt in eq-copilot/identity/ und wird hier nie
@@ -308,19 +308,35 @@ bool EqCopilotProcessor::darfBrokerStarten() const
     return lebenslauf.darfBrokerStarten();
 }
 
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+namespace
+{
+// NAK-313 Etappe 2 (R-313-3): die Zaehler hinter `testzugang` (PluginProcessor.h).
+std::atomic<std::uint64_t> bindungsaufrufe { 0 };
+std::atomic<std::uint64_t> bindungsReconnects { 0 };
+} // namespace
+
+namespace testzugang
+{
+std::uint64_t bindungsaufrufeFuerTest()    { return bindungsaufrufe.load(); }
+std::uint64_t bindungsReconnectsFuerTest() { return bindungsReconnects.load(); }
+} // namespace testzugang
+#endif
+
 bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String& lbl, const juce::String& p)
 {
-    // Dieselben Grenzen wie der einzige UI-Aufrufer. Sie gehoeren auch an die
-    // API-Kante: der State-Leser beweist seinen Writer-Headroom gegen genau
-    // diese Grenzen; ein kuenftiger Caller darf sie nicht umgehen.
-    if (lbl.length() > 120 || p.length() > 60)
-        return false;
+    // Alle drei Werte gegeben; auch hier gelten die Grenzen nur, was sich
+    // aendert (R-313-3).
+    return setzeBindungGeaendert (r, lbl, p);
+}
 
-    nakama::state::Klasse klasse;
-    nakama::state::Messposition position;
-    if (! nakama::state::ausV2Rolle (r, klasse, position))
-        return false;
-
+bool EqCopilotProcessor::setzeBindungGeaendert (const std::optional<juce::String>& rolle,
+                                                const std::optional<juce::String>& label,
+                                                const std::optional<juce::String>& paarId)
+{
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    bindungsaufrufe.fetch_add (1);   // jeder Eintritt, genau einer je Aufruf der API
+#endif
     std::vector<nakama::state::MainProjectMitglied> mainMitglieder;
     std::uint64_t generation = 0;
     std::uint64_t folge = 0;   // NAK-283 Etappe 2 (F01): Signaturfolge zu :347
@@ -329,11 +345,32 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen)
             return false;
+        // NAK-313 Etappe 2 (R-313-3): was der Aufrufer nicht gibt, kommt aus
+        // dem aktuellen Zustand - unter derselben Sperre wie Grenzpruefung und
+        // Vergleich, nie aus einer Kopie des Aufrufers.
+        nakama::state::Klasse klasse;
+        nakama::state::Messposition position;
+        if (! nakama::state::ausV2Rolle (rolle.value_or (nakama::state::v2Rolle (zustand.common)),
+                                         klasse, position))
+            return false;
+        // Die Grenzen des eigenen Writers (State-Vertrag §2: Label hoechstens 120,
+        // Paarname hoechstens 60 Zeichen, gezaehlt in Codepunkten) gelten jedem
+        // Wert, den ein Aufrufer AENDERT. Ein unveraendert geladener laengerer
+        // Wert aus Fremdbytes bleibt stehen - sonst scheiterte eine reine
+        // Rollenwahl an ihm. Der Writer-Headroom des State-Lesers traegt
+        // beides: sein Kandidat nimmt den laengeren von geladenem Text und
+        // Grenztext (`hatWriterHeadroom`, NakamaState.cpp).
+        if (label.has_value() && *label != zustand.common.label && label->length() > 120)
+            return false;
+        if (paarId.has_value() && *paarId != zustand.common.pairId && paarId->length() > 60)
+            return false;
         auto neu = zustand.common;
         neu.klasse = klasse;
         neu.position = position;
-        neu.label = lbl;
-        neu.pairId = p;
+        if (label.has_value())
+            neu.label = *label;
+        if (paarId.has_value())
+            neu.pairId = *paarId;
         // Die Projektbindung entsteht nur an diesem sichtbaren User-Akt.
         // Frischzustand und Migration bleiben leer; der State selbst wird
         // danach zur autoritativen, persistierten Quelle fuer alle Clients.
@@ -363,10 +400,11 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
 
         // §53.5, dritter Punkt: "leerer, nie gespeicherter Altstate → Main
         // erst nach geoeffnetem Editor UND expliziter Initialisierung". Genau
-        // hier ist dieser Akt - der einzige Aufrufer von `setzeBindung` ist
-        // die Rollenwahl im Editor (PluginEditor.cpp), und der Automat
-        // verlangt zusaetzlich selbst einen offenen Editor. Ein Scannerlauf
-        // kann ihn nicht ausloesen: er bedient nichts und oeffnet nichts.
+        // hier ist dieser Akt - der einzige Aufrufer der Bindungs-API im
+        // Produkt ist das Messpunkt-Panel im Editor (PluginEditor.cpp), und der
+        // Automat verlangt zusaetzlich selbst einen offenen Editor. Ein
+        // Scannerlauf kann ihn nicht ausloesen: er bedient nichts und oeffnet
+        // nichts.
         //
         // Der Weg gilt in BEIDE Richtungen: stellt der User `hub` zurueck auf
         // `sensor`, faellt die Klassifikation auf `legacy`. Sonst behauptete
@@ -389,6 +427,9 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
     // `werteSourcesPublikationAus` (`Ipc.cpp`, M-72).
     werteSourcesPublikationAus (sourcesModel.setzePersistenteMitglieder (
         mainMitglieder, generation, folge, publikationsKlasse));
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    bindungsReconnects.fetch_add (1);   // NAK-313 R-313-3: die Reconnect-Anforderung der Bindungs-API
+#endif
     pipe.reconnect();
     controlV3.reconnect();
     return true;

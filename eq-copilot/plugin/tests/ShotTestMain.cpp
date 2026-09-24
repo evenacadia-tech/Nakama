@@ -28,7 +28,11 @@
 // danach die Annahmegrenze am echten Pfad - abonnierte Sitzung, echte
 // Snapshots, 312/M-122 bis M-124, M-127, M-129 -, mit den Bildern
 // sonde012-20-sources-angenommen.png, sonde012-21-sources-liste-voll.png und
-// nak312-liste-voll-hinter-diagnose.png im selben Ordner.
+// nak312-liste-voll-hinter-diagnose.png im selben Ordner. Seit NAK-313
+// Etappe 2 (R-313-3) faehrt dasselbe Bein am Messpunkt-Panel die Faelle
+// 313/M-01 bis 313/M-16: das Panel schreibt nur zurueck, was der User
+// geaendert hat, auch mit geladenem Label ueber 120 und Paarnamen ueber 60
+// Zeichen.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -314,6 +318,35 @@ void panelPruefe (bool ok, const std::string& was, const std::string& detail)
     std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
 }
 
+// NAK-313 Etappe 2 (R-313-3, R-313-12): die Zaehler der Bindungs-API entstehen
+// erst mit dem Bau der Etappe. Die Gegenprobe am Basisstand (Manifest §8.1)
+// uebersetzt dieses Bein mit NAK313_GEGENPROBE_BASISSTAND gegen den
+// unveraenderten Produktcode und faehrt nur die heute messbaren Haelften; die
+// Zaehlerhaelften meldet sie als nicht gewertet. Kein Bau des Kanons setzt den
+// Schalter.
+#if defined (NAK313_GEGENPROBE_BASISSTAND)
+constexpr bool kBindungszaehler = false;
+std::uint64_t bindungsaufrufe()    { return 0; }
+std::uint64_t bindungsReconnects() { return 0; }
+#else
+constexpr bool kBindungszaehler = true;
+std::uint64_t bindungsaufrufe()    { return eqcop::testzugang::bindungsaufrufeFuerTest(); }
+std::uint64_t bindungsReconnects() { return eqcop::testzugang::bindungsReconnectsFuerTest(); }
+#endif
+
+/** Eine Haelfte, die einen Zaehler der Bindungs-API liest ("heute nicht
+    messbar"): am Basisstand nicht gewertet. */
+void zaehlerPruefe (bool ok, const std::string& was, const std::string& detail)
+{
+    if (! kBindungszaehler)
+    {
+        std::printf ("  --      %s  [Basisstand: der Zaehler entsteht erst im Bau, nicht gewertet]\n",
+                     was.c_str());
+        return;
+    }
+    panelPruefe (ok, was, detail);
+}
+
 /** Die Nachrichtenschleife, wie ein Host sie pumpt (Muster B30): JUCE stellt
     Nachrichten, Timer und die Aufraeumrunde des ModalComponentManagers ueber
     ein verstecktes Fenster zu. Endet, sobald `bis` erfuellt ist; die Frist ist
@@ -356,21 +389,81 @@ Typ* erstesKind (juce::Component& eltern)
     return nullptr;
 }
 
+template <typename Typ>
+std::vector<Typ*> alleKinder (juce::Component& eltern)
+{
+    std::vector<Typ*> treffer;
+    for (auto* kind : eltern.getChildren())
+        if (auto* t = dynamic_cast<Typ*> (kind))
+            treffer.push_back (t);
+    return treffer;
+}
+
 enum class PanelFolge { editorVorPanel, panelVorEditor };
+
+/** NAK-313 Etappe 2: die Handgriffe am offenen Panel, in der Reihenfolge des
+    Auftrags. Den Fokusverlust und den Rollenrueckruf ohne Wechsel ruft das
+    Bein als Listener des Panels direkt - JUCE stellt den Fokusverlust nur ueber
+    eine Nachricht zu, und eine gleiche Auswahl meldet die ComboBox nicht. Die
+    Rollenwahl laeuft synchron (sendNotificationSync). */
+enum class PanelHandlung
+{
+    labelSetzen,                // setText: der fertig getippte Name
+    fokusVerlustLabel,          // textEditorFocusLost am Labelfeld
+    fokusVerlustPaar,           // textEditorFocusLost am Paarfeld
+    rollenRueckrufOhneWechsel,  // comboBoxChanged bei unveraenderter Auswahl
+    rolleWaehlen,               // setSelectedId (rollenId, sendNotificationSync)
+    labelEinfuegen,             // insertTextAtCaret (Tippen, Einfuegen), je Wiederholung
+    paarEinfuegen,              // dasselbe am Paarfeld
+    labelLeeren,                // clear()
+    labelZeichenLoeschen,       // deleteBackwards (false); der Caret steht nach setText am Ende
+    paarZeichenLoeschen         // dasselbe am Paarfeld
+};
+
+struct Handlung
+{
+    PanelHandlung art;
+    juce::String text {};
+    int wiederholungen = 1;
+    int rollenId = 0;
+};
+
+struct PanelAuftrag
+{
+    PanelFolge folge = PanelFolge::panelVorEditor;
+    const juce::MemoryBlock* stand = nullptr;   // vor dem Editor ueber setStateInformation geladen
+    std::vector<Handlung> handlungen;
+    const juce::File* bildZiel = nullptr;
+};
 
 struct PanelLauf
 {
     bool geoeffnet = false, panelWeg = false;
     int  marke = 0, dirty = 0;
     juce::String labelVorher, labelNachPanel, labelBeimEnde;
+    // NAK-313 Etappe 2: Aufrufe, Reconnect-Anforderungen und Host-Dirty zaehlen
+    // ab dem Stand nach dem Laden (die Zaehler der Bindungs-API sind prozessweit).
+    bool standGeladen = false;                // geladen, nicht read-only
+    int  dirtyBeimLaden = 0;
+    std::uint64_t aufrufe = 0, reconnects = 0;
+    // nach der Handlungsfolge, vor dem Schliessen
+    std::uint64_t aufrufeNachHandlung = 0;
+    int  dirtyNachHandlung = 0;
+    juce::String labelNachHandlung, paarNachHandlung, labelFeldText, paarFeldText;
+    int  kinder = -1, kinderLabel = 0, kinderAuswahl = 0, kinderFeld = 0;
+    // beim Ende, vor dem Abbau des Prozessors
+    juce::String status, rolleBeimEnde, paarBeimEnde, bindungBeimEnde;
+    bool mainBeimEnde = false;
+    juce::MemoryBlock bytesBeimEnde;
 };
 
 constexpr const char* kNeuesLabel = "NAK-312 Etappe 4";
 
 /** Ein Legacy-Gen mit offenem Editor, das Messpunkt-Popover ueber den
-    normalen Handgriff geoeffnet (derselbe onClick wie ein Klick), im Panel
-    wahlweise eine echte Aenderung gesetzt. */
-PanelLauf panelLauf (PanelFolge folge, bool aendern, const juce::File* bildZiel)
+    normalen Handgriff geoeffnet (derselbe onClick wie ein Klick). Seit NAK-313
+    Etappe 2 wahlweise mit einem vorher geladenen Stand und einer
+    Handlungsfolge am offenen Panel. */
+PanelLauf panelLauf (const PanelAuftrag& auftrag)
 {
     PanelLauf l;
     struct Vogel { bool lebt = true; int marke = 0; };
@@ -388,6 +481,18 @@ PanelLauf panelLauf (PanelFolge folge, bool aendern, const juce::File* bildZiel)
     auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
     PanelDirty dirty;
     proz->addListener (&dirty);
+    if (auftrag.stand != nullptr)
+    {
+        // E-313-15: der Ladeweg - er ruft die Bindungs-API nicht und meldet
+        // kein Dirty (State-Vertrag §6).
+        proz->setStateInformation (auftrag.stand->getData(), (int) auftrag.stand->getSize());
+        l.standGeladen = ! proz->stateNurLesen()
+                      && proz->holeStateHerkunft() == nakama::state::Herkunft::schema2Geladen;
+        l.dirtyBeimLaden = dirty.nichtParameter;
+    }
+    const int dirtyNullpunkt = dirty.nichtParameter;
+    const auto aufrufeNullpunkt = bindungsaufrufe();
+    const auto reconnectsNullpunkt = bindungsReconnects();
     l.labelVorher = proz->holeLabel();
     auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
     editor->setSize (1200, 832);
@@ -401,29 +506,73 @@ PanelLauf panelLauf (PanelFolge folge, bool aendern, const juce::File* bildZiel)
         knopf->onClick();
     auto* box = erstesKind<juce::CallOutBox> (*editor);
     juce::Component* panel = box != nullptr ? box->getChildComponent (0) : nullptr;
-    auto* feld = panel != nullptr ? erstesKind<juce::TextEditor> (*panel) : nullptr;
-    l.geoeffnet = knopf != nullptr && box != nullptr && panel != nullptr && feld != nullptr;
+    const auto felder = panel != nullptr ? alleKinder<juce::TextEditor> (*panel)
+                                         : std::vector<juce::TextEditor*> {};
+    auto* labelFeld = felder.size() > 0 ? felder[0] : nullptr;
+    auto* paarFeld = felder.size() > 1 ? felder[1] : nullptr;
+    auto* wahl = panel != nullptr ? erstesKind<juce::ComboBox> (*panel) : nullptr;
+    auto* feldHoerer = dynamic_cast<juce::TextEditor::Listener*> (panel);
+    auto* wahlHoerer = dynamic_cast<juce::ComboBox::Listener*> (panel);
+    l.geoeffnet = knopf != nullptr && box != nullptr && panel != nullptr && labelFeld != nullptr
+               && paarFeld != nullptr && wahl != nullptr && feldHoerer != nullptr && wahlHoerer != nullptr;
     const juce::Component::SafePointer<juce::Component> panelSicher (panel);
 
-    if (l.geoeffnet && aendern)
-        feld->setText (kNeuesLabel, juce::dontSendNotification);
-    if (l.geoeffnet && bildZiel != nullptr)
+    if (l.geoeffnet)
+        for (const auto& h : auftrag.handlungen)
+            for (int i = 0; i < h.wiederholungen; ++i)
+            {
+                switch (h.art)
+                {
+                    case PanelHandlung::labelSetzen:               labelFeld->setText (h.text, juce::dontSendNotification); break;
+                    case PanelHandlung::fokusVerlustLabel:         feldHoerer->textEditorFocusLost (*labelFeld); break;
+                    case PanelHandlung::fokusVerlustPaar:          feldHoerer->textEditorFocusLost (*paarFeld); break;
+                    case PanelHandlung::rollenRueckrufOhneWechsel: wahlHoerer->comboBoxChanged (wahl); break;
+                    case PanelHandlung::rolleWaehlen:              wahl->setSelectedId (h.rollenId, juce::sendNotificationSync); break;
+                    case PanelHandlung::labelEinfuegen:            labelFeld->insertTextAtCaret (h.text); break;
+                    case PanelHandlung::paarEinfuegen:             paarFeld->insertTextAtCaret (h.text); break;
+                    case PanelHandlung::labelLeeren:               labelFeld->clear(); break;
+                    case PanelHandlung::labelZeichenLoeschen:      labelFeld->deleteBackwards (false); break;
+                    case PanelHandlung::paarZeichenLoeschen:       paarFeld->deleteBackwards (false); break;
+                }
+            }
+    l.aufrufeNachHandlung = bindungsaufrufe() - aufrufeNullpunkt;
+    l.dirtyNachHandlung = dirty.nichtParameter - dirtyNullpunkt;
+    l.labelNachHandlung = proz->holeLabel();
+    l.paarNachHandlung = proz->holePaarId();
+    if (l.geoeffnet)
+    {
+        l.labelFeldText = labelFeld->getText();
+        l.paarFeldText = paarFeld->getText();
+    }
+    if (panel != nullptr)
+    {
+        // 313/M-16: die Kinder des Panels, gezaehlt am offenen Panel.
+        l.kinder = panel->getNumChildComponents();
+        for (auto* kind : panel->getChildren())
+        {
+            if (dynamic_cast<juce::Label*> (kind) != nullptr)      ++l.kinderLabel;
+            if (dynamic_cast<juce::ComboBox*> (kind) != nullptr)   ++l.kinderAuswahl;
+            if (dynamic_cast<juce::TextEditor*> (kind) != nullptr) ++l.kinderFeld;
+        }
+    }
+    if (l.geoeffnet && auftrag.bildZiel != nullptr)
     {
         const auto bild = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
-        bildZiel->deleteFile();
-        juce::FileOutputStream strom (*bildZiel);
+        auftrag.bildZiel->deleteFile();
+        juce::FileOutputStream strom (*auftrag.bildZiel);
         juce::PNGImageFormat png;
         if (strom.openedOk())
             png.writeImageToStream (bild, strom);
     }
 
-    if (folge == PanelFolge::editorVorPanel)
+    if (auftrag.folge == PanelFolge::editorVorPanel)
     {
         // 312/M-35: Editor zerstoeren, danach Prozessor zerstoeren, DANN der
         // Nachrichtenschleife einen Durchlauf geben.
         editor.reset();
         vogel->lebt = false;             // Ende des Eigentuemers
         l.labelBeimEnde = proz->holeLabel();
+        l.paarBeimEnde = proz->holePaarId();
         proz->removeListener (&dirty);
         proz.reset();
         l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
@@ -435,16 +584,98 @@ PanelLauf panelLauf (PanelFolge folge, bool aendern, const juce::File* bildZiel)
             box->dismiss();
         l.panelWeg = pumpe (5000, [&] { return panelSicher == nullptr; });
         l.labelNachPanel = proz->holeLabel();
+        // 313/M-12: die Statuszeile vor dem Ende des Editors, nie ueber das
+        // Zeichnen (das haengt an der Wanduhr).
+        if (auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get()))
+            l.status = ed->statusMeldungFuerTest();
         editor.reset();
         vogel->lebt = false;
         l.labelBeimEnde = proz->holeLabel();
+        l.paarBeimEnde = proz->holePaarId();
+        l.rolleBeimEnde = proz->holeRolle();
+        const auto z = proz->holeZustandKopie();
+        l.mainBeimEnde = z.common.klasse == nakama::state::Klasse::main;
+        l.bindungBeimEnde = z.common.projectBindingId;
+        proz->getStateInformation (l.bytesBeimEnde);
         proz->removeListener (&dirty);
         proz.reset();
     }
     l.marke = vogel->marke;
-    l.dirty = dirty.nichtParameter;
+    l.dirty = dirty.nichtParameter - dirtyNullpunkt;
+    l.aufrufe = bindungsaufrufe() - aufrufeNullpunkt;
+    l.reconnects = bindungsReconnects() - reconnectsNullpunkt;
     eqcop::testzugang::messpunktMarkeFuerTest() = {};
     return l;
+}
+
+/** Die Faelle 312/M-35 bis 312/M-37: ohne geladenen Stand, im Panel wahlweise
+    eine echte Aenderung. */
+PanelLauf panelLauf (PanelFolge folge, bool aendern, const juce::File* bildZiel)
+{
+    PanelAuftrag a;
+    a.folge = folge;
+    if (aendern)
+        a.handlungen.push_back ({ PanelHandlung::labelSetzen, kNeuesLabel });
+    a.bildZiel = bildZiel;
+    return panelLauf (a);
+}
+
+/** NAK-313 Etappe 2 (E-313-15): ein Stand ueber den Writer - Klasse legacy,
+    Messposition, Label und Paarname wie angegeben. Der Writer prueft keine
+    Laengen; so entsteht der geladene Fremdstand mit langen Texten. */
+juce::MemoryBlock standUeberWriter (nakama::state::Messposition position,
+                                    const juce::String& label, const juce::String& paar)
+{
+    auto z = nakama::state::frisch ("0123456789abcdef0123456789abcdef");
+    z.common.position = position;
+    z.common.label = label;
+    z.common.pairId = paar;
+    juce::MemoryBlock bytes;
+    nakama::state::speichere (z, bytes);
+    return bytes;
+}
+
+juce::String wiederholt (const juce::String& stueck, int anzahl)
+{
+    juce::String s;
+    for (int i = 0; i < anzahl; ++i)
+        s += stueck;
+    return s;
+}
+
+bool istHex32 (const juce::String& s)
+{
+    return s.length() == 32 && s.containsOnly ("0123456789abcdef");
+}
+
+std::string laenge (const juce::String& s)
+{
+    return std::to_string (s.length()) + " Codepunkte/" + std::to_string (s.getNumBytesAsUTF8()) + " Bytes";
+}
+
+std::string zaehlerText (std::uint64_t wert)
+{
+    return kBindungszaehler ? std::to_string (wert) : std::string ("nicht messbar");
+}
+
+std::string panel313Text (const PanelLauf& l)
+{
+    return "geoeffnet " + std::string (l.geoeffnet ? "ja" : "NEIN") + ", Panel abgebaut "
+         + (l.panelWeg ? "ja" : "NEIN") + ", Stand geladen " + (l.standGeladen ? "ja" : "nein")
+         + " (Host-Dirty beim Laden " + std::to_string (l.dirtyBeimLaden) + "), Aufrufe "
+         + zaehlerText (l.aufrufe) + ", Reconnect-Anforderungen " + zaehlerText (l.reconnects)
+         + ", Host-Dirty " + std::to_string (l.dirty) + ", Marke " + std::to_string (l.marke)
+         + ", Rolle '" + l.rolleBeimEnde.toStdString() + "', Label " + laenge (l.labelBeimEnde)
+         + " (endet '" + l.labelBeimEnde.getLastCharacters (2).toStdString() + "'), Paarname "
+         + laenge (l.paarBeimEnde) + " (endet '" + l.paarBeimEnde.getLastCharacters (2).toStdString() + "')";
+}
+
+std::string nachHandlungText (const PanelLauf& l)
+{
+    return "nach der Handlung: Aufrufe " + zaehlerText (l.aufrufeNachHandlung) + ", Host-Dirty "
+         + std::to_string (l.dirtyNachHandlung) + ", Label " + laenge (l.labelNachHandlung) + ", Paarname "
+         + laenge (l.paarNachHandlung) + ", Labelfeld " + laenge (l.labelFeldText) + ", Paarfeld "
+         + laenge (l.paarFeldText);
 }
 
 std::string panelText (const PanelLauf& l)
@@ -476,6 +707,11 @@ bool nak312Messpunktpanel (const juce::File& ordner)
                  "schliesst, solange der Editor lebt - die Bindung wird uebernommen, und genau EINE Host-Dirty-"
                  "Meldung entsteht",
                  panelText (m36) + ", Bild " + bild.getFileName().toStdString());
+    // NAK-313 Etappe 2: derselbe Lauf, dazu der Aufrufzaehler.
+    zaehlerPruefe (m36.aufrufe == 1,
+                   "313/M-07 normaler_handgriff_ein_aufruf [NAK-312] M-36 (R-313-3): der Handgriff aus 312/M-36 "
+                   "ruft die Bindungs-API genau einmal",
+                   "Aufrufe " + zaehlerText (m36.aufrufe) + ", " + panelText (m36));
 
     const auto m37 = panelLauf (PanelFolge::panelVorEditor, false, nullptr);
     panelPruefe (m37.geoeffnet && m37.panelWeg && m37.marke == 0 && m37.dirty == 0
@@ -483,9 +719,290 @@ bool nak312Messpunktpanel (const juce::File& ordner)
                  "312/M-37 ohne_aenderung_keine_mutation (Teilfall von 312/M-35, CLAUDE.md State verlustfrei): "
                  "dasselbe ohne Aenderung im Panel - keine Mutation und keine Dirty-Meldung",
                  panelText (m37));
+    // NAK-313 Etappe 2: derselbe Lauf, dazu der Aufrufzaehler (313/M-09 (a)).
+    zaehlerPruefe (m37.aufrufe == 0,
+                   "313/M-09 (a) ohne_aenderung_kein_aufruf [NAK-312] M-37 (R-313-3 Satz 4): frischer Gen, das Panel "
+                   "ohne Aenderung geschlossen - kein Aufruf der Bindungs-API",
+                   "Aufrufe " + zaehlerText (m37.aufrufe) + ", " + panelText (m37));
 
-    std::printf ("NAK-312 PANEL %d geprueft, %d Fehler\n", panelGeprueft, panelFehler);
-    return panelFehler == 0 && panelGeprueft == 3;
+    std::printf ("== NAK-313 Etappe 2 - das Panel schreibt nur Geaendertes (313/M-01 bis 313/M-16, R-313-3) ==\n");
+    using Position = nakama::state::Messposition;
+    // Die langen Texte: ASCII, das letzte Zeichen verschieden - eine Kuerzung
+    // um ein Zeichen steht in jeder Ausgabe.
+    const auto label121 = wiederholt ("a", 120) + "Z";
+    const auto paar61 = wiederholt ("p", 60) + "Q";
+    const auto label125 = wiederholt ("n", 120) + "vwxyz";
+    const auto hoechstes = juce::String::charToString (static_cast<juce::juce_wchar> (0x10ffff));
+    const auto hoechstes120 = wiederholt (hoechstes, 120);
+    // Der Stand x (313/M-01): legacy/pre, Label 121, Paarname 61 Zeichen.
+    const auto x = standUeberWriter (Position::pre, label121, paar61);
+
+    {   // 313/M-01: unveraendert schliessen.
+        PanelAuftrag a;
+        a.stand = &x;
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.dirty == 0 && m.labelBeimEnde == label121
+                         && m.paarBeimEnde == paar61 && m.bytesBeimEnde == x,
+                     "313/M-01 unveraendert_schliessen_ruft_nichts (R-313-3 Satz 1): geladen legacy/pre mit Label 121 "
+                     "und Paarname 61 Zeichen, das Popover ohne Eingabe schliessen - 0 Host-Dirty, Label und Paarname "
+                     "unveraendert, getStateInformation bytegleich zum geladenen Stand",
+                     panel313Text (m) + ", Save bytegleich " + (m.bytesBeimEnde == x ? "ja" : "NEIN"));
+        zaehlerPruefe (m.aufrufe == 0 && m.reconnects == 0,
+                       "313/M-01 unveraendert_schliessen_ruft_nichts (Zaehler): 0 Aufrufe der Bindungs-API, "
+                       "0 Reconnect-Anforderungen",
+                       panel313Text (m));
+    }
+    {   // 313/M-02: Fokusverlust ohne Eingabe.
+        PanelAuftrag a;
+        a.stand = &x;
+        a.handlungen = { { PanelHandlung::fokusVerlustLabel }, { PanelHandlung::fokusVerlustPaar } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.dirty == 0 && m.labelBeimEnde == label121
+                         && m.paarBeimEnde == paar61,
+                     "313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Teilfall von 313/M-01): Fokusverlust am Labelfeld, "
+                     "dann am Paarfeld, dann schliessen - 0 Host-Dirty, beide Texte unveraendert",
+                     panel313Text (m));
+        zaehlerPruefe (m.aufrufe == 0 && m.reconnects == 0,
+                       "313/M-02 fokusverlust_ohne_eingabe_ruft_nichts (Zaehler): ueber beide Fokusverluste und das "
+                       "Schliessen 0 Aufrufe, 0 Reconnect-Anforderungen",
+                       panel313Text (m));
+    }
+    {   // 313/M-03: Rollenrueckruf ohne Wechsel.
+        PanelAuftrag a;
+        a.stand = &x;
+        a.handlungen = { { PanelHandlung::rollenRueckrufOhneWechsel } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.standGeladen && m.dirtyNachHandlung == 0 && m.labelNachHandlung == label121
+                         && m.paarNachHandlung == paar61,
+                     "313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Teilfall von 313/M-01): comboBoxChanged bei "
+                     "unveraenderter Auswahl - 0 Host-Dirty, beide Texte unveraendert",
+                     nachHandlungText (m));
+        zaehlerPruefe (m.aufrufeNachHandlung == 0,
+                       "313/M-03 rollenrueckruf_ohne_wechsel_ruft_nichts (Zaehler): 0 Aufrufe",
+                       nachHandlungText (m));
+    }
+    juce::MemoryBlock nachM04;
+    {   // 313/M-04: Rollenwahl mit unveraendert langem Label; 313/M-15 speichern und laden.
+        PanelAuftrag a;
+        a.stand = &x;
+        a.handlungen = { { PanelHandlung::rolleWaehlen, {}, 1, 4 } };
+        const auto m = panelLauf (a);
+        nachM04 = m.bytesBeimEnde;
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.rolleBeimEnde == "post" && m.dirty == 1,
+                     "313/M-04 rollenwahl_mit_langem_label_gelingt (R-313-3 Satz 3): geladen wie 313/M-01, Rollenwahl "
+                     "NACH dem EQ (id 4), schliessen - Rolle post, genau 1 Host-Dirty; die Rollenwahl gelingt, obwohl "
+                     "das Label ueber 120 Zeichen liegt",
+                     panel313Text (m));
+        panelPruefe (m.labelBeimEnde == label121 && m.paarBeimEnde == paar61,
+                     "313/M-04 rollenwahl_mit_langem_label_gelingt (Texte): Label (121) und Paarname (61) bytegleich",
+                     panel313Text (m));
+        zaehlerPruefe (m.aufrufe == 1,
+                       "313/M-04 rollenwahl_mit_langem_label_gelingt (Zaehler): genau 1 Aufruf",
+                       panel313Text (m));
+
+        auto zweiter = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+        zweiter->setStateInformation (nachM04.getData(), (int) nachM04.getSize());
+        juce::MemoryBlock zweiterSave;
+        zweiter->getStateInformation (zweiterSave);
+        const bool geladen = ! zweiter->stateNurLesen()
+                          && zweiter->holeStateHerkunft() == nakama::state::Herkunft::schema2Geladen;
+        const auto text = "zweiter Gen: geladen " + std::string (geladen ? "ja" : "NEIN") + ", Grund '"
+                        + zweiter->holeStateGrund().toStdString() + "', Rolle '" + zweiter->holeRolle().toStdString()
+                        + "', Label " + laenge (zweiter->holeLabel()) + ", Paarname " + laenge (zweiter->holePaarId())
+                        + ", Save " + std::to_string (zweiterSave.getSize()) + " Bytes, bytegleich zum ersten "
+                        + (nachM04.getSize() > 0 && zweiterSave == nachM04 ? "ja" : "NEIN");
+        panelPruefe (zweiter->holeLabel() == label121 && zweiter->holePaarId() == paar61,
+                     "313/M-15 speichern_laden_mit_langem_label (Teilfall von 313/M-04): die Bytes nach 313/M-04 in "
+                     "einen zweiten Gen geladen - Label und Paarname die 121/61 Zeichen aus dem geladenen Stand",
+                     text);
+        panelPruefe (geladen && zweiter->holeRolle() == "post" && nachM04.getSize() > 0 && zweiterSave == nachM04,
+                     "313/M-15 speichern_laden_mit_langem_label (Laden): der zweite Gen laedt geladen, nicht "
+                     "read-only, Rolle post; sein Save ist bytegleich zum Save des ersten nach 313/M-04",
+                     text);
+    }
+    {   // 313/M-05: Rollenwechsel zu einer Rolle ohne Paarfeld.
+        PanelAuftrag a;
+        a.stand = &x;
+        a.handlungen = { { PanelHandlung::rolleWaehlen, {}, 1, 2 } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.dirty == 1 && m.mainBeimEnde
+                         && istHex32 (m.bindungBeimEnde),
+                     "313/M-05 rollenwechsel_ohne_paarfeld (Teilfall von 313/M-04, R-313-3 Satz 2): Rollenwahl "
+                     "Sammelpunkt (id 2), schliessen - genau 1 Host-Dirty, Klasse main, project_binding_id hex32",
+                     panel313Text (m) + ", main " + (m.mainBeimEnde ? "ja" : "NEIN") + ", Bindung '"
+                         + m.bindungBeimEnde.toStdString() + "'");
+        panelPruefe (m.paarBeimEnde == paar61 && m.labelBeimEnde == label121,
+                     "313/M-05 rollenwechsel_ohne_paarfeld (Texte): der Paarname bleibt die 61, das Label die 121 "
+                     "Zeichen - unveraenderte Felder kommen aus dem Prozessorzustand",
+                     panel313Text (m));
+        zaehlerPruefe (m.aufrufe == 1,
+                       "313/M-05 rollenwechsel_ohne_paarfeld (Zaehler): genau 1 Aufruf",
+                       panel313Text (m));
+    }
+    {   // 313/M-06: Paarname einer Rolle ohne Paar.
+        const auto stand = standUeberWriter (Position::insert, "Bass", "P");
+        PanelAuftrag a;
+        a.stand = &stand;
+        a.handlungen = { { PanelHandlung::labelSetzen, "Bass 2" } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.dirty == 1 && m.labelBeimEnde == "Bass 2",
+                     "313/M-06 paarname_bleibt_ohne_handgriff (R-313-3 Satz 2): geladen legacy/insert mit pair_id 'P' "
+                     "und Label 'Bass', das Label auf 'Bass 2' aendern, schliessen - genau 1 Host-Dirty, Label 'Bass 2'",
+                     panel313Text (m));
+        panelPruefe (m.paarBeimEnde == "P",
+                     "313/M-06 paarname_bleibt_ohne_handgriff (Paarname): 'P' bleibt",
+                     panel313Text (m) + ", Paarname '" + m.paarBeimEnde.toStdString() + "'");
+        zaehlerPruefe (m.aufrufe == 1,
+                       "313/M-06 paarname_bleibt_ohne_handgriff (Zaehler): genau 1 Aufruf",
+                       panel313Text (m));
+    }
+    {   // 313/M-08: ein Handgriff, ein Aufruf.
+        PanelAuftrag a;
+        a.handlungen = { { PanelHandlung::labelSetzen, "NAK-313 M-08" }, { PanelHandlung::fokusVerlustLabel } };
+        const auto m = panelLauf (a);
+        zaehlerPruefe (m.aufrufe == 1,
+                       "313/M-08 fokus_dann_schliessen_ein_aufruf (R-313-3): frischer Gen, Label aendern, Fokusverlust "
+                       "(Uebernahme), schliessen - ueber beide zusammen genau 1 Aufruf",
+                       panel313Text (m));
+        panelPruefe (m.geoeffnet && m.panelWeg && m.dirty == 1 && m.labelBeimEnde == "NAK-313 M-08",
+                     "313/M-08 fokus_dann_schliessen_ein_aufruf (Host-Dirty): genau 1 Host-Dirty, das Label ist "
+                     "uebernommen",
+                     panel313Text (m));
+    }
+    {   // 313/M-09 (b): [NAK-312] M-37 mit langem Label.
+        PanelAuftrag a;
+        a.stand = &x;
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.marke == 0 && m.dirty == 0
+                         && m.labelBeimEnde == label121 && m.paarBeimEnde == paar61,
+                     "313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label [NAK-312] M-37 (R-313-3 Satz 4): "
+                     "der Stand aus 313/M-01, ohne Aenderung geschlossen - keine Mutation (121/61), keine Dirty-Meldung",
+                     panel313Text (m));
+        zaehlerPruefe (m.aufrufe == 0,
+                       "313/M-09 (b) ohne_aenderung_keine_mutation_mit_langem_label (Zaehler): kein Aufruf",
+                       panel313Text (m));
+    }
+    {   // 313/M-11: Eingabegrenzen, Codepunkte gegen Bytes, bei eingerichteter Paarrolle pre.
+        const auto stand = standUeberWriter (Position::pre, {}, {});
+        PanelAuftrag a;
+        a.stand = &stand;
+        a.handlungen = { { PanelHandlung::labelEinfuegen, hoechstes, 121 },
+                         { PanelHandlung::paarEinfuegen, hoechstes, 61 } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.standGeladen && m.labelFeldText.length() == 120
+                         && m.labelFeldText.getNumBytesAsUTF8() == 480 && m.paarFeldText.length() == 60
+                         && m.paarFeldText.getNumBytesAsUTF8() == 240,
+                     "313/M-11 eingabegrenzen_120_60_in_codepunkten (R-313-3 Satz 3, E-313-15): geladen legacy/pre ohne "
+                     "Label und Paar, 121-mal U+10FFFF ins Labelfeld und 61-mal ins Paarfeld (insertTextAtCaret, der "
+                     "Weg des Tippens) - das Labelfeld haelt 120 Codepunkte (480 UTF-8-Bytes), das Paarfeld 60 (240)",
+                     nachHandlungText (m));
+        panelPruefe (m.panelWeg && m.dirty == 1 && m.rolleBeimEnde == "pre" && m.labelBeimEnde.length() == 120
+                         && m.labelBeimEnde.getNumBytesAsUTF8() == 480 && m.paarBeimEnde.length() == 60
+                         && m.paarBeimEnde.getNumBytesAsUTF8() == 240,
+                     "313/M-11 eingabegrenzen_120_60_in_codepunkten (Stand): nach dem Schliessen Rolle pre, Label 120 "
+                     "und Paarname 60 Codepunkte, genau 1 Host-Dirty",
+                     panel313Text (m));
+        zaehlerPruefe (m.aufrufe == 1,
+                       "313/M-11 eingabegrenzen_120_60_in_codepunkten (Zaehler): genau 1 Aufruf",
+                       panel313Text (m));
+    }
+    {   // 313/M-12: geaendert, aber weiter ueber der Grenze; 313/M-16 am offenen Panel.
+        const auto stand = standUeberWriter (Position::pre, label125, {});
+        PanelAuftrag a;
+        a.stand = &stand;
+        a.handlungen = { { PanelHandlung::labelZeichenLoeschen } };
+        const auto m = panelLauf (a);
+        const juce::String erwartet ("Name is longer than 120 characters and was not saved.");
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.labelFeldText.length() == 124 && m.dirty == 0
+                         && m.labelBeimEnde == label125 && m.status == erwartet,
+                     "313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (R-313-3 Satz 3, R-313-15): geladen "
+                     "legacy/pre mit Label 125 Zeichen, ein Zeichen loeschen (124), schliessen - die Bindungs-API "
+                     "lehnt den geaenderten Wert ab: 0 Host-Dirty, das Label bleibt die 125 Zeichen, die vorhandene "
+                     "Statuszeile sagt '" + erwartet.toStdString() + "'",
+                     panel313Text (m) + ", Labelfeld " + laenge (m.labelFeldText) + ", Status '"
+                         + m.status.toStdString() + "'");
+        panelPruefe (m.kinder == 7 && m.kinderLabel == 4 && m.kinderAuswahl == 1 && m.kinderFeld == 2,
+                     "313/M-16 panel_ohne_neues_element (Gate GRENZE, Designteil geparkt): das Panel hat genau 7 "
+                     "Kinder - 4 juce::Label, 1 juce::ComboBox, 2 juce::TextEditor; Eingabegrenze und Statustext "
+                     "sitzen an vorhandenen Elementen",
+                     "Kinder " + std::to_string (m.kinder) + " (Label " + std::to_string (m.kinderLabel)
+                         + ", ComboBox " + std::to_string (m.kinderAuswahl) + ", TextEditor "
+                         + std::to_string (m.kinderFeld) + ")");
+    }
+    {   // 313/M-12 (Paarname und beide): der Wortlaut fuer den Paarnamen aus §8.2.
+        const auto paar65 = wiederholt ("q", 60) + "rstuv";
+        const auto stand = standUeberWriter (Position::pre, label125, paar65);
+        const juce::String name ("Name is longer than 120 characters and was not saved.");
+        const juce::String paarname ("Pair name is longer than 60 characters and was not saved.");
+        PanelAuftrag a;
+        a.stand = &stand;
+        a.handlungen = { { PanelHandlung::paarZeichenLoeschen } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.paarFeldText.length() == 64 && m.dirty == 0
+                         && m.labelBeimEnde == label125 && m.paarBeimEnde == paar65 && m.status == paarname,
+                     "313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (Paarname): geladen legacy/pre mit Label "
+                     "125 und Paarname 65 Zeichen, ein Zeichen des Paarnamens loeschen (64), schliessen - abgelehnt, "
+                     "0 Host-Dirty, beide Texte bleiben, die Statuszeile sagt '" + paarname.toStdString() + "'",
+                     panel313Text (m) + ", Paarfeld " + laenge (m.paarFeldText) + ", Status '"
+                         + m.status.toStdString() + "'");
+        PanelAuftrag b;
+        b.stand = &stand;
+        b.handlungen = { { PanelHandlung::labelZeichenLoeschen }, { PanelHandlung::paarZeichenLoeschen } };
+        const auto n = panelLauf (b);
+        panelPruefe (n.geoeffnet && n.panelWeg && n.standGeladen && n.dirty == 0 && n.labelBeimEnde == label125
+                         && n.paarBeimEnde == paar65 && n.status == name + " " + paarname,
+                     "313/M-12 zu_langes_geaendertes_label_ehrlich_abgewiesen (beide): dasselbe, je ein Zeichen von "
+                     "Label und Paarname loeschen (124/64), schliessen - abgelehnt, 0 Host-Dirty, beide Texte bleiben, "
+                     "die Statuszeile nennt beide Grenzen",
+                     panel313Text (n) + ", Status '" + n.status.toStdString() + "'");
+    }
+    {   // 313/M-13 (a): 120 x U+10FFFF ins leere Labelfeld eines frischen Gen.
+        PanelAuftrag a;
+        a.handlungen = { { PanelHandlung::labelEinfuegen, hoechstes120 } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.dirty == 1 && m.labelBeimEnde == hoechstes120,
+                     "313/M-13 (a) zahlenraender_text: frischer Gen, 120 x U+10FFFF in einem Einfuegen ins leere "
+                     "Labelfeld, schliessen - uebernommen: 120 Codepunkte zaehlen, nicht 480 Bytes; 1 Host-Dirty",
+                     panel313Text (m));
+    }
+    const auto stand120 = standUeberWriter (Position::insert, hoechstes120, {});
+    {   // 313/M-13 (b): der geladene Grenztext, nichts geaendert.
+        PanelAuftrag a;
+        a.stand = &stand120;
+        const auto m = panelLauf (a);
+        zaehlerPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.aufrufe == 0 && m.dirty == 0
+                           && m.labelBeimEnde == hoechstes120,
+                       "313/M-13 (b) zahlenraender_text: geladen legacy/insert mit Label 120 x U+10FFFF (480 Bytes), "
+                       "nichts aendern, schliessen - 0 Aufrufe, 0 Host-Dirty",
+                       panel313Text (m));
+    }
+    {   // 313/M-13 (c): der geladene Grenztext, geleert.
+        PanelAuftrag a;
+        a.stand = &stand120;
+        a.handlungen = { { PanelHandlung::labelLeeren } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.dirty == 1 && m.labelBeimEnde.isEmpty(),
+                     "313/M-13 (c) zahlenraender_text: derselbe Stand, das Label leeren (clear), schliessen - das "
+                     "leere Label ist uebernommen (0 <= 120), 1 Host-Dirty",
+                     panel313Text (m));
+    }
+    {   // 313/M-14: [NAK-312] M-35 mit dem geladenen Stand.
+        PanelAuftrag a;
+        a.stand = &x;
+        a.folge = PanelFolge::editorVorPanel;
+        a.handlungen = { { PanelHandlung::labelSetzen, "NAK-313 M-14" } };
+        const auto m = panelLauf (a);
+        panelPruefe (m.geoeffnet && m.panelWeg && m.standGeladen && m.marke == 0 && m.dirty == 0
+                         && m.labelBeimEnde == label121 && m.paarBeimEnde == paar61,
+                     "313/M-14 panel_abbau_nach_prozessorende_mit_langem_label [NAK-312] M-35 (R-312-2, U57 "
+                     "unberuehrt): der Stand aus 313/M-01, das Label im Panel geaendert - Editor und Prozessor "
+                     "zerstoert, DANN baut die Nachrichtenschleife das Panel ab: Marke 0, die Bindung bis zum "
+                     "Prozessorende unveraendert (121/61), 0 Host-Dirty",
+                     panel313Text (m));
+    }
+
+    std::printf ("MESSPUNKT-PANEL (NAK-312, NAK-313) %d geprueft, %d Fehler\n", panelGeprueft, panelFehler);
+    return panelFehler == 0 && panelGeprueft == 37;
 }
 
 //==============================================================================

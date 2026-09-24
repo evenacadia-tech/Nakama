@@ -724,6 +724,10 @@ void EqCopilotEditor::zeigeMesspunkt()
         juce::ComboBox rolleWahl;
         juce::TextEditor labelFeld, paarFeld;
         float s;
+        // NAK-313 Etappe 2 (R-313-3): was die Felder beim Oeffnen zeigen, nach
+        // einer erfolgreichen Uebernahme das Uebernommene.
+        int gemerkteRollenId = 0;
+        juce::String gemerktesLabel, gemerkterPaarname;
 
         MesspunktPanel (const juce::Component::SafePointer<EqCopilotEditor>& e, float skala,
                         std::function<void()> beiAenderung)
@@ -778,6 +782,15 @@ void EqCopilotEditor::zeigeMesspunkt()
             };
             initFeld (labelFeld, proz.holeLabel());
             initFeld (paarFeld, proz.holePaarId());
+            // NAK-313 R-313-3: keine stille Kuerzung. Tippen und Einfuegen
+            // bleiben in den Grenzen des eigenen Writers (JUCE zaehlt dabei
+            // Codepunkte); setText umgeht den Filter - ein geladener laengerer
+            // Text steht unveraendert da, Loeschen verkuerzt ihn.
+            labelFeld.setInputRestrictions (120);
+            paarFeld.setInputRestrictions (60);
+            gemerkteRollenId = rolleWahl.getSelectedId();
+            gemerktesLabel = labelFeld.getText();
+            gemerkterPaarname = paarFeld.getText();
             paarSichtbarkeit();
             setSize ((int) (400 * s), (int) (238 * s));
         }
@@ -790,9 +803,14 @@ void EqCopilotEditor::zeigeMesspunkt()
             paarFeld.setEnabled (paar);
             paarFeld.setAlpha (paar ? 1.0f : 0.5f);
         }
-        // Übernimmt NUR bei echter Änderung — setzeBindung löst einen
-        // Reconnect aus, und der wäre bei jedem Öffnen/Schließen oder
-        // Fokuswechsel ohne Änderung reines Verbindungs-Geflacker.
+        // Übernimmt NUR, was der User geändert hat (NAK-313 R-313-3):
+        // verglichen wird gegen die Merkwerte - die Werte beim Öffnen, nach
+        // einer erfolgreichen Übernahme die übernommenen. Ohne Abweichung
+        // kein Aufruf, also kein Dirty, kein Reconnect-Geflacker beim
+        // Öffnen/Schließen oder Fokuswechsel und kein veränderter Text.
+        // Unveränderte Felder gibt das Panel nicht mit; der Prozessor nimmt
+        // sie aus seinem aktuellen Zustand. Das deaktivierte Paarfeld einer
+        // Rolle ohne Paar wird nicht gelesen.
         //
         // NAK-312 R-312-2: die Lebendprüfung steht VOR jedem Zugriff. Ist der
         // Editor weg, kehrt der Rückruf zurück - kein Zugriff, keine
@@ -805,16 +823,49 @@ void EqCopilotEditor::zeigeMesspunkt()
             if (ed == nullptr)
                 return;
             const auto id = rolleWahl.getSelectedId();
-            const juce::String rolle = id == 2 ? "hub" : id == 3 ? "pre" : id == 4 ? "post" : "sensor";
             const bool paar = (id == 3 || id == 4);
-            const auto label = labelFeld.getText().substring (0, 120);
-            const auto paarId = paar ? paarFeld.getText().substring (0, 60) : juce::String();
+            std::optional<juce::String> rolle, label, paarName;
+            if (id != gemerkteRollenId)
+                rolle = juce::String (id == 2 ? "hub" : id == 3 ? "pre" : id == 4 ? "post" : "sensor");
+            if (labelFeld.getText() != gemerktesLabel)
+                label = labelFeld.getText();
+            if (paar && paarFeld.getText() != gemerkterPaarname)
+                paarName = paarFeld.getText();
+            if (! rolle.has_value() && ! label.has_value() && ! paarName.has_value())
+                return;   // unverändert: kein Aufruf
 #if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
             if (auto& marke = testzugang::messpunktMarkeFuerTest(); marke && ! marke())
                 return;   // R-312-12: gezählt, kein Zugriff
 #endif
-            if (ed->processor.setzeBindung (rolle, label, paarId) && geaendert)
-                geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
+            // Der Aufruf meldet Host-Dirty, und ein Host darf den Editor darin
+            // abbauen: danach nie mehr `ed`, nur den SafePointer.
+            if (ed->processor.setzeBindungGeaendert (rolle, label, paarName))
+            {
+                gemerkteRollenId = id;
+                if (label.has_value())
+                    gemerktesLabel = *label;
+                if (paarName.has_value())
+                    gemerkterPaarname = *paarName;
+                if (geaendert)
+                    geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
+                return;
+            }
+            // false hat vier Ursachen (read-only, unbekannte Rolle, Grenze,
+            // keine Änderung); die Meldung gilt nur einem geänderten Text über
+            // seiner Grenze. Die Merkwerte bleiben: nichts ist übernommen.
+            juce::StringArray meldung;
+            if (label.has_value() && label->length() > 120)
+                meldung.add ("Name is longer than 120 characters and was not saved.");
+            if (paarName.has_value() && paarName->length() > 60)
+                meldung.add ("Pair name is longer than 60 characters and was not saved.");
+            if (meldung.isEmpty())
+                return;
+            if (auto* lebend = editor.getComponent())
+            {
+                lebend->statusMeldung = meldung.joinIntoString (" ");
+                lebend->statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
+                lebend->uiDirty = true;
+            }
         }
         void comboBoxChanged (juce::ComboBox*) override { paarSichtbarkeit(); uebernehmen(); }
         void textEditorFocusLost (juce::TextEditor&) override { uebernehmen(); }

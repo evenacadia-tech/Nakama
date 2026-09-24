@@ -127,7 +127,10 @@ fn muster_passt(muster: &str, wert: &str) -> Option<bool> {
 /// Groesste ganze Zahl, die binary64 noch exakt traegt: 2^53 - 1.
 pub const SICHERE_GANZZAHL: u64 = 9_007_199_254_740_991;
 
-/// Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308.
+/// Betragsgrenzen der Zahlen des Vertrags, am Literal gemessen: eine Zahl
+/// ungleich 0 liegt betragsmaessig ab 1e-307 und unter 1e308 - der
+/// Dezimalexponent ihrer fuehrenden signifikanten Ziffer liegt zwischen -308
+/// und 308, beide ausgeschlossen (README Regel 3; 1e-308 faellt).
 pub const DEZ_GRENZE: i64 = 308;
 
 /// Signifikante Dezimalziffern, die der Riegel einem NICHTGANZZAHLIGEN Wert

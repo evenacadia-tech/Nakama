@@ -56,7 +56,10 @@ struct Verletzung
 /** Groesste ganze Zahl, die binary64 noch exakt traegt: 2^53 - 1. */
 constexpr juce::int64 sichereGanzzahl = 9007199254740991LL;
 
-/** Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308. */
+/** Betragsgrenzen der Zahlen des Vertrags, am Literal gemessen: eine Zahl
+    ungleich 0 liegt betragsmaessig ab 1e-307 und unter 1e308 - der
+    Dezimalexponent ihrer fuehrenden signifikanten Ziffer liegt zwischen -308
+    und 308, beide ausgeschlossen (README Regel 3; 1e-308 faellt). */
 constexpr int dezGrenze = 308;
 
 /** Prueft den ROHTEXT eines v3-Dokuments, BEVOR ihn ein Parser sieht.
@@ -74,8 +77,9 @@ constexpr int dezGrenze = 308;
       1. keine fuehrende Null (`091`) - JUCE liest 91, RFC 8259 verbietet es;
       2. mathematische Ganzzahlen nur innerhalb +/-(2^53-1), echte Brueche
          mit hoechstens 15 signifikanten Dezimalziffern;
-      3. Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern -
-         beides AUS DEM LITERAL gerechnet, nie ueber getDoubleValue();
+      3. Zahlen ungleich 0 betragsmaessig ab 1e-307 und unter 1e308, und ein
+         `e` braucht Ziffern - beides AUS DEM LITERAL gerechnet, nie ueber
+         getDoubleValue();
       4. genau vier ASCII-Hexziffern in einem u-Escape;
       5. kein NUL-Escape in einer Zeichenkette - juce::String ist
          nullterminiert und bricht dort ab, serde_json und Python nehmen an;
@@ -136,12 +140,12 @@ inline constexpr std::uint64_t v2Ganzzahlgrenze = 9223372036854775807ULL;
     Textriegels, mit `ganzzahlGrenze` statt 2^53-1 in Regel 2: keine
     fuehrende Null, eine mathematische Ganzzahl hoechstens so gross wie die
     Grenze, ein echter Bruch mit hoechstens 15 signifikanten Ziffern, Betrag
-    unter 1e308, ein Exponent mit Ziffern und hoechstens drei davon. Gerechnet
-    wird nur mit Ziffern (`core/ipc/WireZahl.h`); JUCEs Zahlenleser sieht den
-    Text erst danach - er akkumuliert `9223372036854775808` und
-    `2e4294967296` ohne Schranke. Alles andere (Literale, Escapes, Grammatik)
-    prueft der strenge Lauf dahinter; ein `-` vor einem Buchstaben ist hier
-    keine Zahl.
+    ab 1e-307 und unter 1e308, ein Exponent mit Ziffern und hoechstens drei
+    davon. Gerechnet wird nur mit Ziffern (`core/ipc/WireZahl.h`); JUCEs
+    Zahlenleser sieht den Text erst danach - er akkumuliert
+    `9223372036854775808` und `2e4294967296` ohne Schranke. Alles andere
+    (Literale, Escapes, Grammatik) prueft der strenge Lauf dahinter; ein `-`
+    vor einem Buchstaben ist hier keine Zahl.
 
     @returns true, wenn jede Zahl haelt; sonst false mit dem Grund in `fehler`.
 */

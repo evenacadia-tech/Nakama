@@ -120,7 +120,7 @@ def teilschemata(knoten, pfad: str):
 
 
 SICHERE_GANZZAHL = 9007199254740991      # 2**53 - 1
-DEZ_GRENZE = 308                         # |x| < 1e308
+DEZ_GRENZE = 308                         # x != 0: 1e-307 <= |x| < 1e308 (-308 < dez < 308)
 BS = chr(92)                             # Backslash
 HEX = "0123456789abcdefABCDEF"
 FALLTABELLE = FIXTURES / "TEXTRIEGEL-FAELLE.json"

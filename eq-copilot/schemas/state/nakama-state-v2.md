@@ -26,7 +26,7 @@ NakamaState                               schema = 2  (int)
 │     source_intents_v1      array  optional; flach [quelle_id, passage_id|"", rolle, revision, herkunft, konfidenz, ...], höchstens 256 Sechsergruppen (SONDE-014 M-02)
 │     intent_protections_v1  array  optional; flach [quelle_id, eigenschaft, band_von, band_bis, ...], höchstens 256 Vierergruppen (SONDE-014 M-03)
 │     intent_relations_v1    array  optional; flach [quelle_a, quelle_b, art, ...], höchstens 256 Dreiergruppen (SONDE-014 M-06)
-│     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ab 1 (SONDE-014 M-86)
+│     intent_revision_v1     int64  optional; Revision des GANZEN Intent-Bestands, ≥ 1 und ≤ 2^53−1 (SONDE-014 M-86)
 ├── RetainedMainProject                   schema = 1  (int)   nur plugin_kind = legacy, OPTIONAL (NAK-312, §2.0b)
 │     dieselben Eigenschaften wie MainProject, mit denselben Formen, Deckeln und Regeln (ruhender Bestand)
 ├── Parameters                            schema = 1  (int)   nur plugin_kind = active_probe (Pflicht dort)
@@ -35,7 +35,7 @@ NakamaState                               schema = 2  (int)
 │     109 bzw. 112 Eigenschaften mit den IDs aus nakama-parameter-v1.json bzw. nakama-parameter-v2.json,
 │     in Vertragsreihenfolge · bool → bool · float → double (bit-exakt) · enum → string (Enumwort)
 ├── Dsp                                   schema = 1  (int)   nur plugin_kind = active_probe, OPTIONAL (SONDE-015)
-│     state_revision       int64    PFLICHT; ≥ 0, steigt mit jeder committeten Transaktion, sinkt nie
+│     state_revision       int64    PFLICHT; ≥ 0 und ≤ 2^53−1, steigt mit jeder committeten Transaktion, sinkt nie
 │     occupied_v1          array    optional; flach [bool × 8] in Slotreihenfolge; fehlt = kein Slot belegt
 │     schutz_zonen_v1      array    optional; flach [id, low_hz, high_hz, enabled, …], höchstens 8 Vierergruppen,
 │                                   streng aufsteigend nach id
@@ -181,10 +181,18 @@ neues Kind, keine Root-Versionierung. Entwurf §33.5 weist `SourceIntent` dem
 
 | Eigenschaft | Form | Regeln |
 |---|---|---|
-| `source_intents_v1` | flaches Array aus Sechsergruppen | `quelle_id` hex32; `passage_id` hex32 **oder leer** (leer = globaler Scope); `rolle` aus der geschlossenen Menge `fuehrt`, `traegt`, `begleitet`, `geschuetzt`, `verschmolzen`; `revision` `int64` ≥ 1; `herkunft` aus `user`, `template`, `inferred`; `konfidenz` endlich in `[0,1]`. Genau **ein** Eintrag je (Quelle, Scope). Höchstens 256 Gruppen, sortiert nach Quelle, dann Scope. |
+| `source_intents_v1` | flaches Array aus Sechsergruppen | `quelle_id` hex32; `passage_id` hex32 **oder leer** (leer = globaler Scope); `rolle` aus der geschlossenen Menge `fuehrt`, `traegt`, `begleitet`, `geschuetzt`, `verschmolzen`; `revision` `int64` ≥ 1 und ≤ 2^53−1; `herkunft` aus `user`, `template`, `inferred`; `konfidenz` endlich in `[0,1]`. Genau **ein** Eintrag je (Quelle, Scope). Höchstens 256 Gruppen, sortiert nach Quelle, dann Scope. |
 | `intent_protections_v1` | flaches Array aus Vierergruppen | `quelle_id` hex32; `eigenschaft` aus `attack`, `breite`, `ausklang`, `band`; bei `band` ein halboffenes Intervall `[band_von, band_bis)` im 221-Band-Evidenzgitter (`0 <= von < bis <= 221`), sonst **beide `-1`** — `0` ist ein gültiger Bandindex und taugt deshalb nicht als „kein Intervall". Höchstens 256 Gruppen. |
 | `intent_relations_v1` | flaches Array aus Dreiergruppen | `quelle_a` und `quelle_b` hex32 und **verschieden**; `art` aus `fuehrt_vor`, `darf_verschmelzen`, `gleichrangig`. Genau eine Beziehung je geordnetem Paar. Der `fuehrt_vor`-Teilgraph ist **zyklenfrei**: ein Zyklus macht den Stand read-only (§37.4). Höchstens 256 Gruppen. |
-| `intent_revision_v1` | `int64` ≥ 1 | Revision des **ganzen** Bestands, steigt bei jeder persistenten Änderung genau einmal. Fehlt sie, ist der Bestand nie beschrieben worden; **Inhalt ohne Revision** ist ein ungültiger Stand, weil die Vollständigkeitsmarke aus SONDE-014 M-86 dann keine Zahl hätte. |
+| `intent_revision_v1` | `int64` ≥ 1 und ≤ 2^53−1 | Revision des **ganzen** Bestands, steigt bei jeder persistenten Änderung genau einmal. Fehlt sie, ist der Bestand nie beschrieben worden; **Inhalt ohne Revision** ist ein ungültiger Stand, weil die Vollständigkeitsmarke aus SONDE-014 M-86 dann keine Zahl hätte. |
+
+Alle persistenten Revisionen (`intent_revision_v1`, `source_intents_v1.revision`,
+`assistant_step_v1.revision`, `Dsp.state_revision`, die Revision der
+Undo-Einträge) liegen höchstens bei 2^53−1, der größten Zahl, die jede
+Drahtform exakt trägt (v3-Textriegel Regel 2). Ein Stand darüber ist read-only
+mit Originalbytes; Mutatoren halten an der Grenze. *(Präzisiert am 24.09.2026,
+NAK-313 R-313-4. Bis dahin stand hier nur die Untergrenze; der Leser nahm Werte
+bis `int64max` an.)*
 
 Die §37.1-Belegung (`prominence`, Funktionstag, Veto-Kennzeichen) wird aus der
 Rolle **abgeleitet** und **nie** getrennt gespeichert: `fuehrt` → (`foreground`,

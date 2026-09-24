@@ -433,6 +433,13 @@
       "datei": "schema2/legacy-retained-v1.bin",
       "sha256": "86e082cc8fef4d28cdf8038e67b5db5be8469aa074cba50f1e4f4b392a56a557",
       "bytes": 2397
+    },
+    {
+      "datei": "schema2/doppelte-eigenschaft-v1.bin",
+      "sha256": "bc49816e3739ebbfdc3ad1c1205be49a9fd47bc00c73234d139989ef49b8f4fd",
+      "bytes": 202,
+      "erwartung": "nurLesen",
+      "warum": "erklaerter Mutant von schema2/aus-schema1-sensor.bin: an Common zwei Eigenschaften future = \"A\" und future = \"B\" (Eigenschaftszaehler + 2); ein doppelter Name macht eine bekannte Wurzel read-only mit Originalbytes (R-313-2)"
     }
   ],
   "referenz": {

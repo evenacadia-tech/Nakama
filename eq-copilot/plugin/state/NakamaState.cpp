@@ -88,6 +88,10 @@ constexpr int kUndoBasis = kUndoKopf + parameter::kAnzahl;   // 123
 // deklarierte Binaerlaengen. Host-State ist jedoch ein persistenter Vertrag,
 // kein Best-Effort-Stream. Dieser kleine, allokationsfreie Vorleser akzeptiert
 // deshalb nur genau EINEN vollstaendigen, begrenzten JUCE-ValueTree.
+// Seit NAK-313 (R-313-1, R-313-2) beurteilt derselbe Vorleser auch den
+// Headroom-Kandidaten des Lesers, und er zaehlt dabei die Eigenschaftseintraege
+// aller Knoten: legt JUCE danach einen doppelten Namen still zusammen, traegt
+// der gelesene Baum weniger (`namenZusammengelegt`).
 constexpr size_t kMaxStateBytes = 16u * 1024u * 1024u;
 constexpr int kMaxStateTiefe = 64;
 constexpr int kMaxVariantenTiefe = 64;
@@ -121,6 +125,9 @@ public:
             return BytePruefung::bekannteWurzelNichtVerlustfrei;
         return BytePruefung::verlustfrei;
     }
+
+    /** Eigenschaftseintraege aller Knoten, wie die Bytes sie deklarieren. */
+    int eigenschaftsEintraege() const noexcept { return eigenschaftenGesamt; }
 
 private:
     bool hat (size_t n) const noexcept
@@ -287,6 +294,7 @@ private:
         int eigenschaften = 0;
         if (! zaehler (eigenschaften))
             return false;
+        eigenschaftenGesamt += eigenschaften;   // R-313-2: die Vorzaehlung, jede Ebene
         for (int i = 0; i < eigenschaften; ++i)
             if (! utf8CString (false) || ! variante (0))
                 return false;
@@ -304,15 +312,73 @@ private:
     const std::uint8_t* pos = nullptr;
     const std::uint8_t* ende = nullptr;
     int eintraegeGesamt = 0;
+    int eigenschaftenGesamt = 0;
     bool bekannteWurzel = false;
     bool nichtVerlustfrei = false;
 };
 
-BytePruefung pruefeValueTreeBytes (const void* daten, size_t laenge)
+/** Der Byte-Riegel ueber genau einen ValueTree. `eigenschaften` traegt danach
+    die Eigenschaftseintraege aller Knoten (R-313-2, Vorzaehlung fuer `lade`). */
+BytePruefung pruefeValueTreeBytes (const void* daten, size_t laenge, int& eigenschaften)
 {
+    eigenschaften = 0;
     if (laenge > kMaxStateBytes)
         return BytePruefung::ungueltig;
-    return ValueTreeByteRiegel (daten, laenge).pruefe();
+    ValueTreeByteRiegel riegel (daten, laenge);
+    const auto ergebnis = riegel.pruefe();
+    eigenschaften = riegel.eigenschaftsEintraege();
+    return ergebnis;
+}
+
+BytePruefung pruefeValueTreeBytes (const void* daten, size_t laenge)
+{
+    int eigenschaften = 0;
+    return pruefeValueTreeBytes (daten, laenge, eigenschaften);
+}
+
+/** JUCEs toleranter Leser, erst nach dem Byte-Riegel. Eine Ausnahme (auch
+    `std::bad_alloc`) gilt wie Muellbytes: der Baum bleibt ungueltig. */
+juce::ValueTree liesJuceBaum (const void* daten, size_t laenge)
+{
+    try
+    {
+        return juce::ValueTree::readFromData (daten, laenge);
+    }
+    catch (...)
+    {
+        return {};
+    }
+}
+
+/** R-313-2 (NAK-313), die Nachzaehlung: die Eigenschaften aller Knoten des
+    gelesenen Baums - dieselben Knoten aller Ebenen, die der Byte-Riegel
+    gezaehlt hat -, ohne Allokation und ohne Namensmenge. Die Tiefe hat der
+    Riegel schon auf `kMaxStateTiefe` Ebenen begrenzt; die Schranke hier haelt
+    die Rekursion auch ohne ihn endlich. */
+bool eigenschaftenGezaehlt (const juce::ValueTree& knoten, int tiefe, int& summe)
+{
+    if (tiefe >= kMaxStateTiefe)
+        return false;
+    summe += knoten.getNumProperties();
+    for (int i = 0; i < knoten.getNumChildren(); ++i)
+        if (! eigenschaftenGezaehlt (knoten.getChild (i), tiefe + 1, summe))
+            return false;
+    return true;
+}
+
+/** R-313-2: hat JUCE einen doppelten Eigenschaftsnamen still zusammengelegt?
+    Der Leser ersetzt den Wert eines schon gelesenen Namens, statt ihn
+    anzuhaengen; der Baum traegt dann weniger Eigenschaften, als die Bytes
+    deklarieren, und ein Save verloere einen Wert. Nur eine bekannte Wurzel
+    zaehlt - eine fremde bleibt ignoriert wie jeder fremde Baum. Ein Baum
+    jenseits der Riegeltiefe (nach dem Riegel unerreichbar) gilt ebenso als
+    nicht verlustfrei gelesen. */
+bool namenZusammengelegt (const juce::ValueTree& v, int eigenschaftenImRiegel)
+{
+    if (! v.hasType (kRoot) && ! v.hasType (kAltRoot))
+        return false;
+    int gelesen = 0;
+    return ! eigenschaftenGezaehlt (v, 0, gelesen) || gelesen < eigenschaftenImRiegel;
 }
 
 bool istHex32 (const juce::String& wert)
@@ -1192,7 +1258,11 @@ juce::ValueTree synchronisiert (const Zustand& z)
 }
 
 /** Beweist beim Laden, dass jede heute ueber die Produkt-API erreichbare
-    Aenderung wieder einen State <= 16 MiB schreibt. Eine pauschale Reserve
+    Aenderung wieder einen State schreibt, den derselbe Byte-Riegel als
+    verlustfrei annimmt - 16 MiB, Tiefe, Eintraege je Sammlung und im ganzen
+    Baum (NAK-313 R-313-1). Bis dahin zaehlte hier nur die Groesse: ein Common
+    an der Sammlungsgrenze lud schreibbar, und der naechste Save ergaenzte
+    `label` zu einem Stand, den derselbe Leser verwarf. Eine pauschale Reserve
     funktioniert hier nicht: sobald der Writer sie verbraucht, laege sein
     eigenes Ergebnis oberhalb derselben Schreibbar-Schwelle. Deshalb wird der
     groesste konkrete Folgezustand gegen den gehaltenen additiven Baum gebaut.
@@ -1221,7 +1291,7 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
             juce::MemoryOutputStream strom (bytes, false);
             synchronisiert (kandidat).writeToStream (strom);
             strom.flush();
-            return bytes.getSize() <= kMaxStateBytes;
+            return pruefeValueTreeBytes (bytes.getData(), bytes.getSize()) == BytePruefung::verlustfrei;
         }
         catch (...)
         {
@@ -2233,27 +2303,19 @@ LadeErgebnis lade (const void* daten, size_t laenge, const Bundle& bundle, Zusta
         return LadeErgebnis::nurLesen;
     };
 
-    const auto bytePruefung = pruefeValueTreeBytes (daten, laenge);
+    int eigenschaften = 0;   // R-313-2: die Vorzaehlung des Riegels
+    const auto bytePruefung = pruefeValueTreeBytes (daten, laenge, eigenschaften);
     if (bytePruefung == BytePruefung::ungueltig)
         return LadeErgebnis::ignoriert;
     if (bytePruefung == BytePruefung::bekannteWurzelNichtVerlustfrei)
         return nurLesen ("variant marker is not losslessly readable by this JUCE version", {});
 
-    juce::ValueTree v;
-    try
-    {
-        v = juce::ValueTree::readFromData (daten, laenge);
-    }
-    catch (const std::bad_alloc&)
-    {
-        return LadeErgebnis::ignoriert;
-    }
-    catch (...)
-    {
-        return LadeErgebnis::ignoriert;
-    }
+    const auto v = liesJuceBaum (daten, laenge);
     if (! v.isValid())
         return LadeErgebnis::ignoriert;
+    // R-313-2: vor Migration und leseSchema2, derselbe Weg wie der Markerfall.
+    if (namenZusammengelegt (v, eigenschaften))
+        return nurLesen ("duplicate property name in the state tree", {});
 
     if (v.hasType (kAltRoot))
     {

@@ -28,6 +28,16 @@
 // Rollenwahl mit genau einem Host-Dirty; ohne Aenderung bleibt es bei false,
 // ohne Host-Dirty und ohne Reconnect-Anforderung.
 //
+// Seit NAK-313 Etappe 3 (R-313-1, R-313-2; 313/M-17 bis M-37) misst das Bein
+// die State-Annahme an Grenzbaeumen aus Rohbytes: ein schreibbar geladener
+// Stand besteht mit seinem groessten Folgezustand den Byte-Riegel verlustfrei,
+// sonst bleibt er read-only mit Originalbytes und wird nie ignoriert - am
+// Sammlungsrand von Common (65.533 schreibbar, 65.534 bis 65.536 read-only)
+// und an der Gesamtgrenze (G nachgerechnet); ein doppelter Eigenschaftsname in
+// einem Knoten macht eine bekannte Wurzel read-only mit Originalbytes, eine
+// fremde bleibt ignoriert; das Negativ-Golden doppelte-eigenschaft-v1.bin
+// laedt read-only. Die Ladezeit der groessten Grenzfaelle steht im Detailtext.
+//
 //   EqCopStateMigrationTest.exe                    misst
 //   EqCopStateMigrationTest.exe --schreibe-goldens schreibt fixtures/state/schema2/*.bin
 //   EqCopStateMigrationTest.exe --lade-bericht <datei>
@@ -376,6 +386,15 @@ juce::MemoryBlock stateMitZielgroesse (size_t ziel)
     return roh;
 }
 
+/** Eindeutiger Eigenschaftsname `f000001` ... Seit NAK-313 Etappe 3 (313/M-37,
+    R-313-2) schreiben die Grenzhelfer keine gleichen Namen mehr: JUCE legte sie
+    zu einer Eigenschaft zusammen, und die Duplikatregel macht einen solchen
+    Stand read-only - die Grenzfaelle messen ihre Grenze, nicht die Regel. */
+juce::String eindeutig (int i)
+{
+    return "f" + juce::String (i).paddedLeft ('0', 6);
+}
+
 juce::MemoryBlock baumMitEigenschaftszahl (int anzahl)
 {
     juce::MemoryBlock b;
@@ -384,7 +403,7 @@ juce::MemoryBlock baumMitEigenschaftszahl (int anzahl)
     s.writeCompressedInt (anzahl);
     for (int i = 0; i < anzahl; ++i)
     {
-        s.writeString ("x");
+        s.writeString (eindeutig (i + 1));
         juce::var().writeToStream (s);
     }
     s.writeCompressedInt (0);
@@ -410,13 +429,194 @@ juce::MemoryBlock baumMitGesamteintraegen (int gesamt)
         s.writeCompressedInt (n);
         for (int i = 0; i < n; ++i)
         {
-            s.writeString ("x");
+            s.writeString (eindeutig (i + 1));
             juce::var().writeToStream (s);
         }
         s.writeCompressedInt (0);
     }
     s.flush();
     return b;
+}
+
+/*  NAK-313 Etappe 3 (R-313-1, R-313-2; Manifest docs/beweise/NAK-313.md §6.2,
+    §8.3): Grenzbaeume aus Rohbytes. Ein Knoten wird im Byteformat von
+    `ValueTree::writeToStream` geschrieben, aber an der JUCE-Menge vorbei: er
+    darf denselben Eigenschaftsnamen zweimal tragen (R-313-2), und 65.536
+    Eigenschaften kosten beim Bauen keine lineare Namenssuche je Eintrag. */
+struct RohKnoten
+{
+    juce::String typ;
+    std::vector<std::pair<juce::String, juce::var>> eigenschaften;
+    std::vector<RohKnoten> kinder;
+};
+
+void schreibeRoh (const RohKnoten& k, juce::OutputStream& s)
+{
+    s.writeString (k.typ);
+    s.writeCompressedInt ((int) k.eigenschaften.size());
+    for (const auto& e : k.eigenschaften)
+    {
+        s.writeString (e.first);
+        e.second.writeToStream (s);
+    }
+    s.writeCompressedInt ((int) k.kinder.size());
+    for (const auto& kind : k.kinder)
+        schreibeRoh (kind, s);
+}
+
+juce::MemoryBlock rohBytes (const RohKnoten& wurzel)
+{
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    schreibeRoh (wurzel, s);
+    s.flush();
+    return b;
+}
+
+/** Ein gelesener Baum als Rohknoten, Eigenschaften und Kinder in ihrer
+    Reihenfolge - die Grundlage des erklaerten Mutanten (313/M-35). */
+RohKnoten rohAusBaum (const juce::ValueTree& v)
+{
+    RohKnoten k { v.getType().toString(), {}, {} };
+    for (int i = 0; i < v.getNumProperties(); ++i)
+    {
+        const auto name = v.getPropertyName (i);
+        k.eigenschaften.push_back ({ name.toString(), v.getProperty (name) });
+    }
+    for (int i = 0; i < v.getNumChildren(); ++i)
+        k.kinder.push_back (rohAusBaum (v.getChild (i)));
+    return k;
+}
+
+const juce::String kGrenzId ("cccccccccccccccccccccccccccccccc");
+const juce::String kGrenzBindung ("0123456789abcdef0123456789abcdef");
+const juce::String kGrenzLabel ("Grenzlabel");
+const juce::String kHeadroomGrund ("state leaves no bounded headroom for a losslessly reloadable save");
+const juce::String kDuplikatGrund ("duplicate property name in the state tree");
+const juce::String kSchemaGrundOhneSchema ("NakamaState schema  is unknown to this version (it reads schema 2)");
+
+/** Wurzel `NakamaState` (schema 2) mit genau einem Common legacy/insert aus den
+    vier Pflichtfeldern, wahlweise `label` und `project_binding_id` (Bindung als
+    kleinbuchstabiges hex32, sonst endete der Leser vor dem Kandidaten). */
+RohKnoten grenzState (bool mitLabel, bool mitBindung)
+{
+    RohKnoten common { "Common", {}, {} };
+    common.eigenschaften.push_back ({ "schema", 1 });
+    common.eigenschaften.push_back ({ "instance_id", kGrenzId });
+    common.eigenschaften.push_back ({ "plugin_kind", "legacy" });
+    common.eigenschaften.push_back ({ "measurement_position", "insert" });
+    if (mitLabel)
+        common.eigenschaften.push_back ({ "label", kGrenzLabel });
+    if (mitBindung)
+        common.eigenschaften.push_back ({ "project_binding_id", kGrenzBindung });
+    RohKnoten wurzel { "NakamaState", {}, {} };
+    wurzel.eigenschaften.push_back ({ "schema", 2 });
+    wurzel.kinder.push_back (std::move (common));
+    return wurzel;
+}
+
+/** Common mit genau `anzahl` Eintraegen: die Felder aus `grenzState`, dann
+    eindeutig benannte unbekannte Eigenschaften bis zur verlangten Anzahl. */
+juce::MemoryBlock commonMitEigenschaften (int anzahl, bool mitLabel, bool mitBindung)
+{
+    auto wurzel = grenzState (mitLabel, mitBindung);
+    auto& common = wurzel.kinder.front();
+    for (int i = 1; (int) common.eigenschaften.size() < anzahl; ++i)
+        common.eigenschaften.push_back ({ eindeutig (i), i });
+    return rohBytes (wurzel);
+}
+
+/** legacy/insert-Stand ohne Bestandskind mit genau `gesamt` Eintraegen, wie der
+    Byte-Riegel sie zaehlt: Wurzel 1 Eigenschaft + 1 Kind, Common 4 Pflichtfelder
+    (+ `label`) + 5 unbekannte Arrays, der Rest als deren Elemente - je Array
+    unter 65.536, Common weit unter der Sammlungsgrenze. */
+juce::MemoryBlock stateMitGesamteintraegen (int gesamt, bool mitLabel)
+{
+    constexpr int arrays = 5;
+    auto wurzel = grenzState (mitLabel, false);
+    auto& common = wurzel.kinder.front();
+    int rest = gesamt - 2 - (int) common.eigenschaften.size() - arrays;
+    for (int a = 0; a < arrays; ++a)
+    {
+        const int n = rest / (arrays - a);
+        rest -= n;
+        juce::Array<juce::var> elemente;
+        elemente.resize (n);
+        common.eigenschaften.push_back ({ eindeutig (a + 1), juce::var (elemente) });
+    }
+    return rohBytes (wurzel);
+}
+
+/** legacy/insert-Stand, Common mit `label` und einer Kette von Kindknoten unter
+    Common bis zur Ebene `ebenen` (Wurzel = Ebene 0, Common = Ebene 1). `label`
+    steht im Vektor, weil der Writer es immer schreibt (313/M-26). */
+juce::MemoryBlock knotenKette (int ebenen)
+{
+    auto wurzel = grenzState (true, false);
+    RohKnoten* cursor = &wurzel.kinder.front();
+    for (int ebene = 2; ebene <= ebenen; ++ebene)
+    {
+        cursor->kinder.push_back ({ "Tiefe", {}, {} });
+        cursor = &cursor->kinder.back();
+    }
+    return rohBytes (wurzel);
+}
+
+/** legacy/insert-Stand, Common mit `label` und `anzahl` Kindknoten ohne
+    Eigenschaften auf Ebene 2 (313/M-27). */
+juce::MemoryBlock stateMitKnoten (int anzahl)
+{
+    auto wurzel = grenzState (true, false);
+    for (int i = 0; i < anzahl; ++i)
+        wurzel.kinder.front().kinder.push_back ({ "Knoten", {}, {} });
+    return rohBytes (wurzel);
+}
+
+/** Eintraege eines gelesenen Baums, wie der Byte-Riegel sie zaehlt:
+    Eigenschaften und Kinder je Knoten, Arrayelemente samt geschachtelten. Die
+    eigene Zaehlung des Tests - sie prueft, dass ein Helfer die verlangte Zahl
+    trifft; die Produktfunktion ist kein Orakel. */
+int arrayEintraege (const juce::var& wert)
+{
+    const auto* a = wert.getArray();
+    if (a == nullptr)
+        return 0;
+    int n = a->size();
+    for (const auto& e : *a)
+        n += arrayEintraege (e);
+    return n;
+}
+
+int eintraegeWieRiegel (const juce::ValueTree& v)
+{
+    int n = v.getNumProperties() + v.getNumChildren();
+    for (int i = 0; i < v.getNumProperties(); ++i)
+        n += arrayEintraege (v.getProperty (v.getPropertyName (i)));
+    for (int i = 0; i < v.getNumChildren(); ++i)
+        n += eintraegeWieRiegel (v.getChild (i));
+    return n;
+}
+
+int eintraegeWieRiegel (const juce::MemoryBlock& b)
+{
+    return eintraegeWieRiegel (juce::ValueTree::readFromData (b.getData(), b.getSize()));
+}
+
+/** `state::lade` mit gemessener Dauer. Manifest §8.3: die Ladezeit der
+    groessten Grenzfaelle ist Beleg, kein Grenzwert - schon das Einlesen von
+    65.536 eindeutigen Namen ist in JUCE quadratisch. */
+state::LadeErgebnis ladeGemessen (const juce::MemoryBlock& b, const state::Bundle& bundle,
+                                  state::Zustand& z, double& ms)
+{
+    const auto t0 = juce::Time::getMillisecondCounterHiRes();
+    const auto erg = state::lade (b.getData(), b.getSize(), bundle, z);
+    ms = juce::Time::getMillisecondCounterHiRes() - t0;
+    return erg;
+}
+
+juce::String msText (double ms)
+{
+    return juce::String (juce::roundToInt (ms)) + " ms";
 }
 
 
@@ -668,6 +868,483 @@ int ladeBericht (const juce::File& datei)
               << (bindung ? "ANGENOMMEN" : "verweigert") << ", neueSensorId "
               << (kennung ? "ANGENOMMEN" : "verweigert") << ", Host-Dirty " << dirty.nonParam << std::endl;
     return 0;
+}
+
+/*  ═══ NAK-313 Etappe 3: State-Annahme (R-313-1, R-313-2) ═══════════════════
+    Manifest docs/beweise/NAK-313.md §6.2 (M-17 bis M-38) und §8.3.
+
+    R-313-1: ein Stand, den der Leser schreibbar annimmt, ist nach jeder
+    Writer-Ergaenzung verlustfrei rueckschreibbar und laedt wieder schreibbar;
+    der Headroom-Kandidat laeuft durch denselben Byte-Riegel. Nachgerechnet
+    (§6.2): der Kandidat setzt `label`, `pair_id` und `project_binding_id` in
+    Common und traegt ein Bestandskind mit 1 Kindeintrag + 8 Eigenschaften +
+    3.720 Arrayelementen = 3.729 Eintraegen. Ein Common mit n Eintraegen ist
+    genau dann schreibbar, wenn n + fehlende der drei <= 65.536; an der
+    Gesamtgrenze liegt der schreibbare Rand bei G = 262.144 - 3.729 - fehlende
+    Common-Felder = 258.412 ohne und 258.413 mit `label` - nachgerechnet, nie
+    per Suche am Produkt (§8.1).
+
+    R-313-2: ein doppelter Eigenschaftsname in einem Knoten macht eine bekannte
+    Wurzel read-only mit Originalbytes; eine fremde Wurzel bleibt ignoriert. */
+
+/** Eintraege von Common - nur fuer den Detailtext, wenn gespeicherte Bytes vom
+    Eingang abweichen (JUCE liest dabei doppelte Namen zusammengelegt). */
+juce::String commonEintraege (const juce::MemoryBlock& b)
+{
+    const auto v = juce::ValueTree::readFromData (b.getData(), b.getSize());
+    return juce::String (v.getChildWithName ("Common").getNumProperties());
+}
+
+/** Bibliothek: laden, speichern, das Gespeicherte erneut laden und speichern. */
+struct BibLauf
+{
+    state::LadeErgebnis erg1 = state::LadeErgebnis::ignoriert;
+    state::LadeErgebnis erg2 = state::LadeErgebnis::ignoriert;
+    juce::String grund;
+    juce::MemoryBlock s1, s2;
+    double ms = 0.0;
+};
+
+BibLauf bibLauf (const juce::MemoryBlock& x)
+{
+    BibLauf l;
+    state::Zustand z1, z2;
+    l.erg1 = ladeGemessen (x, state::Bundle::eqcp(), z1, l.ms);
+    l.grund = z1.grund;
+    state::speichere (z1, l.s1);
+    l.erg2 = state::lade (l.s1.getData(), l.s1.getSize(), state::Bundle::eqcp(), z2);
+    if (l.erg2 != state::LadeErgebnis::ignoriert)
+        state::speichere (z2, l.s2);
+    return l;
+}
+
+juce::String bibText (const BibLauf& b, const juce::MemoryBlock& x)
+{
+    return "Load 1 " + juce::String (ladeErgebnisWort (b.erg1)) + " (" + msText (b.ms) + ", Grund '" + b.grund
+         + "'), Save " + (gleich (b.s1, x) ? juce::String ("= Originalbytes")
+                                           : "neu (Common " + commonEintraege (b.s1) + " Eintraege)")
+         + ", Load 2 " + ladeErgebnisWort (b.erg2)
+         + ", zweiter Save " + (gleich (b.s2, b.s1) ? "= erster" : "anders");
+}
+
+/** Der Prozessorweg einer Zeile: laden, die API-Folge mit dem geladenen Label
+    und dem Paarnamen "P", speichern, die gespeicherten Bytes erneut laden.
+    Host-Dirty zaehlt ab dem Stand nach dem Laden. */
+struct ApiLauf
+{
+    bool nurLesenNachLaden = false;
+    int angenommen = 0;
+    juce::String rueckgaben;
+    int hostDirty = 0;
+    juce::MemoryBlock gespeichert;
+    state::LadeErgebnis wiederGeladen = state::LadeErgebnis::ignoriert;
+};
+
+ApiLauf apiLauf (const juce::MemoryBlock& bytes, std::initializer_list<const char*> rollen)
+{
+    ApiLauf l;
+    auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+    DirtyZaehler dirty;
+    p->addListener (&dirty);
+    p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+    l.nurLesenNachLaden = p->stateNurLesen();
+    const int dirtyNachLaden = dirty.nonParam;
+    const auto label = p->holeLabel();
+    for (const auto* rolle : rollen)
+    {
+        const bool ok = p->setzeBindung (rolle, label, "P");
+        if (ok) ++l.angenommen;
+        l.rueckgaben += (l.rueckgaben.isEmpty() ? juce::String() : juce::String (", "))
+                      + rolle + (ok ? " true" : " false");
+    }
+    l.hostDirty = dirty.nonParam - dirtyNachLaden;
+    p->getStateInformation (l.gespeichert);
+    p->removeListener (&dirty);
+    state::Zustand z;
+    l.wiederGeladen = state::lade (l.gespeichert.getData(), l.gespeichert.getSize(),
+                                   state::Bundle::eqcp(), z);
+    return l;
+}
+
+juce::String apiText (const ApiLauf& a, const juce::MemoryBlock& x)
+{
+    return juce::String ("Prozessor ") + (a.nurLesenNachLaden ? "read-only" : "schreibbar")
+         + ", setzeBindung (" + a.rueckgaben + "), Host-Dirty " + juce::String (a.hostDirty)
+         + ", getStateInformation " + (gleich (a.gespeichert, x) ? juce::String ("= Originalbytes")
+                                                                  : "neu (Common " + commonEintraege (a.gespeichert) + " Eintraege)")
+         + ", Reload " + ladeErgebnisWort (a.wiederGeladen);
+}
+
+bool apiVerweigert (const ApiLauf& a, const juce::MemoryBlock& x)
+{
+    return a.nurLesenNachLaden && a.angenommen == 0 && a.hostDirty == 0 && gleich (a.gespeichert, x)
+        && a.wiederGeladen == state::LadeErgebnis::nurLesen;
+}
+
+/** R-313-1 am Sammlungsrand von Common: M-17 bis M-22. */
+void nak313AmCommon()
+{
+    constexpr auto nurLesen = state::LadeErgebnis::nurLesen;
+    constexpr auto geladen = state::LadeErgebnis::geladen;
+
+    // M-17 (heute rot): Common mit 65.536 Eintraegen ohne label, Kandidat 65.539.
+    {
+        const auto x = commonMitEigenschaften (65536, false, false);
+        const auto b = bibLauf (x);
+        const auto t = bibText (b, x);
+        const juce::String n ("313/M-17 common_65536_ohne_label_bleibt_lesbar");
+        pruefe (b.erg1 == nurLesen && b.grund == kHeadroomGrund, n + " (a): erster Load nurLesen mit Headroom-Grund", t);
+        pruefe (gleich (b.s1, x), n + " (b): speichere liefert die Originalbytes", t);
+        pruefe (b.erg2 == nurLesen && gleich (b.s2, x),
+                n + " (c): zweiter Load wieder nurLesen bytegleich, nie ignoriert", t);
+    }
+    // M-20 (heute rot, Teilfall von M-17): 65.535 ohne label, Kandidat 65.538;
+    // danach der Paarname ueber die API am gespeicherten Stand.
+    {
+        const auto x = commonMitEigenschaften (65535, false, false);
+        const auto b = bibLauf (x);
+        const auto a = apiLauf (b.s1, { "sensor" });
+        pruefe (b.erg1 == nurLesen && b.grund == kHeadroomGrund && gleich (b.s1, x) && b.erg2 == nurLesen,
+                "313/M-20 (Teilfall von 313/M-17) common_65535_ohne_label: Load nurLesen mit Headroom-Grund, "
+                "Save = Originalbytes, Reload nurLesen (Kandidat 65.538)", bibText (b, x));
+        pruefe (apiVerweigert (a, x),
+                "313/M-20 (Teilfall von 313/M-17) Paarname ueber die API: verweigert, 0 Host-Dirty, "
+                "getStateInformation = Originalbytes, Reload nurLesen", apiText (a, x));
+    }
+    // M-21 (heute rot, Teilfall von M-17): 65.534 ohne die drei Felder, Kandidat 65.537.
+    {
+        const auto x = commonMitEigenschaften (65534, false, false);
+        const auto b = bibLauf (x);
+        const auto a = apiLauf (x, { "pre", "hub" });
+        pruefe (b.erg1 == nurLesen && b.grund == kHeadroomGrund && gleich (b.s1, x),
+                "313/M-21 (Teilfall von 313/M-17) common_65534_erster_read_only_rand: Load nurLesen mit "
+                "Headroom-Grund, Save = Originalbytes (Kandidat 65.537)", bibText (b, x));
+        pruefe (apiVerweigert (a, x),
+                "313/M-21 (Teilfall von 313/M-17) pre und hub ueber die API: verweigert, 0 Host-Dirty, "
+                "getStateInformation = Originalbytes, Reload nurLesen", apiText (a, x));
+    }
+    // M-18 (heute rot): 65.536 mit label und Bindung, dem Kandidaten fehlt nur pair_id.
+    {
+        const auto x = commonMitEigenschaften (65536, true, true);
+        const auto b = bibLauf (x);
+        const auto a = apiLauf (x, { "pre" });
+        const juce::String n ("313/M-18 common_65536_mit_label_und_bindung_bleibt_lesbar");
+        pruefe (b.erg1 == nurLesen && b.grund == kHeadroomGrund && gleich (b.s1, x),
+                n + " (Bibliothek): Load nurLesen mit Headroom-Grund, Save = Originalbytes (Kandidat 65.537)",
+                bibText (b, x));
+        pruefe (apiVerweigert (a, x),
+                n + " (Prozessor): setzeBindung (pre, Label, P) verweigert, 0 Host-Dirty, kein Folgezustand, "
+                "den der naechste Load ignoriert", apiText (a, x));
+    }
+    // M-19 (heute rot, Teilfall von M-18): 65.535 mit label, Kandidat 65.537.
+    {
+        const auto x = commonMitEigenschaften (65535, true, false);
+        const auto b = bibLauf (x);
+        const auto a = apiLauf (x, { "pre", "hub" });
+        pruefe (b.erg1 == nurLesen && b.grund == kHeadroomGrund && gleich (b.s1, x),
+                "313/M-19 (Teilfall von 313/M-18) common_65535_mit_label: Load nurLesen mit Headroom-Grund, "
+                "Save = Originalbytes (Kandidat 65.537)", bibText (b, x));
+        pruefe (apiVerweigert (a, x),
+                "313/M-19 (Teilfall von 313/M-18) pre und hub ueber die API: verweigert, 0 Host-Dirty, "
+                "getStateInformation = Originalbytes, Reload nurLesen", apiText (a, x));
+    }
+    // M-22 (Regressionswache): 65.533 ohne die drei Felder ist der schreibbare
+    // Rand - der Kandidat traegt genau 65.536 und passiert den Riegel.
+    {
+        const auto x = commonMitEigenschaften (65533, false, false);
+        const auto b = bibLauf (x);
+        auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+        p->setStateInformation (b.s1.getData(), (int) b.s1.getSize());
+        const bool schreibbar1 = ! p->stateNurLesen();
+        const auto label = p->holeLabel();
+        const bool pre = p->setzeBindung ("pre", label, "P");
+        const bool hub = p->setzeBindung ("hub", label, "P");
+        juce::MemoryBlock saveA, saveB;
+        p->getStateInformation (saveA);
+        const int commonA = juce::ValueTree::readFromData (saveA.getData(), saveA.getSize())
+                                .getChildWithName ("Common").getNumProperties();
+        double msA = 0.0;
+        const auto t0 = juce::Time::getMillisecondCounterHiRes();
+        p->setStateInformation (saveA.getData(), (int) saveA.getSize());
+        msA = juce::Time::getMillisecondCounterHiRes() - t0;
+        const bool schreibbar2 = ! p->stateNurLesen()
+                              && p->holeStateHerkunft() == state::Herkunft::schema2Geladen;
+        p->getStateInformation (saveB);
+        const juce::String n ("313/M-22 common_rand_bleibt_schreibbar");
+        pruefe (b.erg1 == geladen && b.erg2 == geladen && gleich (b.s1, b.s2),
+                n + " (Bibliothek): 65.533 ohne die drei Felder laedt schreibbar, der Save (65.534 mit label) "
+                "laedt schreibbar und kommt bytegleich zurueck (Kandidat genau 65.536)", bibText (b, x));
+        pruefe (schreibbar1 && pre && hub && commonA == 65536 && schreibbar2 && gleich (saveA, saveB),
+                n + " (Prozessor): pre und hub angenommen, Common danach genau 65.536 Eintraege "
+                "(65.533 + label + pair_id + project_binding_id), Save A laedt schreibbar, Save B = Save A",
+                juce::String ("Load ") + (schreibbar1 ? "schreibbar" : "read-only") + ", pre "
+                    + (pre ? "true" : "false") + ", hub " + (hub ? "true" : "false") + ", Common in Save A "
+                    + juce::String (commonA) + ", Load von Save A " + (schreibbar2 ? "schreibbar" : "NICHT schreibbar")
+                    + " (" + msText (msA) + ", Grund '" + p->holeStateGrund() + "'), Save B "
+                    + (gleich (saveA, saveB) ? "= Save A" : "anders"));
+    }
+}
+
+/** R-313-1 an der Gesamtgrenze: M-24. */
+void nak313Gesamtgrenze()
+{
+    constexpr auto nurLesen = state::LadeErgebnis::nurLesen;
+    constexpr auto geladen = state::LadeErgebnis::geladen;
+    const juce::String n ("313/M-24 gesamtgrenze_bleibt_rueckschreibbar");
+
+    for (const bool mitLabel : { false, true })
+    {
+        const int g = mitLabel ? 258413 : 258412;   // 262.144 - 3.729 - fehlende Common-Felder
+        const juce::String art (mitLabel ? "mit label" : "ohne label");
+
+        // G + 1 (heute rot): der Kandidat traegt 262.145 Eintraege.
+        {
+            const auto x = stateMitGesamteintraegen (g + 1, mitLabel);
+            const int gezaehlt = eintraegeWieRiegel (x);
+            const auto b = bibLauf (x);
+            pruefe (gezaehlt == g + 1 && b.erg1 == nurLesen && b.grund == kHeadroomGrund && gleich (b.s1, x),
+                    n + " (G + 1 = " + juce::String (g + 1) + ", " + art + "): nurLesen bytegleich (Kandidat 262.145)",
+                    "Eintraege " + juce::String (gezaehlt) + ", " + bibText (b, x));
+        }
+        // G (Regressionswache): jeder Load geladen, jeder Folgezustand laedt
+        // schreibbar, der Kandidat traegt jeweils genau 262.144.
+        {
+            const auto x = stateMitGesamteintraegen (g, mitLabel);
+            const int gezaehlt = eintraegeWieRiegel (x);
+            state::Zustand z0;
+            double ms0 = 0.0;
+            const auto erg0 = ladeGemessen (x, state::Bundle::eqcp(), z0, ms0);
+            auto p = std::make_unique<EqCopilotProcessor>();   // NAK-175: Heap
+            juce::MemoryBlock s1, s2, s3;
+            p->setStateInformation (x.getData(), (int) x.getSize());
+            const bool ok1 = ! p->stateNurLesen();
+            p->getStateInformation (s1);
+            p->setStateInformation (s1.getData(), (int) s1.getSize());
+            const bool ok2 = ! p->stateNurLesen();
+            const auto label = p->holeLabel();
+            const bool pre = p->setzeBindung ("pre", label, "P");
+            const bool hub = p->setzeBindung ("hub", label, "P");
+            p->getStateInformation (s2);
+            const int nachHub = eintraegeWieRiegel (s2);
+            p->setStateInformation (s2.getData(), (int) s2.getSize());
+            const bool ok3 = ! p->stateNurLesen();
+            p->getStateInformation (s3);
+            const int erwartetNachHub = g + (mitLabel ? 4 : 5);
+            pruefe (gezaehlt == g && erg0 == geladen && ok1 && ok2 && pre && hub && ok3
+                        && nachHub == erwartetNachHub && gleich (s2, s3),
+                    n + " (G = " + juce::String (g) + ", " + art + "): jeder Load geladen, jeder Folgezustand laedt "
+                    "schreibbar, nach hub " + juce::String (erwartetNachHub) + " Eintraege, Save nach Reload bytegleich",
+                    "Eintraege " + juce::String (gezaehlt) + ", Load " + ladeErgebnisWort (erg0) + " (" + msText (ms0)
+                        + ", Grund '" + z0.grund + "'), Prozessor " + (ok1 ? "schreibbar" : "read-only") + "/"
+                        + (ok2 ? "schreibbar" : "read-only") + ", pre " + (pre ? "true" : "false") + ", hub "
+                        + (hub ? "true" : "false") + ", nach hub " + juce::String (nachHub) + " Eintraege, Reload "
+                        + (ok3 ? "schreibbar" : "read-only") + " (Grund '" + p->holeStateGrund() + "'), Save "
+                        + (gleich (s2, s3) ? "bytegleich" : "anders"));
+        }
+    }
+    // Dazu (heute rot): ein Stand mit 262.144 Eintraegen ohne label - der Writer
+    // ergaenzte label zu 262.145, und der naechste Load verwarf den Stand.
+    {
+        const auto x = stateMitGesamteintraegen (262144, false);
+        const auto b = bibLauf (x);
+        pruefe (b.erg1 == nurLesen && gleich (b.s1, x) && b.erg2 == nurLesen && gleich (b.s2, x),
+                n + " (262.144 ohne label): nurLesen bytegleich, nie ignoriert", bibText (b, x));
+    }
+}
+
+/** R-313-1: Tiefe und Knotenzahl, M-26 und M-27 (M-25 steht bei G9). */
+void nak313TiefeUndKnoten()
+{
+    constexpr auto geladen = state::LadeErgebnis::geladen;
+    {
+        const auto rand = knotenKette (63);
+        const auto b = bibLauf (rand);
+        pruefe (b.erg1 == geladen && gleich (b.s1, rand) && b.erg2 == geladen,
+                "313/M-26 knotentiefe_rand_rueckschreibbar: Kette unter Common bis Ebene 63 (64 Ebenen inklusive "
+                "Wurzel) laedt, Save bytegleich, Reload laedt", bibText (b, rand));
+        const auto zuTief = knotenKette (64);
+        state::Zustand z = state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        const auto erg = state::lade (zuTief.getData(), zuTief.getSize(), state::Bundle::eqcp(), z);
+        pruefe (erg == state::LadeErgebnis::ignoriert && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "313/M-26 knotentiefe_rand_rueckschreibbar: eine Kette bis Ebene 64 bleibt ignoriert",
+                ladeErgebnisWort (erg));
+    }
+    {
+        const auto x = stateMitKnoten (70);
+        const auto b = bibLauf (x);
+        pruefe (b.erg1 == geladen && gleich (b.s1, x) && b.erg2 == geladen,
+                "313/M-27 knotenzahl_ist_keine_grenze: 72 Knoten (Common mit 70 Kindern auf Ebene 2) laden, Save "
+                "bytegleich, Reload laedt - der Riegel begrenzt Tiefe und Eintraege, keine Knotenzahl", bibText (b, x));
+    }
+}
+
+/** Laden und Speichern eines Rohstands fuer die Duplikatfaelle. */
+struct DuplikatLauf
+{
+    state::LadeErgebnis erg = state::LadeErgebnis::ignoriert;
+    state::Zustand z;
+    juce::MemoryBlock s;
+    double ms = 0.0;
+};
+
+DuplikatLauf duplikatLauf (const juce::MemoryBlock& x)
+{
+    DuplikatLauf l;
+    l.erg = ladeGemessen (x, state::Bundle::eqcp(), l.z, l.ms);
+    if (l.erg != state::LadeErgebnis::ignoriert)
+        state::speichere (l.z, l.s);
+    return l;
+}
+
+juce::String duplikatText (const DuplikatLauf& d, const juce::MemoryBlock& x)
+{
+    return juce::String (ladeErgebnisWort (d.erg)) + " (" + msText (d.ms) + "), Grund '" + d.z.grund + "', Label '"
+         + d.z.common.label + "', instance_id '" + d.z.common.instanceId + "', Save "
+         + (gleich (d.s, x) ? juce::String ("= Originalbytes") : "neu (Common " + commonEintraege (d.s) + " Eintraege)");
+}
+
+bool duplikatNurLesen (const DuplikatLauf& d, const juce::MemoryBlock& x)
+{
+    return d.erg == state::LadeErgebnis::nurLesen && d.z.nurLesen && d.z.grund == kDuplikatGrund && gleich (d.s, x);
+}
+
+/** R-313-2: M-29 bis M-35. */
+void nak313Duplikate (const juce::File& fixtureOrdner)
+{
+    // M-29 (heute rot): eine unbekannte Eigenschaft doppelt.
+    {
+        auto w = grenzState (true, false);
+        w.kinder.front().eigenschaften.push_back ({ "future", "A" });
+        w.kinder.front().eigenschaften.push_back ({ "future", "B" });
+        const auto x = rohBytes (w);
+        const auto d = duplikatLauf (x);
+        const auto erneut = duplikatLauf (d.s);
+        const auto a = apiLauf (x, { "pre" });
+        const juce::String n ("313/M-29 doppelte_eigenschaft_bleibt_read_only");
+        pruefe (duplikatNurLesen (d, x) && duplikatNurLesen (erneut, x),
+                n + " (Bibliothek): Common.future = A, dann B - nurLesen mit Duplikatgrund, speichere = "
+                "Originalbytes, Reload nurLesen", duplikatText (d, x) + ", Reload " + ladeErgebnisWort (erneut.erg));
+        pruefe (apiVerweigert (a, x),
+                n + " (Prozessor): setzeBindung verweigert, 0 Host-Dirty, getStateInformation bytegleich",
+                apiText (a, x));
+    }
+    // M-30 (heute rot, Teilfaelle von M-29): ein bekanntes Feld doppelt.
+    {
+        auto w = grenzState (false, false);
+        w.kinder.front().eigenschaften.push_back ({ "label", "A" });
+        w.kinder.front().eigenschaften.push_back ({ "label", "B" });
+        const auto x = rohBytes (w);
+        const auto d = duplikatLauf (x);
+        pruefe (duplikatNurLesen (d, x) && d.z.common.label.isEmpty(),
+                "313/M-30 (a) (Teilfall von 313/M-29) label_doppelt: nurLesen bytegleich, weder A noch B als "
+                "Label gelesen", duplikatText (d, x));
+    }
+    {
+        auto w = grenzState (true, false);
+        w.eigenschaften.push_back ({ "schema", 2 });
+        const auto x = rohBytes (w);
+        const auto d = duplikatLauf (x);
+        pruefe (duplikatNurLesen (d, x),
+                "313/M-30 (b) (Teilfall von 313/M-29) wurzel_schema_doppelt: nurLesen bytegleich",
+                duplikatText (d, x));
+    }
+    // M-31 (heute rot, Teilfall von M-29): Schema-1-Wurzel, keine Migration.
+    {
+        RohKnoten alt { "EqCopilotState", {}, {} };
+        alt.eigenschaften.push_back ({ "schema", 1 });
+        alt.eigenschaften.push_back ({ "sensor_id", "11111111-2222-3333-4444-555555555555" });
+        alt.eigenschaften.push_back ({ "role", "sensor" });
+        alt.eigenschaften.push_back ({ "sensor_id", "66666666-7777-8888-9999-000000000000" });
+        const auto x = rohBytes (alt);
+        const auto d = duplikatLauf (x);
+        pruefe (duplikatNurLesen (d, x) && d.z.herkunft == state::Herkunft::nurLesen,
+                "313/M-31 (Teilfall von 313/M-29) schema1_sensor_id_doppelt: nurLesen bytegleich, keine Migration",
+                duplikatText (d, x));
+    }
+    // M-32 (Regressionswache, Teilfall von M-29): eine fremde Wurzel bleibt ignoriert.
+    {
+        RohKnoten fremd { "IrgendeinAnderesPlugin", {}, {} };
+        fremd.eigenschaften.push_back ({ "sensor_id", "gekapert" });
+        fremd.eigenschaften.push_back ({ "sensor_id", "doppelt" });
+        const auto x = rohBytes (fremd);
+        state::Zustand z = state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        const auto erg = state::lade (x.getData(), x.getSize(), state::Bundle::eqcp(), z);
+        pruefe (erg == state::LadeErgebnis::ignoriert && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "313/M-32 (Teilfall von 313/M-29) fremde_wurzel_mit_doppeltem_namen: ignoriert, Zustand unveraendert",
+                ladeErgebnisWort (erg));
+    }
+    // M-34 (heute rot): das Duplikat tief und am Sammlungsrand.
+    {
+        auto w = grenzState (true, false);
+        RohKnoten kind { "Zukunft", {}, {} };
+        kind.eigenschaften.push_back ({ "future", "A" });
+        kind.eigenschaften.push_back ({ "future", "B" });
+        w.kinder.front().kinder.push_back (std::move (kind));
+        const auto x = rohBytes (w);
+        const auto d = duplikatLauf (x);
+        pruefe (duplikatNurLesen (d, x),
+                "313/M-34 duplikat_tief_und_am_rand (a): Duplikat in einem Kind von Common (Ebene 2) - nurLesen "
+                "bytegleich", duplikatText (d, x));
+    }
+    {
+        auto w = grenzState (true, false);
+        auto& c = w.kinder.front();
+        for (int i = 1; (int) c.eigenschaften.size() < 65535; ++i)
+            c.eigenschaften.push_back ({ eindeutig (i), i });
+        c.eigenschaften.push_back ({ eindeutig (1), 0 });   // der 65.536. Eintrag wiederholt f000001
+        const auto x = rohBytes (w);
+        const auto d = duplikatLauf (x);
+        pruefe (duplikatNurLesen (d, x),
+                "313/M-34 duplikat_tief_und_am_rand (b): Common mit 65.536 Eintraegen, davon ein Name doppelt - "
+                "nurLesen bytegleich", duplikatText (d, x));
+    }
+    // M-33 (Regressionswache): eindeutige Namen laden wie bisher - jedes
+    // Writer-Golden ausser dem Negativ-Golden, je ein eigener Pruefeintrag.
+    {
+        struct Golden { const char* datei; bool aktiveSonde; state::LadeErgebnis erwartet; bool bytegleich; };
+        const Golden goldens[] = {
+            { "aus-schema1-sensor.bin",   false, state::LadeErgebnis::geladen,  true  },
+            { "aus-schema1-hub.bin",      false, state::LadeErgebnis::geladen,  true  },
+            { "aus-schema1-pre.bin",      false, state::LadeErgebnis::geladen,  true  },
+            { "aus-schema1-post.bin",     false, state::LadeErgebnis::geladen,  true  },
+            { "fremdes-major-3.bin",      false, state::LadeErgebnis::nurLesen, true  },
+            { "main-intent-v1.bin",       false, state::LadeErgebnis::geladen,  true  },
+            { "dsp-v2-voll.bin",          true,  state::LadeErgebnis::geladen,  true  },
+            // Layout v1 migriert beim Laden nach Layout v2 (R5); der Save ist
+            // deshalb wie bisher nicht bytegleich zum Eingang.
+            { "layout-v1.bin",            true,  state::LadeErgebnis::geladen,  false },
+            { "main-binding-v1.bin",      false, state::LadeErgebnis::geladen,  true  },
+            { "legacy-retained-v1.bin",   false, state::LadeErgebnis::geladen,  true  }
+        };
+        for (const auto& g : goldens)
+        {
+            juce::MemoryBlock b;
+            const auto datei = fixtureOrdner.getChildFile ("schema2").getChildFile (g.datei);
+            const bool da = datei.existsAsFile() && datei.loadFileAsData (b);
+            state::Zustand z;
+            const auto bundle = g.aktiveSonde ? state::Bundle::nkac() : state::Bundle::eqcp();
+            const auto erg = da ? state::lade (b.getData(), b.getSize(), bundle, z) : state::LadeErgebnis::ignoriert;
+            juce::MemoryBlock s;
+            if (erg != state::LadeErgebnis::ignoriert)
+                state::speichere (z, s);
+            pruefe (da && erg == g.erwartet && ! z.grund.contains ("duplicate") && (! g.bytegleich || gleich (s, b)),
+                    juce::String ("313/M-33 eindeutige_namen_laden_wie_bisher: ") + g.datei + " "
+                        + ladeErgebnisWort (g.erwartet) + (g.bytegleich ? ", Save bytegleich" : ""),
+                    juce::String (ladeErgebnisWort (erg)) + ", Grund '" + z.grund + "', Save "
+                        + (gleich (s, b) ? "bytegleich" : "anders"));
+        }
+    }
+    // M-35 (heute nicht messbar): das Negativ-Golden laedt read-only. Die Datei
+    // schreibt der Goldenschreiber in G7 als erklaerten Mutanten.
+    {
+        const auto datei = fixtureOrdner.getChildFile ("schema2").getChildFile ("doppelte-eigenschaft-v1.bin");
+        juce::MemoryBlock b;
+        const bool da = datei.existsAsFile() && datei.loadFileAsData (b);
+        const auto d = da ? duplikatLauf (b) : DuplikatLauf {};
+        pruefe (da && duplikatNurLesen (d, b),
+                "313/M-35 negativgolden_doppelte_eigenschaft (Laden): nurLesen mit Duplikatgrund, speichere = "
+                "Originalbytes", da ? duplikatText (d, b) : juce::String ("Datei fehlt: ") + datei.getFullPathName());
+    }
 }
 } // namespace
 
@@ -1299,6 +1976,7 @@ int main (int argc, char* argv[])
         const auto goldenOrdner = fixtureOrdner.getChildFile ("schema2");
         if (schreibeGoldens) goldenOrdner.createDirectory();
         int bytegleich = 0;
+        juce::MemoryBlock sensorWriter;   // Grundlage des Negativ-Goldens (313/M-35)
         for (const auto& r : kRollen)
         {
             const auto saat = saatSchema1 (r.name, r.label, r.paar);
@@ -1320,6 +1998,8 @@ int main (int argc, char* argv[])
 
             juce::MemoryBlock heraus;
             state::speichere (z, heraus);
+            if (juce::String (r.name) == "sensor")
+                sensorWriter = heraus;
 
             // Determinismus: zweimal migrieren -> gleiche Bytes.
             state::Zustand z2;
@@ -1366,6 +2046,44 @@ int main (int argc, char* argv[])
             }
             juce::MemoryBlock auf;
             pruefe (datei.existsAsFile() && datei.loadFileAsData (auf) && gleich (auf, bytes), "read-only-Fixture fremdes-major-3.bin bytegleich");
+        }
+
+        /*  NAK-313 Etappe 3 (R-313-2, 313/M-35): das Negativ-Golden. Ein
+            erklaerter Mutant des Writer-Goldens aus-schema1-sensor.bin mit
+            genau EINER benannten Abweichung (Pruefliste E): an dessen `Common`
+            haengen zwei Eigenschaften `future` = "A" und `future` = "B" -
+            Rohbytes, Eigenschaftszaehler von Common + 2. Kein Golden der Liste
+            traegt ein `Common.future`, das zweite haette sonst kein erstes. Der
+            Mutant entsteht aus den Writer-Bytes; die Rohfassung ohne Zusatz
+            muss sie bytegleich wiedergeben, sonst waere die Abweichung nicht
+            die einzige. Geladen wird die Datei in G14 (313/M-35, Laden). */
+        {
+            auto roh = rohAusBaum (juce::ValueTree::readFromData (sensorWriter.getData(), sensorWriter.getSize()));
+            const bool rohGleich = gleich (rohBytes (roh), sensorWriter);
+            bool commonGefunden = false;
+            for (auto& kind : roh.kinder)
+            {
+                if (kind.typ != "Common")
+                    continue;
+                kind.eigenschaften.push_back ({ "future", "A" });
+                kind.eigenschaften.push_back ({ "future", "B" });
+                commonGefunden = true;
+            }
+            const auto mutant = rohBytes (roh);
+            const auto datei = goldenOrdner.getChildFile ("doppelte-eigenschaft-v1.bin");
+            if (schreibeGoldens && rohGleich && commonGefunden)
+            {
+                datei.replaceWithData (mutant.getData(), mutant.getSize());
+                std::cout << "  geschrieben: " << datei.getFullPathName().toRawUTF8() << std::endl;
+            }
+            juce::MemoryBlock auf;
+            const bool gelesen = datei.existsAsFile() && datei.loadFileAsData (auf);
+            pruefe (rohGleich && commonGefunden && gelesen && gleich (auf, mutant),
+                    "313/M-35 negativgolden_doppelte_eigenschaft (Datei): doppelte-eigenschaft-v1.bin bytegleich zum "
+                    "erklaerten Mutanten von aus-schema1-sensor.bin (Common + future A, future B)",
+                    juce::String ("Rohfassung ") + (rohGleich ? "= Writer-Bytes" : "WEICHT AB") + ", Mutant "
+                        + juce::String ((int) mutant.getSize()) + " Bytes, Datei "
+                        + (gelesen ? juce::String ((int) auf.getSize()) + " Bytes" : juce::String ("fehlt")));
         }
 
         /*  SONDE-014 Etappe A: ein Golden fuer den musikalischen Intent.
@@ -2480,20 +3198,55 @@ int main (int argc, char* argv[])
             pruefe (state::lade (arrayGrenze.getData(), arrayGrenze.getSize(), state::Bundle::eqcp(), z)
                         == state::LadeErgebnis::geladen,
                     "63 verschachtelte Arrays plus Blatt passieren und laden");
+            // 313/M-25 (R-313-1): der Kandidat aendert keine Tiefe - der Rand
+            // bleibt ueber Speichern und Laden schreibbar.
+            {
+                state::Zustand z1, z2;
+                const auto erg1 = state::lade (arrayGrenze.getData(), arrayGrenze.getSize(), state::Bundle::eqcp(), z1);
+                juce::MemoryBlock s1, s2;
+                state::speichere (z1, s1);
+                const auto erg2 = state::lade (s1.getData(), s1.getSize(), state::Bundle::eqcp(), z2);
+                state::speichere (z2, s2);
+                pruefe (erg1 == state::LadeErgebnis::geladen && erg2 == state::LadeErgebnis::geladen && gleich (s1, s2),
+                        "313/M-25 variantenrand_rueckschreibbar: 63 Arrays plus Blatt laden, speichern, laden, zweiter "
+                        "Save bytegleich",
+                        juce::String (ladeErgebnisWort (erg1)) + " / " + ladeErgebnisWort (erg2) + ", erster Save "
+                            + (gleich (s1, arrayGrenze) ? "= Eingang" : "anders") + ", zweiter Save "
+                            + (gleich (s1, s2) ? "= erster" : "anders"));
+            }
 
-            const auto eintraegeGrenze = baumMitEigenschaftszahl (65536);
-            pruefe (state::lade (eintraegeGrenze.getData(), eintraegeGrenze.getSize(), state::Bundle::eqcp(), z)
-                        == state::LadeErgebnis::nurLesen,
-                    "65.536 Eintraege in einer Sammlung passieren den Byte-Riegel");
-            const auto eintragZuViel = baumMitEigenschaftszahl (65537);
-            pruefe (state::lade (eintragZuViel.getData(), eintragZuViel.getSize(), state::Bundle::eqcp(), z)
-                        == state::LadeErgebnis::ignoriert,
-                    "65.537 Eintraege in einer Sammlung werden verworfen");
-
-            const auto gesamtGrenze = baumMitGesamteintraegen (262144);
-            pruefe (state::lade (gesamtGrenze.getData(), gesamtGrenze.getSize(), state::Bundle::eqcp(), z)
-                        == state::LadeErgebnis::nurLesen,
-                    "262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel");
+            // 313/M-37 (R-313-2): die Helfer schreiben eindeutige Namen; die
+            // Faelle an der Grenze pruefen zusaetzlich den Grund - der Stand
+            // ohne `schema` ist read-only wegen des Schemas, nicht wegen eines
+            // doppelten Namens. 313/M-23: jenseits der Grenze bleibt der Zustand.
+            {
+                const auto eintraegeGrenze = baumMitEigenschaftszahl (65536);
+                state::Zustand zg;
+                double ms = 0.0;
+                const auto erg = ladeGemessen (eintraegeGrenze, state::Bundle::eqcp(), zg, ms);
+                pruefe (erg == state::LadeErgebnis::nurLesen && zg.grund == kSchemaGrundOhneSchema,
+                        "65.536 Eintraege in einer Sammlung passieren den Byte-Riegel (313/M-37: eindeutige Namen, "
+                        "read-only aus dem Schemagrund)",
+                        juce::String (ladeErgebnisWort (erg)) + " (" + msText (ms) + "), Grund '" + zg.grund + "'");
+            }
+            {
+                const auto eintragZuViel = baumMitEigenschaftszahl (65537);
+                state::Zustand zv = state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+                const auto erg = state::lade (eintragZuViel.getData(), eintragZuViel.getSize(), state::Bundle::eqcp(), zv);
+                pruefe (erg == state::LadeErgebnis::ignoriert && zv.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "65.537 Eintraege in einer Sammlung werden verworfen (313/M-23: Zustand wie vor dem Aufruf)",
+                        juce::String (ladeErgebnisWort (erg)) + ", instance_id '" + zv.common.instanceId + "'");
+            }
+            {
+                const auto gesamtGrenze = baumMitGesamteintraegen (262144);
+                state::Zustand zg;
+                double ms = 0.0;
+                const auto erg = ladeGemessen (gesamtGrenze, state::Bundle::eqcp(), zg, ms);
+                pruefe (erg == state::LadeErgebnis::nurLesen && zg.grund == kSchemaGrundOhneSchema,
+                        "262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel (313/M-37: eindeutige "
+                        "Namen, read-only aus dem Schemagrund)",
+                        juce::String (ladeErgebnisWort (erg)) + " (" + msText (ms) + "), Grund '" + zg.grund + "'");
+            }
             const auto gesamtZuViel = baumMitGesamteintraegen (262145);
             pruefe (state::lade (gesamtZuViel.getData(), gesamtZuViel.getSize(), state::Bundle::eqcp(), z)
                         == state::LadeErgebnis::ignoriert,
@@ -3473,6 +4226,19 @@ int main (int argc, char* argv[])
             }
         }
         a.schliesse ("NAK-312 Etappe 7b: der ruhende Bestand uebersteht hub, sensor, hub live und ueber Speichern und Laden");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // G14 · NAK-313 Etappe 3: State-Annahme (R-313-1, R-313-2; 313/M-17 bis
+    //       M-35; M-23, M-25 und M-37 stehen bei G9, die Datei von M-35 bei G7)
+    // ══════════════════════════════════════════════════════════════════════
+    {
+        Abschnitt a;
+        nak313AmCommon();
+        nak313Gesamtgrenze();
+        nak313TiefeUndKnoten();
+        nak313Duplikate (fixtureOrdner);
+        a.schliesse ("NAK-313 Etappe 3: der Headroom-Kandidat besteht den Byte-Riegel, doppelte Namen bleiben read-only");
     }
 
     std::cout << std::endl

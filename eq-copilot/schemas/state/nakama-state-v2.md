@@ -55,8 +55,8 @@ Kindern. Zwei Kopien derselben Werte können auseinanderlaufen, und §33.5
 verbietet ausdrücklich eine zweite Wahrheit — ein Leser müsste bei Widerspruch
 raten.
 
-**Flache Arrays, keine Kindknoten.** Der Byte-Riegel (§5) erlaubt höchstens 64
-`ValueTree`-Knoten im ganzen Baum. Acht Zonen und 32 Undo-Einträge als Knoten
+**Flache Arrays, keine Kindknoten.** Der Byte-Riegel (§5) begrenzt die Tiefe auf 64
+`ValueTree`-Ebenen und jede Sammlung auf 65.536 Einträge; Kindknoten zählen dort wie Eigenschaften gegen 262.144 Einträge im ganzen Baum. *(Präzisiert am 24.09.2026, NAK-313. Bis dahin stand hier „erlaubt höchstens 64 `ValueTree`-Knoten im ganzen Baum".)* Acht Zonen und 32 Undo-Einträge als Knoten
 wären allein 40. `Dsp` führt seine Listen deshalb als flache bzw.
 verschachtelte Variantenarrays, wie `MainProject` es seit SONDE-012 tut.
 
@@ -283,7 +283,7 @@ Quelle: `EqCopilotState{schema=1, sensor_id, role, label, pair_id}` (Goldens `fi
 
 ## 5 · Unbekanntes Major, read-only (§53.8, §33.5)
 
-Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) · `Common` fehlt oder `Common.schema` ≠ 1 · unbekanntes Enumwort · Klasse nicht im Bundle · Kind-Matrix verletzt · unbekanntes Kind · `Parameters.dsp_schema_version` ist vorhanden und weder 1 noch 2 (unbekanntes Layout-Major) · `Dsp.schema` ≠ 1 oder sein Inhalt verletzt eine Regel aus §2.0 · `RetainedMainProject` außerhalb von `legacy`, doppelt, mit `schema` ≠ 1 oder mit einem Inhalt, der eine Regel von `MainProject` verletzt (§2.0b; der Grund nennt das Kind) · `Pairing` vorhanden, solange dieser Build es nicht liest.
+Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) · `Common` fehlt oder `Common.schema` ≠ 1 · unbekanntes Enumwort · Klasse nicht im Bundle · Kind-Matrix verletzt · unbekanntes Kind · `Parameters.dsp_schema_version` ist vorhanden und weder 1 noch 2 (unbekanntes Layout-Major) · `Dsp.schema` ≠ 1 oder sein Inhalt verletzt eine Regel aus §2.0 · `RetainedMainProject` außerhalb von `legacy`, doppelt, mit `schema` ≠ 1 oder mit einem Inhalt, der eine Regel von `MainProject` verletzt (§2.0b; der Grund nennt das Kind) · `Pairing` vorhanden, solange dieser Build es nicht liest · ein Eigenschaftsname kommt in einem Knoten doppelt vor (JUCE behielte still nur einen Wert; eine fremde Wurzel bleibt „Fremder Baumtyp oder Müllbytes"). *(Präzisiert am 24.09.2026, NAK-313 R-313-2.)*
 
 Seit SONDE-015 ist `Dsp` für `active_probe` **kein** read-only-Grund mehr; für jede andere Klasse bleibt es einer (Kind-Matrix). Ein Build, der `Dsp` noch nicht liest, hält einen Stand mit diesem Kind weiterhin read-only mit Originalbytes — genau dafür schreibt der Writer das Kind nur, wenn es etwas trägt (§2.0).
 
@@ -294,17 +294,17 @@ Verhalten: **audio-neutral** (Passthrough wie immer) · **read-only** (`setzeBin
 Fremder Baumtyp oder Müllbytes: Zustand bleibt wie vor dem Aufruf (heutiges Verhalten, IdentityTest „Muellbytes aendern den Zustand nicht").
 
 Vor dem JUCE-Leser prüft ein allokationsfreier Byte-Riegel genau einen
-vollständigen `ValueTree`: höchstens 16 MiB, höchstens 64 `ValueTree`-Knoten
+vollständigen `ValueTree`: höchstens 16 MiB, höchstens 64 ineinander geschachtelte `ValueTree`-Ebenen
 inklusive Wurzel sowie 63 ineinander geschachtelte Variantenarrays plus
 Skalarblatt, höchstens 65.536 Einträge je
-Sammlung sowie 262.144 Einträge im gesamten Baum. Abgeschnittene Streams,
+Sammlung sowie 262.144 Einträge im gesamten Baum (Eigenschaften, Kinder und Arrayelemente zählen je als Eintrag; eine Knotenzahl begrenzt er nicht). Abgeschnittene Streams,
 Suffixbytes und deklarierte Längen außerhalb des vorhandenen Puffers gelten als
 Müllbytes. Für einen **schreibbaren** geladenen State baut der Leser zusätzlich
 den größten mit den heutigen API-Grenzen erreichbaren Folgezustand über demselben
-additiven Baum. Passt dieser nicht vollständig unter 16 MiB, bleibt der Eingang
+additiven Baum und prüft ihn mit demselben Byte-Riegel. Besteht dieser Kandidat den Riegel nicht vollständig als verlustfrei (16 MiB, Tiefe, Einträge je Sammlung und im ganzen Baum), bleibt der Eingang
 read-only und damit bytegleich. Dieser konkrete Headroom deckt die maximalen
 heutigen Userfelder und verhindert, dass `Save(Load(x))` einen State erzeugt, den
-derselbe Leser beim nächsten Start wegen seiner eigenen Grenze ablehnt. Marker, die JUCE
+derselbe Leser beim nächsten Start wegen seiner eigenen Grenze ablehnt. *(Präzisiert am 24.09.2026, NAK-313 R-313-1. Bis dahin stand hier „höchstens 64 `ValueTree`-Knoten inklusive Wurzel" und „Passt dieser nicht vollständig unter 16 MiB" — der Riegel begrenzt die Tiefe, nicht die Knotenzahl, und der Kandidat wurde nur nach seiner Größe beurteilt.)* Marker, die JUCE
 8 nicht byteverlustfrei zurückschreiben kann
 (`undefined`/Marker 9 oder ein zukünftiger Marker), machen eine bekannte
 `NakamaState`-/`EqCopilotState`-Wurzel dagegen **read-only**; die Originalbytes

@@ -1087,15 +1087,29 @@ def baue(v: dict) -> tuple[dict[str, bytes], dict]:
     # NAK-312 Etappe 7b (U49, Weg Z-A, M-111 bis M-115): `legacy-retained-v1.bin`
     # aus demselben Writer traegt den ruhenden Bestand im Kind
     # `RetainedMainProject` samt einer unbekannten Eigenschaft.
+    # NAK-313 Etappe 3 (R-313-2, M-35): `doppelte-eigenschaft-v1.bin` ist das
+    # Negativ-Golden - derselbe Goldenschreiber legt es als erklaerten Mutanten
+    # von `aus-schema1-sensor.bin` an (zwei Eigenschaften `future` an Common);
+    # der Leser haelt es read-only mit den Originalbytes, geladen wird es in B2.
+    negativ = {
+        "doppelte-eigenschaft-v1": {
+            "erwartung": "nurLesen",
+            "warum": "erklaerter Mutant von schema2/aus-schema1-sensor.bin: an Common zwei Eigenschaften "
+                     "future = \"A\" und future = \"B\" (Eigenschaftszaehler + 2); ein doppelter Name macht "
+                     "eine bekannte Wurzel read-only mit Originalbytes (R-313-2)",
+        },
+    }
     for datei in ("aus-schema1-sensor", "aus-schema1-hub", "aus-schema1-pre", "aus-schema1-post",
                   "fremdes-major-3", "main-intent-v1", "dsp-v2-voll", "layout-v1", "main-binding-v1",
-                  "legacy-retained-v1"):
+                  "legacy-retained-v1", "doppelte-eigenschaft-v1"):
         pfad = FIXTURES / "schema2" / f"{datei}.bin"
         if pfad.exists():
             b = pfad.read_bytes()
-            goldens.append({"datei": f"schema2/{datei}.bin", "sha256": sha256_hex(b), "bytes": len(b)})
+            goldens.append({"datei": f"schema2/{datei}.bin", "sha256": sha256_hex(b), "bytes": len(b),
+                            **negativ.get(datei, {})})
         else:
             goldens.append({"datei": f"schema2/{datei}.bin", "sha256": None, "bytes": None,
+                            **negativ.get(datei, {}),
                             "hinweis": "noch nicht geschrieben - EqCopStateMigrationTest --schreibe-goldens"})
 
     manifest = {

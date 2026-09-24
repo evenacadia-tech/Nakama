@@ -24,6 +24,7 @@
 //! Envelope, Grenzen und Authentisierung").
 
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -225,12 +226,60 @@ fn ganzzahlen_normalisiert(wert: &Value) -> Value {
     kopie
 }
 
+/// Das v3-Schema mit der Hello-Definition einer Verbindungsart als Wurzel -
+/// dieselbe committete Vertragsdatei, die der Coordinator als aktive Fassung
+/// liest, und dieselbe Engine (NAK-313 R-313-7, Manifest §8.6 Schritt 6).
+fn hello_schema(definition: &'static str) -> &'static crate::vertrag::Schema {
+    static CONTROL: OnceLock<crate::vertrag::Schema> = OnceLock::new();
+    static TELEMETRIE: OnceLock<crate::vertrag::Schema> = OnceLock::new();
+    let laden = move || {
+        let mut wurzel: Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+        ))
+        .expect("eingefrorenes v3-Schema ist JSON");
+        let objekt = wurzel.as_object_mut().expect("v3-Wurzel ist ein Objekt");
+        objekt.remove("oneOf");
+        objekt.remove("x-nakama-discriminator");
+        objekt.insert("$ref".into(), Value::String(format!("#/$defs/{definition}")));
+        crate::vertrag::Schema::laden(wurzel).expect("Hello-Definition haelt die Engine-Teilmenge")
+    };
+    if definition == "hello_control" {
+        CONTROL.get_or_init(laden)
+    } else {
+        TELEMETRIE.get_or_init(laden)
+    }
+}
+
+/// Die Hello-Pruefung des Schemas: eine Verletzung wird KeinHello mit dem
+/// JSON-Zeiger der ersten Verletzung in kanonischer Ordnung (Wurzel heisst
+/// die Nachricht selbst; bei required steht das fehlende Feld dahinter).
+fn hello_schema_pruefen(definition: &'static str, wert: &Value) -> Result<(), BootstrapFehler> {
+    let verletzungen = hello_schema(definition).pruefe(wert);
+    let Some(v) = verletzungen.first() else {
+        return Ok(());
+    };
+    let zeiger = if v.instanz.is_empty() { "Wurzel" } else { v.instanz.as_str() };
+    let feld = if v.schluessel == "required" {
+        format!(" {}", v.schema.rsplit('/').next().unwrap_or_default())
+    } else {
+        String::new()
+    };
+    Err(BootstrapFehler::KeinHello(format!("schema: {zeiger} verletzt {}{feld}", v.schluessel)))
+}
+
 /// Liest die erste Nachricht einer Verbindung aus einem Bytepuffer.
 ///
 /// Es gibt bewusst KEINEN Weg, hier einen v3-Binaerframe hineinzureichen: die
 /// Funktion verlangt gueltiges UTF-8-JSON. Ein Binaerframe faellt an
 /// `KeinUtf8` oder `KeinJson` — das ist die Regel "jeder Binaerframe
 /// anstelle eines Bootstrap-Hellos wird geschlossen".
+///
+/// Seit NAK-313 Etappe 6 (R-313-7, Manifest §8.6) die Reihenfolge am Tor:
+/// Laenge, Praefix und UTF-8; das Textriegelurteil ueber die Hello-Bytes wird
+/// gerechnet und gehalten; EIN strenger Lauf; Typ und Protokollwahl aus dem
+/// Wert (ein v2-Hello geht hier als V2, ohne Textriegel und v3-Schema); fuer
+/// v3 das gehaltene Urteil, dann die Hello-Pruefung des Schemas, erst danach
+/// die typisierte Uebernahme aus demselben Wert mit der zweiten Wand dahinter.
 pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehler> {
     if daten.len() < 4 {
         return Err(BootstrapFehler::PraefixUnvollstaendig);
@@ -247,6 +296,13 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
         return Err(BootstrapFehler::Unvollstaendig);
     }
     let roh = std::str::from_utf8(&daten[4..ende]).map_err(|_| BootstrapFehler::KeinUtf8)?;
+    // 🔑 NAK-313 R-313-7 (M-100 bis M-102, M-104): das Urteil des Textriegels
+    // ueber die Hello-Bytes wird ZUERST gerechnet und gehalten - eine reine
+    // Funktion ohne Nebenwirkung. Es entscheidet erst nach der Protokollwahl
+    // und nur ueber ein v3-Hello; ein v2-Hello scheitert nie an einer v3-Regel.
+    // Scheitert schon der strenge Lauf, endet das Hello dort als KeinJson,
+    // auch wenn das gehaltene Urteil ebenfalls negativ ist.
+    let textriegel = crate::vertrag::textriegel_bytes(roh.as_bytes());
     // 🔑 NAK-313 R-313-6 (M-45): EIN strenger Lauf ueber die Hello-Bytes.
     // Protokollwahl und die typisierte Uebernahme der v3-Hellos lesen danach
     // denselben Wert, keinen zweiten Parselauf ueber den Rohtext; ein v2-Hello
@@ -290,8 +346,13 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
         None => return Err(BootstrapFehler::KeinHello("weder protocol noch protocol_version".into())),
     }
 
+    // 🔑 NAK-313 R-313-7: fuer v3 gilt jetzt das gehaltene Textriegelurteil,
+    // dann die Hello-Pruefung des Schemas der Verbindungsart (null ist dort ein
+    // eigener Typ, nicht fehlend). Die Pruefungen danach bleiben die zweite Wand.
+    textriegel.map_err(|g| BootstrapFehler::KeinHello(format!("textriegel: {g}")))?;
     match obj.get("connection_kind").and_then(|v| v.as_str()) {
         Some("control") => {
+            hello_schema_pruefen("hello_control", &wert)?;
             let h: HelloControl = serde_json::from_value(ganzzahlen_normalisiert(&wert))
                 .map_err(|e| BootstrapFehler::KeinHello(e.to_string()))?;
             plugin_version_pruefen(&h.plugin_version).map_err(BootstrapFehler::KeinHello)?;
@@ -314,6 +375,7 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
             Ok((Bootstrap::V3Control(Box::new(h)), ende))
         }
         Some("telemetry") => {
+            hello_schema_pruefen("hello_telemetry", &wert)?;
             let h: HelloTelemetry = serde_json::from_value(ganzzahlen_normalisiert(&wert))
                 .map_err(|e| BootstrapFehler::KeinHello(e.to_string()))?;
             plugin_version_pruefen(&h.plugin_version).map_err(BootstrapFehler::KeinHello)?;
@@ -529,6 +591,9 @@ mod tests {
     /// Laengenpruefung durch — das Schema sagt 120 bzw. 64. Geprueft wird
     /// jeweils die GRENZE und der erste Schritt darueber; ohne die Grenze
     /// waere "wird abgewiesen" auch mit einer viel zu strengen Regel gruen.
+    /// Seit NAK-313 Etappe 6 (M-105) nennt der Grund die Hello-Pruefung des
+    /// Schemas mit dem Zeiger des Feldes: sie laeuft vor der typisierten
+    /// Uebernahme, die Laengenpruefung dahinter bleibt die zweite Wand.
     #[test]
     fn host_haelt_die_laengen_des_vertrags() {
         let n = "a".repeat(32);
@@ -562,8 +627,8 @@ mod tests {
             "1.0",
         ))) {
             Err(BootstrapFehler::KeinHello(g)) => assert!(
-                g.contains("host.name"),
-                "der Grund muss host.name nennen, nicht irgendetwas ({g})"
+                g.starts_with("schema: /host/name "),
+                "der Grund muss die Schemapruefung mit dem Zeiger /host/name nennen ({g})"
             ),
             andere => panic!("121-Zeichen-Hostname wurde angenommen: {andere:?}"),
         }
@@ -573,8 +638,8 @@ mod tests {
             &"v".repeat(65),
         ))) {
             Err(BootstrapFehler::KeinHello(g)) => assert!(
-                g.contains("host.version"),
-                "der Grund muss host.version nennen ({g})"
+                g.starts_with("schema: /host/version "),
+                "der Grund muss die Schemapruefung mit dem Zeiger /host/version nennen ({g})"
             ),
             andere => panic!("65-Zeichen-Hostversion wurde angenommen: {andere:?}"),
         }
@@ -785,7 +850,10 @@ mod tests {
     /// doppelten Schluessels heisst `duplikat`, jeder andere `KeinJson`
     /// `parser`. Seit Etappe 5 (M-72, M-73) stehen dort auch gueltige Hellos
     /// in der `.0`- und `e`-Form: sie werden ein `V3Control` mit dem Wert aus
-    /// `wert`. Zuletzt die Zaehlpruefung.
+    /// `wert`. Seit Etappe 6 (M-98 bis M-104, dazu die mit dem Tor verschobenen
+    /// Negativen aus M-72, M-73 und M-96) die Eintraege des Tors mit den Stufen
+    /// textriegel und schema und die v2-Hellos, die als V2 durchgehen. Zuletzt
+    /// die Zaehlpruefung.
     #[test]
     fn nak313_m45_doppelter_schluessel_im_hello() {
         use crate::vertrag::produkteingaenge as tabelle;
@@ -851,6 +919,157 @@ mod tests {
             "M-49 Zaehlpruefung rust_bootstrap: {gefahren} Eintraege gefahren, der Kopf nennt {soll_anzahl}"
         );
         assert!(rot.is_empty(), "rust_bootstrap weicht von `produkt` ab:\n{}", rot.join("\n"));
+    }
+
+    /// Ein Control-Hello ohne host, mit einem Zusatz vor audio und einer
+    /// Ersetzung - die Bausteine der Tor-Faelle der Etappe 6.
+    fn control_mit(zusatz_vor_audio: &str, alt: &str, neu: &str) -> String {
+        let json = control_json(&"a".repeat(32))
+            .replace("\"audio\"", &format!("{zusatz_vor_audio}\"audio\""));
+        if alt.is_empty() {
+            json
+        } else {
+            json.replace(alt, neu)
+        }
+    }
+
+    /// NAK-313 M-98 (R-313-7): host ist nicht Pflicht - ohne host ein
+    /// V3Control mit host None.
+    #[test]
+    fn nak313_m98_host_fehlt_gueltig() {
+        match bootstrap_lesen(&praefix(&control_mit("", "", ""))) {
+            Ok((Bootstrap::V3Control(h), _)) => assert_eq!(h.host, None),
+            andere => panic!("ohne host bleibt das Hello gueltig: {andere:?}"),
+        }
+    }
+
+    /// NAK-313 M-99 (R-313-7): null ist ein eigener Typ, nicht „fehlt". Alle
+    /// drei fallen an der Hello-Pruefung des Schemas mit dem Zeiger des Feldes,
+    /// nie als V3Control mit host oder name None.
+    #[test]
+    fn nak313_m99_host_null_faellt_am_schema() {
+        for (host, zeiger) in [
+            ("null", "/host"),
+            ("{\"pid\":1,\"name\":null}", "/host/name"),
+            ("{\"pid\":1,\"version\":null}", "/host/version"),
+        ] {
+            let json = control_mit(&format!("\"host\":{host},"), "", "");
+            match bootstrap_lesen(&praefix(&json)) {
+                Err(BootstrapFehler::KeinHello(g)) => assert!(
+                    g.starts_with(&format!("schema: {zeiger} ")),
+                    "host {host}: der Grund nennt das Schema mit dem Zeiger {zeiger} ({g})"
+                ),
+                andere => panic!("host {host} faellt am Schema: {andere:?}"),
+            }
+        }
+    }
+
+    /// NAK-313 M-100 (R-313-7, Regel 5): ein NUL-Escape in plugin_version
+    /// faellt am Textriegel, obwohl serde_json es annimmt.
+    #[test]
+    fn nak313_m100_nul_escape_im_hello() {
+        let json = control_mit("", "\"plugin_version\":\"0.3.0\"", "\"plugin_version\":\"a\\u0000b\"");
+        match bootstrap_lesen(&praefix(&json)) {
+            Err(BootstrapFehler::KeinHello(g)) => assert!(
+                g.starts_with("textriegel: NUL-Escape in Zeichenkette an Position "),
+                "der Grund ist der des Rust-Riegels ({g})"
+            ),
+            andere => panic!("ein NUL-Escape im Hello faellt am Textriegel: {andere:?}"),
+        }
+    }
+
+    /// NAK-313 M-101 (R-313-7, E-313-17): die Samplerategrenze des Tors ist
+    /// die des C++-Writers - 1e-308 faellt am Textriegel (Untergrenze), 1e-307
+    /// und 48000 gelten, 768000.5 faellt am Schema (maximum). 1e-300 bleibt nur
+    /// benannt (NAK-387 Beobachtung 1) und steht allein in der Tabelle.
+    #[test]
+    fn nak313_m101_samplerate_raender() {
+        let mit = |rate: &str| {
+            control_mit("", "\"samplerate\":48000", &format!("\"samplerate\":{rate}"))
+        };
+        match bootstrap_lesen(&praefix(&mit("1e-308"))) {
+            Err(BootstrapFehler::KeinHello(g)) => {
+                assert_eq!(g, "textriegel: Zahl ausserhalb +/-1e308: 1e-308", "(a) 1e-308")
+            }
+            andere => panic!("(a) 1e-308 faellt am Textriegel: {andere:?}"),
+        }
+        for (fall, rate, soll) in [("(b)", "1e-307", 1e-307), ("(d)", "48000", 48_000.0)] {
+            match bootstrap_lesen(&praefix(&mit(rate))) {
+                Ok((Bootstrap::V3Control(h), _)) => assert_eq!(h.audio.samplerate, soll, "{fall}"),
+                andere => panic!("{fall} {rate} ist ein V3Control: {andere:?}"),
+            }
+        }
+        match bootstrap_lesen(&praefix(&mit("768000.5"))) {
+            Err(BootstrapFehler::KeinHello(g)) => assert!(
+                g.starts_with("schema: /audio/samplerate "),
+                "(e) 768000.5 faellt am Schema ({g})"
+            ),
+            andere => panic!("(e) 768000.5 faellt am Schema: {andere:?}"),
+        }
+    }
+
+    /// NAK-313 M-102 (R-313-7): die Reihenfolge am Tor - verletzt ein Hello
+    /// den Textriegel und das Schema, nennt der Grund den Textriegel.
+    #[test]
+    fn nak313_m102_reihenfolge_am_tor() {
+        let json = control_mit(
+            "\"host\":null,",
+            "\"plugin_version\":\"0.3.0\"",
+            "\"plugin_version\":\"a\\u0000b\"",
+        );
+        match bootstrap_lesen(&praefix(&json)) {
+            Err(BootstrapFehler::KeinHello(g)) => {
+                assert!(g.starts_with("textriegel: "), "der Textriegel geht dem Schema vor ({g})")
+            }
+            andere => panic!("NUL-Escape und host null fallen am Textriegel: {andere:?}"),
+        }
+    }
+
+    /// NAK-313 M-103 (R-313-6): je Hello genau ein strenger Lauf - Protokollwahl,
+    /// Tor und Uebernahme lesen denselben Wert. Gezaehlt ueber die Adresse und
+    /// Laenge der Hello-Bytes (Laufzaehler nur im Testbau, thread-lokal).
+    #[test]
+    fn nak313_m103_ein_parselauf_je_hello() {
+        use crate::vertrag::laeufe;
+        let n = "a".repeat(32);
+        let faelle = [
+            ("v2-Hello", "{\"type\":\"hello\",\"protocol_version\":2,\"plugin_version\":\"0.3.0\"}".to_owned()),
+            ("v3-Control-Hello", control_json(&n)),
+            ("v3-Telemetry-Hello", telemetry_json(&n, &"b".repeat(32), &"c".repeat(32))),
+            ("v3-Hello mit host null", control_mit("\"host\":null,", "", "")),
+        ];
+        for (name, json) in faelle {
+            let daten = praefix(&json);
+            laeufe::vergessen();
+            let ergebnis = bootstrap_lesen(&daten);
+            assert_eq!(
+                laeufe::ueber(&daten[4..]),
+                1,
+                "{name}: genau ein strenger Lauf ueber die Hello-Bytes ({ergebnis:?})"
+            );
+        }
+    }
+
+    /// NAK-313 M-104 (R-313-7): ein v2-Hello scheitert nie an einer v3-Regel -
+    /// weder das gehaltene Textriegelurteil (Regel 2: mehr als 15 Stellen,
+    /// Regel 5: NUL-Escape) noch das v3-Schema entscheiden ueber es.
+    #[test]
+    fn nak313_m104_v2_hello_ohne_v3_regeln() {
+        let v2 = "{\"type\":\"hello\",\"protocol_version\":2,\"plugin_version\":\"0.4.0\",\
+                  \"host_pid\":4711,\"sensor\":{\"sensor_id\":\"sensor-1\",\"role\":\"sensor\",\
+                  \"label\":\"Klavier\"},\"audio\":{\"samplerate\":48000,\"block_size\":512,\
+                  \"channels\":2}}";
+        for (fall, json) in [
+            ("(a) samplerate 48000.0000000000001",
+             v2.replace("\"samplerate\":48000", "\"samplerate\":48000.0000000000001")),
+            ("(b) NUL-Escape in sensor.label",
+             v2.replace("\"label\":\"Klavier\"", "\"label\":\"Kla\\u0000vier\"")),
+        ] {
+            match bootstrap_lesen(&praefix(&json)) {
+                Ok((Bootstrap::V2 { roh }, _)) => assert_eq!(roh, json, "{fall}: die Rohbytes"),
+                andere => panic!("{fall}: ein v2-Hello bleibt V2: {andere:?}"),
+            }
+        }
     }
 
     #[test]

@@ -250,6 +250,8 @@ Verlauf. Wiederaufnahme nur durch neues User-Wort.
   Argumentzerlegung (`Add-Content $log ("EXIT=" + …)` wird zum Kommando
   `EXIT=`, die Marke fehlt still). Zeichenketten im Befehlstext einfach
   quotieren.
+- `[IO.File]`-Aufrufe lösen relative Pfade gegen das Prozessverzeichnis auf,
+  nicht gegen `Set-Location`: in Arbeitskopien absolute Pfade und `git -C`.
 - Bash-Heredocs können Backslashes in Windows-Pfaden verändern; Pipes
   verdecken Exitcodes.
 - Bytegleiche Fixtures und Patches brauchen passende `.gitattributes`-Regeln.

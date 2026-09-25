@@ -1,0 +1,16 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m70-feature
+Matrixzeile: M-70; Zusagesatz: kFeatureMetricsVersion = 20260927
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Nacharbeitsstand): 89
+SHA-256 vor der Mutation: EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-feature/FeatureEngine.h
+Wortlaut vorher:
+    kFeatureMetricsVersion = 20260927u;
+Wortlaut nachher:
+    kFeatureMetricsVersion = 20260928u;
+Lauf mit Mutation: --nak380 M-70 21:14:55 bis 21:14:56, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: FeatureEngine nennt 20260927 — 20260928
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: FeatureEngine nennt 20260927)
+    Pruefungen: 12 bestanden, 1 gescheitert
+Ruecknahme aus der Sicherung (FeatureEngine.h), SHA-256 EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039: gleich
+Lauf nach Ruecknahme: --nak380 M-70 21:14:56 bis 21:14:56, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

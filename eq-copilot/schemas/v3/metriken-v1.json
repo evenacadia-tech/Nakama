@@ -429,10 +429,10 @@
           "zweck": "NAK-380 M-47, T-380-5: P0, der absolute Bezugspegel im Logarithmus L = 10*log10(Binleistung + P0). Codebezug kFlussP0Db = -100.0. Liegt mindestens 34 dB ueber den Rauschboeden von 16-Bit-Dither, 24 Bit und float32 und 17 dB unter dem Binpegel von -50-dBFS-Weissrauschen."
         },
         "kFlussFilterCent": {
-          "wert": 50.0,
+          "wert": 125.0,
           "einheit": "Cent",
           "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
-          "zweck": "NAK-380 M-42: halbe Breite des Maximumfilters ueber den Vorframe (SuperFlux Gl. 5, ein Viertelton), w_k = max(1, ceil(k*(2^(50/1200) - 1))) Bins. Codebezug kFlussFilterCent = 50.0."
+          "zweck": "NAK-380 M-42, R-380-12 (i): halbe Breite des Maximumfilters ueber den Vorframe (SuperFlux Gl. 5), an die Hopzeit der Hauptstufe gebunden: ein Vibrato +-D Cent mit Rate f_v bewegt einen Teilton je Hop um hoechstens 2*D*sin(pi*f_v*T_hop) Cent, bei D = 50, f_v = 5,5 Hz 67,2 Cent (48 kHz) und 71,9 Cent (44,1 kHz), bei 7 Hz 80,7 und 85,3 Cent; Startwert ein Halbton (100 Cent), kalibriert am Korpus auf 125 Cent (Manifest NAK-380 §37: das Vibrato V1 traegt bei 100 Cent 4 Ereignisse in 30 s, ab 125 Cent keines), w_k = max(1, ceil(k*(2^(125/1200) - 1))) Bins. Codebezug kFlussFilterCent = 125.0."
         },
         "kFlussKappa": {
           "wert": 3.0,
@@ -447,10 +447,10 @@
           "zweck": "NAK-380 M-46: rho des Rauschbodenbezugs, T_eff >= (1 + rho)*Median. Codebezug kFlussRho = 1.0."
         },
         "kFlussTminDbJeBin": {
-          "wert": 0.30,
+          "wert": 0.10,
           "einheit": "dB je Detektor-Bin",
           "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
-          "zweck": "NAK-380 M-45: absolute Mindestschwelle T_min = Wert*K (K Detektor-Bins). Codebezug kFlussTminDbJeBin = 0.30. Startwert 0,05 dB je Bin, kalibriert am Null- und Impulskorpus (Manifest NAK-380 §35): das Vibrato V1 erreicht SF bis 414,6 dB bei K = 1530 (0,271 dB je Bin), Weiss- und Rosarauschen bis 245,8 dB."
+          "zweck": "NAK-380 M-45, T-380-5, R-380-12 (i): absolute Mindestschwelle T_min = Wert*K (K Detektor-Bins, bei 48 kHz 153,0 dB). Codebezug kFlussTminDbJeBin = 0.10. Startwert 0,05 dB je Bin (deckt stehende Toene mit Median und MAD nahe 0 und Aenderungen unter P0), kalibriert nach R-380-12 (i) auf die Obergrenze 0,10 dB (Manifest NAK-380 §37: bei 125 Cent halten Null- und Impulskorpus ab 0,095 dB je Bin); das Vibrato haelt das Maximumfilter (kFlussFilterCent), nicht diese Schwelle."
         },
         "kSperrzeitMs": {
           "wert": 50.0,

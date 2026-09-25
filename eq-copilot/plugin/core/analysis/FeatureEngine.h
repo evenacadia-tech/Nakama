@@ -173,16 +173,30 @@ inline constexpr double kPeakCrestSchwelleDb = 12.0;
     letzten Ereignis. Der Vorframe laeuft ueber ALLE Hauptstufen-Frames, die
     Historie nur ueber aktive (A-6). Die sieben Werte sind gefuehrt
     (`metriken-v1.json`, Fassung 20260927); Herleitungen im Manifest NAK-380
-    §8.0 T-380-5, die Kalibrierung von T_min in §35. */
+    §8.0 T-380-5 und Regel R-380-12 (§36.2), die Korpusmessung in §37. */
 
 /** P0 in dBFS je Bin. 34 dB ueber den Rauschboeden von 16-Bit-Dither (-134),
     24 Bit (-177) und float32-Rundung (etwa -183 dBFS je Bin bei 4096 Punkten),
     17 dB unter dem Binpegel von -50-dBFS-Weissrauschen (-83 dBFS). */
 inline constexpr double kFlussP0Db = -100.0;
 
-/** Halbe Breite des Maximumfilters: ±50 Cent (ein Viertelton, ±1 Band der
-    SuperFlux-Filterbank); w_k = max(1, ceil(k*(2^(50/1200) - 1))) Bins. */
-inline constexpr double kFlussFilterCent = 50.0;
+/** Halbe Breite des Maximumfilters in Cent; w_k = max(1,
+    ceil(k*(2^(kFlussFilterCent/1200) - 1))) Bins.
+
+    An die Hopzeit gebunden (R-380-12 (i)): SuperFlux legt ±1 Band der
+    Viertelton-Filterbank (±50 Cent) bei 10 ms Hop an (Boeck/Widmer, DAFx-13,
+    Gl. 5). Die Hauptstufe hoppt mit 2048 Samples, 42,67 ms bei 48 kHz und
+    46,44 ms bei 44,1 kHz. Ein Vibrato mit Tiefe ±D Cent und Rate f_v bewegt
+    einen Teilton je Hop um hoechstens Delta = 2*D*sin(pi*f_v*T_hop) Cent (die
+    Differenz der Sinusphase ueber einen Hop): fuer D = 50 und f_v = 5,5 Hz
+    67,2 Cent bei 48 kHz und 71,9 Cent bei 44,1 kHz, mit Reserve bis 7 Hz
+    80,7 und 85,3 Cent - alle ueber 50 Cent. Startwert ist deshalb ein
+    Halbton, 100 Cent (±2 SuperFlux-Baender). Kalibriergroesse nach R-380-12
+    (i): mit 100 Cent traegt das Vibrato V1 noch 4 Ereignisse in 30 s, ab
+    der ersten Stufe 125 Cent keines mehr (gemessen am Korpus, Manifest
+    NAK-380 §37). Bei 125 Cent w_10 = 1, w_101 = 8, w_1000 = 75,
+    w_1668 = 125. */
+inline constexpr double kFlussFilterCent = 125.0;
 
 /** H: Historie der adaptiven Schwelle in AKTIVEN Hauptstufen-Frames (1,37 s
     bei 48 kHz). Die ersten H Frames nach Start oder Grenze bleiben ohne
@@ -195,11 +209,19 @@ inline constexpr double kFlussKappa = 3.0;
 /** rho: Rauschbodenbezug, T_eff >= (1 + rho)*Median. */
 inline constexpr double kFlussRho = 1.0;
 
-/** Absolute Mindestschwelle je Detektor-Bin in dB, T_min = Wert*K.
-    Startwert 0,05 dB; kalibriert am Null- und Impulskorpus auf 0,30 dB
-    (Manifest NAK-380 §35: das Vibrato V1 erreicht SF bis 414,6 dB =
-    0,271 dB je Bin, das Weiss- und Rosarauschen bis 245,8 dB). */
-inline constexpr double kFlussTminDbJeBin = 0.30;
+/** Absolute Mindestschwelle je Detektor-Bin in dB, T_min = Wert*K (bei
+    48 kHz 0,10*1530 = 153,0 dB). Herleitung T-380-5 mit dem Startwert
+    0,05 dB: sie deckt stehende Toene, deren Historie Median und MAD nahe 0
+    traegt (dort waere med + kappa*MAD ein Haarausloeser), und Aenderungen
+    unter P0 (M-47: -130 -> -120 dBFS je Bin ergibt 59,5 dB). Das Vibrato
+    haelt nicht diese Schwelle, sondern das Maximumfilter mit der an die
+    Hopzeit gebundenen Breite (`kFlussFilterCent`): mit 50 Cent loest V1
+    auch bei 0,10 dB aus. Kalibriert nach R-380-12 (i) auf die Obergrenze
+    0,10 dB: mit breiterem Filter loest stationaeres Rauschen bei 0,05 dB
+    haeufiger aus (Weissrauschen -20 dBFS in 30 s: 0 Ereignisse bei 50 Cent,
+    4 bei 100, 10 bei 125 Cent); bei 125 Cent halten Null- und Impulskorpus
+    ab 0,095 dB je Bin (Manifest NAK-380 §37). */
+inline constexpr double kFlussTminDbJeBin = 0.10;
 
 /** Sperrzeit: Mindestabstand zweier Ereignisse in ms (SuperFlux
     combination_width); sperrt bei 44,1 und 48 kHz genau den Folgeframe, in
@@ -421,7 +443,8 @@ struct HeadroomVerteilung
 
     Vorframe L(n-1,k) und Filterpuffer Lmax(n-1,k) je Detektor-Bin (2*K*8 B,
     bei 44,1 kHz 26 656 B), der Ring der monotonen Warteschlange des
-    gleitenden Maximums (2*w_max + 2 Plaetze), die Historie der aktiven Frames
+    gleitenden Maximums (2*w_max + 2 Plaetze, w_max aus `kFlussFilterCent` am
+    obersten Detektor-Bin), die Historie der aktiven Frames
     (kFlussHistorie Werte, 2*32*8 B mit dem Sortierpuffer), SF(n-1) fuer die
     Spitzenwahl und die Zeit des letzten Ereignisses fuer die Sperrzeit. Alle
     laengenabhaengigen Traeger sind Vektoren, angelegt in `vorbereiten`; der
@@ -602,8 +625,13 @@ public:
         vorigesSpektrum.assign ((std::size_t) Gitter::evidenzBaender, 0.0);
         // NAK-380 Etappe 4 (M-43, M-72): der Detektor im Heap, nur hier
         // angelegt - Vorframe und Filterpuffer je Detektor-Bin (2*K*8 B), der
-        // Ring der monotonen Warteschlange (2*w_max + 2 Plaetze, w_max die
-        // Filterbreite am obersten Detektor-Bin) und die Historie.
+        // Ring der monotonen Warteschlange und die Historie. Der Ring haelt
+        // 2*w_max + 2 Plaetze (Schranke in `flussFilterRechnen`); w_max ist
+        // die Filterbreite am obersten Detektor-Bin k_max = binVon + K - 1,
+        // ceil(k_max*(2^(kFlussFilterCent/1200) - 1)), also aus der Konstante
+        // hergeleitet und nicht als Zahl gefuehrt. Bei 125 Cent: 44,1 kHz
+        // k_max 1668, w_max 125, 252 Plaetze; 48 kHz 1532, 115, 232; 96 kHz
+        // 766, 58, 118 (NAK-380 M-43, R-380-12 (i)).
         detektor.assign (1u, FlussDetektor {});
         detektorBinsBestimmen();      // Bins der Hauptstufe im Gitterbereich
         {

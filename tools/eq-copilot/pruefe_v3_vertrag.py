@@ -2546,16 +2546,20 @@ def pruefe_nak380_etappe_3(lauf: Lauf, nur: str | None = None) -> None:
 
 NAK380_E4_FASSUNG = "20260927"
 # Die sieben gefuehrten Detektorschwellen der Fassung 20260927 (T-380-5, M-70):
-# Name -> Block im Register. Jede ist eine `inline constexpr`-Konstante in
-# FeatureEngine.h und wird einzeln an ihrer Codestelle geprueft.
+# Name -> (Block im Register, geltender Wert). Jede ist eine
+# `inline constexpr`-Konstante in FeatureEngine.h und wird einzeln an ihrer
+# Codestelle geprueft: Code, Register und geltender Wert muessen gleich sein.
+# Filterbreite und T_min nach der Kalibrierfolge R-380-12 (i) (Manifest
+# NAK-380 §36.2; Startwerte 100 Cent und 0,05 dB je Bin, gemessen und
+# kalibriert auf 125 Cent und 0,10 dB je Bin in §37).
 NAK380_E4_DETEKTORSCHWELLEN = {
-    "kFlussP0Db": "schwellen",
-    "kFlussFilterCent": "schwellen",
-    "kFlussHistorie": "ganzzahlige_schwellen",
-    "kFlussKappa": "schwellen",
-    "kFlussRho": "schwellen",
-    "kFlussTminDbJeBin": "schwellen",
-    "kSperrzeitMs": "schwellen",
+    "kFlussP0Db": ("schwellen", -100.0),
+    "kFlussFilterCent": ("schwellen", 125.0),
+    "kFlussHistorie": ("ganzzahlige_schwellen", 32),
+    "kFlussKappa": ("schwellen", 3.0),
+    "kFlussRho": ("schwellen", 1.0),
+    "kFlussTminDbJeBin": ("schwellen", 0.10),
+    "kSperrzeitMs": ("schwellen", 50.0),
 }
 
 
@@ -2655,7 +2659,7 @@ def pruefe_nak380_etappe_4(lauf: Lauf, schema: dict, nur: str | None = None) -> 
         # Jede gefuehrte Detektorschwelle einzeln an ihrer Codestelle.
         index = _kern_konstantenindex(
             sorted((WURZEL / "eq-copilot/plugin/core/analysis").rglob("*.h")))
-        for name, block in NAK380_E4_DETEKTORSCHWELLEN.items():
+        for name, (block, geltend) in NAK380_E4_DETEKTORSCHWELLEN.items():
             feld = neu.get(block, {}).get(name, {})
             fundstellen = index.get(name, [])
             if not feld:
@@ -2668,11 +2672,14 @@ def pruefe_nak380_etappe_4(lauf: Lauf, schema: dict, nur: str | None = None) -> 
                 soll = feld.get("wert")
                 gleich = (ist is not None and isinstance(soll, (int, float))
                           and ist == float(soll)
+                          and float(soll) == float(geltend)
                           and datei == "FeatureEngine.h"
                           and str(feld.get("datei", "")).endswith("core/analysis/FeatureEngine.h"))
-                befund = f"Code {roh} ({datei}), Register {soll!r} ({feld.get('datei')!r})"
+                befund = (f"Code {roh} ({datei}), Register {soll!r} ({feld.get('datei')!r}), "
+                          f"geltend {geltend!r}")
             lauf.wahr(
-                f"nak380_m70_fassung_etappe_4: {name} steht mit dem Registerwert in FeatureEngine.h",
+                f"nak380_m70_fassung_etappe_4: {name} = {geltend!r} steht mit dem Registerwert in "
+                "FeatureEngine.h",
                 gleich,
                 befund,
             )

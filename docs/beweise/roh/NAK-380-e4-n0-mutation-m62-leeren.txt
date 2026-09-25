@@ -1,0 +1,23 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m62-leeren
+Matrixzeile: M-62; Zusagesatz: Auskunft flussBinVorgaengerGueltig() direkt nach der Grenze falsch; kein Ereignis im ersten Frame nach der Grenze (Matrixmutation Leeren in grenzeZiehen weg)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Zeit.h
+Zeile (Nacharbeitsstand): 500
+SHA-256 vor der Mutation: C8BC4C900185B6C8E98737D77CAED507571B80FCB261B5BC05B85421D28716B5; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m62-leeren/Zeit.h
+Wortlaut vorher:
+        detektorLeeren();
+Wortlaut nachher:
+        // detektorLeeren();
+  Bau EqCopAnalysisGoldenTest: 21:18:03 bis 21:18:23, Exit 0
+  Binary 21:18:22.763 juenger als Quelle 21:18:03.956: ja
+Lauf mit Mutation: --nak380 M-62 21:18:23 bis 21:18:23, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [wahr]
+    [ROT]  380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 2, im ersten Frame 1, vor voller Historie 2; 10.0053 sF, 10.5600 sFP]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: flussBinVorgaengerGueltig() direkt nach der Grenze falsch | kein Ereignis im ersten Frame nach der Grenze)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.085 dB (Soll <= 1,0), Oktaven 57.89/57.80/57.73/57.66/57.71/57.75/57.81/57.73/57.74/57.75 dB; RMS 0.09904 gegen 0.10000 (-0.084 dB)]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+Ruecknahme aus der Sicherung (Zeit.h), SHA-256 C8BC4C900185B6C8E98737D77CAED507571B80FCB261B5BC05B85421D28716B5: gleich
+  Bau EqCopAnalysisGoldenTest: 21:18:23 bis 21:18:43, Exit 0
+  Binary 21:18:42.941 juenger als Quelle 21:18:23.465: ja
+Lauf nach Ruecknahme: --nak380 M-62 21:18:43 bis 21:18:43, Exit 0, 4 bestanden, 0 gescheitert

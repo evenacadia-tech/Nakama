@@ -272,7 +272,7 @@ struct FeatureEngineTestzugang
     }
 
     // ── NAK-380 Etappe 4 (T-380-11): der Detektor nach T-380-5 ────────────
-    /** Filterbreite w_k in Bins (±50 Cent), wie das Produkt sie rechnet. */
+    /** Filterbreite w_k in Bins (±kFlussFilterCent), wie das Produkt sie rechnet. */
     static int filterBreite (int k) noexcept { return FeatureEngine::flussFilterBreite (k); }
 
     /** Heap-Bytes von Vorframe und Filterpuffer (2*K*8 B). */
@@ -280,6 +280,50 @@ struct FeatureEngineTestzugang
     {
         return e.detektor.empty() ? 0u
             : (e.detektor[0].vorframe.size() + e.detektor[0].filter.size()) * sizeof (double);
+    }
+
+    /** NAK-380 M-43 (R-380-12 (i)): Plaetze im Ring der monotonen
+        Warteschlange, wie `vorbereiten` ihn anlegt. */
+    static std::size_t schlangePlaetze (const FeatureEngine& e) noexcept
+    {
+        return e.detektor.empty() ? 0u : e.detektor[0].schlange.size();
+    }
+
+    /** NAK-380 M-43: rechnet das Maximumfilter des Produkts ueber einen
+        Vorframe, dessen Pegel ueber alle Bins streng faellt (Binleistung in
+        dBFS: -20 - 0,01*k). Dort entfernt die Warteschlange von hinten nie
+        etwas; sie haelt jedes Fenster voll, und das ist der Fall, fuer den
+        die Ringgroesse reichen muss. Rueckgabe: Zahl der Detektor-Bins, deren
+        Filterwert vom direkt gerechneten Maximum ueber |j - i| <= w_(von+i)
+        abweicht. Ein zu kleiner Ring ueberschreibt den Kopf der Schlange
+        (Index modulo Ringgroesse, kein Zugriff ausserhalb) und liefert dort
+        ein kleineres Maximum. -1: die Vorbedingung fehlt (der Vorframe faellt
+        nicht streng, etwa weil der Flussschritt ihn nicht geschrieben hat). */
+    static int filterAbweichungenFallend (FeatureEngine& e) noexcept
+    {
+        auto& s = e.haupt;
+        const double df = s.fs / (double) s.punkte;
+        for (std::size_t k = 0; k < s.psd.size(); ++k)
+            s.psd[k] = std::pow (10.0, (-20.0 - 0.01 * (double) k) / 10.0) / df;
+        double sf = 0.0, zentrum = 0.0;
+        e.binFlussSchritt (s, sf, zentrum);
+        const auto& d = e.detektor[0];
+        if (d.binAnzahl < 2 || (int) d.vorframe.size() < d.binAnzahl || (int) d.filter.size() < d.binAnzahl)
+            return -1;
+        for (int i = 1; i < d.binAnzahl; ++i)
+            if (! (d.vorframe[(std::size_t) i] < d.vorframe[(std::size_t) (i - 1)]))
+                return -1;
+        int abweichend = 0;
+        for (int i = 0; i < d.binAnzahl; ++i)
+        {
+            const int w = FeatureEngine::flussFilterBreite (d.binVon + i);
+            double soll = d.vorframe[(std::size_t) std::max (0, i - w)];
+            for (int j = std::max (0, i - w); j <= std::min (d.binAnzahl - 1, i + w); ++j)
+                soll = std::max (soll, d.vorframe[(std::size_t) j]);
+            if (d.filter[(std::size_t) i] != soll)
+                ++abweichend;
+        }
+        return abweichend;
     }
 
     /** Zwei konstruierte Hauptstufen-Spektren, je Bin k (0..N/2) die
@@ -546,7 +590,8 @@ __declspec(noinline) void nak380LraMesskern (const char* nur)
 // Schwellen werden beiderseits geprueft (Lehre Z1 aus §31).
 //
 //   Binleistung p_k = psd_k * fs/N;  L = 10*log10(p_k + P0), P0 = 10^(-100/10)
-//   w_k = max(1, ceil(k*(2^(50/1200) - 1)))   (±50 Cent, SuperFlux Gl. 5)
+//   w_k = max(1, ceil(k*(2^(125/1200) - 1)))  (±125 Cent, SuperFlux Gl. 5,
+//                                               an die Hopzeit gebunden und kalibriert, R-380-12 (i))
 //   SF = Summe_k max(0, L(n,k) - max_{|j-k|<=w_k} L(n-1,j))
 //   T_eff = max(med + kappa*MAD, (1 + rho)*med, T_min), T_min = t_min*K
 //
@@ -606,40 +651,43 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
     if (nak380Waehlt (nur, "M-42"))
     {
         abschnitt ("380/M-42 superflux_maximumfilter");
-        // w_10 = ceil(0,293) = 1, w_101 = ceil(2,960) = 3, w_1000 = ceil(29,30) = 30,
-        // w_1668 = ceil(48,88) = 49 (Faktor 2^(1/24) - 1 = 0,029302).
+        // 125 Cent (R-380-12 (i): Startwert 100, kalibriert, Manifest §37),
+        // Faktor 2^(125/1200) - 1 = 0,074873: w_10 = ceil(0,749) = 1, w_101 =
+        // ceil(7,562) = 8, w_1000 = ceil(74,87) = 75, w_1668 = ceil(124,89) = 125.
         const int w10 = FeatureEngineTestzugang::filterBreite (10);
         const int w101 = FeatureEngineTestzugang::filterBreite (101);
         const int w1000 = FeatureEngineTestzugang::filterBreite (1000);
         const int w1668 = FeatureEngineTestzugang::filterBreite (1668);
-        pruefe (w10 == 1 && w101 == 3 && w1000 == 30 && w1668 == 49,
-                "380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 3, w_1000 = 30, w_1668 = 49",
+        pruefe (w10 == 1 && w101 == 8 && w1000 == 75 && w1668 == 125,
+                "380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 8, w_1000 = 75, w_1668 = 125",
                 juce::String (w10) + ", " + juce::String (w101) + ", " + juce::String (w1000) + ", "
                     + juce::String (w1668));
         // Vorframe: Teilton in Bin 101 auf -20 dBFS, alle uebrigen Bins -120.
-        // d = 1..4: Zielbin 101+d hat w = 3, 4, 4, 4, sein Fenster enthaelt
-        // Bin 101 -> Fluss 0. d = 5: Fenster von Bin 106 ist 102..110 ->
-        // genau ein Bin steigt von L(-120) auf L(-20): 79,9568 dB.
-        const double sollD5 = pegelMitP0 (-20.0) - pegelMitP0 (-120.0);
+        // d = 1..9: Zielbin 101+d (102 bis 110) hat w = 8 (ceil(7,64) bis
+        // ceil(7,94)) bzw. 9 (ceil(8,01) bis ceil(8,24)), sein Fenster enthaelt
+        // Bin 101 -> Fluss 0. d = 10: w_111 = ceil(8,31) = 9, das Fenster von
+        // Bin 111 ist 102..120 -> genau ein Bin steigt von L(-120) auf L(-20):
+        // 79,9568 dB.
+        const double sollD10 = pegelMitP0 (-20.0) - pegelMitP0 (-120.0);
         juce::String werte;
-        bool nullBisVier = true;
-        double d5 = -1.0;
-        for (int d = 1; d <= 5; ++d)
+        bool nullBisNeun = true;
+        double d10 = -1.0;
+        for (int d = 1; d <= 10; ++d)
         {
             auto e = std::make_unique<FeatureEngine>();
             e->vorbereiten (kFs);
             const double sf = FeatureEngineTestzugang::binFluss (
                 *e, spektrum (-120.0, 101, -20.0), spektrum (-120.0, 101 + d, -20.0));
             werte << (d > 1 ? ", " : "") << "d=" << d << ": " << juce::String (sf, 6);
-            if (d <= 4) nullBisVier = nullBisVier && sf == 0.0;
-            else d5 = sf;
+            if (d <= 9) nullBisNeun = nullBisNeun && sf == 0.0;
+            else d10 = sf;
         }
-        pruefe (nullBisVier,
-                "380/M-42 superflux_maximumfilter: d = 1 bis 4 ergibt Fluss 0,0 dB (Bin 101 im Fenster)",
+        pruefe (nullBisNeun,
+                "380/M-42 superflux_maximumfilter: d = 1 bis 9 ergibt Fluss 0,0 dB (Bin 101 im Fenster)",
                 werte);
-        pruefe (std::abs (d5 - sollD5) <= 1.0e-9,
-                "380/M-42 superflux_maximumfilter: d = 5 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin",
-                "ist " + juce::String (d5, 6) + ", Soll " + juce::String (sollD5, 6));
+        pruefe (std::abs (d10 - sollD10) <= 1.0e-9,
+                "380/M-42 superflux_maximumfilter: d = 10 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin",
+                "ist " + juce::String (d10, 6) + ", Soll " + juce::String (sollD10, 6));
     }
 
     if (nak380Waehlt (nur, "M-43"))
@@ -664,6 +712,41 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
                         + ", K = " + juce::String (s.anzahl) + ", Vorframe und Filterpuffer 2*K*8 B <= 26 656 B",
                     "von " + juce::String (von) + ", K " + juce::String (anzahl) + ", "
                         + juce::String ((juce::int64) bytes) + " B");
+        }
+        // R-380-12 (i): der Ring der monotonen Warteschlange folgt der
+        // Filterbreite. 2*w_max + 2 Plaetze mit w_max = ceil(k_max*(2^(125/1200)
+        // - 1)) am obersten Detektor-Bin k_max = von + K - 1: 44,1 kHz k_max 1668,
+        // ceil(124,89) = 125, 252 Plaetze; 48 kHz 1532, ceil(114,71) = 115, 232;
+        // 96 kHz 766, ceil(57,35) = 58, 118. Dazu reicht er: ueber einen streng
+        // fallenden Vorframe haelt die Schlange jedes Fenster voll, hoechstens
+        // w_i + w_(i-1) + 2 Indizes (nachgerechnet 236 bei 44,1 kHz, 216 bei
+        // 48 kHz, 110 bei 96 kHz), und das Filter muss in JEDEM Detektor-Bin
+        // das direkt gerechnete Maximum treffen.
+        struct SollRing { double fs; int kMax; int wMax; std::size_t plaetze; };
+        const SollRing ringSoll[] = { { 44100.0, 1668, 125, 252u }, { 48000.0, 1532, 115, 232u },
+                                      { 96000.0, 766, 58, 118u } };
+        for (const auto& r : ringSoll)
+        {
+            auto e = std::make_unique<FeatureEngine>();
+            e->vorbereiten (r.fs);
+            const int kMax = e->detektorBinVon() + e->detektorBinAnzahl() - 1;
+            const auto plaetze = FeatureEngineTestzugang::schlangePlaetze (*e);
+            pruefe (kMax == r.kMax && FeatureEngineTestzugang::filterBreite (kMax) == r.wMax
+                        && plaetze == r.plaetze,
+                    "380/M-43 detektor_binbereich: " + juce::String (r.fs / 1000.0, 1)
+                        + " kHz, Ring der Warteschlange 2*w_max + 2 = " + juce::String ((int) r.plaetze)
+                        + " Plaetze (w_max = " + juce::String (r.wMax) + " am Bin " + juce::String (r.kMax) + ")",
+                    "k_max " + juce::String (kMax) + ", w_max "
+                        + juce::String (FeatureEngineTestzugang::filterBreite (kMax)) + ", "
+                        + juce::String ((juce::int64) plaetze) + " Plaetze");
+            const int abweichend = FeatureEngineTestzugang::filterAbweichungenFallend (*e);
+            pruefe (abweichend == 0,
+                    "380/M-43 detektor_binbereich: " + juce::String (r.fs / 1000.0, 1)
+                        + " kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe "
+                          "gleich dem direkten Maximum in jedem Detektor-Bin",
+                    abweichend < 0 ? juce::String ("Vorbedingung fehlt: Vorframe faellt nicht streng")
+                                   : juce::String (abweichend) + " von " + juce::String (e->detektorBinAnzahl())
+                                         + " Bins abweichend");
         }
         // Heap in vorbereiten: danach alloziert der Lauf nichts mehr (auch
         // nicht der Flussschritt). 2 s W1, Block 512, Puffer vorher angelegt.
@@ -710,7 +793,9 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
     if (nak380Waehlt (nur, "M-45"))
     {
         abschnitt ("380/M-45 absolute_mindestschwelle");
-        // Historie 32 x 0 (med = MAD = 0) -> T_eff = T_min = t_min * 1530.
+        // Historie 32 x 0 (med = MAD = 0) -> T_eff = T_min = t_min * 1530;
+        // mit dem kalibrierten t_min = 0,10 dB je Bin (R-380-12 (i), Manifest
+        // §37) 153,0 dB: 152,9 kein Ereignis, 153,1 genau eines.
         const int unter = folge (historie (0.0, 0, 0.0), { tMin48 - 0.1 });
         const int ueber = folge (historie (0.0, 0, 0.0), { tMin48 + 0.1 });
         pruefe (unter == 0,
@@ -724,19 +809,21 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
     if (nak380Waehlt (nur, "M-46"))
     {
         abschnitt ("380/M-46 rauschbodenbezug");
-        // Historie 16 x 280 und 16 x 320: med = 300, alle |x - med| = 20 ->
-        // MAD = 20. T_eff = max(300 + 3*20 = 360, (1 + rho)*300 = 600, T_min)
-        // = 600 (rho = 1, T_min < 600): 599 kein Ereignis, 601 genau eines.
-        const auto h = historie (280.0, 16, 320.0);
-        const double teff = std::max ({ 300.0 + nakama::analyse::kFlussKappa * 20.0,
-                                        (1.0 + nakama::analyse::kFlussRho) * 300.0, tMin48 });
+        // Historie 16 x 160 und 16 x 200: med = (160 + 200)/2 = 180, alle
+        // |x - med| = 20 -> MAD = 20. T_eff = max(180 + 3*20 = 240,
+        // (1 + rho)*180 = 360, T_min = 0,10*1530 = 153,0) = 360: 359 kein
+        // Ereignis, 361 genau eines (Matrix §6.3; der kalibrierte T_min liegt
+        // weiter unter 360).
+        const auto h = historie (160.0, 16, 200.0);
+        const double teff = std::max ({ 180.0 + nakama::analyse::kFlussKappa * 20.0,
+                                        (1.0 + nakama::analyse::kFlussRho) * 180.0, tMin48 });
         const int unter = folge (h, { teff - 1.0 });
         const int ueber = folge (h, { teff + 1.0 });
-        pruefe (teff == 600.0 && unter == 0,
-                "380/M-46 rauschbodenbezug: T_eff = (1 + rho)*med = 600, SF = 599 loest nicht aus",
+        pruefe (teff == 360.0 && unter == 0,
+                "380/M-46 rauschbodenbezug: T_eff = (1 + rho)*med = 360, SF = 359 loest nicht aus",
                 "T_eff " + juce::String (teff, 3) + ", Ereignisse " + juce::String (unter));
         pruefe (ueber == 1,
-                "380/M-46 rauschbodenbezug: SF = 601 loest genau ein Ereignis aus",
+                "380/M-46 rauschbodenbezug: SF = 361 loest genau ein Ereignis aus",
                 "Ereignisse " + juce::String (ueber));
     }
 
@@ -777,23 +864,28 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
     if (nak380Waehlt (nur, "M-48"))
     {
         abschnitt ("380/M-48 spitzenwahl_lokales_maximum");
-        // Historie 16 x 0 und 16 x 2: med = 1, MAD = 1 -> T_eff = T_min
-        // (1 + 3 < T_min, 2 < T_min). SF-Folge 0, A, 0,9A, 0,8A mit A = 2*T_min:
-        // alle drei ueber T_eff; 0,9A liegt 42,67 ms nach A (Sperrzeit) und ist
-        // kein lokales Maximum, 0,8A liegt 85,33 ms nach A (Sperrzeit frei)
-        // und ist kein lokales Maximum -> genau ein Ereignis.
-        const double a = 2.0 * tMin48;
-        const int n = folge (historie (0.0, 16, 2.0), { 0.0, a, 0.9 * a, 0.8 * a });
+        // Historie 32 x 0: med = MAD = 0 -> T_eff = T_min = 153,0 dB (Matrix
+        // §6.3 mit dem kalibrierten T_min). SF-Folge 0, 500, 450, 400: alle
+        // drei ueber T_eff; 450 liegt
+        // 42,67 ms nach 500 (Sperrzeit) und ist kein lokales Maximum, 400 liegt
+        // 85,33 ms nach 500 (Sperrzeit frei) und ist kein lokales Maximum ->
+        // genau ein Ereignis. Die Historie nimmt die Folge auf; der Median
+        // bleibt 0, solange weniger als 16 Werte ungleich 0 sind.
+        const int n = folge (historie (0.0, 0, 0.0), { 0.0, 500.0, 450.0, 400.0 });
         pruefe (n == 1,
-                "380/M-48 spitzenwahl_lokales_maximum: 0, A, 0,9A, 0,8A ergibt genau ein Ereignis (am Frame mit A)",
-                "A = " + juce::String (a, 3) + ", Ereignisse " + juce::String (n));
+                "380/M-48 spitzenwahl_lokales_maximum: 0, 500, 450, 400 ergibt genau ein Ereignis (am Frame mit 500)",
+                "T_eff = T_min = " + juce::String (tMin48, 3) + ", Ereignisse " + juce::String (n));
     }
 
     if (nak380Waehlt (nur, "M-49"))
     {
         abschnitt ("380/M-49 sperrzeit_50ms");
-        const double a = 2.0 * tMin48;
-        const auto h = historie (0.0, 16, 2.0);
+        // Historie 32 x 0 -> T_eff = T_min = 153,0 dB bei 48 kHz, 166,6 dB bei
+        // 44,1 kHz (Matrix §6.3 mit dem kalibrierten T_min); zwei
+        // steigende Ueberschreitungen A = 500 und 1,1A = 550, beide lokale
+        // Maxima gegen SF(n-1); dazwischen fuer 2 Hops ein Frame mit 1 dB.
+        const double a = 500.0;
+        const auto h = historie (0.0, 0, 0.0);
         pruefe (nakama::analyse::kSperrzeitMs == 50.0,
                 "380/M-49 sperrzeit_50ms: Konstante kSperrzeitMs = 50,0",
                 juce::String (nakama::analyse::kSperrzeitMs, 3));

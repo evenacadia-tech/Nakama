@@ -1,0 +1,28 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m54-tmin0
+Matrixzeile: M-54, M-55; Zusagesatz: hoechstens 1 Ereignis (T_min = 0: Haarausloeser; Matrixmutation)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 800
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m54-tmin0/Spektrum.h
+Wortlaut vorher:
+            const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+Wortlaut nachher:
+            const double tMin = 0.0;
+  Bau EqCopAnalysisGoldenTest: 21:08:05 bis 21:08:26, Exit 0
+  Binary 21:08:25.791 juenger als Quelle 21:08:05.828: ja
+Lauf mit Mutation: --nak380 M-54 21:08:26 bis 21:08:26, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-54 nullkorpus_S1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 304, Golden 0; 1.4080 sF, 1.4933 sF, 1.6213 sF, 1.7067 sF, 1.7920 sF, 1.8773 sF, 1.9627 sF, 2.0907 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-54 nullkorpus_S1: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-54 nullkorpus_S1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Lauf mit Mutation: --nak380 M-55 21:08:26 bis 21:08:27, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-55 nullkorpus_S2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 205, Golden 0; 1.4507 sF, 1.6213 sF, 1.7493 sF, 1.8773 sF, 2.0053 sF, 2.1760 sF, 2.3040 sF, 2.4320 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-55 nullkorpus_S2: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-55 nullkorpus_S2: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopAnalysisGoldenTest: 21:08:27 bis 21:08:46, Exit 0
+  Binary 21:08:46.421 juenger als Quelle 21:08:27.528: ja
+Lauf nach Ruecknahme: --nak380 M-54 21:08:46 bis 21:08:47, Exit 0, 2 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-55 21:08:47 bis 21:08:48, Exit 0, 2 bestanden, 0 gescheitert

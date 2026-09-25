@@ -27,3 +27,21 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m45-tmin2.txt
 
 Hinweis: Die Matrixmutation "T_min -> 0" (m45-tmin0) endet bei Historie 32 x 0 (med = MAD = 0) am Nennerriegel `nenner > 0`: T_eff = 0 = med, kein Flussereignis, Protokoll NEIN. Formgueltig ersetzt durch "T_min halbiert" (m45-tminhalb, JA); die zweite Haelfte faellt an "T_min doppelt" (m45-tmin2, JA).
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: T_min = 0,10 dB * 1530 = 153,0 dB (kalibriert nach R-380-12 (i), §37): 152,9 dB kein Ereignis, 153,1 dB genau eines; Formel unveraendert, Zahl aus dem geltenden Wert
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B18, `--nak380 M-45`, Binary 21:19:20.376):
+    [ok]   380/M-45 absolute_mindestschwelle: SF = T_min - 0,1 dB loest nicht aus  [T_min = 153.000 dB, Ereignisse 0]
+    [ok]   380/M-45 absolute_mindestschwelle: SF = T_min + 0,1 dB loest genau ein Ereignis aus  [T_min = 153.000 dB, Ereignisse 1]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m45-tminhalb (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): T_min = 0,10 dB * 1530 = 153,0 dB: 152,9 kein Ereignis (Ersatz fuer T_min -> 0, s. m45-tmin0)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;` -> `const double tMin = 0.5 * kFlussTminDbJeBin * (double) d.binAnzahl;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m45-tminhalb.txt
+  - m45-tmin2 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): 153,1 dB genau ein Ereignis
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;` -> `const double tMin = 2.0 * kFlussTminDbJeBin * (double) d.binAnzahl;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m45-tmin2.txt
+  - m45-tmin0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): Matrixmutation T_min -> 0 (erwartet NEIN: bei med = MAD = 0 sperrt der Nenner > 0)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;` -> `const double tMin = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: NEIN; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m45-tmin0.txt

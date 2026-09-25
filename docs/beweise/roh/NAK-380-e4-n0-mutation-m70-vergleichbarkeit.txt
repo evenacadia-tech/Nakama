@@ -1,0 +1,16 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m70-vergleichbarkeit
+Matrixzeile: M-70; Zusagesatz: METRICS_VERSION in vergleichbarkeit.rs = 20260927
+Datei: broker/src/coordinator/vergleichbarkeit.rs
+Zeile (Nacharbeitsstand): 149
+SHA-256 vor der Mutation: E74651E98AA2422B0B913C6AF97D8AD99C77AEEC4C91ECF9059E2078AF45FB09; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-vergleichbarkeit/vergleichbarkeit.rs
+Wortlaut vorher:
+    pub const METRICS_VERSION: u32 = 20260927;
+Wortlaut nachher:
+    pub const METRICS_VERSION: u32 = 20260928;
+Lauf mit Mutation: --nak380 M-70 21:14:57 bis 21:14:58, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: vergleichbarkeit.rs nennt 20260927 — '20260928'
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: vergleichbarkeit.rs nennt 20260927)
+    Pruefungen: 12 bestanden, 1 gescheitert
+Ruecknahme aus der Sicherung (vergleichbarkeit.rs), SHA-256 E74651E98AA2422B0B913C6AF97D8AD99C77AEEC4C91ECF9059E2078AF45FB09: gleich
+Lauf nach Ruecknahme: --nak380 M-70 21:14:58 bis 21:14:58, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

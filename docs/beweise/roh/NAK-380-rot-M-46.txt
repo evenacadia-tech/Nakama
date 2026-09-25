@@ -22,3 +22,18 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m46-rho2 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:787): 601 genau ein Ereignis
     Wortlaut: `const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 2.0 * kFlussRho) * med), tMin);`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m46-rho2.txt
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: med 180, MAD 20: T_eff = max(240, 360, 153,0) = 360; 359 kein Ereignis, 361 genau eines (Matrixzahlen §6.3)
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B18, `--nak380 M-46`, Binary 21:19:20.376):
+    [ok]   380/M-46 rauschbodenbezug: T_eff = (1 + rho)*med = 360, SF = 359 loest nicht aus  [T_eff 360.000, Ereignisse 0]
+    [ok]   380/M-46 rauschbodenbezug: SF = 361 loest genau ein Ereignis aus  [Ereignisse 1]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m46-rho0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:801): T_eff = (1 + rho)*med = 360: 359 kein Ereignis (Matrixmutation rho -> 0)
+    Wortlaut: `const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m46-rho0.txt
+  - m46-rho2 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:801): 361 genau ein Ereignis
+    Wortlaut: `const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 2.0 * kFlussRho) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m46-rho2.txt

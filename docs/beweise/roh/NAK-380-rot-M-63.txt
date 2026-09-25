@@ -36,3 +36,24 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m63-madnenner.txt
 
 Hinweis: die Mutation "T_min = 0" (m63-tmin0) laesst den Sinusfall gruen - der Nenner bleibt dort >= med > 0 und die Klammer 1000 haelt; Protokoll NEIN. Die Nennerzusage ist in der Matrix "nachgerechnet"; ihr messbarer Teil faellt mit dem Basisnenner MAD ohne Klammer (m63-madnenner, JA). Ohne Klammer allein (m63-klammer) bleibt der Sinusfall bei 343,98 < 1000 - der neue Nenner begrenzt ihn, der Klick auf Stille faellt (JA).
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: Staerke endlich in [3, 1000] (Klick auf Stille, Klick auf stehendem Sinus, Korpus I1), am Draht durch Textriegel und Schema; Etikett der Staerkehaelfte nach §36.3 "heute nicht messbar (nachgerechnet)", Zuordnungshaelfte "heute rot"
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B16, `--nak380 M-63`, Binary 21:19:38.541):
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [4 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am serialisierten Wire-Text, jedes Flussereignis mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [am Draht 3 (143360:1000.000, 192512:1000.000, 196608:16.747), verloren 0, nicht gebaut 4, Riegelfehler 0, Schemafehler 0 in 15 Snapshots]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis reist mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [1 Flussereignisse der Engine, ausserhalb 0; am Draht 1 (143360:1000.000), verloren 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [64 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema  [am Draht 64, kleinste 3.807, groesste 83.193, verloren 0, Riegelfehler 0, Schemafehler 0 in 93 Snapshots]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m63-klammer (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:872): staerke endlich in [3, 1000], auf 1000 geklemmt; der Wiretext passiert Textriegel und Schema
+    Wortlaut: `? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)` -> `? (float) (kFlussKappa * (sf - med) / nenner)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m63-klammer.txt
+  - m63-kappa (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:872): staerke >= kappa = 3 bei Ausloesung (Korpus I1)
+    Wortlaut: `? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)` -> `? (float) std::min (kFlussStaerkeMax, (sf - med) / nenner)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m63-kappa.txt
+  - m63-madnenner (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:872): Nenner >= max(med, T_min - med) > 0 auch bei kleinster MAD (Klick auf stehendem Sinus)
+    Wortlaut: `? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)` -> `? (float) ((sf - med) / mad)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m63-madnenner.txt

@@ -1,0 +1,16 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m70-filtercent
+Matrixzeile: M-70; Zusagesatz: gefuehrt kFlussFilterCent = 125.0 (Code auf den Startwert 100 ohne Register)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Nacharbeitsstand): 199
+SHA-256 vor der Mutation: EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-filtercent/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr double kFlussFilterCent = 125.0;
+Wortlaut nachher:
+    inline constexpr double kFlussFilterCent = 100.0;
+Lauf mit Mutation: --nak380 M-70 21:15:02 bis 21:15:03, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: kFlussFilterCent = 125.0 steht mit dem Registerwert in FeatureEngine.h — Code 100.0 (FeatureEngine.h), Register 125.0 ('eq-copilot/plugin/core/analysis/FeatureEngine.h'), geltend 125.0
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kFlussFilterCent = 125.0 steht)
+    Pruefungen: 12 bestanden, 1 gescheitert
+Ruecknahme aus der Sicherung (FeatureEngine.h), SHA-256 EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039: gleich
+Lauf nach Ruecknahme: --nak380 M-70 21:15:03 bis 21:15:03, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

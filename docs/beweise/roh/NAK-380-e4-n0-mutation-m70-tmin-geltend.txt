@@ -1,0 +1,24 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m70-tmin-geltend
+Matrixzeile: M-70; Zusagesatz: T_min 0,10 dB je Bin ist der geltende Wert: Code UND Register gemeinsam auf 0,05
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Nacharbeitsstand): 224
+SHA-256 vor der Mutation: EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-tmin-geltend/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr double kFlussTminDbJeBin = 0.10;
+Wortlaut nachher:
+    inline constexpr double kFlussTminDbJeBin = 0.05;
+Datei: eq-copilot/schemas/v3/metriken-v1.json
+Zeile (Nacharbeitsstand): 450
+SHA-256 vor der Mutation: D3114464595454BAE5E85493A5C3BA80D45773DD8E14ACBC6D3C63718496E9A5; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-tmin-geltend/metriken-v1.json
+Wortlaut vorher:
+    "wert": 0.10,
+Wortlaut nachher:
+    "wert": 0.05,
+Lauf mit Mutation: --nak380 M-70 21:15:09 bis 21:15:10, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: kFlussTminDbJeBin = 0.1 steht mit dem Registerwert in FeatureEngine.h — Code 0.05 (FeatureEngine.h), Register 0.05 ('eq-copilot/plugin/core/analysis/FeatureEngine.h'), geltend 0.1
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kFlussTminDbJeBin = 0.1 steht)
+    Pruefungen: 12 bestanden, 1 gescheitert
+Ruecknahme aus der Sicherung (metriken-v1.json), SHA-256 D3114464595454BAE5E85493A5C3BA80D45773DD8E14ACBC6D3C63718496E9A5: gleich
+Ruecknahme aus der Sicherung (FeatureEngine.h), SHA-256 EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039: gleich
+Lauf nach Ruecknahme: --nak380 M-70 21:15:10 bis 21:15:11, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

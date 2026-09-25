@@ -1,0 +1,26 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m42-betrag
+Matrixzeile: M-42; Zusagesatz: positive Log-Deltas: d = 10 ergibt 79,96 dB in genau einem Bin
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 731
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m42-betrag/Spektrum.h
+Wortlaut vorher:
+                if (delta > 0.0)
+                {
+                    sf += delta;
+Wortlaut nachher:
+                if (delta != 0.0)
+                {
+                    sf += std::abs (delta);
+  Bau EqCopSonde013DynamicsTest: 21:02:28 bis 21:02:37, Exit 0
+  Binary 21:02:37.232 juenger als Quelle 21:02:28.537: ja
+Lauf mit Mutation: --nak380 M-42 21:02:37 bis 21:02:37, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-42 superflux_maximumfilter: d = 1 bis 9 ergibt Fluss 0,0 dB (Bin 101 im Fenster)  [d=1: 1279.308581, d=2: 1279.308581, d=3: 1279.308581, d=4: 1279.308581, d=5: 1279.308581, d=6: 1279.308581, d=7: 1279.308581, d=8: 1279.308581, d=9: 1279.308581, d=10: 1439.222154]
+    [ROT]  380/M-42 superflux_maximumfilter: d = 10 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin  [ist 1439.222154, Soll 79.956786]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-42 superflux_maximumfilter: d = 10 ergibt)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 8, w_1000 = 75, w_1668 = 125  [1, 8, 75, 125]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013DynamicsTest: 21:02:37 bis 21:02:46, Exit 0
+  Binary 21:02:46.153 juenger als Quelle 21:02:37.894: ja
+Lauf nach Ruecknahme: --nak380 M-42 21:02:46 bis 21:02:46, Exit 0, 3 bestanden, 0 gescheitert

@@ -1,0 +1,64 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m53-rosa
+Matrixzeile: M-53, M-57 bis M-59, M-61, M-62; Zusagesatz: E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+Datei: eq-copilot/plugin/tests/Nak380Pruefsignale.h
+Zeile (Nacharbeitsstand): 294
+SHA-256 vor der Mutation: BFAB9757C6B4DC2C7087493C00D9F96A2BA1A1E4FFE8DD81BF6FD550700811A9; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m53-rosa/Nak380Pruefsignale.h
+Wortlaut vorher:
+                b0 = 0.99886 * b0 + w * 0.0555179;
+Wortlaut nachher:
+                b0 = 0.0;
+  Bau EqCopAnalysisGoldenTest: 21:16:06 bis 21:16:23, Exit 0
+  Binary 21:16:23.192 juenger als Quelle 21:16:06.590: ja
+Lauf mit Mutation: --nak380 M-53 21:16:23 bis 21:16:24, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.397 dB (Soll <= 1,0), Oktaven 56.09/57.48/58.07/58.68/59.01/59.28/59.35/59.46/59.49/59.52 dB; RMS 0.10023 gegen 0.10000 (0.020 dB)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-53 rosa_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+Lauf mit Mutation: --nak380 M-57 21:16:24 bis 21:16:24, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.308 dB (Soll <= 1,0), Oktaven 36.00/37.31/38.09/38.63/38.94/39.19/39.36/39.42/39.47/39.52 dB; RMS 0.00996 gegen 0.01000 (-0.031 dB)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-57 rosa_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+    [ok]   380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 112, genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+Lauf mit Mutation: --nak380 M-58 21:16:24 bis 21:16:25, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-58 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.308 dB (Soll <= 1,0), Oktaven 36.00/37.31/38.09/38.63/38.94/39.19/39.36/39.42/39.47/39.52 dB; RMS 0.00996 gegen 0.01000 (-0.031 dB)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-58 rosa_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-58 impulskorpus_I2: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 56 Ziele, verworfen 0]
+    [ok]   380/M-58 impulskorpus_I2: genau 56 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 56, genau einer 56, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+Lauf mit Mutation: --nak380 M-59 21:16:25 bis 21:16:25, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-59 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.308 dB (Soll <= 1,0), Oktaven 36.00/37.31/38.09/38.63/38.94/39.19/39.36/39.42/39.47/39.52 dB; RMS 0.00996 gegen 0.01000 (-0.031 dB)]
+    [ROT]  380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 108, genau einer 108, ohne Treffer 4 (10.650 s, 16.150 s, 26.650 s, 28.650 s), mehrfach 0, Fehlalarme 0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-59 rosa_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-59 impulskorpus_I3: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+Lauf mit Mutation: --nak380 M-61 21:16:25 bis 21:16:26, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.489 dB (Soll <= 1,0), Oktaven 56.07/57.56/58.07/58.59/58.92/59.16/59.38/59.38/59.46/59.49 dB; RMS 0.09995 gegen 0.10000 (-0.004 dB)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-61 rosa_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9547 sFP (Sample 333824)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -100.0000 bis -100.0000 dB; 6,859 s: -100.0000 bis -100.0000 dB]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert  [Stand 21 -> 21, Fuellung 32 -> 32]
+Lauf mit Mutation: --nak380 M-62 21:16:26 bis 21:16:26, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.169 dB (Soll <= 1,0), Oktaven 56.24/57.41/58.11/58.54/58.90/59.17/59.37/59.40/59.46/59.50 dB; RMS 0.09980 gegen 0.10000 (-0.018 dB)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-62 rosa_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+    [ok]   380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [falsch]
+    [ok]   380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 0, im ersten Frame 0, vor voller Historie 0]
+Ruecknahme aus der Sicherung (Nak380Pruefsignale.h), SHA-256 BFAB9757C6B4DC2C7087493C00D9F96A2BA1A1E4FFE8DD81BF6FD550700811A9: gleich
+  Bau EqCopAnalysisGoldenTest: 21:16:26 bis 21:16:39, Exit 0
+  Binary 21:16:39.264 juenger als Quelle 21:16:26.623: ja
+Lauf nach Ruecknahme: --nak380 M-53 21:16:39 bis 21:16:40, Exit 0, 3 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-57 21:16:40 bis 21:16:40, Exit 0, 3 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-58 21:16:40 bis 21:16:41, Exit 0, 3 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-59 21:16:41 bis 21:16:42, Exit 0, 3 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-61 21:16:42 bis 21:16:42, Exit 0, 4 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-62 21:16:42 bis 21:16:42, Exit 0, 4 bestanden, 0 gescheitert

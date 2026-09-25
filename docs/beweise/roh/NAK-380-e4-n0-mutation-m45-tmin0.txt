@@ -1,0 +1,21 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m45-tmin0
+Matrixzeile: M-45; Zusagesatz: Matrixmutation T_min -> 0 (erwartet NEIN: bei med = MAD = 0 sperrt der Nenner > 0)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 800
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m45-tmin0/Spektrum.h
+Wortlaut vorher:
+            const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+Wortlaut nachher:
+            const double tMin = 0.0;
+  Bau EqCopSonde013DynamicsTest: 21:05:12 bis 21:05:22, Exit 0
+  Binary 21:05:21.931 juenger als Quelle 21:05:12.335: ja
+Lauf mit Mutation: --nak380 M-45 21:05:22 bis 21:05:22, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-45 absolute_mindestschwelle: SF = T_min + 0,1 dB loest genau ein Ereignis aus  [T_min = 153.000 dB, Ereignisse 0]
+Die Zusage faellt an der erwarteten Pruefung: NEIN (erwartet: 380/M-45 absolute_mindestschwelle: SF = T_min - 0,1 dB)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-45 absolute_mindestschwelle: SF = T_min - 0,1 dB loest nicht aus  [T_min = 153.000 dB, Ereignisse 0]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013DynamicsTest: 21:05:22 bis 21:05:30, Exit 0
+  Binary 21:05:30.269 juenger als Quelle 21:05:22.326: ja
+Lauf nach Ruecknahme: --nak380 M-45 21:05:30 bis 21:05:30, Exit 0, 2 bestanden, 0 gescheitert

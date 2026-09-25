@@ -50,3 +50,46 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m61-stilleleert.txt
 
 Messverlauf: der erste Lauf der Matrixmutation "Vorframe nur in aktiven Frames" (NAK-380-e4-mutation-m61-vorframe-lauf1.txt) blieb am Ereigniszaehler gruen, weil das letzte aktive Fenster vor der Pause nur 384 Rosa-Samples traegt; deshalb misst der Fall die zwei Traeger am Testzugang (Vorframe = -100 dB je Bin in der Stille, Stand und Fuellung der Historie). Ein erster Messpunkt 6,901 s lag genau 32 Frames nach 5,504 s (Ring einmal herum, m61-historie-lauf1 NEIN); der Endstand misst bei 6,859 s (31 Frames). Die Mutation "Ereigniszeit aus dem Blockanfang" blieb im 4096-Sample-Fenster (332 800, NAK-380-e4-mutation-m61-zeit-verworfen.txt, NEIN) und ist durch "Stille leert die Historie" (m61-stilleleert, JA) ersetzt.
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: genau ein Ereignis mit stromSample in [331 904, 336 000], keines in den stationaeren Abschnitten; Vorframe ueber inaktive Frames, Historie nur aktive (unveraendert, neu gemessen)
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B5, `--nak380 M-61`, Binary 21:18:42.941):
+    [ok]   380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.282 dB (Soll <= 1,0), Oktaven 57.74/57.97/57.69/57.72/57.72/57.73/57.81/57.72/57.74/57.74 dB; RMS 0.09955 gegen 0.10000 (-0.039 dB)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9547 sFP (Sample 333824)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -100.0000 bis -100.0000 dB; 6,859 s: -100.0000 bis -100.0000 dB]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert  [Stand 21 -> 21, Fuellung 32 -> 32]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m61-stilleleert (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:691): genau ein Ereignis in [331 904, 336 000] (Gegenteil von A-6: ein inaktiver Frame leert die Historie)
+    Wortlaut: `if (binFlussSchritt (s, sf, zentrumHz))
+        detektor[0].sfVorher = sf;` -> `if (binFlussSchritt (s, sf, zentrumHz))
+    {
+        detektor[0].sfVorher = sf;
+        detektor[0].gefuellt = 0;
+    }`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m61-stilleleert.txt
+  - m61-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): keines in den stationaeren Abschnitten nach voller Historie (rein relative Schwelle)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m61-relativ.txt
+  - m61-vorframe (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:486): der Vorframe laeuft ueber inaktive Frames (Matrixmutation Vorframe nur in aktiven Frames)
+    Wortlaut: `if (&s == &haupt)
+            flussVorframeSchritt (s);` -> `if (&s == &haupt)
+            (void) 0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m61-vorframe.txt
+  - m61-historie (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:691): die Historie nimmt nur aktive Frames
+    Wortlaut: `if (binFlussSchritt (s, sf, zentrumHz))
+        detektor[0].sfVorher = sf;` -> `if (binFlussSchritt (s, sf, zentrumHz))
+    {
+        auto& d = detektor[0];
+        d.sfVorher = sf;
+        d.historie[(std::size_t) d.stand] = sf;
+        d.stand = (d.stand + 1) % kFlussHistorie;
+        if (d.gefuellt < kFlussHistorie) ++d.gefuellt;
+    }`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m61-historie.txt
+  - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m53-rosa.txt

@@ -111,6 +111,32 @@ struct FeatureEngineTestzugang
         e.detektorSchritt (e.haupt, sf, 1000.0);
         return e.ereignisAnzahlJetzt() - vorher;
     }
+
+    // NAK-380 Nacharbeit 0 (R-380-12 (ii)): nur fuer die Beobachtung I3 im
+    // Abstand 100 ms, ohne Zusage. Fensteranfang und SF des zuletzt
+    // geschlossenen Hauptstufen-Frames und die Schwelle T_eff, die die
+    // aktuelle Historie fuer den NAECHSTEN Frame ergibt (NaN ohne volle
+    // Historie). Veraendert nur den Sortierpuffer, den `medianUndMad` ohnehin
+    // in jedem Frame ueberschreibt. `fensterStromStart` steht nach
+    // `rechneFenster` schon auf dem naechsten Fenster (`schiebeStufe`:
+    // += hop); der Anfang des geschlossenen ist einen Hop davor, vor dem
+    // ersten geschlossenen Fenster 0.
+    static std::uint64_t letzterFensterStart (const FeatureEngine& e) noexcept
+    {
+        const auto hop = (std::uint64_t) e.haupt.hop;
+        return e.haupt.fensterStromStart >= hop ? e.haupt.fensterStromStart - hop : 0u;
+    }
+    static double letzterFluss (const FeatureEngine& e) noexcept { return e.detektor[0].sfVorher; }
+    static double naechsteSchwelle (FeatureEngine& e) noexcept
+    {
+        const auto& d = e.detektor[0];
+        if (d.gefuellt < kFlussHistorie)
+            return std::nan ("");
+        double med = 0.0, mad = 0.0;
+        e.medianUndMad (med, mad);
+        return std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med),
+                         kFlussTminDbJeBin * (double) d.binAnzahl);
+    }
 };
 } // namespace nakama::analyse
 #endif
@@ -1433,6 +1459,158 @@ __declspec(noinline) void nak380Impulsfall (const char* id, const char* name,
                 + ", mehrfach " + juce::String (mehrere) + ", Fehlalarme " + juce::String (fremd));
 }
 
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+/** NAK-380 Nacharbeit 0 (R-380-12 (ii)): Klickpaare im Abstand `abstand`
+    auf demselben P2 wie I3 als BEOBACHTUNG - keine Pruefung, kein
+    Zusagefall, nur ueber `--nak380-beobachtung`. Ausgegeben werden die
+    Ereignisse, die Treffer nach der Zaehlregel §7.3 und je zweitem Klick
+    der Fluss SF der Hauptstufen-Frames, deren Fenster [s, s + 4096) ihn
+    tragen, mit der Schwelle T_eff, die dort galt. "Fluss eines zweiten
+    Klicks" ist das groesste SF dieser Frames. */
+__declspec(noinline) void nak380BeobachtungKlickpaare (std::uint64_t abstand)
+{
+    namespace sig = nakama::test::nak380;
+    constexpr double fs = 48000.0;
+    constexpr std::uint64_t nH = 4096;
+    auto x = sig::rosaMono (sig::kP2Saat, 0.01, 1440000u);
+    const auto klicks = sig::klickPaare (abstand);
+    sig::klicksEinsetzen (x, klicks);
+
+    struct Fenster { std::uint64_t start; double sf; double tEff; };
+    std::vector<Fenster> fenster;
+    std::vector<Ereignis> ev;
+    auto engine = std::make_unique<FeatureEngine>();
+    engine->vorbereiten (fs);
+    std::vector<float> audio (1024u);
+    std::uint64_t strom = 0;
+    // Der erste Frame (Fensteranfang 0) hat keinen Vorframe, liefert kein SF
+    // und aendert die Historie nicht; gezaehlt wird ab dem zweiten.
+    std::uint64_t letzterStart = FeatureEngineTestzugang::letzterFensterStart (*engine);
+    double tEffNaechster = FeatureEngineTestzugang::naechsteSchwelle (*engine);
+    while (strom < x.size())
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> (512u, x.size() - strom);
+        for (std::uint32_t i = 0; i < anzahl; ++i)
+            audio[(std::size_t) i * 2u] = audio[(std::size_t) i * 2u + 1u] = x[(std::size_t) (strom + i)];
+        rt::StampedBlock b;
+        b.stromVon = strom;
+        b.sampleCount = anzahl;
+        b.segment = 0;
+        b.startFolge = 0;
+        b.kanaele = 2;
+        b.tapMaske = 1;
+        b.projectSampleStart = (std::int64_t) strom;
+        b.sampleRate = fs;
+        b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+        const bool frame = engine->nimmBlock (b, audio.data());
+        strom += anzahl;
+        // Ein Block von 512 Samples schliesst hoechstens ein Hauptstufen-
+        // Fenster (Hop 2048); ein neuer Fensteranfang heisst: genau eines.
+        const auto start = FeatureEngineTestzugang::letzterFensterStart (*engine);
+        const double sfJetzt = FeatureEngineTestzugang::letzterFluss (*engine);
+        if (start != letzterStart)
+        {
+            fenster.push_back ({ start, sfJetzt, tEffNaechster });
+            letzterStart = start;
+            tEffNaechster = FeatureEngineTestzugang::naechsteSchwelle (*engine);
+        }
+        if (frame)
+        {
+            for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+                ev.push_back (engine->ereignis (i));
+            engine->ereignisseEntnommen();
+        }
+    }
+    for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+        ev.push_back (engine->ereignis (i));
+
+    // Treffer nach §7.3 je Klick (I3-Zaehlung: jeder Klick ein Ziel); dazu
+    // die Pfade des treffenden Ereignisses (F Fluss, P Peak).
+    std::vector<int> treffer (klicks.size(), 0);
+    std::vector<juce::String> pfade (klicks.size());
+    int fremd = 0;
+    for (const auto& e : ev)
+    {
+        bool zugeordnet = false;
+        for (std::size_t z = 0; z < klicks.size() && ! zugeordnet; ++z)
+            if (e.stromSample <= klicks[z] && klicks[z] - e.stromSample <= nH)
+            {
+                ++treffer[z];
+                zugeordnet = true;
+                pfade[z] << (e.qualitaetFluss ? "F" : "") << (e.qualitaetPeak ? "P" : "");
+            }
+        if (! zugeordnet) ++fremd;
+    }
+    int genauEiner = 0, keiner = 0, mehrere = 0;
+    juce::String verfehlt;
+    for (std::size_t z = 0; z < klicks.size(); ++z)
+    {
+        if (treffer[z] == 1) ++genauEiner;
+        else if (treffer[z] == 0)
+        {
+            ++keiner;
+            verfehlt << (keiner > 1 ? ", " : "") << juce::String ((double) klicks[z] / fs, 4) << " s ("
+                     << (z % 2 == 1 ? "zweiter" : "erster") << ")";
+        }
+        else ++mehrere;
+    }
+    std::cout << "Beobachtung Klickpaare, Abstand " << abstand << " Samples = "
+              << juce::String (1000.0 * (double) abstand / fs, 2).toRawUTF8() << " ms, 56 Paare, P2 -40 dBFS"
+              << " (Saat 0x3800008), Klick +0,5, 48 kHz, Block 512; N_H + Hop = 6144 Samples = 128,0 ms"
+              << std::endl;
+    std::cout << "Hauptstufen-Fenster gesehen " << fenster.size() << ", Ringverlust "
+              << engine->ereignisseVerworfen() << std::endl;
+    std::cout << "Ereignisse gesamt " << ev.size() << " (Soll bei getrennten Klicks 112); genau einer "
+              << genauEiner << ", ohne Treffer " << keiner << ", mehrfach " << mehrere << ", Fehlalarme "
+              << fremd << std::endl;
+    std::cout << "Verfehlte Klicks: " << (keiner > 0 ? verfehlt.toRawUTF8() : "keine") << std::endl;
+
+    // Je Klick: SF der tragenden Frames (Fensteranfang s mit s <= c < s + N_H)
+    // und T_eff dort; zweite und erste Klicks getrennt zusammengefasst.
+    double minZweit = 1.0e300, maxZweit = -1.0, minErst = 1.0e300, maxErst = -1.0;
+    double tEffBeiMinZweit = 0.0, tEffBeiMaxZweit = 0.0;
+    std::uint64_t cMinZweit = 0, cMaxZweit = 0;
+    std::cout << "Je zweitem Klick (Zeit; SF der tragenden Frames [dB] bei Fensteranfang; T_eff dort; Treffer):"
+              << std::endl;
+    for (std::size_t z = 0; z < klicks.size(); ++z)
+    {
+        const auto c = klicks[z];
+        double groesstes = -1.0, tEffDort = 0.0;
+        juce::String zeile;
+        for (const auto& f : fenster)
+            if (f.start <= c && c < f.start + nH)
+            {
+                zeile << (zeile.isEmpty() ? "" : "; ") << juce::String (f.sf, 1) << " @ "
+                      << juce::String ((double) f.start / fs, 4) << " s (T_eff "
+                      << juce::String (f.tEff, 1) << ")";
+                if (f.sf > groesstes) { groesstes = f.sf; tEffDort = f.tEff; }
+            }
+        if (z % 2 == 1)
+        {
+            std::cout << "  " << juce::String ((double) c / fs, 4).toRawUTF8() << " s: "
+                      << zeile.toRawUTF8() << "; Treffer " << treffer[z]
+                      << (treffer[z] > 0 ? " (" + pfade[z] + ")" : juce::String()).toRawUTF8() << std::endl;
+            if (groesstes < minZweit) { minZweit = groesstes; tEffBeiMinZweit = tEffDort; cMinZweit = c; }
+            if (groesstes > maxZweit) { maxZweit = groesstes; tEffBeiMaxZweit = tEffDort; cMaxZweit = c; }
+        }
+        else
+        {
+            minErst = std::min (minErst, groesstes);
+            maxErst = std::max (maxErst, groesstes);
+        }
+    }
+    std::cout << "Fluss eines zweiten Klicks: kleinster " << juce::String (minZweit, 1).toRawUTF8() << " dB bei "
+              << juce::String ((double) cMinZweit / fs, 4).toRawUTF8() << " s (T_eff dort "
+              << juce::String (tEffBeiMinZweit, 1).toRawUTF8() << " dB), groesster "
+              << juce::String (maxZweit, 1).toRawUTF8() << " dB bei "
+              << juce::String ((double) cMaxZweit / fs, 4).toRawUTF8() << " s (T_eff dort "
+              << juce::String (tEffBeiMaxZweit, 1).toRawUTF8() << " dB)" << std::endl;
+    std::cout << "Zum Vergleich Fluss eines ersten Klicks: kleinster " << juce::String (minErst, 1).toRawUTF8()
+              << " dB, groesster " << juce::String (maxErst, 1).toRawUTF8() << " dB" << std::endl;
+}
+#endif
+
 __declspec(noinline) void nak380Detektor (const char* nur)
 {
     namespace sig = nakama::test::nak380;
@@ -1459,13 +1637,17 @@ __declspec(noinline) void nak380Detektor (const char* nur)
         nak380Nullfall ("M-56", "nullkorpus_V1", sig::v1Vibrato (kDreissig), 0);
 
     // M-57: 112 Klicks, (29,75 - 2,0)/0,25 + 1 = 112. M-58/M-59: 56 Paare,
-    // (29,5 - 2,0)/0,5 + 1 = 56; Abstand 20 ms = 960 und 100 ms = 4 800 Samples.
+    // (29,5 - 2,0)/0,5 + 1 = 56; Abstand 20 ms = 960 und 150 ms = 7 200
+    // Samples. I3 liegt ueber der Vorframe-Verdeckung N_H + Hop = 6 144
+    // Samples = 128,0 ms (R-380-12 (ii), `Spektrum.h` ueber `flussSchritt`):
+    // der erste Frame, der den zweiten Klick traegt, hat einen Vorframe ohne
+    // den ersten; 56 Paare ergeben 2*56 = 112 Ereignisse.
     if (nak380Waehlt (nur, "M-57"))
         nak380Impulsfall ("M-57", "impulskorpus_I1", sig::i1Klicks(), false, 112);
     if (nak380Waehlt (nur, "M-58"))
         nak380Impulsfall ("M-58", "impulskorpus_I2", sig::klickPaare (960u), true, 56);
     if (nak380Waehlt (nur, "M-59"))
-        nak380Impulsfall ("M-59", "impulskorpus_I3", sig::klickPaare (4800u), false, 112);
+        nak380Impulsfall ("M-59", "impulskorpus_I3", sig::klickPaare (sig::kI3AbstandSamples), false, 112);
 
     // M-60 (Peakpfad bleibt): die zwei Saetze der Zusage, die die bestehenden
     // B5-Faelle nicht einzeln messen, als Einheit ueber den Testzugang. Rahmen:
@@ -1703,6 +1885,21 @@ int main (int argc, char* argv[])
         std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
         return fehler == 0 ? 0 : 1;
     }
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+    // NAK-380 Nacharbeit 0 (R-380-12 (ii)): `--nak380-beobachtung I3-100`
+    // misst die Klickpaare im Abstand 100 ms einmal als Beobachtung (keine
+    // Pruefung); `I3-150` dieselbe Ausgabe am Zusageabstand zum Vergleich.
+    if (argc == 3 && std::strcmp (argv[1], "--nak380-beobachtung") == 0)
+    {
+        if (std::strcmp (argv[2], "I3-100") == 0)
+            nak380BeobachtungKlickpaare (nakama::test::nak380::kI3BeobachtungAbstandSamples);
+        else if (std::strcmp (argv[2], "I3-150") == 0)
+            nak380BeobachtungKlickpaare (nakama::test::nak380::kI3AbstandSamples);
+        else
+            return 2;
+        return 0;
+    }
+#endif
     std::cout << "== Nakama SONDE-009 - FeatureEngine v2: Zeit, Validity, Events, Baender ==" << std::endl;
     std::cout << "Gate: \"Drop/Seek/Loop trennt jedes offene Fenster.\"" << std::endl;
     std::cout << "Stufen: Bass " << FeatureEngine::kBassPunkte << " (Hop "

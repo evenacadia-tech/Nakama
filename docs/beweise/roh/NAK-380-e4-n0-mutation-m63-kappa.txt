@@ -1,0 +1,24 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m63-kappa
+Matrixzeile: M-63; Zusagesatz: staerke >= kappa = 3 bei Ausloesung (Korpus I1)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 872
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m63-kappa/Spektrum.h
+Wortlaut vorher:
+                    ? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)
+Wortlaut nachher:
+                    ? (float) std::min (kFlussStaerkeMax, (sf - med) / nenner)
+  Bau EqCopSonde013EventWireTest: 21:13:22 bis 21:13:36, Exit 0
+  Binary 21:13:36.331 juenger als Quelle 21:13:22.825: ja
+Lauf mit Mutation: --nak380 M-63 21:13:36 bis 21:13:37, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [64 Flussereignisse, ausserhalb 11]
+    [ROT]  380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema  [am Draht 64, kleinste 1.269, groesste 27.731, verloren 0, Riegelfehler 0, Schemafehler 0 in 93 Snapshots]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Korpus I1 - jedes Flussereignis der Engine)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [4 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am serialisierten Wire-Text, jedes Flussereignis mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [am Draht 3 (143360:522.235, 192512:1000.000, 196608:5.582), verloren 0, nicht gebaut 4, Riegelfehler 0, Schemafehler 0 in 15 Snapshots]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis reist mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [1 Flussereignisse der Engine, ausserhalb 0; am Draht 1 (143360:343.100), verloren 0]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013EventWireTest: 21:13:37 bis 21:13:52, Exit 0
+  Binary 21:13:52.265 juenger als Quelle 21:13:37.597: ja
+Lauf nach Ruecknahme: --nak380 M-63 21:13:52 bis 21:13:53, Exit 0, 5 bestanden, 0 gescheitert

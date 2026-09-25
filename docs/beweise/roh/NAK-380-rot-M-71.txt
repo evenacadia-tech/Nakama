@@ -8,3 +8,27 @@ Rotbeweisspalte (Etikett): heute rot (Bruch am Wortlaut, Validierung Teil C `:29
 
 
 Kommentar ueber dem Fluss (Spektrum.h) woertlich nach §8.4. Belegzeile: Maximumfilter und positive Deltas M-42 (m42-w0, m42-betrag), echte MAD M-44 (m44-mittel), Vibrato M-56 (m50-relativ), Peakpfad M-60 (m60-peakpfad) - alle JA.
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: Beleg des Wortlauts §39.1 ueber M-42 (Bins, Maximumfilter, positive Deltas), M-44 (echte MAD), M-56 (Vibrato <= 1 durch den Maximumfilter, Mutation Filterbreite 50 Cent rot) und M-60 (Peakpfad)
+Endstand: keine eigene Pruefung; Beleg ueber die genannten Zeilen (M-44 und M-60 unveraendert, Protokolle NAK-380-e4-mutation-m44-mittel.txt und NAK-380-e4-mutation-m60-peakpfad.txt aus Etappe 4).
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m42-w0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:682): Filterbreite w_10 = 1, w_101 = 8, w_1000 = 75, w_1668 = 125; d = 1 bis 9 ergibt 0,0 dB (Matrixmutation w_k -> 0)
+    Wortlaut: `return w < 1 ? 1 : w;` -> `return 0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m42-w0.txt
+  - m42-betrag (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:731): positive Log-Deltas: d = 10 ergibt 79,96 dB in genau einem Bin
+    Wortlaut: `if (delta > 0.0)
+            {
+                sf += delta;` -> `if (delta != 0.0)
+            {
+                sf += std::abs (delta);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m42-betrag.txt
+  - m56-filter50 (eq-copilot/plugin/core/analysis/FeatureEngine.h:199): V1 hoechstens 1 Ereignis, gehalten durch den Maximumfilter bei kalibriertem T_min (Mechanismusbeleg R-380-12 (i): Filterbreite -> 50 Cent)
+    Wortlaut: `inline constexpr double kFlussFilterCent = 125.0;` -> `inline constexpr double kFlussFilterCent = 50.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m56-filter50.txt
+  - m50-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): hoechstens 1 Ereignis in 30 s / genau 112 (rein relative Schwelle: rho = 0, T_min = 0; Matrixmutation)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m50-relativ.txt

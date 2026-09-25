@@ -1,0 +1,60 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m50-relativ
+Matrixzeile: M-50 bis M-53, M-56, M-57; Zusagesatz: hoechstens 1 Ereignis in 30 s / genau 112 (rein relative Schwelle: rho = 0, T_min = 0; Matrixmutation)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 800
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m50-relativ/Spektrum.h
+Wortlaut vorher:
+            const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
+Wortlaut nachher:
+            const double tMin = 0.0;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);
+  Bau EqCopAnalysisGoldenTest: 21:07:14 bis 21:07:36, Exit 0
+  Binary 21:07:36.434 juenger als Quelle 21:07:14.803: ja
+Lauf mit Mutation: --nak380 M-50 21:07:36 bis 21:07:37, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 36, Golden 0; 1.4933 sF, 1.7920 sFP, 2.0053 sF, 2.0907 sF, 2.4747 sF, 2.6880 sFP, 3.1147 sF, 4.7360 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-50 nullkorpus_W1: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Lauf mit Mutation: --nak380 M-51 21:07:37 bis 21:07:38, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-51 nullkorpus_W2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 32, Golden 0; 1.4080 sFP, 1.7920 sF, 1.8773 sF, 1.9627 sF, 2.0907 sF, 4.2240 sF, 4.3947 sF, 5.0773 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-51 nullkorpus_W2: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-51 nullkorpus_W2: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Lauf mit Mutation: --nak380 M-52 21:07:38 bis 21:07:38, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-52 nullkorpus_W3: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 30, Golden 0; 1.6640 sF, 3.8400 sFP, 4.4800 sF, 4.8640 sF, 5.1200 sF, 6.2720 sFP, 11.3493 sF, 11.7333 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-52 nullkorpus_W3: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-52 nullkorpus_W3: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Lauf mit Mutation: --nak380 M-53 21:07:38 bis 21:07:39, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 32, Golden 0; 1.8347 sF, 3.1573 sF, 3.2427 sF, 3.8400 sF, 4.9920 sFP, 7.4240 sF, 7.5520 sF, 7.8933 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-53 nullkorpus_P1: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.177 dB (Soll <= 1,0), Oktaven 57.79/57.86/57.69/57.80/57.82/57.86/57.79/57.80/57.77/57.77 dB; RMS 0.10030 gegen 0.10000 (0.026 dB)]
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Lauf mit Mutation: --nak380 M-56 21:07:39 bis 21:07:39, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-56 nullkorpus_V1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 14, Golden 0; 2.5600 sF, 2.8160 sF, 3.4133 sF, 5.2907 sF, 6.0160 sF, 9.4720 sF, 10.1973 sF, 13.6533 sF, ...]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-56 nullkorpus_V1: hoechstens)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-56 nullkorpus_V1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Lauf mit Mutation: --nak380 M-57 21:07:39 bis 21:07:40, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 121, genau einer 111, ohne Treffer 1 (13.750 s), mehrfach 0, Fehlalarme 10]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-57 impulskorpus_I1: genau 112)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopAnalysisGoldenTest: 21:07:40 bis 21:08:02, Exit 0
+  Binary 21:08:02.081 juenger als Quelle 21:07:40.622: ja
+Lauf nach Ruecknahme: --nak380 M-50 21:08:02 bis 21:08:03, Exit 0, 2 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-51 21:08:03 bis 21:08:03, Exit 0, 2 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-52 21:08:03 bis 21:08:03, Exit 0, 2 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-53 21:08:03 bis 21:08:04, Exit 0, 3 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-56 21:08:04 bis 21:08:05, Exit 0, 2 bestanden, 0 gescheitert
+Lauf nach Ruecknahme: --nak380 M-57 21:08:05 bis 21:08:05, Exit 0, 3 bestanden, 0 gescheitert

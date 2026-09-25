@@ -581,10 +581,23 @@ inline double FeatureEngine::summeBereich (const Stufe& s, int von, int bis) noe
 //== Ereignisse ===========================================================
 
 /** SuperFlux-Fluss (§39.1; Boeck/Widmer, DAFx-13, Gl. 5 und 6) auf den
-    Bins der Hauptstufe: Maximumfilter ±50 Cent über den Vorframe, positive
+    Bins der Hauptstufe: Maximumfilter ±kFlussFilterCent (125 Cent, an die
+    Hopzeit gebunden und kalibriert) über den Vorframe, positive
     Log-Deltas, Schwelle aus Median und echter MAD über 32 aktive Frames mit
     Rauschboden- und Absolutbezug, Spitzenwahl mit 50 ms Sperrzeit; der
     einfache Peakpfad bleibt als Gegenbeleg.
+
+    Vorframe-Verdeckung (NAK-380 R-380-12 (ii)): ein zweiter Impuls im
+    Abstand Delta nach dem ersten trifft mit seinem ersten Frame auf einen
+    Vorframe, der den ersten Impuls noch traegt, sobald Delta < N_H + Hop -
+    sicher fuer Delta <= N_H, fuer N_H < Delta < N_H + Hop je nach Lage im
+    Hopraster. Sein Fluss ist dann um Lmax des Impulsspektrums reduziert,
+    nicht null; ob er T_eff uebersteigt, haengt am Material. Frei ist der
+    Vorframe ab Delta >= N_H + Hop = 4096 + 2048 = 6144 Samples, 128,0 ms bei
+    48 kHz und 139,3 ms bei 44,1 kHz. Das ist eine Eigenschaft der
+    Hauptstufe (4096 Punkte, Hop 2048), keine Sperrzeit; gemessen im Manifest
+    NAK-380 §37 (Klickpaare im Abstand 100 ms als Beobachtung, 150 ms als
+    Zusage M-59).
 
     Der BANDfluss (log10 der Bandmittel gegen den vorigen aktiven Frame) wird
     hier weiter gerechnet, aber nur noch fuer den Onsetverlauf des
@@ -734,9 +747,10 @@ inline bool FeatureEngine::binFlussSchritt (const Stufe& s, double& sf, double& 
     Detektorbereich. Gleitendes Maximum ueber eine monotone Warteschlange:
     jeder Index wird genau einmal eingereiht und hoechstens einmal entfernt,
     also O(K) je Frame. Beide Fensterraender steigen monoton, weil
-    w_(k+1) - w_k in {0, 1} liegt (der Faktor 0,0293 ist kleiner als 1);
-    darum haelt die Schlange hoechstens w_i + w_(i-1) + 2 <= 2*w_max + 2
-    Indizes - genau die Ringgroesse aus `vorbereiten`. */
+    w_(k+1) - w_k in {0, 1} liegt (der Faktor 2^(kFlussFilterCent/1200) - 1,
+    bei 125 Cent 0,0749, ist kleiner als 1); darum haelt die Schlange
+    hoechstens w_i + w_(i-1) + 2 <= 2*w_max + 2 Indizes - genau die
+    Ringgroesse aus `vorbereiten`. */
 inline void FeatureEngine::flussFilterRechnen() noexcept
 {
     auto& d = detektor[0];

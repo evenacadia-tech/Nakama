@@ -28,3 +28,23 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
             {
                 sf += std::abs (delta);`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m42-betrag.txt
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: Filterbreite 125 Cent (Kalibrierfolge R-380-12 (i), §37): w_10 = 1, w_101 = 8, w_1000 = 75, w_1668 = 125 Bins; d = 1 bis 9 ergibt den Fluss 0,0 dB (Bin 101 liegt im Fenster von Bin 101 + d, w_102 bis w_106 = 8, w_107 bis w_110 = 9), d = 10 ergibt 79,96 dB (Fenster von Bin 111 ist 102 bis 120); positive Log-Deltas; Mutation w_k -> 0 unveraendert
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B18, `--nak380 M-42`, Binary 21:19:20.376):
+    [ok]   380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 8, w_1000 = 75, w_1668 = 125  [1, 8, 75, 125]
+    [ok]   380/M-42 superflux_maximumfilter: d = 1 bis 9 ergibt Fluss 0,0 dB (Bin 101 im Fenster)  [d=1: 0.000000, d=2: 0.000000, d=3: 0.000000, d=4: 0.000000, d=5: 0.000000, d=6: 0.000000, d=7: 0.000000, d=8: 0.000000, d=9: 0.000000, d=10: 79.956786]
+    [ok]   380/M-42 superflux_maximumfilter: d = 10 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin  [ist 79.956786, Soll 79.956786]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m42-w0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:682): Filterbreite w_10 = 1, w_101 = 8, w_1000 = 75, w_1668 = 125; d = 1 bis 9 ergibt 0,0 dB (Matrixmutation w_k -> 0)
+    Wortlaut: `return w < 1 ? 1 : w;` -> `return 0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m42-w0.txt
+  - m42-betrag (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:731): positive Log-Deltas: d = 10 ergibt 79,96 dB in genau einem Bin
+    Wortlaut: `if (delta > 0.0)
+            {
+                sf += delta;` -> `if (delta != 0.0)
+            {
+                sf += std::abs (delta);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m42-betrag.txt

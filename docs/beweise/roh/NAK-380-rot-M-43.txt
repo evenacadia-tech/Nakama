@@ -35,3 +35,41 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
     { std::vector<double> nak380Mutation (d.vorframe); zentrumHz += 0.0 * nak380Mutation[0]; }
     flussFilterRechn`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m43-heap.txt
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: K = 1666/1530/765 bei 44,1/48/96 kHz (k = 3 bis 1668, 3 bis 1532, 2 bis 766); Vorframe und Filterpuffer 2*K*8 B <= 26 656 B im Heap in `vorbereiten`; NEU: Ring der Warteschlange 2*w_max + 2 aus kFlussFilterCent hergeleitet (252/232/118 Plaetze bei 125 Cent) und ausreichend (Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum)
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B18, `--nak380 M-43`, Binary 21:19:20.376):
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1666, 26656 B]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 2, K 765, 12240 B]
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, Ring der Warteschlange 2*w_max + 2 = 252 Plaetze (w_max = 125 am Bin 1668)  [k_max 1668, w_max 125, 252 Plaetze]
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1666 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232 Plaetze (w_max = 115 am Bin 1532)  [k_max 1532, w_max 115, 232 Plaetze]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1530 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, Ring der Warteschlange 2*w_max + 2 = 118 Plaetze (w_max = 58 am Bin 766)  [k_max 766, w_max 58, 118 Plaetze]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 765 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m43-untergrenze (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:671): Untergrenze 30,36 Hz: K = 1666/1530/765 bei k = 3/3/2 (Matrixmutation k = 0)
+    Wortlaut: `const int von = (int) std::ceil (Gitter::evidenzKante (0) / df);` -> `const int von = 0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m43-untergrenze.txt
+  - m43-obergrenze (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:673): Obergrenze min(17 959,39 Hz, Kappe): k bis 1668/1532/766
+    Wortlaut: `const int bis = std::min ((int) std::ceil (oben / df) - 1, kHauptPunkte / 2);` -> `const int bis = kHauptPunkte / 2;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m43-obergrenze.txt
+  - m43-speicher (eq-copilot/plugin/core/analysis/FeatureEngine.h:641): Vorframe und Filterpuffer 2*K*8 B <= 26 656 B
+    Wortlaut: `d.vorframe.assign ((std::size_t) d.binAnzahl, kFlussP0Db);` -> `d.vorframe.assign ((std::size_t) (2 * d.binAnzahl), kFlussP0Db);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m43-speicher.txt
+  - m43-heap (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:739): im Heap in vorbereiten, keine Allokation im Flussschritt
+    Wortlaut: `zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+    flussFilterRechnen();` -> `zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+    { std::vector<double> nak380Mutation (d.vorframe); zentrumHz += 0.0 * nak380Mutation[0]; }
+    flussFilterRechnen();`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m43-heap.txt
+  - m43-ring50 (eq-copilot/plugin/core/analysis/FeatureEngine.h:644): Ring der Warteschlange 2*w_max + 2 aus kFlussFilterCent hergeleitet und ausreichend (Mutation: Ringgroesse setzt 50 Cent voraus)
+    Wortlaut: `? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1) + 2)` -> `? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1, std::exp2 (50.0 / 1200.0) - 1.0) + 2)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m43-ring50.txt
+  - m43-ring2w (eq-copilot/plugin/core/analysis/FeatureEngine.h:644): Ring der Warteschlange 2*w_max + 2 aus der Herleitung (Mutation: 2*w_max, ein Platz je Seite zu wenig)
+    Wortlaut: `? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1) + 2)` -> `? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1))`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m43-ring2w.txt

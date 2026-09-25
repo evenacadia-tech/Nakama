@@ -19,3 +19,15 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m54-tmin0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): hoechstens 1 Ereignis (T_min = 0: Haarausloeser)
     Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;` -> `const double tMin = 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m54-tmin0.txt
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: hoechstens 1 Ereignis in 30 s (S2), Golden 0, neu gemessen
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B5, `--nak380 M-55`, Binary 21:18:42.941):
+    [ok]   380/M-55 nullkorpus_S2: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-55 nullkorpus_S2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m54-tmin0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): hoechstens 1 Ereignis (T_min = 0: Haarausloeser; Matrixmutation)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;` -> `const double tMin = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m54-tmin0.txt

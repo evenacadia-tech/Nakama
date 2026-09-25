@@ -33,3 +33,25 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m53-rosa.txt
 
 Messverlauf: die erste Signalfassung (Klick +0,9 bei 10,5 s auf dem +14-dB-Rosa) machte m62-historie nicht rot (NAK-380-e4-mutation-m62-historie-lauf1.txt); die Endfassung traegt eine Delle -34 dB von 0,3 bis 0,6 s nach der Grenze mit Ruecksprung in der Nachfuellphase. m62-leeren und m62-historie sind an der Endfassung wiederholt (beide JA; lauf1-Protokolle bleiben).
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: Auskunft direkt nach der Grenze falsch; kein Ereignis im ersten Frame nach der Grenze und keines vor 32 aktiven Frames (unveraendert, neu gemessen)
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B5, `--nak380 M-62`, Binary 21:18:42.941):
+    [ok]   380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.085 dB (Soll <= 1,0), Oktaven 57.89/57.80/57.73/57.66/57.71/57.75/57.81/57.73/57.74/57.75 dB; RMS 0.09904 gegen 0.10000 (-0.084 dB)]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+    [ok]   380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [falsch]
+    [ok]   380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 0, im ersten Frame 0, vor voller Historie 0]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m62-leeren (eq-copilot/plugin/core/analysis/featureengine/Zeit.h:500): Auskunft flussBinVorgaengerGueltig() direkt nach der Grenze falsch; kein Ereignis im ersten Frame nach der Grenze (Matrixmutation Leeren in grenzeZiehen weg)
+    Wortlaut: `detektorLeeren();` -> `// detektorLeeren();`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m62-leeren.txt
+  - m62-historie (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:924): keines, bevor die Historie wieder 32 aktive Frames traegt
+    Wortlaut: `d.stand = 0;
+    d.gefuellt = 0;
+    d.sfVorher = 0.0;` -> `d.sfVorher = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m62-historie.txt
+  - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m53-rosa.txt

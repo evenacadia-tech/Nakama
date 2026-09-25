@@ -74,3 +74,75 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-sperrzeit.txt
 
 A5: nak380_m70_fassung_etappe_4 prueft vier Versionsstellen, `seit`, die Uebernahme der Fassung 20260926 und sieben Detektorschwellen einzeln ueber den Kernkonstantenindex; je Stelle eine Mutation (m70-feature, m70-prepost, m70-vergleichbarkeit, m70-aktuell, m70-seit, m70-uebernahme, m70-p0, m70-filtercent, m70-historie, m70-kappa, m70-rho, m70-tmin, m70-sperrzeit), alle JA. Die Nullkorpusfaelle M-50 bis M-56 fallen am alten Wert (Basisstand, §35.2).
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: Fassung 20260927 mit den geltenden Werten nach der Kalibrierfolge: P0 -100 dBFS je Bin, Filterbreite 125 Cent, H = 32, kappa = 3, rho = 1, T_min-Faktor 0,10 dB je Bin, Sperrzeit 50 ms; A5 prueft je Schwelle Code = Register = geltender Wert an der Codestelle; Mutation je Stelle
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein A5, `pruefe_v3_vertrag.py --nak380 M-70`):
+    Pruefungen: 13 bestanden, 0 gescheitert
+    EXIT=0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m70-feature (eq-copilot/plugin/core/analysis/FeatureEngine.h:89): kFeatureMetricsVersion = 20260927
+    Wortlaut: `kFeatureMetricsVersion = 20260927u;` -> `kFeatureMetricsVersion = 20260928u;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-feature.txt
+  - m70-prepost (broker/src/coordinator/prepost.rs:206): METRICS_VERSION in prepost.rs = 20260927
+    Wortlaut: `pub const METRICS_VERSION: u32 = 20260927;` -> `pub const METRICS_VERSION: u32 = 20260928;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-prepost.txt
+  - m70-vergleichbarkeit (broker/src/coordinator/vergleichbarkeit.rs:149): METRICS_VERSION in vergleichbarkeit.rs = 20260927
+    Wortlaut: `pub const METRICS_VERSION: u32 = 20260927;` -> `pub const METRICS_VERSION: u32 = 20260928;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-vergleichbarkeit.txt
+  - m70-aktuell (eq-copilot/schemas/v3/metriken-v1.json:20): aktuell im Register = 20260927
+    Wortlaut: `"aktuell": 20260927,` -> `"aktuell": 20260926,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-aktuell.txt
+  - m70-seit (eq-copilot/schemas/v3/metriken-v1.json:422): seit nennt NAK-380 Etappe 4
+    Wortlaut: `"seit": "NAK-380 Etappe 4",` -> `"seit": "NAK-380 Etappe 4x",`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-seit.txt
+  - m70-uebernahme-lauf1 (eq-copilot/schemas/v3/metriken-v1.json:161): Eintraege der Fassung 20260926 unveraendert uebernommen
+    Wortlaut: `Die Konfidenzschwellen bleiben unveraendert.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.0,` -> `Die Konfidenzschwellen bleiben unveraendert.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.5,`
+    Die Zusage faellt an der erwarteten Pruefung: NEIN; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-uebernahme-lauf1.txt
+  - m70-uebernahme (eq-copilot/schemas/v3/metriken-v1.json:290): Eintraege der Fassung 20260926 unveraendert uebernommen
+    Wortlaut: `"20260926": {
+      "seit": "NAK-380 Etappe 3",
+      "hinweis": "Die LRA-Kurzzeitfolge wird seit dieser Fassung mit 10 Hz geführt; die M1-Perzentile entstehen aus Mittelwerten von je acht Welch-Segmenten. Die Konfidenzschwellen bleiben unverändert.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.0,` -> `"20260926": {
+      "seit": "NAK-380 Etappe 3",
+      "hinweis": "Die LRA-Kurzzeitfolge wird seit dieser Fassung mit 10 Hz geführt; die M1-Perzentile entstehen aus Mittelwerten von je acht Welch-Segmenten. Die Konfidenzschwellen bleiben unverändert.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.5,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-uebernahme.txt
+  - m70-p0 (eq-copilot/plugin/core/analysis/FeatureEngine.h:181): gefuehrt kFlussP0Db = -100.0
+    Wortlaut: `inline constexpr double kFlussP0Db = -100.0;` -> `inline constexpr double kFlussP0Db = -90.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-p0.txt
+  - m70-filtercent (eq-copilot/plugin/core/analysis/FeatureEngine.h:199): gefuehrt kFlussFilterCent = 125.0 (Code auf den Startwert 100 ohne Register)
+    Wortlaut: `inline constexpr double kFlussFilterCent = 125.0;` -> `inline constexpr double kFlussFilterCent = 100.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-filtercent.txt
+  - m70-historie (eq-copilot/plugin/core/analysis/FeatureEngine.h:204): gefuehrt kFlussHistorie = 32
+    Wortlaut: `inline constexpr int kFlussHistorie = 32;` -> `inline constexpr int kFlussHistorie = 30;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-historie.txt
+  - m70-kappa (eq-copilot/plugin/core/analysis/FeatureEngine.h:207): gefuehrt kFlussKappa = 3.0
+    Wortlaut: `inline constexpr double kFlussKappa = 3.0;` -> `inline constexpr double kFlussKappa = 3.5;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-kappa.txt
+  - m70-rho (eq-copilot/plugin/core/analysis/FeatureEngine.h:210): gefuehrt kFlussRho = 1.0
+    Wortlaut: `inline constexpr double kFlussRho = 1.0;` -> `inline constexpr double kFlussRho = 1.5;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-rho.txt
+  - m70-tmin (eq-copilot/plugin/core/analysis/FeatureEngine.h:224): gefuehrt kFlussTminDbJeBin = 0.10 (Code auf den Startwert 0.05 ohne Register)
+    Wortlaut: `inline constexpr double kFlussTminDbJeBin = 0.10;` -> `inline constexpr double kFlussTminDbJeBin = 0.05;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-tmin.txt
+  - m70-sperrzeit (eq-copilot/plugin/core/analysis/FeatureEngine.h:229): gefuehrt kSperrzeitMs = 50.0 (Matrix: 50 -> 60 ohne Registereintrag)
+    Wortlaut: `inline constexpr double kSperrzeitMs = 50.0;` -> `inline constexpr double kSperrzeitMs = 60.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-sperrzeit.txt
+  - m70-filtercent-geltend (eq-copilot/plugin/core/analysis/FeatureEngine.h:199 und eq-copilot/schemas/v3/metriken-v1.json:432): Filterbreite 125 Cent ist der geltende Wert: Code UND Register gemeinsam auf 50 Cent
+    Wortlaut: `inline constexpr double kFlussFilterCent = 125.0; | "wert": 125.0,` -> `inline constexpr double kFlussFilterCent = 50.0; | "wert": 50.0,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-filtercent-geltend.txt
+  - m70-tmin-geltend (eq-copilot/plugin/core/analysis/FeatureEngine.h:224 und eq-copilot/schemas/v3/metriken-v1.json:450): T_min 0,10 dB je Bin ist der geltende Wert: Code UND Register gemeinsam auf 0,05
+    Wortlaut: `inline constexpr double kFlussTminDbJeBin = 0.10; | "wert": 0.10,` -> `inline constexpr double kFlussTminDbJeBin = 0.05; | "wert": 0.05,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m70-tmin-geltend.txt

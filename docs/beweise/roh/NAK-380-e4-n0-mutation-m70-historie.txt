@@ -1,0 +1,16 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m70-historie
+Matrixzeile: M-70; Zusagesatz: gefuehrt kFlussHistorie = 32
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Nacharbeitsstand): 204
+SHA-256 vor der Mutation: EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-historie/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr int kFlussHistorie = 32;
+Wortlaut nachher:
+    inline constexpr int kFlussHistorie = 30;
+Lauf mit Mutation: --nak380 M-70 21:15:03 bis 21:15:04, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: kFlussHistorie = 32 steht mit dem Registerwert in FeatureEngine.h — Code 30 (FeatureEngine.h), Register 32 ('eq-copilot/plugin/core/analysis/FeatureEngine.h'), geltend 32
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kFlussHistorie = 32 steht)
+    Pruefungen: 12 bestanden, 1 gescheitert
+Ruecknahme aus der Sicherung (FeatureEngine.h), SHA-256 EDF8EBEE12F3C7333D29282291F96AE828C8FBD8949D984B7807564D93EF6039: gleich
+Lauf nach Ruecknahme: --nak380 M-70 21:15:04 bis 21:15:04, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

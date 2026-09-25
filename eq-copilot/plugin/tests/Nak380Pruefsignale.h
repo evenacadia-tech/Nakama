@@ -429,8 +429,19 @@ inline std::vector<std::uint64_t> i1Klicks()
     return aus;
 }
 
+/** I3-Paarabstand bei 48 kHz (NAK-380 R-380-12 (ii)): 150 ms = 7200
+    Samples, ueber der Vorframe-Verdeckung der Hauptstufe - ein zweiter Klick
+    trifft erst ab N_H + Hop = 4096 + 2048 = 6144 Samples (128,0 ms bei
+    48 kHz, 139,3 ms bei 44,1 kHz) auf einen Vorframe ohne den ersten.
+    100 ms = 4800 Samples ist die einmalige Beobachtung darunter, ohne
+    Zusage. I2 (20 ms = 960 Samples) liegt innerhalb der Sperrzeit. */
+inline constexpr std::uint64_t kI3AbstandSamples = 7200u;
+inline constexpr std::uint64_t kI3BeobachtungAbstandSamples = 4800u;
+static_assert (kI3AbstandSamples >= 4096u + 2048u, "I3 muss ueber N_H + Hop liegen");
+
 /** I2/I3: Klickpaare bei t_j = 2,0 s + 0,5 s * j und t_j + `abstandSamples`,
-    j = 0 bis 55; Reihenfolge je Paar erst, dann zweiter Klick. */
+    j = 0 bis 55; Reihenfolge je Paar erst, dann zweiter Klick. Derselbe
+    Erzeuger liefert I2, I3 und die 100-ms-Beobachtung. */
 inline std::vector<std::uint64_t> klickPaare (std::uint64_t abstandSamples)
 {
     std::vector<std::uint64_t> aus;

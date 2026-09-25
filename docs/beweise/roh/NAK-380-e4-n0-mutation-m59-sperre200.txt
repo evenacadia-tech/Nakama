@@ -1,0 +1,22 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m59-sperre200
+Matrixzeile: M-59; Zusagesatz: genau 112 Ereignisse, Paare im Abstand 150 ms (Matrixmutation Sperrzeit 200 ms -> 56)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 848
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m59-sperre200/Spektrum.h
+Wortlaut vorher:
+                || (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= kSperrzeitMs * s.fs;
+Wortlaut nachher:
+                || (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= 200.0 * s.fs;
+  Bau EqCopAnalysisGoldenTest: 21:10:11 bis 21:10:31, Exit 0
+  Binary 21:10:31.347 juenger als Quelle 21:10:11.871: ja
+Lauf mit Mutation: --nak380 M-59 21:10:31 bis 21:10:32, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 77, genau einer 77, ohne Treffer 35 (2.650 s, 3.150 s, 4.150 s, 4.650 s, 5.650 s, 6.150 s, 7.650 s, 8.150 s), mehrfach 0, Fehlalarme 0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-59 impulskorpus_I3: genau 112)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-59 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-59 impulskorpus_I3: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopAnalysisGoldenTest: 21:10:32 bis 21:10:52, Exit 0
+  Binary 21:10:51.745 juenger als Quelle 21:10:32.293: ja
+Lauf nach Ruecknahme: --nak380 M-59 21:10:52 bis 21:10:52, Exit 0, 3 bestanden, 0 gescheitert

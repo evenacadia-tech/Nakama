@@ -1,0 +1,26 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m70-uebernahme
+Matrixzeile: M-70; Zusagesatz: Eintraege der Fassung 20260926 unveraendert uebernommen
+Datei: eq-copilot/schemas/v3/metriken-v1.json
+Zeile (Nacharbeitsstand): 290
+SHA-256 vor der Mutation: D3114464595454BAE5E85493A5C3BA80D45773DD8E14ACBC6D3C63718496E9A5; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m70-uebernahme/metriken-v1.json
+Wortlaut vorher:
+    "20260926": {
+          "seit": "NAK-380 Etappe 3",
+          "hinweis": "Die LRA-Kurzzeitfolge wird seit dieser Fassung mit 10 Hz geführt; die M1-Perzentile entstehen aus Mittelwerten von je acht Welch-Segmenten. Die Konfidenzschwellen bleiben unverändert.",
+          "schwellen": {
+            "kPeakSteigungSchwelleDb": {
+              "wert": 12.0,
+Wortlaut nachher:
+    "20260926": {
+          "seit": "NAK-380 Etappe 3",
+          "hinweis": "Die LRA-Kurzzeitfolge wird seit dieser Fassung mit 10 Hz geführt; die M1-Perzentile entstehen aus Mittelwerten von je acht Welch-Segmenten. Die Konfidenzschwellen bleiben unverändert.",
+          "schwellen": {
+            "kPeakSteigungSchwelleDb": {
+              "wert": 12.5,
+Lauf mit Mutation: --nak380 M-70 21:18:43 bis 21:18:44, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: Eintraege der Fassung 20260926 unveraendert uebernommen — schwellen/kPeakSteigungSchwelleDb
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Eintraege der Fassung 20260926 unveraendert uebernommen)
+    Pruefungen: 12 bestanden, 1 gescheitert
+Ruecknahme aus der Sicherung (metriken-v1.json), SHA-256 D3114464595454BAE5E85493A5C3BA80D45773DD8E14ACBC6D3C63718496E9A5: gleich
+Lauf nach Ruecknahme: --nak380 M-70 21:18:44 bis 21:18:44, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

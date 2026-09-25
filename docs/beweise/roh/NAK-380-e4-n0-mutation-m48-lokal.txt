@@ -1,0 +1,20 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m48-lokal
+Matrixzeile: M-48; Zusagesatz: 0, 500, 450, 400 ergibt genau ein Ereignis (Matrixmutation SF(n) >= SF(n-1) weg)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 851
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m48-lokal/Spektrum.h
+Wortlaut vorher:
+            const bool flussAus = sf > tEff && sf >= d.sfVorher && sperreFrei && nenner > 0.0;
+Wortlaut nachher:
+            const bool flussAus = sf > tEff && sperreFrei && nenner > 0.0;
+  Bau EqCopSonde013DynamicsTest: 21:06:05 bis 21:06:13, Exit 0
+  Binary 21:06:13.138 juenger als Quelle 21:06:05.283: ja
+Lauf mit Mutation: --nak380 M-48 21:06:13 bis 21:06:13, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-48 spitzenwahl_lokales_maximum: 0, 500, 450, 400 ergibt genau ein Ereignis (am Frame mit 500)  [T_eff = T_min = 153.000, Ereignisse 2]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-48 spitzenwahl_lokales_maximum)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013DynamicsTest: 21:06:13 bis 21:06:21, Exit 0
+  Binary 21:06:21.602 juenger als Quelle 21:06:13.563: ja
+Lauf nach Ruecknahme: --nak380 M-48 21:06:21 bis 21:06:21, Exit 0, 1 bestanden, 0 gescheitert

@@ -571,7 +571,7 @@ pub const GUARDRAIL_LOUDNESS_DB: f64 = 1.0;
 /// Spitzenwert. Enger als die Loudness: eine angehobene Spitze bei gleichem
 /// Median ist genau der Fall, den ein Guardrail fangen soll.
 pub const GUARDRAIL_PEAK_DB: f64 = 0.5;
-/// Onsetstaerke. Die Groesse ist eine Summe von MAD-Vielfachen, keine dB.
+/// Onsetstaerke. Summe der Ereignisstaerken (Vielfache der auf kappa normierten Schwellendistanz; bei greifender relativer Schwelle echte MAD), keine dB.
 pub const GUARDRAIL_TRANSIENT: f64 = 2.0;
 /// Seitenanteil in dB — die Stereobreite.
 pub const GUARDRAIL_BREITE_DB: f64 = 1.5;

@@ -17,3 +17,14 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m48-lokal (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:837): Spitzenwahl lokales Maximum: genau ein Ereignis
     Wortlaut: `sf > tEff && sf >= d.sfVorher && sperreFrei` -> `sf > tEff && sperreFrei`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m48-lokal.txt
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: SF-Folge 0, 500, 450, 400 bei Historie 32 x 0 (T_eff = T_min = 153,0 dB): genau ein Ereignis am Frame mit 500 (Matrixzahlen §6.3)
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B18, `--nak380 M-48`, Binary 21:19:20.376):
+    [ok]   380/M-48 spitzenwahl_lokales_maximum: 0, 500, 450, 400 ergibt genau ein Ereignis (am Frame mit 500)  [T_eff = T_min = 153.000, Ereignisse 1]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m48-lokal (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:851): 0, 500, 450, 400 ergibt genau ein Ereignis (Matrixmutation SF(n) >= SF(n-1) weg)
+    Wortlaut: `const bool flussAus = sf > tEff && sf >= d.sfVorher && sperreFrei && nenner > 0.0;` -> `const bool flussAus = sf > tEff && sperreFrei && nenner > 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m48-lokal.txt

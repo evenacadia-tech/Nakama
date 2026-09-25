@@ -26,3 +26,21 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
     Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m53-rosa.txt
+
+Nacharbeit 0, 25.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-12, Matrixfassung §36.3; Stand uncommittet auf 9125dbbc)
+Zusage in der Fassung der Nacharbeit: hoechstens 1 Ereignis in 30 s (P1), Golden 0, neu gemessen; P1 nach E-380-13 selbstgeprueft
+Endstand (eq-copilot/build/nak380-e4n0/end, Bein B5, `--nak380 M-53`, Binary 21:18:42.941):
+    [ok]   380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.177 dB (Soll <= 1,0), Oktaven 57.79/57.86/57.69/57.80/57.82/57.86/57.79/57.80/57.77/57.77 dB; RMS 0.10030 gegen 0.10000 (0.026 dB)]
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m50-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800): hoechstens 1 Ereignis in 30 s / genau 112 (rein relative Schwelle: rho = 0, T_min = 0; Matrixmutation)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m50-relativ.txt
+  - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m53-rosa.txt

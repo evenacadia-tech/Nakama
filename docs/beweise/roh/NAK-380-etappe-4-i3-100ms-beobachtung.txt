@@ -1,0 +1,100 @@
+NAK-380 Etappe 4, Nacharbeit 0 (Bauer Opus 5.5 xhigh, 25.09.2026) — Beobachtung I3 im Abstand 100 ms
+Regel R-380-12 (ii) (Manifest §36.2): einmalige BEOBACHTUNG ohne Zusage, ohne Pruefung, ohne Golden.
+Die Zusage M-59 liegt seit dieser Nacharbeit bei 150 ms (ueber N_H + Hop = 6144 Samples = 128,0 ms
+bei 48 kHz, 139,3 ms bei 44,1 kHz); dieser Lauf misst, was der Detektor darunter tut.
+
+Signal: P2 rosa Rauschen -40 dBFS (RMS 0,01, Saat 0x3800008, L = R), 30 s = 1 440 000 Samples, 48 kHz,
+Block 512; Klickpaare (ein Sample +0,5) bei t_j = 2,0 s + 0,5 s*j und t_j + 100 ms (4800 Samples),
+j = 0 bis 55 = 56 Paare, 112 Klicks (Erzeuger klickPaare aus Nak380Pruefsignale.h, derselbe wie I2/I3).
+Stand: Endwertesatz der Nacharbeit (kFlussFilterCent = 125.0, kFlussTminDbJeBin = 0.10, T_min = 153,0 dB
+bei K = 1530), uncommittet auf 9125dbbc.
+Aufruf: eq-copilot/build/plugin/EqCopAnalysisGoldenTest_artefacts/Release/EqCopAnalysisGoldenTest.exe
+        --nak380-beobachtung I3-100   (25.09.2026, 20:58:56 Uhr, Exit 0)
+Binary-Zeitstempel 20:58:51.129, juenger als die Quelle AnalysisGoldenTestMain.cpp 20:58:32.415.
+Zaehlregel wie §7.3: ein Ereignis trifft Klick c, wenn sein stromSample in [c - 4096, c] liegt.
+"Fluss eines zweiten Klicks" = groesstes SF der Hauptstufen-Frames, deren Fenster [s, s + 4096)
+ihn tragen; T_eff ist die Schwelle, die fuer diesen Frame galt (aus der Historie davor).
+Pfade des treffenden Ereignisses: F = Flussbit, P = Peakbit.
+
+--- Ausgabe I3-100 (vollstaendig) ---
+Beobachtung Klickpaare, Abstand 4800 Samples = 100.00 ms, 56 Paare, P2 -40 dBFS (Saat 0x3800008), Klick +0,5, 48 kHz, Block 512; N_H + Hop = 6144 Samples = 128,0 ms
+Hauptstufen-Fenster gesehen 701, Ringverlust 0
+Ereignisse gesamt 108 (Soll bei getrennten Klicks 112); genau einer 108, ohne Treffer 4, mehrfach 0, Fehlalarme 0
+Verfehlte Klicks: 8.6000 s (zweiter), 12.1000 s (zweiter), 21.1000 s (zweiter), 28.1000 s (zweiter)
+Je zweitem Klick (Zeit; SF der tragenden Frames [dB] bei Fensteranfang; T_eff dort; Treffer):
+  2.1000 s: 2022.8 @ 2.0480 s (T_eff 153.0); 27.7 @ 2.0907 s (T_eff 153.0); Treffer 1 (FP)
+  2.6000 s: 26.3 @ 2.5173 s (T_eff 153.0); 2265.6 @ 2.5600 s (T_eff 153.0); Treffer 1 (FP)
+  3.1000 s: 54.0 @ 3.0293 s (T_eff 153.0); 276.5 @ 3.0720 s (T_eff 153.0); Treffer 1 (FP)
+  3.6000 s: 755.4 @ 3.5413 s (T_eff 166.8); 35.2 @ 3.5840 s (T_eff 174.4); Treffer 1 (FP)
+  4.1000 s: 2270.0 @ 4.0533 s (T_eff 153.0); 26.3 @ 4.0960 s (T_eff 153.0); Treffer 1 (FP)
+  4.6000 s: 10.4 @ 4.5227 s (T_eff 153.0); 1709.2 @ 4.5653 s (T_eff 153.0); Treffer 1 (FP)
+  5.1000 s: 167.7 @ 5.0347 s (T_eff 153.0); 86.4 @ 5.0773 s (T_eff 153.0); Treffer 1 (FP)
+  5.6000 s: 1391.9 @ 5.5467 s (T_eff 153.0); 54.7 @ 5.5893 s (T_eff 153.0); Treffer 1 (FP)
+  6.1000 s: 33.1 @ 6.0160 s (T_eff 153.0); 2183.8 @ 6.0587 s (T_eff 153.0); Treffer 1 (FP)
+  6.6000 s: 13.8 @ 6.5280 s (T_eff 153.0); 624.0 @ 6.5707 s (T_eff 153.0); Treffer 1 (F)
+  7.1000 s: 642.8 @ 7.0400 s (T_eff 153.0); 54.6 @ 7.0827 s (T_eff 153.0); Treffer 1 (FP)
+  7.6000 s: 3056.0 @ 7.5520 s (T_eff 153.0); 72.6 @ 7.5947 s (T_eff 153.0); Treffer 1 (FP)
+  8.1000 s: 19.1 @ 8.0213 s (T_eff 153.0); 1845.0 @ 8.0640 s (T_eff 153.0); Treffer 1 (F)
+  8.6000 s: 128.5 @ 8.5333 s (T_eff 153.0); 81.2 @ 8.5760 s (T_eff 153.0); Treffer 0
+  9.1000 s: 1639.4 @ 9.0453 s (T_eff 153.0); 16.3 @ 9.0880 s (T_eff 153.0); Treffer 1 (FP)
+  9.6000 s: 2536.7 @ 9.5573 s (T_eff 153.0); 17.3 @ 9.6000 s (T_eff 153.0); Treffer 1 (FP)
+  10.1000 s: 28.7 @ 10.0267 s (T_eff 153.0); 1038.0 @ 10.0693 s (T_eff 153.0); Treffer 1 (F)
+  10.6000 s: 371.2 @ 10.5387 s (T_eff 153.0); 75.3 @ 10.5813 s (T_eff 153.0); Treffer 1 (FP)
+  11.1000 s: 1785.7 @ 11.0507 s (T_eff 153.0); 42.1 @ 11.0933 s (T_eff 153.0); Treffer 1 (FP)
+  11.6000 s: 39.3 @ 11.5200 s (T_eff 153.0); 2072.1 @ 11.5627 s (T_eff 153.0); Treffer 1 (F)
+  12.1000 s: 126.6 @ 12.0320 s (T_eff 153.0); 107.5 @ 12.0747 s (T_eff 153.0); Treffer 0
+  12.6000 s: 1184.3 @ 12.5440 s (T_eff 153.0); 29.1 @ 12.5867 s (T_eff 153.0); Treffer 1 (FP)
+  13.1000 s: 2209.0 @ 13.0560 s (T_eff 153.0); 16.9 @ 13.0987 s (T_eff 155.0); Treffer 1 (F)
+  13.6000 s: 62.2 @ 13.5253 s (T_eff 153.0); 1069.8 @ 13.5680 s (T_eff 153.0); Treffer 1 (FP)
+  14.1000 s: 498.9 @ 14.0373 s (T_eff 153.0); 20.3 @ 14.0800 s (T_eff 156.8); Treffer 1 (FP)
+  14.6000 s: 2101.9 @ 14.5493 s (T_eff 153.0); 33.7 @ 14.5920 s (T_eff 153.0); Treffer 1 (F)
+  15.1000 s: 59.1 @ 15.0187 s (T_eff 153.0); 1479.0 @ 15.0613 s (T_eff 153.0); Treffer 1 (FP)
+  15.6000 s: 47.6 @ 15.5307 s (T_eff 153.0); 164.5 @ 15.5733 s (T_eff 153.0); Treffer 1 (FP)
+  16.1000 s: 1116.4 @ 16.0427 s (T_eff 153.0); 34.4 @ 16.0853 s (T_eff 153.0); Treffer 1 (F)
+  16.6000 s: 2403.3 @ 16.5547 s (T_eff 153.0); 59.1 @ 16.5973 s (T_eff 153.0); Treffer 1 (FP)
+  17.1000 s: 42.7 @ 17.0240 s (T_eff 153.0); 1144.9 @ 17.0667 s (T_eff 153.0); Treffer 1 (FP)
+  17.6000 s: 297.6 @ 17.5360 s (T_eff 153.0); 48.3 @ 17.5787 s (T_eff 153.0); Treffer 1 (FP)
+  18.1000 s: 2072.4 @ 18.0480 s (T_eff 153.0); 40.1 @ 18.0907 s (T_eff 153.0); Treffer 1 (FP)
+  18.6000 s: 42.4 @ 18.5173 s (T_eff 153.0); 2406.9 @ 18.5600 s (T_eff 153.0); Treffer 1 (FP)
+  19.1000 s: 33.5 @ 19.0293 s (T_eff 153.0); 531.5 @ 19.0720 s (T_eff 153.0); Treffer 1 (FP)
+  19.6000 s: 450.9 @ 19.5413 s (T_eff 153.0); 29.8 @ 19.5840 s (T_eff 153.0); Treffer 1 (FP)
+  20.1000 s: 1706.6 @ 20.0533 s (T_eff 153.0); 46.0 @ 20.0960 s (T_eff 153.0); Treffer 1 (FP)
+  20.6000 s: 44.2 @ 20.5227 s (T_eff 153.0); 1075.9 @ 20.5653 s (T_eff 153.0); Treffer 1 (FP)
+  21.1000 s: 146.0 @ 21.0347 s (T_eff 153.0); 76.0 @ 21.0773 s (T_eff 153.0); Treffer 0
+  21.6000 s: 1112.6 @ 21.5467 s (T_eff 153.0); 20.1 @ 21.5893 s (T_eff 153.0); Treffer 1 (FP)
+  22.1000 s: 22.7 @ 22.0160 s (T_eff 153.0); 2443.2 @ 22.0587 s (T_eff 153.0); Treffer 1 (FP)
+  22.6000 s: 23.6 @ 22.5280 s (T_eff 153.0); 598.1 @ 22.5707 s (T_eff 153.0); Treffer 1 (F)
+  23.1000 s: 326.4 @ 23.0400 s (T_eff 153.0); 10.3 @ 23.0827 s (T_eff 153.0); Treffer 1 (FP)
+  23.6000 s: 2072.2 @ 23.5520 s (T_eff 153.0); 35.3 @ 23.5947 s (T_eff 153.0); Treffer 1 (FP)
+  24.1000 s: 35.0 @ 24.0213 s (T_eff 153.0); 1525.0 @ 24.0640 s (T_eff 153.0); Treffer 1 (F)
+  24.6000 s: 187.3 @ 24.5333 s (T_eff 153.0); 87.1 @ 24.5760 s (T_eff 153.0); Treffer 1 (FP)
+  25.1000 s: 1119.8 @ 25.0453 s (T_eff 153.0); 19.0 @ 25.0880 s (T_eff 153.0); Treffer 1 (FP)
+  25.6000 s: 2360.5 @ 25.5573 s (T_eff 153.0); 14.7 @ 25.6000 s (T_eff 153.0); Treffer 1 (FP)
+  26.1000 s: 21.8 @ 26.0267 s (T_eff 153.0); 662.0 @ 26.0693 s (T_eff 153.0); Treffer 1 (F)
+  26.6000 s: 464.2 @ 26.5387 s (T_eff 153.0); 51.8 @ 26.5813 s (T_eff 153.0); Treffer 1 (FP)
+  27.1000 s: 1916.0 @ 27.0507 s (T_eff 153.0); 31.4 @ 27.0933 s (T_eff 153.0); Treffer 1 (FP)
+  27.6000 s: 12.8 @ 27.5200 s (T_eff 153.0); 2039.7 @ 27.5627 s (T_eff 153.0); Treffer 1 (F)
+  28.1000 s: 106.1 @ 28.0320 s (T_eff 153.0); 102.3 @ 28.0747 s (T_eff 153.0); Treffer 0
+  28.6000 s: 1186.7 @ 28.5440 s (T_eff 153.0); 32.2 @ 28.5867 s (T_eff 153.0); Treffer 1 (FP)
+  29.1000 s: 2710.6 @ 29.0560 s (T_eff 153.0); 7.3 @ 29.0987 s (T_eff 153.0); Treffer 1 (F)
+  29.6000 s: 81.5 @ 29.5253 s (T_eff 153.0); 1188.2 @ 29.5680 s (T_eff 153.0); Treffer 1 (FP)
+Fluss eines zweiten Klicks: kleinster 106.1 dB bei 28.1000 s (T_eff dort 153.0 dB), groesster 3056.0 dB bei 7.6000 s (T_eff dort 153.0 dB)
+Zum Vergleich Fluss eines ersten Klicks: kleinster 118.0 dB, groesster 2706.8 dB
+
+--- Zusammenfassung ---
+Ereignisse gesamt 108 (bei getrennten Klicks waeren es 112); 108 Klicks mit genau einem Treffer,
+4 ohne Treffer, keine Mehrfachtreffer, keine Fehlalarme. Verfehlt sind nur zweite Klicks:
+8,6 s (SF 128,5 / 81,2 dB), 12,1 s (126,6 / 107,5 dB), 21,1 s (146,0 / 76,0 dB), 28,1 s (106,1 / 102,3 dB),
+T_eff dort jeweils 153,0 dB. Fluss eines zweiten Klicks: kleinster 106,1 dB (28,1 s), groesster 3056,0 dB
+(7,6 s). Der Vorframe des ersten Frames, der den zweiten Klick traegt, enthaelt den ersten Klick; der
+Fluss ist reduziert, nicht null (R-380-12 (ii)).
+
+--- Vergleich am Zusageabstand 150 ms (--nak380-beobachtung I3-150, 20:58:56 bis 20:58:57 Uhr, Exit 0;
+    nur Kopf- und Summenzeilen, die Zusage selbst traegt B5 380/M-59) ---
+Beobachtung Klickpaare, Abstand 7200 Samples = 150.00 ms, 56 Paare, P2 -40 dBFS (Saat 0x3800008), Klick +0,5, 48 kHz, Block 512; N_H + Hop = 6144 Samples = 128,0 ms
+Hauptstufen-Fenster gesehen 701, Ringverlust 0
+Ereignisse gesamt 112 (Soll bei getrennten Klicks 112); genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0
+Verfehlte Klicks: keine
+Je zweitem Klick (Zeit; SF der tragenden Frames [dB] bei Fensteranfang; T_eff dort; Treffer):
+Fluss eines zweiten Klicks: kleinster 160.6 dB bei 23.1500 s (T_eff dort 153.0 dB), groesster 2802.6 dB bei 26.1500 s (T_eff dort 153.0 dB)
+Zum Vergleich Fluss eines ersten Klicks: kleinster 118.0 dB, groesster 2706.8 dB

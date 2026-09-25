@@ -1,0 +1,24 @@
+NAK-380 Etappe 4, Nacharbeit 0 (25.09.2026) — Mutationsprotokoll m63-madnenner
+Matrixzeile: M-63; Zusagesatz: Nenner >= max(med, T_min - med) > 0 auch bei kleinster MAD (Klick auf stehendem Sinus)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 872
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n0/m63-madnenner/Spektrum.h
+Wortlaut vorher:
+                    ? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)
+Wortlaut nachher:
+                    ? (float) ((sf - med) / mad)
+  Bau EqCopSonde013EventWireTest: 21:13:53 bis 21:14:07, Exit 0
+  Binary 21:14:07.432 juenger als Quelle 21:13:53.830: ja
+Lauf mit Mutation: --nak380 M-63 21:14:07 bis 21:14:08, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [4 Flussereignisse, ausserhalb 3]
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am serialisierten Wire-Text, jedes Flussereignis mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [am Draht 1 (196608:31.203), verloren 2, nicht gebaut 4, Riegelfehler 0, Schemafehler 0 in 15 Snapshots]
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis reist mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [1 Flussereignisse der Engine, ausserhalb 1; am Draht 0 (), verloren 1]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Klick auf stehendem Sinus)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [64 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema  [am Draht 64, kleinste 6.881, groesste 158.225, verloren 0, Riegelfehler 0, Schemafehler 0 in 93 Snapshots]
+Ruecknahme aus der Sicherung (Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013EventWireTest: 21:14:08 bis 21:14:24, Exit 0
+  Binary 21:14:24.107 juenger als Quelle 21:14:08.713: ja
+Lauf nach Ruecknahme: --nak380 M-63 21:14:24 bis 21:14:25, Exit 0, 5 bestanden, 0 gescheitert

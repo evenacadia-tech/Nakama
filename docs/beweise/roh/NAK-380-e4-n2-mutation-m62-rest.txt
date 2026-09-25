@@ -1,0 +1,63 @@
+NAK-380 Etappe 4, Nacharbeit 2 (26.09.2026) — Mutationsprotokoll m62-rest (Rest R1 der Wiederpruefung 1)
+Laeufer: Beobachtung --nak380-beobachtung I3-100 und I3-150 (B5-Programm, ohne Matrixzusage); Regel D1 (§39.1, §42.1): gespeiste Samplezahl = Signallaenge als eigene Pruefung, Laeufer und Engine
+Neue Pruefung: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp:1559 (Aufruf nak380SamplesGeprueft, Pruefzeile :1390), Pruefkennung "380/Beobachtung I3-<Abstand>: Vorbedingung gespeiste Samplezahl = 1440000"
+Begruendung der Mutation: vorhandene Gegenprobe m62-rest der Nacharbeit 1 (NAK-380-e4-n1-mutation-m62-rest.txt), Wortlaut uebernommen; der gemeinsame Laeufer speist nur volle Bloecke (2812 * 512 = 1 439 744, Restblock 256 fehlt), kein Zugriff hinter dem Puffer
+Datei: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp
+Zeile: 1344 (am Basisstand 46bd211c und am Nacharbeitsstand gleich)
+Wortlaut vorher:
+        while (strom < samples)
+        {
+            const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+Wortlaut nachher:
+        while (strom + (std::uint64_t) block <= samples)
+        {
+            const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+
+--- Basisstand 46bd211c, vor der Aenderung (Erfassung "heute rot", §8.1) ---
+SHA-256 vor der Mutation: B244C4AB74F8397C2F3128CBA2DE715C23D4B96C688F11194169008FBE36F2AA; Sicherung eq-copilot/build/nak380-sicherung/e4n2/m62-rest-basis/0-AnalysisGoldenTestMain.cpp
+SHA-256 mit Mutation: F69AD5A50893C285048D263F3A8D80CCCF77903EC6E4B6459B1CFDD378991CF5
+  Bau EqCopAnalysisGoldenTest: 00:29:41 bis 00:29:52, Exit 0
+  Binary EqCopAnalysisGoldenTest 00:29:52.007 juenger als Quelle 00:29:41.361: ja
+Lauf mit Mutation: EqCopAnalysisGoldenTest --nak380-beobachtung I3-100 00:29:52 bis 00:29:52, Exit 0
+    [ok]   380/Beobachtung rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    Ausgabe: Hauptstufen-Fenster gesehen 701, Ringverlust 0, gespeist 1439744 Samples, von der Engine verarbeitet 1439744 (Puffer 1440000)
+    Ausgabe: Ereignisse gesamt 108 (Soll bei getrennten Klicks 112); genau einer 108, ohne Treffer 4, mehrfach 0, Fehlalarme 0
+Lauf mit Mutation: EqCopAnalysisGoldenTest --nak380-beobachtung I3-150 00:29:52 bis 00:29:53, Exit 0
+    [ok]   380/Beobachtung rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    Ausgabe: Hauptstufen-Fenster gesehen 701, Ringverlust 0, gespeist 1439744 Samples, von der Engine verarbeitet 1439744 (Puffer 1440000)
+    Ausgabe: Ereignisse gesamt 112 (Soll bei getrennten Klicks 112); genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0
+Ergebnis am Basisstand: Exit 0 in beiden Modi trotz 1 439 744 statt 1 440 000 gespeister Samples; die einzige Pruefung (Rosa, Puffer vor dem Lauf) bleibt gruen. Befund R1 gemessen.
+Ruecknahme aus der Sicherung (0-AnalysisGoldenTestMain.cpp), SHA-256 B244C4AB74F8397C2F3128CBA2DE715C23D4B96C688F11194169008FBE36F2AA: gleich
+  Bau EqCopAnalysisGoldenTest: 00:30:06 bis 00:30:16, Exit 0
+  Binary EqCopAnalysisGoldenTest 00:30:16.566 juenger als Quelle 00:30:06.205: ja
+Lauf nach Ruecknahme: EqCopAnalysisGoldenTest --nak380-beobachtung I3-100 00:30:16 bis 00:30:17, Exit 0
+    Ausgabe: Hauptstufen-Fenster gesehen 701, Ringverlust 0, gespeist 1440000 Samples, von der Engine verarbeitet 1440000 (Puffer 1440000)
+
+--- Nacharbeitsstand (nach der Aenderung, Pruefungen :1559 und :1561) ---
+SHA-256 vor der Mutation: 595A6C41D97C7DD5AE067704CCA6621A5FF02D6E7EB2CB802357E3C1CB7B9865; Sicherung eq-copilot/build/nak380-sicherung/e4n2/m62-rest/0-AnalysisGoldenTestMain.cpp
+SHA-256 mit Mutation: A9F119802FF7C161756935E82CA47D38545663F4422B9238DECD050DED31A490
+  Bau EqCopAnalysisGoldenTest: 00:32:02 bis 00:32:13, Exit 0
+  Binary EqCopAnalysisGoldenTest 00:32:13.199 juenger als Quelle 00:32:02.606: ja
+Lauf mit Mutation: EqCopAnalysisGoldenTest --nak380-beobachtung I3-100 00:32:13 bis 00:32:13, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/Beobachtung I3-100: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine  [Puffer 1440000, gespeist 1439744, von der Engine verarbeitet 1439744]
+Die Mutation faellt an der erwarteten neuen Pruefung: JA (erwartet: Beobachtung I3-100: Vorbedingung gespeiste Samplezahl)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/Beobachtung rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/Beobachtung I3-100: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    Ausgabe: Hauptstufen-Fenster gesehen 701, Ringverlust 0, gespeist 1439744 Samples, von der Engine verarbeitet 1439744 (Puffer 1440000)
+    Ausgabe: Ereignisse gesamt 108 (Soll bei getrennten Klicks 112); genau einer 108, ohne Treffer 4, mehrfach 0, Fehlalarme 0
+Lauf mit Mutation: EqCopAnalysisGoldenTest --nak380-beobachtung I3-150 00:32:13 bis 00:32:14, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/Beobachtung I3-150: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine  [Puffer 1440000, gespeist 1439744, von der Engine verarbeitet 1439744]
+Die Mutation faellt an der erwarteten neuen Pruefung: JA (erwartet: Beobachtung I3-150: Vorbedingung gespeiste Samplezahl)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/Beobachtung rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/Beobachtung I3-150: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    Ausgabe: Hauptstufen-Fenster gesehen 701, Ringverlust 0, gespeist 1439744 Samples, von der Engine verarbeitet 1439744 (Puffer 1440000)
+    Ausgabe: Ereignisse gesamt 112 (Soll bei getrennten Klicks 112); genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0
+Ruecknahme aus der Sicherung (0-AnalysisGoldenTestMain.cpp), SHA-256 595A6C41D97C7DD5AE067704CCA6621A5FF02D6E7EB2CB802357E3C1CB7B9865: gleich
+  Bau EqCopAnalysisGoldenTest: 00:32:21 bis 00:32:32, Exit 0
+  Binary EqCopAnalysisGoldenTest 00:32:32.280 juenger als Quelle 00:32:21.726: ja
+Lauf nach Ruecknahme: EqCopAnalysisGoldenTest --nak380-beobachtung I3-100 00:32:32 bis 00:32:32, Exit 0, 3 Pruefungen ok, 0 rot
+Lauf nach Ruecknahme: EqCopAnalysisGoldenTest --nak380-beobachtung I3-150 00:32:33 bis 00:32:33, Exit 0, 3 Pruefungen ok, 0 rot

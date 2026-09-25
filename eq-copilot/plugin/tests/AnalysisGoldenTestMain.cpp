@@ -1503,8 +1503,10 @@ __declspec(noinline) void nak380Impulsfall (const char* id, const char* name,
 
 #if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
 /** NAK-380 Nacharbeit 0 (R-380-12 (ii)): Klickpaare im Abstand `abstand`
-    auf demselben P2 wie I3 als BEOBACHTUNG - keine Pruefung, kein
-    Zusagefall, nur ueber `--nak380-beobachtung`. Ausgegeben werden die
+    auf demselben P2 wie I3 als BEOBACHTUNG - kein Zusagefall, nur ueber
+    `--nak380-beobachtung`. Geprueft werden seit Nacharbeit 2 nur die
+    Messvorbedingungen (E-380-13, gespeiste Samplezahl, Verlustzaehler);
+    die Ereigniszahlen bleiben Ausgabe ohne Zusage. Ausgegeben werden die
     Ereignisse, die Treffer nach der Zaehlregel §7.3 und je zweitem Klick
     der Fluss SF der Hauptstufen-Frames, deren Fenster [s, s + 4096) ihn
     tragen, mit der Schwelle T_eff, die dort galt. "Fluss eines zweiten
@@ -1549,6 +1551,14 @@ __declspec(noinline) void nak380BeobachtungKlickpaare (std::uint64_t abstand)
                 tEffNaechster = FeatureEngineTestzugang::naechsteSchwelle (e);
             }
         });
+    // Messvorbedingungen des Laufs als eigene Pruefungen (Nacharbeit 2,
+    // Reste R1 und R2 der Wiederpruefung 1): gespeiste Samplezahl =
+    // Signallaenge (Befund D1; 1 440 000 = 2812 volle Bloecke + Rest 256)
+    // und Zaehlregel §7.3 (Befund D5). Keine Zusage zu den Ereigniszahlen.
+    const auto kennung = "I3-" + juce::String (juce::roundToInt (1000.0 * (double) abstand / fs));
+    nak380SamplesGeprueft ("Beobachtung", kennung.toRawUTF8(), *lauf, x.size(), 1440000u,
+                           "30 s * 48 000, 2812 Bloecke + Rest 256");
+    nak380VerlustGeprueft ("Beobachtung", kennung.toRawUTF8(), lauf->verworfen);
     const auto& ev = lauf->ereignisse;
 
     // Treffer nach §7.3 je Klick (I3-Zaehlung: jeder Klick ein Ziel); dazu
@@ -1901,8 +1911,9 @@ int main (int argc, char* argv[])
     }
 #if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
     // NAK-380 Nacharbeit 0 (R-380-12 (ii)): `--nak380-beobachtung I3-100`
-    // misst die Klickpaare im Abstand 100 ms einmal als Beobachtung (keine
-    // Pruefung); `I3-150` dieselbe Ausgabe am Zusageabstand zum Vergleich.
+    // misst die Klickpaare im Abstand 100 ms einmal als Beobachtung (ohne
+    // Zusage zu den Ereigniszahlen); `I3-150` dieselbe Ausgabe am
+    // Zusageabstand zum Vergleich.
     if (argc == 3 && std::strcmp (argv[1], "--nak380-beobachtung") == 0)
     {
         if (std::strcmp (argv[2], "I3-100") == 0)
@@ -1911,7 +1922,10 @@ int main (int argc, char* argv[])
             nak380BeobachtungKlickpaare (nakama::test::nak380::kI3AbstandSamples);
         else
             return 2;
-        // Einzige Pruefung der Beobachtung ist ihre Vorbedingung E-380-13.
+        // Die Pruefungen der Beobachtung sind ihre Messvorbedingungen
+        // E-380-13, gespeiste Samplezahl und Verlustzaehler (Nacharbeit 2);
+        // der Exitcode folgt ihnen. Die Ereigniszahlen bleiben Ausgabe ohne
+        // Zusage.
         return fehler == 0 ? 0 : 1;
     }
 #endif

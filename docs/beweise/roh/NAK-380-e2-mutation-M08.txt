@@ -1,0 +1,1 @@
+M-08(a): Frame.h Liveleistung ohne Breite. M-08(b): BandGrid.h `kPlausibelMaxDb` 24 -> -40. Nur Rotlaeufe, Ruecknahmen hashgleich.

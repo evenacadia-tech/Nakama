@@ -1112,3 +1112,84 @@ fn pruefe_band_stereo(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flatbuffers::FlatBufferBuilder;
+
+    fn batch_mit_metrics_version(version: u32) -> Vec<u8> {
+        let mut fbb = FlatBufferBuilder::new();
+        let sid = fbb.create_string("S-1-5-21-380");
+        let projekt = fbb.create_string(&"1".repeat(32));
+        let sitzung = fbb.create_string(&"2".repeat(32));
+        let instanz = fbb.create_string(&"3".repeat(32));
+        let nonce = fbb.create_string(&"4".repeat(32));
+        let quelle = fb::Adresse::create(
+            &mut fbb,
+            &fb::AdresseArgs {
+                logon_sid: Some(sid),
+                project_binding_id: Some(projekt),
+                session_epoch: Some(sitzung),
+                instance_id: Some(instanz),
+                runtime_nonce: Some(nonce),
+            },
+        );
+        let werte = fbb.create_vector(&[-120i16; 64]);
+        let bitmap = fbb.create_vector(&[0xffu8; 8]);
+        let baender = fb::Bandwerte::create(
+            &mut fbb,
+            &fb::BandwerteArgs {
+                gitter: fb::Bandgitter::nakama_log64_v1,
+                encoding: fb::BandEncoding::q_db_0p1_i16,
+                werte_i16: Some(werte),
+                gueltig_bitmap: Some(bitmap),
+                ..Default::default()
+            },
+        );
+        let transport = fb::Transportstempel::create(
+            &mut fbb,
+            &fb::TransportstempelArgs {
+                transport_epoch: 1,
+                continuity_segment: 1,
+                sequence: 1,
+                zeitbasis: fb::Zeitbasis::local_monotonic,
+                sample_count: 512,
+                sample_rate: 48000.0,
+                process_context_present: Some(false),
+                ..Default::default()
+            },
+        );
+        let frame = fb::Frame::create(
+            &mut fbb,
+            &fb::FrameArgs {
+                transport: Some(transport),
+                baender: Some(baender),
+                metrics_version: version,
+                ..Default::default()
+            },
+        );
+        let eintrag = fb::QuellenEintrag::create(
+            &mut fbb,
+            &fb::QuellenEintragArgs { quelle: Some(quelle), frame: Some(frame) },
+        );
+        let eintraege = fbb.create_vector(&[eintrag]);
+        let batch = fb::FeatureBatch::create(
+            &mut fbb,
+            &fb::FeatureBatchArgs { eintraege: Some(eintraege) },
+        );
+        fb::finish_feature_batch_buffer(&mut fbb, batch);
+        fbb.finished_data().to_vec()
+    }
+
+    #[test]
+    fn nak380_m18_alte_und_neue_version_gelesen() {
+        for version in [20_260_904, 20_260_925] {
+            let puffer = batch_mit_metrics_version(version);
+            let verstoesse = pruefe(&puffer);
+            assert!(verstoesse.is_empty(), "Version {version}: {verstoesse:?}");
+            assert!(fuer_broker(&puffer).is_ok(),
+                    "Version {version} muss der produktive Broker-Leser annehmen");
+        }
+    }
+}

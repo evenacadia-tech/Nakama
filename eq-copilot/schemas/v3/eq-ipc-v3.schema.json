@@ -421,7 +421,7 @@
     },
 
     "bandwerte": {
-      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). DISKRIMINIERT UEBER `gitter_id`, weil die Bandzahl aus dem Gitter FOLGT und nicht frei ist: die beiden Gitter sind als Zahlen eingefroren (221 und 64), und eine Nachricht, die 221 Werte unter `nakama_log64_v1` traegt, ist keine 'grosszuegige' Nachricht, sondern eine falsche. Jeder Gitterzweig diskriminiert zusaetzlich ueber `encoding`: q_db_0p1_i16 und q_db_0p01_i16 tragen Ganzzahlen innerhalb der jeweiligen `plausibler_bereich_db.traegergrenzen` aus quantisierung-v1.json; float32 traegt endliche Zahlen, deren Endlichkeit der gemeinsame Textriegel vor dem Parser erzwingt. Bis zum 28.08.2026 waren alle Werte nur `number`; dadurch galten Brueche und Werte ausserhalb der plausiblen Traegergrenzen auch fuer i16 als gueltig. Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte — daraus folgt ihre Laenge exakt, deshalb steht sie je Zweig fest statt als Spanne. Am 28.08.2026 mit `git grep` bestaetigt: kein Produktionscode im Baum erzeugt v3-Nachrichten; nach G1 §10.0 wird diese Verschaerfung deshalb ohne Versionsanhebung eingetragen.",
+      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). DISKRIMINIERT UEBER `gitter_id`, weil die Bandzahl aus dem Gitter FOLGT und nicht frei ist: die beiden Gitter sind als Zahlen eingefroren (221 und 64), und eine Nachricht, die 221 Werte unter `nakama_log64_v1` traegt, ist keine 'grosszuegige' Nachricht, sondern eine falsche. Jeder Gitterzweig diskriminiert zusaetzlich ueber `encoding`: q_db_0p1_i16 und q_db_0p01_i16 tragen Ganzzahlen innerhalb der jeweiligen `plausibler_bereich_db.traegergrenzen` aus quantisierung-v1.json; float32 traegt endliche Zahlen, deren Endlichkeit der gemeinsame Textriegel vor dem Parser erzwingt. Bis zum 28.08.2026 waren alle Werte nur `number`; dadurch galten Brueche und Werte ausserhalb der plausiblen Traegergrenzen auch fuer i16 als gueltig. Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte — daraus folgt ihre Laenge exakt, deshalb steht sie je Zweig fest statt als Spanne. Am 28.08.2026 mit `git grep` bestaetigt: kein Produktionscode im Baum erzeugt v3-Nachrichten; nach G1 §10.0 wird diese Verschaerfung deshalb ohne Versionsanhebung eingetragen. Die Groesse haengt am Gitter (bandwerte_fein, bandwerte_grob); `Frame.band_stereo` bleibt davon als dimensionsloser FlatBuffers-Wert getrennt.",
       "x-nakama-discriminator": "gitter_id",
       "oneOf": [
         { "$ref": "#/$defs/bandwerte_fein" },
@@ -430,7 +430,7 @@
     },
 
     "bandwerte_fein": {
-      "description": "221 Baender (nakama_1_24_oct_30_18k_v1, Evidenz 1-4 Hz), zusaetzlich ueber encoding diskriminiert. Bitmap: ceil(221/8) = 28 Bytes = 40 Base64-Zeichen.",
+      "description": "Mittlere einseitige Leistungsdichte je Band in dBFS/Hz (Mittel ueber die FFT-Bins des Bandes, NAK-380 R-380-1). 221 Baender (nakama_1_24_oct_30_18k_v1, Evidenz 1-4 Hz), zusaetzlich ueber encoding diskriminiert. Bitmap: ceil(221/8) = 28 Bytes = 40 Base64-Zeichen.",
       "x-nakama-discriminator": "encoding",
       "oneOf": [
         {
@@ -509,7 +509,7 @@
     },
 
     "bandwerte_grob": {
-      "description": "64 Gruppen (nakama_log64_v1, Live 10 Hz), zusaetzlich ueber encoding diskriminiert. Bitmap: ceil(64/8) = 8 Bytes = 12 Base64-Zeichen.",
+      "description": "Bandleistung je Livegruppe in dBFS: Summe Dichte mal Gitterbandbreite ueber die Feinbaender der Gruppe (NAK-380 R-380-1). 64 Gruppen (nakama_log64_v1, Live 10 Hz), zusaetzlich ueber encoding diskriminiert. Bitmap: ceil(64/8) = 8 Bytes = 12 Base64-Zeichen.",
       "x-nakama-discriminator": "encoding",
       "oneOf": [
         {

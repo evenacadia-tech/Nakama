@@ -1,0 +1,20 @@
+NAK-380 Etappe 2 Rotbeweis M-16, 25.09.2026
+Hälfte (a)-(c), Datei vor der Mutation: broker/src/coordinator/hypothese/zusammenhang.rs
+SHA-256 vor der Mutation: 89EBAAA8109B3227D56EF0A91B66B38680C231EE70AD0A64F4C08753ECC2A870
+Mutation wörtlich: `if !leistung.is_finite() { continue; }` wurde entfernt.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m16_integration_zahlenrand_bandpassung`.
+Exitcode: 101. Gefallene Prüfung: M-16(b); der Leistungsüberlauf wurde NaN.
+Mitgefallene Prüfungen: keine. Grün gebliebene Teilprüfungen: M-16(a) und M-16(c).
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: 89EBAAA8109B3227D56EF0A91B66B38680C231EE70AD0A64F4C08753ECC2A870 (identisch).
+Fall grün: JA; gefilterter Fall danach Exitcode 0.
+
+Hälfte (d), Datei vor der Mutation: broker/src/coordinator/hypothese/zusammenhang.rs
+SHA-256 vor der Mutation: 89EBAAA8109B3227D56EF0A91B66B38680C231EE70AD0A64F4C08753ECC2A870
+Mutation wörtlich: `10f64.powf(db / 10.0) * breite(index)` -> `10f64.powf(db / 10.0) * 1.0`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m16_integration_zahlenrand_bandpassung`, Teilprüfung M-16(d).
+Exitcode: 101. Gefallene Prüfung: M-16(d) mit 4/221=0,018099547511 statt 0,000276809466.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: 89EBAAA8109B3227D56EF0A91B66B38680C231EE70AD0A64F4C08753ECC2A870 (identisch).
+Fall grün: JA; gefilterter Fall danach Exitcode 0.

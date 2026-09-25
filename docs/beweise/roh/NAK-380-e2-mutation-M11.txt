@@ -1,0 +1,1 @@
+M-11: Rust und C++ lesen Mitten statt Kanten; nur fuer Rotlauf, Ruecknahmen hashgleich.

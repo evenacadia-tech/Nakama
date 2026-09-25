@@ -1,0 +1,9 @@
+NAK-380 Etappe 2 — M-04 alter Wert vor dem Produktbau
+Datum/Basis-SHA: 25.09.2026 / 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
+Etikett: heute rot; Golden-Klasse (ii), nachgezogener Formelwert.
+Bein/Fall: B5 / 380/M-04 livegruppen_summe_parseval
+Testdatei SHA-256: 707B4D7FFD116BAEE2158DEC989B787AA06DCABF0F17DDD2BFD43ED6855456EB
+Altinhalt am unveränderten Produktcode: -40,8805 dBFS.
+Unabhängige Referenz: 10log10((2*0,1^2/48000)*(17959,3929444597-30,3605446870)) = -21,2665 dBFS.
+Ergebnis: ROT, Exit B5 1; die Zusage fällt am neuen M-04-Fall.
+

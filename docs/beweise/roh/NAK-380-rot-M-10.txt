@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-10, 25.09.2026
+Datei vor der Mutation: broker/src/coordinator/hypothese/screening.rs
+SHA-256 vor der Mutation: 05D2EF45C59711B74B63AF97D71E9F560682AD04AD353E3CED52BCE169864FEB
+Mutation wörtlich: `bandpassung(kandidat, bandintervall_der_gruppe(gruppe))` -> `bandpassung(kandidat, Bandintervall { von: 0, bis: 221 })`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m10_screening_erbt_bandbreite`.
+Exitcode: 101. Gefallene Prüfung: M-10 mit Gruppenenergie A=1,00000000.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 05D2EF45C59711B74B63AF97D71E9F560682AD04AD353E3CED52BCE169864FEB (identisch).
+Fall grün: JA; neu kompiliert, gefilterter Fall danach Exitcode 0.

@@ -1,8 +1,10 @@
 //! Determinismus (M-25): die Groessen, die zur `metrics_version` gehoeren.
 //!
 //! **Gleicher Eingang, gleiche Reihenfolge (M-25).** Bootstrap-Saat,
-//! Reduktionsreihenfolge, Eingangsquantisierung und Tie-Break-Key stehen als
-//! benannte Konstanten hier und gehoeren zur `metrics_version` (§36.4). Sie
+//! Reduktionsreihenfolge, Eingangsquantisierung, Bandbreitentafel des
+//! eingefrorenen Feinbandgitters und Tie-Break-Key stehen als benannte
+//! Groessen hier beziehungsweise in `bandbreite.rs` und gehoeren zur
+//! `metrics_version` (§36.4). Sie
 //! sind ABSICHTLICH nicht im Register `metriken-v1.json`: Entscheid **E-12**
 //! des Dirigenten (06.09.2026) erlaubt genau EINEN Versionsschritt, und der
 //! liegt in Etappe H zusammen mit der Kalibrierung. Zwei Schritte fuer eine

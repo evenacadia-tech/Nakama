@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 — M-09 alter Wert vor dem Produktbau
+Datum/Basis-SHA: 25.09.2026 / 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
+Etikett: heute rot.
+Bein/Fall: A4 / nak380_m09_bandpassung_integriert_mit_bandbreite
+Befehl: cargo test --manifest-path broker/Cargo.toml nak380_m09_bandpassung_integriert_mit_bandbreite -- --nocapture
+Exit: 101.
+Altinhalt ohne Breitengewicht: A = 0,006709057208, B = 0,138326884953; A liegt fälschlich hinter B.
+Unabhängige Konstruktion: Die Dichten wurden aus vorgegebenen integrierten Anteilen gebaut; deshalb sind mit Gitterbreite A = 0,4000 und B = 0,3000.
+Der Lauf fiel an A=0,00670906 gegen Referenz 0,4000. Die Zusage fällt an der erwarteten Prüfung: JA.
+

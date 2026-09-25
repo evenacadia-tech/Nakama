@@ -1,0 +1,12 @@
+NAK-380 Etappe 2 — M-01 Ausgangserfassung am Basisstand
+Datum: 25.09.2026
+Basis-SHA: 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
+Etikett: heute nicht messbar; der neue Fall wurde vor dem ersten Produktedit gebaut und gefahren.
+Bein/Fall: B5 / 380/M-01 evidenz_feinband_ist_dichte
+Testdatei SHA-256: 707B4D7FFD116BAEE2158DEC989B787AA06DCABF0F17DDD2BFD43ED6855456EB
+Befehl: EqCopAnalysisGoldenTest.exe
+Exit des Beins: 1, ausschließlich wegen der gleichzeitig zuerst geschriebenen heute-roten M-02 bis M-05 und M-08(a).
+M-01: GRÜN.
+Ausgang: Referenz 10log10(2 sigma^2/fs) = -63,8021 dBFS/Hz; größter Mittelwertfehler 0,3822 dB; P50 Band 220 = -63,8312 dBFS/Hz; 25 Bänder ohne Bit; 178 Evidenzframes.
+Die Referenz stammt aus 2*0,1^2/48000, nicht aus dem Lauf. Die feste Saat ist 0x03800001.
+

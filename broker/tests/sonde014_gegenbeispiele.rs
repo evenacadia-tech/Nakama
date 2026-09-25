@@ -804,7 +804,10 @@ fn eigen4_quelle_im_falschen_band() {
 // Der schärfste Trennungsfall des G5-Laufs: beide Sonden tragen im Befundband
 // exakt dieselbe Anhebung. Der Unterschied ist +0,1 dB in Band 210 — über
 // hundert Bandindizes vom Befund entfernt und für die Behauptung ohne jede
-// Bedeutung. Er senkte den Rang der zweiten um zwei Quanten, und das genügte.
+// Bedeutung. Mit bandbreitengewichteter Leistung senkt er die Bandpassung
+// von 0,012284648442 auf 0,012278612128; nach der Sechstelung und erneuten
+// Quantisierung bleibt genau ein Rangquantum. Das genügt weiterhin nur als
+// Gegenprobe darauf, dass die Ränge wirklich verschieden sind.
 #[test]
 fn f7_rangdifferenz_am_quantum() {
     let b = Buehne::schlank();

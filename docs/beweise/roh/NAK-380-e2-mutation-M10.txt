@@ -1,0 +1,1 @@
+M-10: screening.rs Gruppenintervall -> [0, 221); nur fuer Rotlauf, Ruecknahme hashgleich.

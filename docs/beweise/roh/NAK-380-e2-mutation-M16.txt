@@ -1,0 +1,1 @@
+M-16(a-c): Endlichkeitsriegel entfernt. M-16(d): Breite -> 1.0. Nur Rotlaeufe, Ruecknahmen hashgleich.

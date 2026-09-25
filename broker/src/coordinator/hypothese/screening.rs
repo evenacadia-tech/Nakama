@@ -339,6 +339,60 @@ mod tests {
     use super::*;
     use crate::coordinator::intent::{IntentBestand, SchutzangabeSpiegel};
 
+    fn nak380_leistungsprofil(id: &str, bereiche: &[((f64, f64), f64)]) -> Quellprofil {
+        let wert: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../eq-copilot/schemas/v3/bandgitter/nakama_1_24_oct_30_18k_v1.json"
+        ))
+        .expect("eingefrorenes Evidenzgitter ist JSON");
+        let dekodiere = |text: &str| {
+            f64::from_bits(u64::from_str_radix(text, 16).expect("hex64 ist gueltig"))
+        };
+        let kanten: Vec<f64> = wert["kanten_hz"]["hex64"]
+            .as_array().expect("Kantenfeld").iter()
+            .map(|v| dekodiere(v.as_str().expect("hex64-Text"))).collect();
+        let mitten: Vec<f64> = wert["mitten_hz"]["hex64"]
+            .as_array().expect("Mittenfeld").iter()
+            .map(|v| dekodiere(v.as_str().expect("hex64-Text"))).collect();
+        let breiten: Vec<f64> = kanten.windows(2).map(|k| k[1] - k[0]).collect();
+        let mut f = fenster(0, 512, 1);
+        f.p50_gueltig.fill(false);
+        for &((von, bis), anteil) in bereiche {
+            let summe: f64 = mitten.iter().zip(&breiten)
+                .filter(|(m, _)| **m >= von && **m < bis)
+                .map(|(_, w)| *w).sum();
+            let dichte_db = 10.0 * (anteil / summe).log10();
+            for (index, mitte) in mitten.iter().enumerate() {
+                if *mitte >= von && *mitte < bis {
+                    f.p50_db[index] = dichte_db as f32;
+                    f.p50_gueltig[index] = true;
+                }
+            }
+        }
+        Quellprofil {
+            quelle_id: id.into(), fenster: vec![f], routing_bekannt: true,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn nak380_m10_screening_erbt_bandbreite() {
+        let a = nak380_leistungsprofil(
+            "a", &[((8000.0, 16000.0), 0.4), ((80.0, 160.0), 0.6)]);
+        let b = nak380_leistungsprofil(
+            "b", &[((8000.0, 16000.0), 0.3), ((3000.0, 6000.0), 0.7)]);
+        let master = masterprofil();
+        let aufnahme = aufnahme_mit(master.clone(), vec![a.clone(), b.clone()]);
+        let ra = screeningrang(&a, &aufnahme, &master, 57);
+        let rb = screeningrang(&b, &aufnahme, &master, 57);
+        // R-380-8: 0,4 bzw. 0,3 mal 1099,67/8000 Hz.
+        assert!((ra.gruppenenergie - 0.05498).abs() <= 1e-4,
+                "A Gruppenenergie {:.8}", ra.gruppenenergie);
+        assert!((rb.gruppenenergie - 0.04124).abs() <= 1e-4,
+                "B Gruppenenergie {:.8}", rb.gruppenenergie);
+        assert!(screening_quantisiert(&ra) > screening_quantisiert(&rb),
+                "A muss im Screening vor B liegen: {ra:?} gegen {rb:?}");
+    }
+
     /// **K-06.** Der Screeningrang misst auf der GRUPPE, nicht auf einem
     /// feineren Intervall.
     ///

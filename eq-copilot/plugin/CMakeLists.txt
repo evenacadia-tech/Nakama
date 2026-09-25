@@ -1007,7 +1007,7 @@ juce_add_console_app(EqCopSonde013EventWireTest PRODUCT_NAME "eqcop-sonde013even
 target_sources(EqCopSonde013EventWireTest PRIVATE tests/Sonde013EventWireTest.cpp)
 target_compile_definitions(EqCopSonde013EventWireTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
-target_link_libraries(EqCopSonde013EventWireTest PRIVATE juce::juce_core Advapi32
+target_link_libraries(EqCopSonde013EventWireTest PRIVATE juce::juce_core flatbuffers Advapi32
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSonde013EventWireTest)
 

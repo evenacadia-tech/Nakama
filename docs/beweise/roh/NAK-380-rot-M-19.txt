@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-19, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h
+SHA-256 vor der Mutation: ED6FBAA8CBC1DF2AED08C461A9CA07E83D937AE7144BE608FAEABF75ED7472B1
+Mutation wörtlich: `kFeatureMetricsVersion = 20260925u` -> `kFeatureMetricsVersion = 20260904u` bei Register `aktuell = 20260925`.
+Gefahrener Rotlauf: A5 `metrics_version_bindet_schwellen` und `nak380_m19_fassung_etappe_2`.
+Exitcode: 2. Gefallene Prüfung: `metrics_version_bindet_schwellen: Code und Register nennen dieselbe Version` (851/1).
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: 851, darunter der Registerinhalt von `nak380_m19_fassung_etappe_2`.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: ED6FBAA8CBC1DF2AED08C461A9CA07E83D937AE7144BE608FAEABF75ED7472B1 (identisch).
+Fall grün: JA; A5 danach 852/0, Exitcode 0.

@@ -1,0 +1,1 @@
+M-05: Frame.h Liveleistung ohne Gitterbreite; nur fuer Rotlauf, Ruecknahme hashgleich.

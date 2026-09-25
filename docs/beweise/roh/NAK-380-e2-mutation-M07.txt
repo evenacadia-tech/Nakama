@@ -1,0 +1,1 @@
+M-07: BandGrid.h Energie <= 0 wird 0 dB statt -inf; nur fuer Rotlauf, Ruecknahme hashgleich.

@@ -152,6 +152,7 @@ abhängt.
 | `bitmap_fuellbits` | Die ungenutzten Bits des letzten Bytes sind nicht 0. Sonst erzeugen zwei Sender für **dieselbe** Messung zwei verschiedene Puffer, und ein Bytevergleich wäre keine Aussage mehr. |
 | `bandwert_bereich` | Ein i16-Bandwert außerhalb von **`plausibler_bereich_db`** in `quantisierung-v1.json` (−144…+24 dB, in Trägerwerte umgerechnet). **Nicht** `bereich_db` — das ist der Trägerumfang (±32767) und wäre als Regel wirkungslos. Beide Leser vergleichen ihre einkompilierten Konstanten bei jedem Testlauf mit der Vertragsdatei; vorher stand die Zahl nur im Quelltext, während hier `bereich_db` als Quelle genannt war. |
 | `nicht_endlich` | NaN oder ±inf auf der Leitung. `quantisierung-v1.json` legt fest, dass Nichtendliches beim **Erzeugen** zu Wert 0 mit `gueltig=false` wird — auf der Leitung ist es ein Senderfehler und wird abgelehnt, nicht saniert. |
+| `Bandwerte`-Groesse | `Bandwerte` traegt die Groesse seines Feldes: 221 spektrale Feinbaender = Leistungsdichte in dBFS/Hz; `Frame.baender` = Bandleistung in dBFS; `Frame.band_stereo` = dimensionsloser float32-Seitenanteil in [0, 1] (NAK-380 R-380-1). |
 | `korrelation_bereich` · `breite_negativ` | Korrelation außerhalb [-1, 1]; negative Breite. |
 | `grenzen_verdreht` | Abgeleitete Schleifengrenzen mit Ende vor Anfang. |
 | `ppq_verdreht` | Rohe PPQ-Schleifengrenzen mit Ende vor Anfang. |

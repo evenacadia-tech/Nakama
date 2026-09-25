@@ -27,9 +27,11 @@
 // Gegenprobe ueber den Playhead-Rueckfallweg, der weniger kann.
 #include "PluginProcessor.h"
 #include "analysis/FeatureEngine.h"
+#include "Nak380Pruefsignale.h"
 
 #include <juce_core/juce_core.h>
 
+#include <array>
 #include <cmath>
 #include <complex>
 #include <cstdint>
@@ -752,6 +754,250 @@ double biquadLeistung (const Biquad& f, double w)
     const auto h = zaehler / nenner;
     return std::norm (h);
 }
+
+struct Nak380Bandmittel
+{
+    std::array<double, Gitter::evidenzBaender> feinLinear {};
+    std::array<double, Gitter::evidenzBaender> feinP50Db {};
+    std::array<int, Gitter::evidenzBaender> feinAnzahl {};
+    std::array<double, Gitter::liveBaender> liveLinear {};
+    std::array<int, Gitter::liveBaender> liveAnzahl {};
+    int evidenzframes {};
+};
+
+/** NAK-380 W0: eigener, nicht eingebetteter Lauf; Engine und Signalpuffer
+    liegen auf dem Heap (NAK-175). */
+__declspec(noinline) Nak380Bandmittel nak380W0Lauf (double sigma, double sekunden)
+{
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+    auto engine = std::make_unique<FeatureEngine>();
+    engine->vorbereiten (fs);
+    nakama::test::nak380::W0 signal;
+    signal.sigma = sigma;
+    std::vector<float> audio ((std::size_t) block * 2u);
+    Nak380Bandmittel aus;
+    std::uint64_t strom = 0;
+    std::int64_t projekt = 0;
+    const auto samples = (std::uint64_t) std::llround (sekunden * fs);
+    while (strom < samples)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> (block, samples - strom);
+        for (std::uint32_t i = 0; i < anzahl; ++i)
+            signal.naechstes (audio[(std::size_t) i * 2u], audio[(std::size_t) i * 2u + 1u]);
+        rt::StampedBlock b;
+        b.stromVon = strom;
+        b.sampleCount = anzahl;
+        b.segment = 0;
+        b.startFolge = 0;
+        b.kanaele = 2;
+        b.tapMaske = 1;
+        b.projectSampleStart = projekt;
+        b.sampleRate = fs;
+        b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+        const bool frame = engine->nimmBlock (b, audio.data());
+        strom += anzahl;
+        projekt += (std::int64_t) anzahl;
+        if (! frame || strom < (std::uint64_t) (3.0 * fs))
+            continue;
+
+        const auto& f = engine->frame();
+        for (int g = 0; g < Gitter::liveBaender; ++g)
+            if (bitmapLies (f.live.bitmap, g))
+            {
+                const double db = (double) f.live.werte[(std::size_t) g] * 0.1;
+                aus.liveLinear[(std::size_t) g] += std::pow (10.0, db / 10.0);
+                ++aus.liveAnzahl[(std::size_t) g];
+            }
+        if (! f.evidenzFrisch)
+            continue;
+        ++aus.evidenzframes;
+        for (int band = 0; band < Gitter::evidenzBaender; ++band)
+            if (bitmapLies (f.evidenz.bitmap, band)
+                && bitmapLies (f.evidenzP50.bitmap, band))
+            {
+                const double db = (double) f.evidenz.werte[(std::size_t) band] * 0.01;
+                aus.feinLinear[(std::size_t) band] += std::pow (10.0, db / 10.0);
+                aus.feinP50Db[(std::size_t) band]
+                    += (double) f.evidenzP50.werte[(std::size_t) band] * 0.01;
+                ++aus.feinAnzahl[(std::size_t) band];
+            }
+    }
+    return aus;
+}
+
+__declspec(noinline) double nak380S3Gruppenleistung (double amplitude)
+{
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+    auto engine = std::make_unique<FeatureEngine>();
+    engine->vorbereiten (fs);
+    std::vector<float> audio ((std::size_t) block * 2u);
+    std::uint64_t strom = 0;
+    std::int64_t projekt = 0;
+    double summe = 0.0;
+    int n = 0;
+    const auto samples = (std::uint64_t) (10.0 * fs);
+    while (strom < samples)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> (block, samples - strom);
+        for (std::uint32_t i = 0; i < anzahl; ++i)
+        {
+            const float v = nakama::test::nak380::s3 (strom + i, amplitude, fs);
+            audio[(std::size_t) i * 2u] = v;
+            audio[(std::size_t) i * 2u + 1u] = v;
+        }
+        rt::StampedBlock b;
+        b.stromVon = strom;
+        b.sampleCount = anzahl;
+        b.segment = 0;
+        b.startFolge = 0;
+        b.kanaele = 2;
+        b.tapMaske = 1;
+        b.projectSampleStart = projekt;
+        b.sampleRate = fs;
+        b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+        const bool frame = engine->nimmBlock (b, audio.data());
+        strom += anzahl;
+        projekt += (std::int64_t) anzahl;
+        if (frame && strom >= (std::uint64_t) (3.0 * fs)
+            && bitmapLies (engine->frame().live.bitmap, 35))
+        {
+            const double db = (double) engine->frame().live.werte[35] * 0.1;
+            summe += std::pow (10.0, db / 10.0);
+            ++n;
+        }
+    }
+    return n > 0 ? 10.0 * std::log10 (summe / (double) n)
+                 : -std::numeric_limits<double>::infinity();
+}
+
+__declspec(noinline) void nak380DichteUndBandleistung()
+{
+    std::cout << "\n== NAK-380 Etappe 2 - Dichte und Bandleistung ==" << std::endl;
+    constexpr double fs = 48000.0;
+    constexpr double sigma = 0.1;
+    const double dichte = 2.0 * sigma * sigma / fs;
+    const double dichteDb = 10.0 * std::log10 (dichte); // R-380-8: 2 sigma^2 / fs = -63,80 dBFS/Hz.
+    const auto w0 = nak380W0Lauf (sigma, 60.0);
+
+    int ohneBit = 0;
+    double groessterFehler = 0.0;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const auto n = w0.feinAnzahl[(std::size_t) b];
+        if (n == 0) { ++ohneBit; continue; }
+        const double mittelDb = 10.0 * std::log10 (w0.feinLinear[(std::size_t) b] / (double) n);
+        groessterFehler = std::max (groessterFehler, std::abs (mittelDb - dichteDb));
+    }
+    const int p50Band = 220;
+    const double p50 = w0.feinP50Db[(std::size_t) p50Band]
+                     / (double) w0.feinAnzahl[(std::size_t) p50Band];
+    pruefe (w0.evidenzframes > 0 && ohneBit == 25 && groessterFehler <= 0.5
+                && std::abs (p50 - dichteDb) <= 1.5,
+            "380/M-01 evidenz_feinband_ist_dichte",
+            "Referenz 10log10(2 sigma^2/fs)=" + juce::String (dichteDb, 4)
+                + " dBFS/Hz; groesster Mittelwertfehler " + juce::String (groessterFehler, 4)
+                + " dB; P50 Band 220 " + juce::String (p50, 4)
+                + "; ohne Bit " + juce::String (ohneBit)
+                + "; Evidenzframes " + juce::String (w0.evidenzframes));
+
+    double minDb = std::numeric_limits<double>::infinity();
+    double maxDb = -std::numeric_limits<double>::infinity();
+    double groessterGruppenfehler = 0.0;
+    double liveSumme = 0.0;
+    for (int g = 0; g < Gitter::liveBaender; ++g)
+    {
+        const int n = w0.liveAnzahl[(std::size_t) g];
+        if (n == 0)
+            continue;
+        const double p = w0.liveLinear[(std::size_t) g] / (double) n;
+        const double breite = Gitter::evidenzKante (Gitter::liveBisExkl (g))
+                             - Gitter::evidenzKante (Gitter::liveVon (g));
+        const double istDb = 10.0 * std::log10 (p);
+        const double sollDb = dichteDb + 10.0 * std::log10 (breite);
+        groessterGruppenfehler = std::max (groessterGruppenfehler,
+                                           std::abs (istDb - sollDb));
+        minDb = std::min (minDb, istDb);
+        maxDb = std::max (maxDb, istDb);
+        liveSumme += p;
+    }
+    const double spanne = maxDb - minDb;
+    // R-380-8: W63/W0 = 1959,392773/2,7477 -> 28,53 dB.
+    const double spanneSoll = 10.0 * std::log10 (
+        (Gitter::evidenzKante (221) - Gitter::evidenzKante (217))
+        / (Gitter::evidenzKante (3) - Gitter::evidenzKante (0)));
+    pruefe (groessterGruppenfehler <= 0.5 && std::abs (spanne - spanneSoll) <= 0.5,
+            "380/M-02 livegruppe_ist_bandleistung_weiss",
+            "Spanne " + juce::String (spanne, 4) + " dB, Referenz "
+                + juce::String (spanneSoll, 4) + " dB; groesster Gruppenfehler "
+                + juce::String (groessterGruppenfehler, 4) + " dB");
+
+    const double p0 = w0.liveLinear[0] / (double) w0.liveAnzahl[0];
+    const double p0SollDb = dichteDb
+                          + 10.0 * std::log10 (Gitter::evidenzKante (3)
+                                               - Gitter::evidenzKante (0));
+    const double p0Db = 10.0 * std::log10 (p0);
+    pruefe (std::abs (p0Db - p0SollDb) <= 0.5,
+            "380/M-03 livegruppe_leere_feinbaender_ergaenzt",
+            "Gruppe 0 " + juce::String (p0Db, 4) + " dBFS, Referenz Dichte mal 2,7477 Hz "
+                + juce::String (p0SollDb, 4) + " dBFS");
+
+    const double summeDb = 10.0 * std::log10 (liveSumme);
+    const double summeSollDb = 10.0 * std::log10 (
+        dichte * (Gitter::evidenzKante (221) - Gitter::evidenzKante (0)));
+    pruefe (std::abs (summeDb - summeSollDb) <= 0.3,
+            "380/M-04 livegruppen_summe_parseval",
+            "Summe " + juce::String (summeDb, 4) + " dBFS, Referenz "
+                + juce::String (summeSollDb, 4) + " dBFS");
+
+    const double sinusHalbDb = nak380S3Gruppenleistung (0.5);
+    pruefe (std::abs (sinusHalbDb - 10.0 * std::log10 (0.125)) <= 1.0,
+            "380/M-05 livegruppe_sinus_leistung",
+            "Gruppe 35 " + juce::String (sinusHalbDb, 4)
+                + " dBFS, Referenz 10log10(A^2/2)=-9,0309 dBFS");
+
+    const auto w0h = nak380W0Lauf (1.0, 60.0);
+    const double weiss63Db = 10.0 * std::log10 (
+        w0h.liveLinear[63] / (double) w0h.liveAnzahl[63]);
+    const double weiss63SollDb = 10.0 * std::log10 (
+        2.0 / fs * (Gitter::evidenzKante (221) - Gitter::evidenzKante (217)));
+    const double sinusVollDb = nak380S3Gruppenleistung (1.0);
+    pruefe (std::abs (weiss63Db - weiss63SollDb) <= 1.0
+                && std::abs (sinusVollDb - 10.0 * std::log10 (0.5)) <= 1.0,
+            "380/M-08 livegruppe_traegerrand",
+            "W0h Gruppe 63 " + juce::String (weiss63Db, 4) + " gegen "
+                + juce::String (weiss63SollDb, 4) + " dBFS; S3 A=1 Gruppe 35 "
+                + juce::String (sinusVollDb, 4) + " gegen -3,0103 dBFS");
+
+    // Vertragswerte aus kanten_hz.hex64, nicht aus dem Lauf abgelesen.
+    constexpr std::uint64_t breite0Bits = 0x3fec77d2b45dde00ull;
+    constexpr std::uint64_t breite120Bits = 0x403c77d2b45dddc0ull;
+    constexpr std::uint64_t breite220Bits = 0x407ff44e07b18980ull;
+    const auto breite = [] (int b) { return Gitter::evidenzKante (b + 1) - Gitter::evidenzKante (b); };
+    double breitensumme = 0.0;
+    bool allePositiv = true;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const double w = breite (b);
+        allePositiv = allePositiv && std::isfinite (w) && w > 0.0;
+        breitensumme += w;
+    }
+    pruefe (allePositiv
+                && std::abs (breitensumme - (Gitter::evidenzKante (221)
+                                              - Gitter::evidenzKante (0))) <= 1e-6
+                && bitsVon (breite (0)) == breite0Bits
+                && bitsVon (breite (120)) == breite120Bits
+                && bitsVon (breite (220)) == breite220Bits,
+            "380/M-11 bandbreiten_aus_gitter",
+            "221 Breiten, Summe " + juce::String (breitensumme, 9)
+                + " Hz; hex64 b0/b120/b220 "
+                + juce::String::toHexString ((juce::int64) bitsVon (breite (0))) + "/"
+                + juce::String::toHexString ((juce::int64) bitsVon (breite (120))) + "/"
+                + juce::String::toHexString ((juce::int64) bitsVon (breite (220))));
+}
 } // namespace
 
 //==============================================================================
@@ -764,6 +1010,8 @@ int main()
               << FeatureEngine::kBassHop << "), Haupt " << FeatureEngine::kHauptPunkte
               << " (Hop " << FeatureEngine::kHauptHop << "), Trennung bei "
               << FeatureEngine::kTrennungHz << " Hz." << std::endl << std::endl;
+
+    nak380DichteUndBandleistung();
 
     //==========================================================================
     std::cout << "== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==" << std::endl;

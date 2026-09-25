@@ -594,8 +594,9 @@ fn die_wertetabelle_der_kleinen_zahlen_haelt_den_riegel() {
 //
 // Warum B ueber die Projektion und nicht ueber die Rechnung: die Bandwerte
 // des Wire-Encodings `q_db_0p1_i16` sind geklemmt, und `bandpassung` hat
-// deshalb in JEDER Buehne dieses Korpus einen Boden bei `1/217` - gemessen
-// ueber Sockel bis 90 dB und Anomaliehuebe bis -150 dB. Die Groessenordnung
+// deshalb in JEDER Buehne dieses Korpus einen durch die Gitterbreite
+// bestimmten Boden; fuer Band 0 gegen das ganze Gitter ist die Quote
+// 0,0002768095. Die Groessenordnung
 // `1e-11` entsteht am echten Rechenweg erst mit einer Dynamik, die dieser
 // Korpus nicht traegt; sie ist deshalb hier eingesetzt, statt behauptet zu
 // werden - und zwar mit genau der Funktion, die die Zusage traegt.

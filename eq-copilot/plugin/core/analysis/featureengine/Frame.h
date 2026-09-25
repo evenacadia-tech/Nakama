@@ -336,21 +336,39 @@ inline void FeatureEngine::fuelleLive (LiveBaender& satz, float* breite, std::ui
 
     for (int g = 0; g < Gitter::liveBaender; ++g)
     {
-        // Lineare Energiesumme der Feinbaender der Gruppe — das Livegitter
-        // ist eine GRUPPIERUNG, keine zweite Filterbank (Fixture-Herkunft).
-        double summe = 0.0, seiteSumme = 0.0, gesamtSumme = 0.0;
+        // Bandleistung der Livegruppe: Die Feinbaender tragen mittlere
+        // einseitige Leistungsdichte. Deshalb wird erst mit ihrer Breite
+        // integriert. Fehlende Feinbaender ohne FFT-Bin bekommen die
+        // mittlere Dichte der belegten Feinbaender derselben Gruppe; eine
+        // Gruppe ganz ohne belegtes Feinband bleibt dagegen ohne Aussage.
+        double summe = 0.0, dichteSumme = 0.0, belegteBreite = 0.0;
+        double seiteSumme = 0.0, gesamtSumme = 0.0;
         int belegte = 0;
         for (int b = Gitter::liveVon (g); b < Gitter::liveBisExkl (g); ++b)
             if (liveAkku[(std::size_t) b].n > 0)
             {
                 const double n = (double) liveAkku[(std::size_t) b].n;
-                summe += liveAkku[(std::size_t) b].summe / n;
-                seiteSumme  += liveBreiteAkku[(std::size_t) b].seite  / n;
-                gesamtSumme += liveBreiteAkku[(std::size_t) b].gesamt / n;
+                const double bandbreite = Gitter::evidenzKante (b + 1)
+                                         - Gitter::evidenzKante (b);
+                const double dichte = liveAkku[(std::size_t) b].summe / n;
+                summe += dichte * bandbreite;
+                dichteSumme += dichte;
+                seiteSumme  += liveBreiteAkku[(std::size_t) b].seite
+                             / n * bandbreite;
+                gesamtSumme += liveBreiteAkku[(std::size_t) b].gesamt
+                             / n * bandbreite;
+                belegteBreite += bandbreite;
                 ++belegte;
             }
-        if (belegte == 0)
+        if (belegteBreite <= 0.0)
             continue;                          // Bitmap bleibt 0
+
+        const double gruppenBreite
+            = Gitter::evidenzKante (Gitter::liveBisExkl (g))
+            - Gitter::evidenzKante (Gitter::liveVon (g));
+        const double fehlendeBreite = gruppenBreite - belegteBreite;
+        if (fehlendeBreite > 0.0)
+            summe += dichteSumme / (double) belegte * fehlendeBreite;
 
         // Band-Stereo: Seitenanteil der Gruppe. Nur wenn ueberhaupt Energie
         // da ist — 0/0 waere NaN, und NaN ist hier "keine Aussage", also

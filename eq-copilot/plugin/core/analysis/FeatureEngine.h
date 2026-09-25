@@ -86,7 +86,7 @@ namespace nakama::analyse
 /** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
     dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
     weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260904u;
+inline constexpr std::uint32_t kFeatureMetricsVersion = 20260925u;
 
 /*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
 
@@ -98,6 +98,12 @@ inline constexpr std::uint32_t kFeatureMetricsVersion = 20260904u;
        3-s-Fensters statt gegen den Sample-Peak des 100-ms-Rahmens. Dasselbe
        Feld, dieselbe Feld-ID, ANDERE Bedeutung — ohne die Version haette ein
        Empfaenger kein Mittel, die zwei Faelle zu unterscheiden.
+
+    Warum die Zahl mit NAK-380 Etappe 2 steigt: Die 64 Livegruppen wechseln
+    von einer Summe von Feinband-Dichten zur Bandleistung, und jeder
+    Brokerverbraucher einer Leistung integriert die Dichte nun mit der
+    Bandbreite des eingefrorenen Gitters. Gleiche Felder tragen damit eine
+    korrigierte Messaussage; der Schritt darf nicht still bleiben.
 
     Die Schwellen dieser Fassung stehen in
     `eq-copilot/schemas/v3/metriken-v1.json`; **A5**

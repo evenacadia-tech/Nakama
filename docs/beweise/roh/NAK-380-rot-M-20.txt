@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-20, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/src/PluginProcessor.cpp
+SHA-256 vor der Mutation: 6D23AE41146030FFF0CCA8A9C3C853F13DC5E5B620E05904853C058E48D00F48
+Mutation wörtlich: `std::vector<float> nak380Mutation(64, 0.0f);` am Anfang von `processBlock` eingefügt.
+Gefahrener Rotlauf: betroffenes Bein B4 `EqCopQueueStressTest`.
+Exitcode: 1. Gefallene Prüfungen: die vier Nullforderungen bei 4000/2000/40/4000 gezählten Audiothread-Allokationen.
+Mitgefallene Prüfungen: vier Allokationswachen derselben Zusage. Grün gebliebene Prüfungen: die übrigen 117 B4-Prüfungen.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 6D23AE41146030FFF0CCA8A9C3C853F13DC5E5B620E05904853C058E48D00F48 (identisch); Quelle danach berührt und B4 neu gebaut.
+Fall grün: JA; B4 danach 121/0, Exitcode 0. A1, A16 und B1 ebenfalls Exitcode 0.

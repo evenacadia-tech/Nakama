@@ -1,0 +1,1 @@
+M-02: Frame.h Liveleistung `dichte * bandbreite` -> `dichte * 1.0`; nur fuer Rotlauf, Ruecknahme hashgleich.

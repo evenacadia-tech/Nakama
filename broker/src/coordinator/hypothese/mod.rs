@@ -48,6 +48,7 @@
 //! Verdrahtungsbein `broker/tests/sonde014_hypothese.rs`.
 
 mod befund;
+pub(crate) mod bandbreite;
 mod determinismus;
 mod eingang;
 mod enthaltung;

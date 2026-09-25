@@ -1,0 +1,1 @@
+M-06: Frame.h band_stereo ohne Breitengewicht; nur fuer Rotlauf, Ruecknahme hashgleich.

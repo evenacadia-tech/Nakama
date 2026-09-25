@@ -1,0 +1,1 @@
+M-20: `std::vector<float>` in `processBlock`; nur fuer Rotlauf, Ruecknahme hashgleich.

@@ -1,0 +1,1 @@
+M-13: maskierung.rs `breite(index)` -> 1.0; nur fuer Rotlauf, Ruecknahme hashgleich.

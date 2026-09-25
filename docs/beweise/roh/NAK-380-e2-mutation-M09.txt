@@ -1,0 +1,1 @@
+M-09: zusammenhang.rs `breite(index)` -> 1.0; nur fuer Rotlauf, Ruecknahme hashgleich.

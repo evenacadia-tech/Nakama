@@ -1,0 +1,1 @@
+M-19: FeatureEngine.h Version 20260925 -> 20260904; nur fuer Rotlauf, Ruecknahme hashgleich.

@@ -1,0 +1,1 @@
+M-14: rechnung.rs Dichteabweichung bekommt `10*log10(breite)`; nur fuer Rotlauf, Ruecknahme hashgleich.

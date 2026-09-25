@@ -1,0 +1,11 @@
+NAK-380 Etappe 2 Rotbeweis M-05, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/featureengine/Frame.h
+SHA-256 vor der Mutation: 1C163AA7B9309171C0A1E363BA124868B4B8804B5277325C3E88C318E85F4A2C
+Mutation wörtlich: `summe += dichte * bandbreite;` -> `summe += dichte * 1.0;`.
+Gefahrener Rotlauf: betroffenes Bein B5, Fall `380/M-05 livegruppe_sinus_leistung`.
+Exitcode: 1. Gefallene Prüfung: M-05 mit -24,0000 statt -9,0309 dBFS.
+Mitgefallene Prüfungen: M-02, M-04 und M-08(a).
+Grün gebliebene Prüfungen: M-01, M-03 und M-11.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 1C163AA7B9309171C0A1E363BA124868B4B8804B5277325C3E88C318E85F4A2C (identisch).
+Fall grün: JA; B5 danach Exitcode 0.

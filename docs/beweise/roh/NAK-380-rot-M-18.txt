@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-18, 25.09.2026
+Datei vor der Mutation: broker/src/telemetrie.rs
+SHA-256 vor der Mutation: 66E8599824CAE662800A4FA1A875C58F9E17776DA1EC3FB9797A3BADDC6201F0
+Mutation wörtlich: `if f.metrics_version() < 1` -> `if f.metrics_version() != 20260925`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m18_alte_und_neue_version_gelesen`.
+Exitcode: 101. Gefallene Prüfung: M-18; Fassung 20260904 wurde mit `metrics_version`-Verstoß abgelehnt.
+Mitgefallene Prüfungen: keine. Grün gebliebene Teilprüfung: Fassung 20260925; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 66E8599824CAE662800A4FA1A875C58F9E17776DA1EC3FB9797A3BADDC6201F0 (identisch).
+Fall grün: JA; nach Zeitstempelkorrektur neu kompiliert, gefilterter Fall Exitcode 0. Der Fixture-Korpus blieb bytegleich.

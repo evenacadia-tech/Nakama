@@ -326,6 +326,37 @@ mod tests {
     use super::*;
     use crate::coordinator::vergleichbarkeit::{GATE_MINDEST_FENSTER, GATE_ZEITUEBERDECKUNG};
 
+    #[test]
+    fn nak380_m14_masteranomalie_vergleicht_dichten() {
+        let mut f = fenster(0, 512, 1);
+        f.p50_db.fill(-20.0);
+        f.p50_db[30] = -14.0;
+        f.p50_db[200] = -17.0;
+        let master = Quellprofil {
+            quelle_id: "m".into(), fenster: vec![f], routing_bekannt: true,
+            ..Default::default()
+        };
+        let (_, band, beobachtung, gruppe) =
+            masteranomalie(&master, None).expect("Dichteanomalie ist messbar");
+        assert_eq!(gruppe, gruppe_von_band(30));
+        assert!((band.von..band.bis).contains(&30));
+        assert!(beobachtung.gueltig && (beobachtung.wert_db + 14.0).abs() < 1e-9,
+                "Band 30 mit +6 dB muss vor Band 200 mit +3 dB liegen: {beobachtung:?}");
+    }
+
+    #[test]
+    fn nak380_m15_bandmittel_bleibt_dichtemittel() {
+        let mut f = fenster(0, 512, 1);
+        f.p50_db[10] = -20.0;
+        f.p50_db[11] = -40.0;
+        f.p50_db[12] = -40.0;
+        f.p50_db[13] = -40.0;
+        let mittel = bandmittel(&f, Bandintervall { von: 10, bis: 14 })
+            .expect("vier Dichtewerte");
+        assert!((mittel + 35.0).abs() < 1e-12,
+                "Dichtemittel ist -35,00 dB, nicht integrierte Leistung: {mittel}");
+    }
+
     /// **N-18, N-19, N-20 bis N-22, N-44 (NAK-212 R4).** Das Alignment misst
     /// die PAARWEISE Ueberlappung, nicht die Ueberdeckung zweier Spannen.
     #[test]

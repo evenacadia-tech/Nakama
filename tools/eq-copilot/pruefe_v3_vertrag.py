@@ -2258,6 +2258,78 @@ def pruefe_metrikregister(lauf: Lauf) -> None:
               not abweichend, "; ".join(abweichend))
 
 
+def pruefe_nak380_etappe_2(lauf: Lauf, schema: dict) -> None:
+    """NAK-380 M-17/M-19: Groessen je Feld und Fassungsstufe Etappe 2."""
+    defs = schema.get("$defs", {})
+    bandwerte = str(defs.get("bandwerte", {}).get("description", ""))
+    fein = str(defs.get("bandwerte_fein", {}).get("description", ""))
+    grob = str(defs.get("bandwerte_grob", {}).get("description", ""))
+    fbs_pfad = WURZEL / "eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs"
+    fb_readme_pfad = WURZEL / "eq-copilot/schemas/v3/flatbuffers/README.md"
+    v3_readme_pfad = WURZEL / "eq-copilot/schemas/v3/README.md"
+    fbs = fbs_pfad.read_text(encoding="utf-8")
+    fb_readme = fb_readme_pfad.read_text(encoding="utf-8")
+    v3_readme = v3_readme_pfad.read_text(encoding="utf-8")
+
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: bandwerte_fein ist dBFS/Hz",
+        "Mittlere einseitige Leistungsdichte je Band in dBFS/Hz" in fein,
+        fein,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: bandwerte_grob ist Bandleistung",
+        "Bandleistung je Livegruppe in dBFS" in grob,
+        grob,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: bandwerte trennt band_stereo",
+        "Frame.band_stereo" in bandwerte and "dimensionslos" in bandwerte,
+        bandwerte,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: FlatBuffers Frame.baender",
+        "/// 64 Livegruppen, Bandleistung in dBFS." in fbs,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: FlatBuffers Frame.band_stereo",
+        "/// Dimensionsloser float32-Seitenanteil je Livegruppe in [0, 1], keine q_db-Kodierung."
+        in fbs,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: FlatBuffers Bandwerte-Feldregel",
+        "221 spektrale Feinbaender = Leistungsdichte in dBFS/Hz" in fb_readme
+        and "`Frame.baender` = Bandleistung in dBFS" in fb_readme
+        and "`Frame.band_stereo` = dimensionsloser float32-Seitenanteil" in fb_readme,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: v3-README nennt beide Spektralgroessen",
+        "221 Baender (Evidenz, 1–4 Hz), Leistungsdichte in dBFS/Hz" in v3_readme
+        and "64 Gruppen (Live, 10 Hz), Bandleistung in dBFS" in v3_readme,
+    )
+
+    register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+    fassungen = register.get("fassungen", {})
+    neu = fassungen.get("20260925", {})
+    alt = fassungen.get("20260904", {})
+    lauf.wahr(
+        "nak380_m19_fassung_etappe_2: aktuell ist 20260925",
+        register.get("aktuell") == 20260925,
+        f"aktuell={register.get('aktuell')!r}",
+    )
+    lauf.wahr(
+        "nak380_m19_fassung_etappe_2: seit nennt NAK-380 Etappe 2",
+        neu.get("seit") == "NAK-380 Etappe 2",
+        repr(neu.get("seit")),
+    )
+    lauf.wahr(
+        "nak380_m19_fassung_etappe_2: Konfidenzschwellen bleiben unveraendert",
+        bool(neu)
+        and neu.get("schwellen") == alt.get("schwellen")
+        and neu.get("ganzzahlige_schwellen") == alt.get("ganzzahlige_schwellen")
+        and neu.get("nicht_gefuehrt") == alt.get("nicht_gefuehrt"),
+    )
+
+
 def pruefe_comparability_schwellen(lauf: Lauf) -> None:
     """SONDE-013 M-29: die drei Startgates leben in der `metrics_version`.
 
@@ -2386,6 +2458,7 @@ def main(argv: list[str]) -> int:
     pruefe_fixtures(lauf, schema, manifest)
     pruefe_produkteingaenge(lauf, schema)
     pruefe_metrikregister(lauf)
+    pruefe_nak380_etappe_2(lauf, schema)
     pruefe_comparability_schwellen(lauf)
     pruefe_experiment_belegung(lauf, schema, reserviert)
 

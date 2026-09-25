@@ -1,0 +1,20 @@
+NAK-380 Etappe 2 Rotbeweis M-11, 25.09.2026
+Rust-Hälfte, Datei vor der Mutation: broker/src/coordinator/hypothese/bandbreite.rs
+SHA-256 vor der Mutation: 53D04D8605D9D841B17E4A65B331AEDD5458A9A20EA4B251D387A601B32231C6
+Mutation wörtlich: `gitter["kanten_hz"]["hex64"]` -> `gitter["mitten_hz"]["hex64"]`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m11_bandbreiten_aus_gitter`.
+Exitcode: 101. Gefallene Prüfung: M-11 Rust mit Summe 620765,452223 statt 17929,032400.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: 53D04D8605D9D841B17E4A65B331AEDD5458A9A20EA4B251D387A601B32231C6 (identisch).
+Fall grün: JA; gefilterter Rust-Fall danach Exitcode 0.
+
+C++-Hälfte, Datei vor der Mutation: eq-copilot/plugin/core/analysis/BandGrid.h
+SHA-256 vor der Mutation: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D
+Mutation wörtlich: `return std::bit_cast<double> (gitter::kEvidenzKantenBits[(std::size_t) i]);` -> `return evidenzMitte (i);` in `evidenzKante`.
+Gefahrener Rotlauf: betroffenes Bein B5, Fall `380/M-11 bandbreiten_aus_gitter`.
+Exitcode: 1. Gefallene Prüfung: M-11 C++ mit Summe 17671,110551 und Breite 220 gleich null.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: M-01 bis M-05 und M-08.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D (identisch).
+Fall grün: JA; B5 danach Exitcode 0.

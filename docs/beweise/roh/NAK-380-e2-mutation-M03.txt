@@ -1,0 +1,1 @@
+M-03: Frame.h Ergaenzung fehlender Feinbaender durch `false &&` abgeschaltet; nur fuer Rotlauf, Ruecknahme hashgleich.

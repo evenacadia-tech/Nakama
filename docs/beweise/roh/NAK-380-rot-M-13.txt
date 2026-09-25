@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-13, 25.09.2026
+Datei vor der Mutation: broker/src/coordinator/maskierung.rs
+SHA-256 vor der Mutation: 6C684B610B28A3D10FA953ACCD2A50FDB85533E182144688F175D1C02FC7D310
+Mutation wörtlich: `10f64.powf(db / 10.0) * breite(index)` -> `10f64.powf(db / 10.0) * 1.0` in `bandpegel`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m13_maskierungswert_leistungsverhaeltnis`.
+Exitcode: 101. Gefallene Prüfung: M-13 mit 14,107772334 statt 13,924917160 dB.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 6C684B610B28A3D10FA953ACCD2A50FDB85533E182144688F175D1C02FC7D310 (identisch).
+Fall grün: JA; gefilterter Fall danach Exitcode 0.

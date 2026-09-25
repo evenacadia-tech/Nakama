@@ -24,8 +24,11 @@
 #include "../core/StampedAudioQueue.h"
 #include "../state/NakamaKanon.h"
 #include "../vertrag/NakamaEvidenz.h"
+#include "../vertrag/NakamaTelemetrie.h"
 #include "../vertrag/NakamaVertrag.h"
 #include "../core/ipc/IpcQueues.h"
+#include "../core/ipc/TelemetryClient.h"
+#include "Nak380Pruefsignale.h"
 
 #include <juce_core/juce_core.h>
 
@@ -492,12 +495,106 @@ PassagenLauf fahrePassage (const std::function<float (std::uint64_t)>& signal, i
         }
     return r;
 }
+
+__declspec(noinline) bool nak380LiveFrame (bool weiss, FeatureFrame& aus)
+{
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+    const int zielgruppe = weiss ? 63 : 35;
+    auto engine = std::make_unique<FeatureEngine>();
+    engine->vorbereiten (fs);
+    nakama::test::nak380::W0 w0;
+    w0.sigma = 1.0;
+    std::vector<float> audio ((std::size_t) block * 2u);
+    std::uint64_t strom = 0;
+    std::int64_t projekt = 0;
+    const auto ende = (std::uint64_t) (weiss ? 10.0 * fs : 5.0 * fs);
+    while (strom < ende)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> (block, ende - strom);
+        for (std::uint32_t i = 0; i < anzahl; ++i)
+        {
+            float l = 0.0f, r = 0.0f;
+            if (weiss)
+                w0.naechstes (l, r);
+            else
+                l = r = nakama::test::nak380::s3 (strom + i, 1.0, fs);
+            audio[(std::size_t) i * 2u] = l;
+            audio[(std::size_t) i * 2u + 1u] = r;
+        }
+        rt::StampedBlock b;
+        b.stromVon = strom;
+        b.sampleCount = anzahl;
+        b.segment = 0;
+        b.startFolge = 0;
+        b.kanaele = 2;
+        b.tapMaske = 1;
+        b.projectSampleStart = projekt;
+        b.sampleRate = fs;
+        b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+        const bool frame = engine->nimmBlock (b, audio.data());
+        strom += anzahl;
+        projekt += (std::int64_t) anzahl;
+        if (frame && strom >= (std::uint64_t) (3.0 * fs)
+            && nakama::analyse::bitmapLies (engine->frame().live.bitmap, zielgruppe))
+        {
+            aus = engine->frame();
+            return true;
+        }
+    }
+    return false;
+}
+
+__declspec(noinline) void nak380LivegruppenAmDraht()
+{
+    abschnitt ("NAK-380 M-08  Livegruppen am P2-Draht");
+    FeatureFrame weiss {}, sinusFrame {};
+    const bool weissGebaut = nak380LiveFrame (true, weiss);
+    const bool sinusGebaut = nak380LiveFrame (false, sinusFrame);
+    nakama::ipc::Adresse adresse {
+        "S-1-5-21-380", std::string (32, '1'), std::string (32, '2'),
+        std::string (32, '3'), std::string (32, '4')
+    };
+    auto roundtrip = [&] (const FeatureFrame& f, int gruppe, const char* name)
+    {
+        std::vector<std::uint8_t> puffer;
+        std::vector<nakama::telemetrie::Empfangsframe> gelesen;
+        juce::Array<nakama::telemetrie::Verstoss> verstoesse;
+        const bool geschrieben = nakama::ipc::featureFrameAlsFlatbuffer (f, adresse, puffer);
+        const bool gelesenOk = geschrieben
+            && nakama::telemetrie::lese (puffer.data(), puffer.size(), gelesen, verstoesse);
+        const double db = nakama::analyse::bitmapLies (f.live.bitmap, gruppe)
+            ? (double) f.live.werte[(std::size_t) gruppe] * 0.1
+            : -std::numeric_limits<double>::infinity();
+        const bool ok = geschrieben && gelesenOk && gelesen.size() == 1
+                     && verstoesse.isEmpty()
+                     && nakama::analyse::bitmapLies (f.live.bitmap, gruppe)
+                     && db >= nakama::analyse::kPlausibelMinDb
+                     && db <= nakama::analyse::kPlausibelMaxDb
+                     && ! f.live.saturated;
+        return std::pair<bool, juce::String> {
+            ok, juce::String (name) + " Gruppe " + juce::String (gruppe) + " "
+                + juce::String (db, 3) + " dBFS, Bytes " + juce::String ((int) puffer.size())
+                + ", Verstoesse " + juce::String (verstoesse.size())
+        };
+    };
+    const auto w = weissGebaut ? roundtrip (weiss, 63, "W0h")
+                               : std::pair<bool, juce::String> { false, "W0h ohne Frame" };
+    const auto s = sinusGebaut ? roundtrip (sinusFrame, 35, "S3")
+                               : std::pair<bool, juce::String> { false, "S3 ohne Frame" };
+    pruefe (w.first && s.first,
+            "380/M-08 livegruppe_traegerrand_drahtwache",
+            w.second + "; " + s.second);
+}
 } // namespace
 
 int main()
 {
     std::cout << "SONDE-013 M-05 | Evidenzpfad: Verteilung, Abdeckung, "
                  "Konvergenz und der Ereignisstrom" << std::endl;
+
+    nak380LivegruppenAmDraht();
 
     // ── A · Der Snapshot haelt den Vertrag ────────────────────────────────
     abschnitt ("A · Der erzeugte Snapshot haelt den v3-Vertrag");

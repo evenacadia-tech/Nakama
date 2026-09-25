@@ -24,6 +24,7 @@
 use super::messung::{
     bandmittel, gemeinsame_reihen, korrelation_gerichtet, median, mittel, spannweite,
 };
+use super::bandbreite::breite;
 use super::screening::STUFE_B_AUFRUFE;
 use super::{
     quantisiert, Aufnahme, Bandintervall, Quellprofil, BAENDER_FEIN, BOOTSTRAP_SAAT,
@@ -185,8 +186,10 @@ pub fn rang_und_beleg(
 /// Wie gut die Energie des Kandidaten im Befundband sitzt.
 ///
 /// Der Anteil seiner LINEAREN Leistung im Bandintervall an seiner
-/// Gesamtleistung. In dB zu mitteln waere ein geometrisches Mittel und
-/// unterschaetzte genau die Spitzen, um die es hier geht.
+/// Gesamtleistung. Die Feinbandwerte sind Dichten; jede Dichte wird deshalb
+/// vor dem Summieren mit der Bandbreite des eingefrorenen Gitters integriert.
+/// In dB zu mitteln waere ein geometrisches Mittel und unterschaetzte genau
+/// die Spitzen, um die es hier geht.
 pub(super) fn bandpassung(kandidat: &Quellprofil, band: Bandintervall) -> f64 {
     let mut im_band = 0.0f64;
     let mut gesamt = 0.0f64;
@@ -195,7 +198,7 @@ pub(super) fn bandpassung(kandidat: &Quellprofil, band: Bandintervall) -> f64 {
             let Some(db) = fenster.band(index) else {
                 continue;
             };
-            let leistung = 10f64.powf(db / 10.0);
+            let leistung = 10f64.powf(db / 10.0) * breite(index);
             if !leistung.is_finite() {
                 continue;
             }
@@ -424,6 +427,107 @@ pub fn rang_quantisiert(rang: &Rangkomponenten) -> i64 {
 mod tests {
     use super::super::testhilfe::*;
     use super::*;
+
+    fn nak380_gitter() -> (Vec<f64>, Vec<f64>) {
+        let wert: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../eq-copilot/schemas/v3/bandgitter/nakama_1_24_oct_30_18k_v1.json"
+        ))
+        .expect("eingefrorenes Evidenzgitter ist JSON");
+        let dekodiere = |text: &str| {
+            f64::from_bits(u64::from_str_radix(text, 16).expect("hex64 ist gueltig"))
+        };
+        let kanten: Vec<f64> = wert["kanten_hz"]["hex64"]
+            .as_array()
+            .expect("Kantenfeld")
+            .iter()
+            .map(|v| dekodiere(v.as_str().expect("hex64-Text")))
+            .collect();
+        let mitten: Vec<f64> = wert["mitten_hz"]["hex64"]
+            .as_array()
+            .expect("Mittenfeld")
+            .iter()
+            .map(|v| dekodiere(v.as_str().expect("hex64-Text")))
+            .collect();
+        let breiten = kanten.windows(2).map(|k| k[1] - k[0]).collect();
+        (mitten, breiten)
+    }
+
+    fn nak380_leistungsprofil(id: &str, bereiche: &[((f64, f64), f64)]) -> Quellprofil {
+        let (mitten, breiten) = nak380_gitter();
+        let mut f = fenster(0, 512, 1);
+        f.p50_gueltig.fill(false);
+        for &((von, bis), anteil) in bereiche {
+            let summe: f64 = mitten
+                .iter()
+                .zip(&breiten)
+                .filter(|(m, _)| **m >= von && **m < bis)
+                .map(|(_, w)| *w)
+                .sum();
+            let dichte_db = 10.0 * (anteil / summe).log10();
+            for (index, mitte) in mitten.iter().enumerate() {
+                if *mitte >= von && *mitte < bis {
+                    f.p50_db[index] = dichte_db as f32;
+                    f.p50_gueltig[index] = true;
+                }
+            }
+        }
+        Quellprofil {
+            quelle_id: id.into(),
+            fenster: vec![f],
+            routing_bekannt: true,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn nak380_m09_bandpassung_integriert_mit_bandbreite() {
+        let a = nak380_leistungsprofil(
+            "a",
+            &[((8000.0, 16000.0), 0.4), ((80.0, 160.0), 0.6)],
+        );
+        let b = nak380_leistungsprofil(
+            "b",
+            &[((8000.0, 16000.0), 0.3), ((3000.0, 6000.0), 0.7)],
+        );
+        let band = Bandintervall { von: 193, bis: 217 };
+        let pa = bandpassung(&a, band);
+        let pb = bandpassung(&b, band);
+        // R-380-8: konstruktive Leistungsanteile, nicht aus diesem Lauf abgelesen.
+        assert!((pa - 0.4).abs() <= 1e-4, "A={pa:.8}, Referenz 0,4000");
+        assert!((pb - 0.3).abs() <= 1e-4, "B={pb:.8}, Referenz 0,3000");
+        assert!(pa > pb, "A muss vor B liegen: {pa:.8} gegen {pb:.8}");
+    }
+
+    #[test]
+    fn nak380_m16_integration_zahlenrand_bandpassung() {
+        let band = Bandintervall { von: 10, bis: 14 };
+
+        let mut nicht_endlich = fenster(0, 512, 1);
+        nicht_endlich.p50_db[10] = f32::NAN;
+        nicht_endlich.p50_db[11] = f32::INFINITY;
+        nicht_endlich.p50_db[12] = f32::NEG_INFINITY;
+        let a = Quellprofil { fenster: vec![nicht_endlich], ..Default::default() };
+        assert!(bandpassung(&a, band).is_finite(), "M-16(a) Leser verriegelt NaN/Inf");
+
+        let mut ueberlauf = fenster(0, 512, 1);
+        ueberlauf.p50_db.fill(4000.0);
+        let b = Quellprofil { fenster: vec![ueberlauf], ..Default::default() };
+        let rb = bandpassung(&b, band);
+        assert!(rb.is_finite(), "M-16(b) Leistungsueberlauf bleibt endlich: {rb}");
+
+        let mut ohne_bit = fenster(0, 512, 1);
+        ohne_bit.p50_gueltig.fill(false);
+        let c = Quellprofil { fenster: vec![ohne_bit], ..Default::default() };
+        assert_eq!(bandpassung(&c, band), 0.0, "M-16(c) ohne Bit");
+
+        let mut sehr_leise = fenster(0, 512, 1);
+        sehr_leise.p50_db.fill(-300.0);
+        let d = Quellprofil { fenster: vec![sehr_leise], ..Default::default() };
+        let rd = bandpassung(&d, band);
+        // R-380-8: (Kante14-Kante10)/(Kante221-Kante0) = 0,0002768095.
+        assert!((rd - 0.00027680946580434235).abs() <= 1e-10,
+                "M-16(d) Breitenquote {rd:.12}, Referenz 0,000276809466");
+    }
 
     /// **N-41 und N-47 (NAK-212 D1, D7).** Getrennt heisst BEIDES zugleich:
     /// verschiedener quantisierter Gesamtrang UND verschiedener Zusammenhang.

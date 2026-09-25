@@ -9,8 +9,8 @@ falsch — nie der Vertrag.
 | `eq-ipc-v3.schema.json` | Die definierten JSON-Nachrichtenfamilien (P0/P1). Die Zahl steht ausdruecklich NICHT hier, sondern maschinenlesbar in `reservierte-nachrichten-v1.json` (`gesamt_erwartet`, `definiert`, `reserviert`) — eine Zahl in Prosa lief in diesem Projekt schon einmal gegen die Maschine (Nebenbefund N-05, 06.09.2026). |
 | `reservierte-nachrichten-v1.json` | Die reservierten sowie die spaeter belegten Familien-/Feldnamen + ihr Eigentuemerticket, dazu die Fassungsleiter `wire_envelope_schema_minor` |
 | `quantisierung-v1.json` | Kodierung der Bandwerte + 61 Testvektoren |
-| `bandgitter/nakama_1_24_oct_30_18k_v1.json` | 221 Baender (Evidenz, 1–4 Hz) |
-| `bandgitter/nakama_log64_v1.json` | 64 Gruppen (Live, 10 Hz) |
+| `bandgitter/nakama_1_24_oct_30_18k_v1.json` | 221 Baender (Evidenz, 1–4 Hz), Leistungsdichte in dBFS/Hz |
+| `bandgitter/nakama_log64_v1.json` | 64 Gruppen (Live, 10 Hz), Bandleistung in dBFS |
 
 ## Wer diesen Vertrag prueft
 

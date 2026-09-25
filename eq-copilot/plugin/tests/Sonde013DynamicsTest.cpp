@@ -210,14 +210,102 @@ struct FeatureEngineTestzugang
         return kHeadroomKlasseUntenDb
              + ((double) e.headroomRing[0].groesste + 0.5) * kHeadroomKlassenBreiteDb;
     }
+
+    static void liveLeeren (FeatureEngine& e) noexcept
+    {
+        for (auto& v : e.liveAkku) v = { 0.0, 0 };
+        for (auto& v : e.liveBreiteAkku) v = { 0.0, 0.0 };
+    }
+
+    static void liveBandSetzen (FeatureEngine& e, int band, double dichte,
+                                std::uint32_t n, double seite,
+                                double gesamt) noexcept
+    {
+        e.liveAkku[(std::size_t) band] = { dichte * (double) n, n };
+        e.liveBreiteAkku[(std::size_t) band] = {
+            seite * (double) n, gesamt * (double) n
+        };
+    }
+
+    static void liveFuellen (const FeatureEngine& e, LiveBaender& baender,
+                             float* stereo, std::uint8_t* stereoBitmap) noexcept
+    {
+        e.fuelleLive (baender, stereo, stereoBitmap);
+    }
 };
 } // namespace nakama::analyse
 #endif
+
+namespace
+{
+__declspec(noinline) void nak380BandStereoUndLeereGruppe()
+{
+    abschnitt ("NAK-380 Etappe 2  band_stereo und leere Gruppe");
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+    using nakama::analyse::FeatureEngineTestzugang;
+    using nakama::analyse::Gitter;
+    using nakama::analyse::LiveBaender;
+    using nakama::analyse::bitmapLies;
+
+    auto engine = std::make_unique<FeatureEngine>();
+    engine->vorbereiten (48000.0);
+    FeatureEngineTestzugang::liveLeeren (*engine);
+    for (int band = 120; band <= 123; ++band)
+        FeatureEngineTestzugang::liveBandSetzen (
+            *engine, band, 1.0e-3, 1,
+            band == 123 ? 1.0e-6 : 0.0, 1.0e-6);
+
+    LiveBaender live {};
+    float stereo[Gitter::liveBaender] {};
+    std::uint8_t stereoBitmap[(Gitter::liveBaender + 7) / 8] {};
+    FeatureEngineTestzugang::liveFuellen (*engine, live, stereo, stereoBitmap);
+    const double breite120 = Gitter::evidenzKante (121) - Gitter::evidenzKante (120);
+    const double breite121 = Gitter::evidenzKante (122) - Gitter::evidenzKante (121);
+    const double breite122 = Gitter::evidenzKante (123) - Gitter::evidenzKante (122);
+    const double breite123 = Gitter::evidenzKante (124) - Gitter::evidenzKante (123);
+    // R-380-8: Σs_b w_b / Σt_b w_b = 31,0446383/118,9808076.
+    const double soll = breite123 / (breite120 + breite121 + breite122 + breite123);
+    pruefe (bitmapLies (stereoBitmap, 35)
+                && std::abs ((double) stereo[35] - soll) <= 1e-4,
+            "380/M-06 band_stereo_leistungsgewichtet",
+            "ist " + juce::String (stereo[35], 6) + ", Referenz 31,0446383/118,9808076="
+                + juce::String (soll, 6) + "; ungewichtet 0,250000");
+
+    FeatureEngineTestzugang::liveLeeren (*engine);
+    live.leeren();
+    std::fill (std::begin (stereo), std::end (stereo), 0.0f);
+    nakama::analyse::bitmapNullen (stereoBitmap, Gitter::liveBaender);
+    FeatureEngineTestzugang::liveFuellen (*engine, live, stereo, stereoBitmap);
+    const bool leerOhneBit = ! bitmapLies (live.bitmap, 10)
+                          && live.werte[10] == 0 && ! live.saturated;
+
+    for (int band = Gitter::liveVon (10); band < Gitter::liveBisExkl (10); ++band)
+        FeatureEngineTestzugang::liveBandSetzen (*engine, band, 0.0, 3, 0.0, 0.0);
+    live.leeren();
+    std::fill (std::begin (stereo), std::end (stereo), 0.0f);
+    nakama::analyse::bitmapNullen (stereoBitmap, Gitter::liveBaender);
+    FeatureEngineTestzugang::liveFuellen (*engine, live, stereo, stereoBitmap);
+    const bool nullOhneBit = ! bitmapLies (live.bitmap, 10)
+                          && live.werte[10] == 0 && ! live.saturated;
+    pruefe (leerOhneBit && nullOhneBit,
+            "380/M-07 gruppe_ohne_beleg_ohne_bit",
+            "leer=" + juce::String (leerOhneBit ? "ohne Bit" : "FEHLER")
+                + ", Summe 0 bei n=3=" + juce::String (nullOhneBit ? "ohne Bit" : "FEHLER"));
+#else
+    pruefe (false, "380/M-06 band_stereo_leistungsgewichtet",
+            "NAKAMA_FEATUREENGINE_TESTZUGANG fehlt");
+    pruefe (false, "380/M-07 gruppe_ohne_beleg_ohne_bit",
+            "NAKAMA_FEATUREENGINE_TESTZUGANG fehlt");
+#endif
+}
+} // namespace
 
 int main()
 {
     constexpr double fs = 48000.0;
     std::cout << "== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==" << std::endl;
+
+    nak380BandStereoUndLeereGruppe();
 
     // ── M-01: drei Fenster, nicht ein Fenster mit drei Namen ──────────────
     //

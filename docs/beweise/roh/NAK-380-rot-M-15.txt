@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-15, 25.09.2026
+Datei vor der Mutation: broker/src/coordinator/hypothese/messung.rs
+SHA-256 vor der Mutation: 02096E7B4A415F868E37DFB19CA71AE2000C3EC5CAA7EC3A607490823360A8C6
+Mutation wörtlich: arithmetisches Dichtemittel `summe / n as f64` -> `10.0 * sum(10f64.powf(db / 10.0) * breite(index)).log10()`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m15_bandmittel_bleibt_dichtemittel`.
+Exitcode: 101. Gefallene Prüfung: M-15 mit -19,117704948 statt -35,00 dB.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 02096E7B4A415F868E37DFB19CA71AE2000C3EC5CAA7EC3A607490823360A8C6 (identisch).
+Fall grün: JA; gefilterter Fall danach Exitcode 0.

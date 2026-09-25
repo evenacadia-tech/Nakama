@@ -1,0 +1,1 @@
+M-17: getrennte Wortmutationen fuer dBFS/Hz, Bandleistung und dimensionslos; nur Rotlaeufe, Ruecknahmen hashgleich.

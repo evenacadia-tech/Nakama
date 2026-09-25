@@ -1270,6 +1270,15 @@ pub enum BandwerteOffset {}
 /// i/8, Bit i%8. Die Fuellbits des letzten Bytes MUESSEN 0 sein — sonst
 /// erzeugen zwei Sender fuer denselben Messwert zwei verschiedene Puffer, und
 /// ein Bytevergleich waere keine Aussage mehr.
+///
+/// Die Groesse gilt je besitzendem Feld und Gitter: spektrale Werte im
+/// Evidenzgitter nakama_1_24_oct_30_18k_v1 (221 Baender) sind mittlere
+/// einseitige Leistungsdichte in dBFS/Hz (Mittel ueber die FFT-Bins des
+/// Bandes); Frame.baender im Livegitter nakama_log64_v1 (64 Gruppen) sind
+/// Bandleistung in dBFS (Summe Dichte mal Gitterbandbreite ueber ihre
+/// Feinbaender); Frame.band_stereo ist auf demselben Livegitter ein
+/// dimensionsloser float32-Seitenanteil in [0, 1] und keine q_db-Kodierung
+/// (NAK-380 R-380-1).
 pub struct Bandwerte<'a> {
   pub _tab: ::flatbuffers::Table<'a>,
 }
@@ -1704,6 +1713,7 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<::flatbuffers::ForwardsUOffset<Transportstempel>>(Frame::VT_TRANSPORT, None).unwrap()}
   }
+  /// 64 Livegruppen, Bandleistung in dBFS.
   #[inline]
   pub fn baender(&self) -> Bandwerte<'a> {
     // Safety:
@@ -1767,9 +1777,9 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<f32>(Frame::VT_KORRELATION, None)}
   }
-  /// Optionale Band-Stereobreite auf dem festen 64er-Loggitter. Sie ist ein
-  /// eigener Bandsatz, nie eine Umdeutung von `breite`: float32, 64 Werte,
-  /// acht Bitmapbytes, gueltige Werte im Bereich [0, 1], saturated=false.
+  /// Dimensionsloser float32-Seitenanteil je Livegruppe in [0, 1], keine q_db-Kodierung.
+  /// Optionaler eigener Bandsatz auf dem festen 64er-Loggitter, nie eine
+  /// Umdeutung von `breite`: 64 Werte, acht Bitmapbytes, saturated=false.
   #[inline]
   pub fn band_stereo(&self) -> Option<Bandwerte<'a>> {
     // Safety:

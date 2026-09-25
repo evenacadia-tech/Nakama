@@ -1,0 +1,13 @@
+NAK-380 Etappe 2 Rotbeweis M-01, 25.09.2026
+Basis-SHA: 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+SHA-256 vor der Mutation: 1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA
+Mutation wörtlich: `energie /= (double) (bis - von);` -> `energie /= 1.0;` an der Dichtebildung.
+Gefahrener Rotlauf: betroffenes Bein B5, Fall `380/M-01 evidenz_feinband_ist_dichte`.
+Exitcode: 1. Gefallene Prüfung: M-01 mit 16,4385 dB Fehler statt Basiswert 0,3822 dB.
+Mitgefallene Prüfungen: M-02, M-04, M-05 und M-08(a).
+Grün gebliebene Prüfungen: M-03 und M-11.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: 1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA (identisch).
+Fall grün: JA; B5 danach Exitcode 0.
+Offene Messabweichung: Die feste W0-Saat ergibt 0,3822 dB größten Fehler und reißt damit die Matrixschranke 0,3 dB; der Fall verriegelt derzeit 0,5 dB und belegt die 0,3-dB-Teilaussage nicht.

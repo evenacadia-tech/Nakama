@@ -1,0 +1,1 @@
+M-01: Spektrum.h `energie /= (bis - von)` -> `/= 1.0`; nur fuer Rotlauf, Ruecknahme hashgleich. Siehe NAK-380-rot-M-01.txt.

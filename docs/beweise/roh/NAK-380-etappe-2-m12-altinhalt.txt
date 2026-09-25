@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 — M-12 alter und neuer Formelwert
+Datum/Basis-SHA: 25.09.2026 / 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
+Klasse (i): Der bestehende grobe Bereich -20 < Pegel < -19 bleibt eine Wache und wurde nicht erzeugt.
+Klasse (ii): Der exakte neue Wert wurde zuerst gegen den unveränderten Produktcode gefahren.
+Bein/Fall: A4 / nak380_m12_bandpegel_integriert
+Befehl: cargo test --manifest-path broker/Cargo.toml nak380_m12_bandpegel_integriert -- --nocapture
+Exit: 101; Altinhalt -19,871627753 dB.
+Gitterbreiten aus kanten_hz.hex64: w10 = 1,1875093599695319 Hz, w11 = 1,222306040251695 Hz, w12 = 1,2581223410939444 Hz, w13 = 1,2949881396591465 Hz.
+Unabhängige Referenz: 10log10(10^-2*w10 + 10^-4*(w11+w12+w13)) = -19,117704947908983 dB.
+Die Zusage fällt an der erwarteten Prüfung: JA.

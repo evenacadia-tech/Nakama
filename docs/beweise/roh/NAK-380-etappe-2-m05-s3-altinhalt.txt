@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 — M-05 alter Wert vor dem Produktbau
+Datum/Basis-SHA: 25.09.2026 / 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
+Etikett: heute rot; Golden-Klasse (ii), nachgezogener Formelwert.
+Bein/Fall: B5 / 380/M-05 livegruppe_sinus_leistung
+Testdatei SHA-256: 707B4D7FFD116BAEE2158DEC989B787AA06DCABF0F17DDD2BFD43ED6855456EB
+Signal: S3, 1030 Hz, Amplitude 0,5, 48 kHz, 512 Samples/Block, 10 s.
+Altinhalt am unveränderten Produktcode: Gruppe 35 = -24,0000 dBFS.
+Unabhängige Referenz: 10log10(A^2/2) = 10log10(0,125) = -9,0309 dBFS.
+Ergebnis: ROT, Exit B5 1; die Zusage fällt am neuen M-05-Fall.
+

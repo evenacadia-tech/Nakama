@@ -1,0 +1,11 @@
+NAK-380 Etappe 2 Rotbeweis M-07, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/BandGrid.h
+SHA-256 vor der Mutation: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D
+Mutation wörtlich: `return -std::numeric_limits<double>::infinity();` -> `return 0.0;` im Zweig `energieLinear <= 0` von `energieAlsDb`.
+Gefahrener Rotlauf: betroffenes Bein B18, Fall `380/M-07 gruppe_ohne_beleg_ohne_bit`.
+Exitcode: 1. Gefallene Prüfung: M-07; die Nullsumme bekam ein Gültigkeitsbit.
+Mitgefallene Prüfungen: keine.
+Grün gebliebene Prüfung: M-06.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D (identisch).
+Fall grün: JA; B18 danach Exitcode 0.

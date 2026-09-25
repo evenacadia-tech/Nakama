@@ -1,0 +1,1 @@
+M-04: Frame.h Liveleistung ohne Gitterbreite; nur fuer Rotlauf, Ruecknahme hashgleich.

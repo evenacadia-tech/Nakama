@@ -38,6 +38,7 @@
 //! P5-Bedienvertrag ausschließt („keine eigene Detektion und keine
 //! konkurrierende Schwelle").
 
+use super::hypothese::bandbreite::breite;
 use super::hypothese::{Bandintervall, Evidenzfenster, Quellprofil};
 
 /// Der Maskierungswert eines Befunds, in der Form von `$defs/maskierung`.
@@ -123,8 +124,9 @@ pub fn maskierung(
     })
 }
 
-/// Der Bandpegel eines Fensters im Bereich, in dB — als **Leistungssumme**,
-/// nicht als dB-Mittel.
+/// Der Bandpegel eines Fensters im Bereich, in dB — als **Leistungssumme**
+/// der mit ihrer Gitterbreite integrierten Feinband-Dichten, nicht als
+/// dB-Mittel.
 ///
 /// ⚠️ dB zu mitteln ist ein geometrisches Mittel und unterschätzt genau die
 /// Spitze, um die es bei einer Maskierung geht. Zwei Bänder mit −20 und −40 dB
@@ -137,7 +139,7 @@ fn bandpegel(fenster: &Evidenzfenster, band: Bandintervall) -> Option<f64> {
         let Some(db) = fenster.band(index) else {
             continue;
         };
-        let anteil = 10f64.powf(db / 10.0);
+        let anteil = 10f64.powf(db / 10.0) * breite(index);
         if !anteil.is_finite() {
             continue;
         }
@@ -311,8 +313,51 @@ mod tests {
         gemischt.p50_db[10] = -20.0;
         let pegel = bandpegel(&gemischt, BAND).unwrap();
         // Ein dB-Mittel ergaebe (−20 −40 −40 −40)/4 = −35 dB.
-        // Die Leistungssumme liegt bei rund −19,87 dB.
-        assert!(pegel > -20.0 && pegel < -19.0, "{pegel}");
+        // Aus den Gitterbreiten: 10log10(10^-2*w10 + 10^-4*(w11+w12+w13))
+        // = −19,117704948 dB.
+        assert!((pegel - (-19.117_704_947_908_983)).abs() < 1e-9, "{pegel}");
+    }
+
+    #[test]
+    fn nak380_m12_bandpegel_integriert() {
+        let mut gemischt = fenster(0, 512, 1, -40.0);
+        gemischt.p50_db[10] = -20.0;
+        let pegel = bandpegel(&gemischt, BAND).unwrap();
+        // R-380-8: 10log10(10^-2*w10 + 10^-4*(w11+w12+w13)).
+        let soll = -19.117704947908983;
+        assert!((pegel - soll).abs() <= 0.01,
+                "Pegel {pegel:.9} dB, Gitterreferenz {soll:.9} dB");
+    }
+
+    #[test]
+    fn nak380_m13_maskierungswert_leistungsverhaeltnis() {
+        let a = profil("a", vec![fenster(0, 512, 1, -40.0)]);
+        let mut b_fenster = fenster(0, 512, 1, -40.0);
+        b_fenster.p50_db[10] = -20.0;
+        let b = profil("b", vec![b_fenster]);
+        let wert = maskierung(&a, &b, BAND).expect("beide Profile messen");
+        // R-380-8: -19,11770495 - (-33,04262211) = 13,92491716 dB.
+        let soll = 13.924917159525855;
+        assert!(wert.gueltig && (wert.wert_db - soll).abs() <= 0.01,
+                "Maskierungswert {:.9} dB, Gitterreferenz {soll:.9} dB", wert.wert_db);
+    }
+
+    #[test]
+    fn nak380_m16_integration_zahlenrand_bandpegel() {
+        let mut nicht_endlich = fenster(0, 512, 1, -40.0);
+        nicht_endlich.p50_db[10] = f32::NAN;
+        nicht_endlich.p50_db[11] = f32::INFINITY;
+        nicht_endlich.p50_db[12] = f32::NEG_INFINITY;
+        assert!(bandpegel(&nicht_endlich, BAND).is_some_and(f64::is_finite),
+                "M-16(a) nicht-endliche P50 werden am Leser verworfen");
+
+        let ueberlauf = fenster(0, 512, 1, 4000.0);
+        assert!(bandpegel(&ueberlauf, BAND).is_none(),
+                "M-16(b) 10^400 wird verworfen, nicht zu Inf");
+
+        let mut ohne_bit = fenster(0, 512, 1, -40.0);
+        ohne_bit.p50_gueltig.fill(false);
+        assert!(bandpegel(&ohne_bit, BAND).is_none(), "M-16(c) ohne Bit ist None");
     }
 
     /// Der Wert traegt keine Zeichenanweisung. Das ist eine Aussage ueber den

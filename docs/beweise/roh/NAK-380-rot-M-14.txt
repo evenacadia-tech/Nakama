@@ -1,0 +1,10 @@
+NAK-380 Etappe 2 Rotbeweis M-14, 25.09.2026
+Datei vor der Mutation: broker/src/coordinator/hypothese/rechnung.rs
+SHA-256 vor der Mutation: FF085916602178EF89E6C25E2FDC31CD0D62BB8E71BAC4A1997E275820F0C675
+Mutation wörtlich: `let abweichung = wert - basis;` -> `let abweichung = wert + 10.0 * breite(index).log10() - basis;`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m14_masteranomalie_vergleicht_dichten`.
+Exitcode: 101. Gefallene Prüfung: M-14 mit Gruppe 57 statt Gruppe 8.
+Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme: Sicherung zurückkopiert; SHA-256 nach der Rücknahme: FF085916602178EF89E6C25E2FDC31CD0D62BB8E71BAC4A1997E275820F0C675 (identisch).
+Fall grün: JA; gefilterter Fall danach Exitcode 0.

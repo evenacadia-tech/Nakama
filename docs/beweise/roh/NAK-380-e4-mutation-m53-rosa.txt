@@ -1,0 +1,22 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m53-rosa
+Matrixzeile: M-53, M-57 bis M-59, M-61, M-62; Zusagesatz: E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+Datei: eq-copilot/plugin/tests/Nak380Pruefsignale.h
+Zeile (Etappenstand): 294
+SHA-256 vor der Mutation: C8540CA22C3B6516FCA4477FCD2CB1F2C73EE58D0FB81001116940CA007304C1; Sicherung eq-copilot/build/nak380-sicherung/e4/m53-rosa/Nak380Pruefsignale.h
+Wortlaut vorher:
+                b0 = 0.99886 * b0 + w * 0.0555179;
+Wortlaut nachher:
+                b0 = 0.0;
+  Bau EqCopAnalysisGoldenTest: 19:44:46 bis 19:44:59, Exit 0
+  Binary 19:44:59.643 juenger als Quelle 19:44:46.047: ja
+Lauf mit Mutation: --nak380 M-53 19:44:59 bis 19:45:00, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 1.397 dB (Soll <= 1,0), Oktaven 56.09/57.48/58.07/58.68/59.01/59.28/59.35/59.46/59.49/59.52 dB; RMS 0.10023 gegen 0.10000 (0.020 dB)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-53 rosa_selbstpruefung_E-380-13)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+Ruecknahme aus der Sicherung, SHA-256 C8540CA22C3B6516FCA4477FCD2CB1F2C73EE58D0FB81001116940CA007304C1: gleich
+  Bau EqCopAnalysisGoldenTest: 19:45:00 bis 19:45:11, Exit 0
+  Binary nach Ruecknahme 19:45:11.325 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-53 19:45:11 bis 19:45:12, Exit 0, 3 bestanden, 0 gescheitert

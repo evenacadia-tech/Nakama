@@ -1,0 +1,21 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m67-nullvarianz
+Matrixzeile: M-67; Zusagesatz: Koinzidenz bei Nullvarianz None, Rangkomponente 0
+Datei: broker/src/coordinator/hypothese/messung.rs
+Zeile (Etappenstand): 313
+SHA-256 vor der Mutation: 2B811F8F42EAB7684F8222A85670826FC081F2ED562A47E5C78956ED6C195D29; Sicherung eq-copilot/build/nak380-sicherung/e4/m67-nullvarianz/messung.rs
+Wortlaut vorher:
+        if var_a <= 0.0 || var_b <= 0.0 {
+            return None;
+Wortlaut nachher:
+        if var_a <= 0.0 || var_b <= 0.0 {
+            return Some(1.0);
+Lauf mit Mutation: test --manifest-path broker/Cargo.toml --color never --test sonde014_hypothese hoch_verlangt_einen_belegten_zusammenhang 19:48:49 bis 19:48:53, Exit 101
+Gefallene Pruefungen:
+    test hoch_verlangt_einen_belegten_zusammenhang ... FAILED
+    thread 'hoch_verlangt_einen_belegten_zusammenhang' (335748) panicked at tests\sonde014_hypothese.rs:1503:5:
+    assertion `left == right` failed: konstante Onsetreihe
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.39s
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: konstante Onsetreihe)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 2B811F8F42EAB7684F8222A85670826FC081F2ED562A47E5C78956ED6C195D29: gleich
+Lauf nach Ruecknahme: test --manifest-path broker/Cargo.toml --color never --test sonde014_hypothese hoch_verlangt_einen_belegten_zusammenhang 19:48:53 bis 19:49:01, Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.99s

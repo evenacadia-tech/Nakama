@@ -1,0 +1,24 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m63-madnenner
+Matrixzeile: M-63; Zusagesatz: Nenner >= max(med, T_min - med) > 0 auch bei kleinster MAD (Klick auf stehendem Sinus): mit dem Basisnenner MAD und ohne Klammer waechst die Staerke dort ueber 1000
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 858
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m63-madnenner/Spektrum.h
+Wortlaut vorher:
+                    ? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)
+Wortlaut nachher:
+                    ? (float) ((sf - med) / mad)
+  Bau EqCopSonde013EventWireTest: 19:52:31 bis 19:52:43, Exit 0
+  Binary 19:52:43.457 juenger als Quelle 19:52:31.696: ja
+Lauf mit Mutation: --nak380 M-63 19:52:43 bis 19:52:44, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [4 Flussereignisse, ausserhalb 3]
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am serialisierten Wire-Text, jedes Flussereignis mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [am Draht 1 (196608:24.061), verloren 2, nicht gebaut 4, Riegelfehler 0, Schemafehler 0 in 15 Snapshots]
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis reist mit staerke_mad in [3, 1000], Textriegel und Schema gueltig  [1 Flussereignisse der Engine, ausserhalb 1; am Draht 0 (), verloren 1]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Klick auf stehendem Sinus)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [60 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema  [am Draht 60, kleinste 7.591, groesste 125.402, verloren 0, Riegelfehler 0, Schemafehler 0 in 93 Snapshots]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013EventWireTest: 19:52:44 bis 19:52:56, Exit 0
+  Binary nach Ruecknahme 19:52:56.372 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-63 19:52:56 bis 19:52:57, Exit 0, 5 bestanden, 0 gescheitert

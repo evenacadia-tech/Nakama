@@ -1,0 +1,44 @@
+NAK-380 Etappe 4 — Rotbeweis M-69 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Vertragstext der Stärke präzisiert (rechnen↔vertragen)
+Zustand und Vorbedingung: Schema `dynamics_ereignis` (`eq-ipc-v3.schema.json:1270`)
+Zusage: die Beschreibung nennt die Stärke „Flussüberschreitung in Vielfachen der auf κ = 3 normierten Schwellendistanz (bei greifender relativer Schwelle die echte MAD), höchstens 1000; reines Peakereignis: Crest über Schwelle in dB“; kein Feld, keine Version
+Test je Sprache: Python: A5 NEU `nak380_m69_staerke_benannt`
+Rotbeweisspalte (Etikett): heute rot (die Einheit steht nur im Code, `Vertrag.h:284`); Mutation Satz entfernt → A5 rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein A5, `--nak380 M-69`):
+    Pruefungen: 2 bestanden, 5 gescheitert
+    ROT: nak380_m69_staerke_benannt: Flussstaerke in Vielfachen der auf kappa = 3 normierten Schwellendistanz
+    ROT: nak380_m69_staerke_benannt: bei greifender relativer Schwelle die echte MAD
+    ROT: nak380_m69_staerke_benannt: hoechstens 1000
+    ROT: nak380_m69_staerke_benannt: reines Peakereignis traegt den Crest ueber der Schwelle in dB
+    ROT: nak380_m69_staerke_benannt: Vertrag.h nennt dieselbe Einheit am Feld staerke
+    Exit 2
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-69`):
+    Pruefungen: 7 bestanden, 0 gescheitert
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m69-vielfache (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1270): Vielfache der auf kappa = 3 normierten Schwellendistanz
+    Wortlaut: `der auf kappa = 3 normierten` -> `der auf kappa = 2 normierten`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-vielfache.txt
+  - m69-mad (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1270): bei greifender relativer Schwelle die echte MAD
+    Wortlaut: `(bei greifender relativer Schwelle die echte MAD)` -> `(bei greifender relativer Schwelle die mittlere MAD)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-mad.txt
+  - m69-1000 (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1270): hoechstens 1000
+    Wortlaut: `echte MAD), hoechstens 1000;` -> `echte MAD), hoechstens 100;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-1000.txt
+  - m69-peak (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1270): reines Peakereignis: Crest ueber der Schwelle in dB
+    Wortlaut: `traegt den Crest ueber der Schwelle in dB (NAK-380 R-380-2).` -> `traegt den Crest in dB (NAK-380 R-380-2).`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-peak.txt
+  - m69-feld (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1280): kein Feld: staerke_mad bleibt 0 bis 1000
+    Wortlaut: `"staerke_mad": { "type": "number", "minimum": 0, "maximum": 1000 },` -> `"staerke_mad": { "type": "number", "minimum": 0, "maximum": 2000 },`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-feld.txt
+  - m69-version (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:3): keine Version: $id bleibt evenacadia.nakama.ipc.v3
+    Wortlaut: `"$id": "evenacadia.nakama.ipc.v3",` -> `"$id": "evenacadia.nakama.ipc.v4",`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-version.txt
+  - m69-vertragh (eq-copilot/plugin/core/analysis/featureengine/Vertrag.h:284): Vertrag.h nennt dieselbe Einheit (rechnen<->vertragen)
+    Wortlaut: `≥ κ bei Auslösung, ≤ 1000; Peakereignis` -> `≥ κ bei Auslösung, ≤ 100; Peakereignis`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m69-vertragh.txt
+
+A5: sieben Teilpruefungen in nak380_m69_staerke_benannt (tools/eq-copilot/pruefe_v3_vertrag.py). Je Teilpruefung eine Mutation am Schema- oder Vertrag.h-Text (m69-vielfache, m69-mad, m69-1000, m69-peak, m69-feld, m69-version, m69-vertragh), alle JA.

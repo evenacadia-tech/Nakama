@@ -1,0 +1,22 @@
+NAK-380 Etappe 4 — Rotbeweis M-44 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · echte MAD an schiefer Verteilung
+Zustand und Vorbedingung: Historie aus 32 Werten: 28 × 1,0 und 4 × 11,0
+Zusage: Median 1,0; MAD = Median der Absolutabweichungen = 0,0 (die mittlere Abweichung wäre 1,25); relative Schwelle med + 3·MAD = 1,0 statt 4,75
+Test je Sprache: C++: B18 NEU `380/M-44 echte_mad_schief`
+Rotbeweisspalte (Etikett): heute rot: `Spektrum.h:638-641` liefert 1,25 (nachgerechnet); nach dem Bau Mutation Median → Mittel der Abweichungen → 1,25 → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B18, `--nak380 M-44`):
+    [ROT]  380/M-44 echte_mad_schief: Median 1,0, MAD = Median der Absolutabweichungen = 0,0, med + 3*MAD = 1,0 (nicht 4,75)  [Median 1.000000, MAD 1.250000]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-44`):
+    [ok]   380/M-44 echte_mad_schief: Median 1,0, MAD = Median der Absolutabweichungen = 0,0, med + 3*MAD = 1,0 (nicht 4,75)  [Median 1.000000, MAD 0.000000]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m44-mittel (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:894): MAD = Median der Absolutabweichungen (0,0, nicht 1,25)
+    Wortlaut: `mad = 0.5 * (d.sortiert[n / 2 - 1] + d.sortiert[n / 2]);` -> `mad = 0.0;
+    for (std::size_t i = 0; i < n; ++i)
+        mad += d.sortiert[i];
+    mad /= (double) n;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m44-mittel.txt

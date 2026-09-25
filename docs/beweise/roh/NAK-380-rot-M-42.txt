@@ -1,0 +1,30 @@
+NAK-380 Etappe 4 — Rotbeweis M-42 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · R-380-2 · Fluss auf Bins mit Maximumfilter
+Zustand und Vorbedingung: Testzugang ruft den Flussschritt mit zwei konstruierten Hauptstufen-Spektren (48 kHz, 4096 Punkte): Vorframe ein Teilton in Bin k₀ = 101 auf −20 dBFS je Bin, alle übrigen Bins −120 dBFS; aktueller Frame derselbe Teilton um d Bins verschoben
+Zusage: Filterbreite w₁₀ = 1, w₁₀₁ = 3, w₁₀₀₀ = 30, w₁₆₆₈ = 49 Bins (nachgerechnet); das Fenster gehört zum Zielbin k = k₀ + d: d = 1 bis 4 ergibt den Fluss 0,0 dB (w₁₀₂ = 3, w₁₀₃ bis w₁₀₅ = 4, Bin 101 liegt jeweils im Fenster), d = 5 ergibt 79,96 dB (Fenster von Bin 106 ist 102 bis 110; Anstieg von 10·log10(10⁻¹² + P0) = −99,96 dB auf −20,00 dB in genau einem Bin), nachgerechnet; positive Log-Deltas, Bänder spielen keine Rolle
+Test je Sprache: C++: B18 NEU `380/M-42 superflux_maximumfilter` (Testzugang)
+Rotbeweisspalte (Etikett): heute rot: der bandbasierte Fluss (`Spektrum.h:585-608`) ergibt für d = 1 einen Fluss > 0, weil Bin 101 in Feinband 126 (Bins 99 bis 101) und Bin 102 in Feinband 127 (Bins 102 bis 104) liegt (nachgerechnet aus `Zeit.h:120-145`); nach dem Bau Mutation w_k → 0 → d = 1 ergibt 79,96 dB → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B18, `--nak380 M-42`):
+    [ROT]  380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 3, w_1000 = 30, w_1668 = 49  [-1, -1, -1, -1]
+    [ROT]  380/M-42 superflux_maximumfilter: d = 1 bis 4 ergibt Fluss 0,0 dB (Bin 101 im Fenster)  [d=1: 95.228787, d=2: 95.228787, d=3: 95.228787, d=4: 95.228787, d=5: 95.228787]
+    [ROT]  380/M-42 superflux_maximumfilter: d = 5 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin  [ist 95.228787, Soll 79.956786]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-42`):
+    [ok]   380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 3, w_1000 = 30, w_1668 = 49  [1, 3, 30, 49]
+    [ok]   380/M-42 superflux_maximumfilter: d = 1 bis 4 ergibt Fluss 0,0 dB (Bin 101 im Fenster)  [d=1: 0.000000, d=2: 0.000000, d=3: 0.000000, d=4: 0.000000, d=5: 79.956786]
+    [ok]   380/M-42 superflux_maximumfilter: d = 5 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin  [ist 79.956786, Soll 79.956786]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m42-w0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:669): Filterbreite w_k; d = 1 bis 4 ergibt 0,0 dB (Bin 101 im Fenster)
+    Wortlaut: `return w < 1 ? 1 : w;` -> `return 0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m42-w0.txt
+  - m42-betrag (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:718): positive Log-Deltas: d = 5 ergibt 79,96 dB in genau einem Bin
+    Wortlaut: `if (delta > 0.0)
+            {
+                sf += delta;` -> `if (delta != 0.0)
+            {
+                sf += std::abs (delta);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m42-betrag.txt

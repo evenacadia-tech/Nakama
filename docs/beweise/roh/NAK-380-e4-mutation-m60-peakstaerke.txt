@@ -1,0 +1,21 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m60-peakstaerke
+Matrixzeile: M-60; Zusagesatz: ein reines Peakereignis traegt staerke = Crest ueber Schwelle in dB
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 859
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m60-peakstaerke/Spektrum.h
+Wortlaut vorher:
+                    : (float) (crestDb - kPeakCrestSchwelleDb);
+Wortlaut nachher:
+                    : (float) crestDb;
+  Bau EqCopAnalysisGoldenTest: 19:58:06 bis 19:58:22, Exit 0
+  Binary 19:58:22.100 juenger als Quelle 19:58:06.655: ja
+Lauf mit Mutation: --nak380 M-60 19:58:22 bis 19:58:22, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-60 peakpfad_bleibt: ein reines Peakereignis traegt staerke = Crest ueber Schwelle in dB  [Ereignisse 1, staerke 26.0206 (Soll 14.0206), Bits Peak 1 Fluss 0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: ein reines Peakereignis traegt staerke)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-60 peakpfad_bleibt: loesen Fluss und Peak im selben Frame aus, entsteht genau ein Ereignis mit beiden Bits  [Ereignisse 1, staerke 6.0000 (Soll 6,0), Bits Peak 1 Fluss 1]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopAnalysisGoldenTest: 19:58:22 bis 19:58:38, Exit 0
+  Binary nach Ruecknahme 19:58:37.855 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-60 19:58:38 bis 19:58:38, Exit 0, 2 bestanden, 0 gescheitert

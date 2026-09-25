@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m69-vertragh
+Matrixzeile: M-69; Zusagesatz: Vertrag.h nennt dieselbe Einheit (rechnen<->vertragen)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Vertrag.h
+Zeile (Etappenstand): 284
+SHA-256 vor der Mutation: DAEE19EE91E818B9921EC3204D852B93303ADB992CD758BB08B05601337E55AC; Sicherung eq-copilot/build/nak380-sicherung/e4/m69-vertragh/Vertrag.h
+Wortlaut vorher:
+    ≥ κ bei Auslösung, ≤ 1000; Peakereignis
+Wortlaut nachher:
+    ≥ κ bei Auslösung, ≤ 100; Peakereignis
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:20 bis 19:48:20, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m69_staerke_benannt: Vertrag.h nennt dieselbe Einheit am Feld staerke
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Vertrag.h nennt dieselbe Einheit)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 DAEE19EE91E818B9921EC3204D852B93303ADB992CD758BB08B05601337E55AC: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:20 bis 19:48:20, Exit 0, Pruefungen: 7 bestanden, 0 gescheitert

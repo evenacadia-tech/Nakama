@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m70-aktuell
+Matrixzeile: M-70; Zusagesatz: aktuell = 20260927 im Register
+Datei: eq-copilot/schemas/v3/metriken-v1.json
+Zeile (Etappenstand): 20
+SHA-256 vor der Mutation: 7C1E3DBA844F8EE2CADE00FCE6550E82DC3EE3FA4DF2AD4449D8653258A7C26A; Sicherung eq-copilot/build/nak380-sicherung/e4/m70-aktuell/metriken-v1.json
+Wortlaut vorher:
+      "aktuell": 20260927,
+Wortlaut nachher:
+      "aktuell": 20260926,
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:23 bis 19:48:24, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: aktuell ist 20260927 — aktuell=20260926
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: aktuell ist 20260927)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 7C1E3DBA844F8EE2CADE00FCE6550E82DC3EE3FA4DF2AD4449D8653258A7C26A: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:24 bis 19:48:24, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

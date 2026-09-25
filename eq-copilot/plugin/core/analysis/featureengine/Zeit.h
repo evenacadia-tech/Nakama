@@ -493,9 +493,11 @@ inline void FeatureEngine::grenzeZiehen (Grenzgrund grund) noexcept
     rahmenMid2 = rahmenSide2 = 0.0;
     rahmenL = rahmenR = rahmenL2 = rahmenR2 = rahmenLR = 0.0;
 
-    vorigesSpektrumGueltig = false; // Fluss: kein Vorgaenger ueber die Grenze
-    flussStand = 0;                 // und keine Schwelle aus der alten Epoche
-    flussGefuellt = 0;
+    vorigesSpektrumGueltig = false; // Bandfluss (Fingerprint): kein Vorgaenger ueber die Grenze
+    // NAK-380 M-62: der Detektor verliert Vorframe, Historie, SF(n-1) und
+    // Sperrzeit - dieselben Traeger, die `zuruecksetzen` leert. Kein Fluss
+    // gegen ein Spektrum der alten Epoche, keine Schwelle aus ihr.
+    detektorLeeren();
     // SONDE-013 M-86: derselbe Grund fuer den Peakpfad. Eine Steigung
     // gegen den Rahmen VOR der Grenze vergliche zwei Stellen der Musik.
     vorigerRahmenPeak = 0.0;

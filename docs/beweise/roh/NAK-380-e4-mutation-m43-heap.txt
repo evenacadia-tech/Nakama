@@ -1,0 +1,26 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m43-heap
+Matrixzeile: M-43; Zusagesatz: im Heap in vorbereiten, keine Allokation im Flussschritt
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 726
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m43-heap/Spektrum.h
+Wortlaut vorher:
+        zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+        flussFilterRechnen();
+Wortlaut nachher:
+        zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+        { std::vector<double> nak380Mutation (d.vorframe); zentrumHz += 0.0 * nak380Mutation[0]; }
+        flussFilterRechnen();
+  Bau EqCopSonde013DynamicsTest: 19:26:40 bis 19:26:47, Exit 0
+  Binary 19:26:47.247 juenger als Quelle 19:26:40.192: ja
+Lauf mit Mutation: --nak380 M-43 19:26:47 bis 19:26:47, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [45 Allokationen in 2 s]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: nach vorbereiten() alloziert der Lauf nichts)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1666, 26656 B]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 2, K 765, 12240 B]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:26:47 bis 19:26:55, Exit 0
+  Binary nach Ruecknahme 19:26:54.788 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-43 19:26:55 bis 19:26:55, Exit 0, 4 bestanden, 0 gescheitert

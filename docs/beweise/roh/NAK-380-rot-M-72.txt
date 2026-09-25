@@ -1,0 +1,10 @@
+NAK-380 Etappe 4 — Rotbeweis M-72 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: Audio unberührt, Etappe 4
+Zustand und Vorbedingung: Detektor im Analyseworker; Vorframe, Filterpuffer und Historie im Heap in `vorbereiten` (≤ 26 656 B + 2·32·8 B)
+Zusage: A1, A16 und B1 grün
+Test je Sprache: A1, A16, B1, B4
+Rotbeweisspalte (Etikett): Regressionswache wie M-20
+
+
+
+Regressionswache wie M-20: die Allokationsmutation in processBlock (PluginProcessor.cpp, ausserhalb der Ticketpfade) ist in NAK-380-rot-M-20.txt belegt (B4 rot, JA); diese Etappe beruehrt den Audiopfad nicht. Dazu: der Flussschritt alloziert nach vorbereiten() nichts (M-43, m43-heap JA). A1, A16, B1, B4 am Endstand gruen (§35.6).

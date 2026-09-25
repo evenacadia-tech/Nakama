@@ -1,0 +1,38 @@
+NAK-380 Etappe 4 — Pflichterfassung M-50 (Golden-Klasse (ii), E-380-18)
+Zweck: der exakte Ereigniszaehler des UNVERAENDERTEN Codes fuer genau W1; der
+neue Code laeuft zuerst gegen genau diesen Altinhalt rot (Rohdatei
+docs/beweise/roh/NAK-380-rot-M-50.txt), erst danach wird der neue exakte
+Zaehler innerhalb der Schranke <= 1 zum Golden (§8.4).
+
+Kopf
+- Matrixzeile: M-50 (Nullkorpus W1)
+- Bein: B5 EqCopAnalysisGoldenTest, Fall `380/M-50 nullkorpus_W1` (Aufruf `--nak380 M-50`)
+- HEAD: 21853aa1a8936115831411d6c5966ba9560ef7b0 (Basis der Etappe 4); Produktcode unveraendert
+  (`git diff --stat HEAD -- eq-copilot/plugin/core broker/src eq-copilot/schemas` leer), SHA-256 der
+  Produktdateien wie in docs/beweise/roh/NAK-380-etappe-4-m68-f1-ausgang.txt
+- Testquelle: Basisvariante von AnalysisGoldenTestMain.cpp (SHA-256
+  1E5138ACEE9BE4573E87A4308BA559B3459A947D98EEE7616666C6A3526D497E; einzige Abweichung von der
+  Endfassung: in M-62 `flussHatVorgaenger()` statt `flussBinVorgaengerGueltig()`, das es am
+  Basisstand nicht gibt; der M-50-Fall ist in beiden Fassungen wortgleich)
+- Binary: eq-copilot/build/plugin/EqCopAnalysisGoldenTest_artefacts/Release/EqCopAnalysisGoldenTest.exe,
+  gebaut 25.09.2026 19:06:07.245 (Bau 19:05:35 bis 19:06:07 Uhr, Exit 0), juenger als die Quellen
+  (AnalysisGoldenTestMain.cpp 19:05:30.478, Nak380Pruefsignale.h 18:55:23.942);
+  SHA-256 F69D2D6059792920072D144A314295996A33DB8BDFC67A96AA0F0D4CF070A513
+- Lauf: 25.09.2026 19:06:59 bis 19:07:00 Uhr, Exit 1
+
+Signal (§7.2 W1)
+- Gauss-Weissrauschen L = R, sigma = 0,1 (-20 dBFS), SplitMix64 und Box-Muller
+  (`nakama::test::nak380::weissMono (kW1Saat = 0x03800003, 0.1, 1440000)`), als float32 gespeichert
+- 30 s = 1 440 000 Samples, 48 kHz, Block 512 (2 812 volle Bloecke, der letzte 256), frische Engine
+  im Heap; der Ring wird nach jedem gebauten Frame gelesen und mit `ereignisseEntnommen()` quittiert,
+  am Ende noch einmal gelesen; `ereignisseVerworfen()` = 0
+
+Ergebnis
+- ALTZAEHLER W1 = 18 Ereignisse in 30 s (Schranke der Matrix: hoechstens 1)
+- erste acht Ereignisse (Fensteranfang in s, F = Flussbit, P = Peakbit):
+  0.8960 F, 1.6213 F, 2.4320 F, 5.5040 F, 6.5707 F, 7.4667 F, 9.9840 F, 10.9227 F, ...
+- Ausgabe:
+[ok]   380/M-50 nullkorpus_W1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+[ROT]  380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 18, Golden 0; ...]
+- Einordnung: die 19 aus b11_ursache.out und 13 bis 24 aus b11_fluss.out stammen von anderen
+  Signalen und Saaten und sind nicht diese Referenz; 18 liegt in ihrer Spanne.

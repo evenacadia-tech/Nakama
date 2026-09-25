@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m49-konstante
+Matrixzeile: M-49; Zusagesatz: Konstante kSperrzeitMs = 50.0
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 207
+SHA-256 vor der Mutation: 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1; Sicherung eq-copilot/build/nak380-sicherung/e4/m49-konstante/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr double kSperrzeitMs = 50.0;
+Wortlaut nachher:
+    inline constexpr double kSperrzeitMs = 60.0;
+  Bau EqCopSonde013DynamicsTest: 19:44:31 bis 19:44:38, Exit 0
+  Binary 19:44:38.494 juenger als Quelle 19:44:31.952: ja
+Lauf mit Mutation: --nak380 M-49 19:44:38 bis 19:44:38, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-49 sperrzeit_50ms: Konstante kSperrzeitMs = 50,0  [60.000]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Konstante kSperrzeitMs = 50,0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, zwei steigende Ueberschreitungen im Abstand 1 Hop (42,67 ms) ergeben ein Ereignis  [Ereignisse 1]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse  [Ereignisse 2]
+    [ok]   380/M-49 sperrzeit_50ms: 44,1 kHz, 1 Hop (46,44 ms) ein Ereignis, 2 Hops (92,88 ms) zwei  [1 / 2]
+Ruecknahme aus der Sicherung, SHA-256 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1: gleich
+  Bau EqCopSonde013DynamicsTest: 19:44:38 bis 19:44:45, Exit 0
+  Binary nach Ruecknahme 19:44:45.494 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-49 19:44:45 bis 19:44:46, Exit 0, 4 bestanden, 0 gescheitert

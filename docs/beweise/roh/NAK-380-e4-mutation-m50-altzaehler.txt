@@ -1,0 +1,21 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m50-altzaehler
+Matrixzeile: M-50; Zusagesatz: Golden-Klasse (ii): der neue Code laeuft gegen den Altzaehler 18 rot
+Datei: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp
+Zeile (Etappenstand): 1403
+SHA-256 vor der Mutation: 3E4E39DED0E886F2C7572CF90B87A46584F8EF368E11D5B21A16E8BA2FEC479F; Sicherung eq-copilot/build/nak380-sicherung/e4/m50-altzaehler/AnalysisGoldenTestMain.cpp
+Wortlaut vorher:
+    sig::weissMono (sig::kW1Saat, 0.1, kDreissig), 0);
+Wortlaut nachher:
+    sig::weissMono (sig::kW1Saat, 0.1, kDreissig), 18);
+  Bau EqCopAnalysisGoldenTest: 19:29:22 bis 19:29:36, Exit 0
+  Binary 19:29:36.102 juenger als Quelle 19:29:22.693: ja
+Lauf mit Mutation: --nak380 M-50 19:29:36 bis 19:29:36, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 18]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+Ruecknahme aus der Sicherung, SHA-256 3E4E39DED0E886F2C7572CF90B87A46584F8EF368E11D5B21A16E8BA2FEC479F: gleich
+  Bau EqCopAnalysisGoldenTest: 19:29:36 bis 19:29:47, Exit 0
+  Binary nach Ruecknahme 19:29:47.373 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-50 19:29:47 bis 19:29:48, Exit 0, 2 bestanden, 0 gescheitert

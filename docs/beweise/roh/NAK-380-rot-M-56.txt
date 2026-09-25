@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Rotbeweis M-56 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Nullkorpus V1 (Vibrato)
+Zustand und Vorbedingung: wie M-50, 440 Hz mit 6 Obertönen, Vibrato ±50 Cent bei 5,5 Hz, float32 (§7 V1)
+Zusage: höchstens 1 Ereignis in 30 s
+Test je Sprache: C++: B5 NEU `380/M-56 nullkorpus_V1`
+Rotbeweisspalte (Etikett): heute rot: 6 (gemessen `b11_fluss.out`; ein Maximumfilter allein ergab 66); nach dem Bau Mutation wie M-50 → mehr als 1 (die rein relative Schwelle ergab heute 6) → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B5, `--nak380 M-56`):
+    [ok]   380/M-56 nullkorpus_V1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ROT]  380/M-56 nullkorpus_V1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 19, Golden 0; 1.3227 sF, 1.9627 sF, 4.7787 sF, 4.8640 sF, 6.8693 sF, 7.6800 sF, 8.9600 sF, 11.8613 sF, ...]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-56`):
+    [ok]   380/M-56 nullkorpus_V1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-56 nullkorpus_V1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m50-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): hoechstens 1 Ereignis in 30 s (rein relative Schwelle: rho = 0, T_min = 0)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med)` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m50-relativ.txt

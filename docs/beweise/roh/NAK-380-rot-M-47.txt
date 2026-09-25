@@ -1,0 +1,26 @@
+NAK-380 Etappe 4 — Rotbeweis M-47 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Pegelbezug P0 und Aktivitätsgate
+Zustand und Vorbedingung: (a) Weißrauschen L = R aus SplitMix64 und Box-Muller, Saat 0x3800001, je Abschnitt auf die feste Rahmenenergie normiert; springt bei 5 s von −90 auf −70 dBFS (beide Rahmenenergien unter dem Aktivitätsgate −60 dB, `Spektrum.h:448-451`); (b) Testzugang: Vorframe alle Bins −130 dBFS, Frame alle Bins −120 dBFS, als aktiv markiert
+Zusage: (a) kein Ereignis; (b) SF = 1530 · 10·log10((10⁻¹² + 10⁻¹⁰)/(10⁻¹³ + 10⁻¹⁰)) = 1530 · 0,0389 = 59,5 dB < 76,5 → kein Ereignis (nachgerechnet)
+Test je Sprache: C++: B18 NEU `380/M-47 pegelbezug_p0`
+Rotbeweisspalte (Etikett): zwei Hälften: (a) Regressionswache (heute kehrt `Spektrum.h:477` vor dem Detektor zurück): Mutation Ereignisauslösung ohne Aktivitätsbedingung → Sprung um 20 dB löst aus → rot; (b) heute nicht messbar: Mutation P0 → 0 → SF = 1530 · 10 dB → Ereignis → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B18, `--nak380 M-47`):
+    [ok]   380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus  [Ereignisse 0]
+    [ROT]  380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis  [SF 1490.0000, Soll 59.4756, T_min 76.500, Ereignisse 0]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-47`):
+    [ok]   380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus  [Ereignisse 0]
+    [ok]   380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis  [SF 59.4756, Soll 59.4756, T_min 459.000, Ereignisse 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m47-aktiv (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:486): (a) unter dem Aktivgate kein Ereignis
+    Wortlaut: `if (&s == &haupt)
+            flussVorframeSchritt (s);` -> `if (&s == &haupt)
+            flussSchritt (s);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m47-aktiv.txt
+  - m47-p0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:705): (b) SF = 59,49 dB < T_min, kein Ereignis (P0 im Log)
+    Wortlaut: `const double p0 = std::pow (10.0, kFlussP0Db / 10.0);` -> `const double p0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m47-p0.txt

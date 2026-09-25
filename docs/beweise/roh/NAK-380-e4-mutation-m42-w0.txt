@@ -1,0 +1,22 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m42-w0
+Matrixzeile: M-42; Zusagesatz: Filterbreite w_k; d = 1 bis 4 ergibt 0,0 dB (Bin 101 im Fenster)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 669
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m42-w0/Spektrum.h
+Wortlaut vorher:
+        return w < 1 ? 1 : w;
+Wortlaut nachher:
+        return 0;
+  Bau EqCopSonde013DynamicsTest: 19:25:25 bis 19:25:32, Exit 0
+  Binary 19:25:32.547 juenger als Quelle 19:25:25.106: ja
+Lauf mit Mutation: --nak380 M-42 19:25:32 bis 19:25:32, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-42 superflux_maximumfilter: Filterbreite w_10 = 1, w_101 = 3, w_1000 = 30, w_1668 = 49  [0, 0, 0, 0]
+    [ROT]  380/M-42 superflux_maximumfilter: d = 1 bis 4 ergibt Fluss 0,0 dB (Bin 101 im Fenster)  [d=1: 79.956786, d=2: 79.956786, d=3: 79.956786, d=4: 79.956786, d=5: 79.956786]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-42 superflux_maximumfilter: d = 1 bis 4)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-42 superflux_maximumfilter: d = 5 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin  [ist 79.956786, Soll 79.956786]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:25:32 bis 19:25:40, Exit 0
+  Binary nach Ruecknahme 19:25:40.162 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-42 19:25:40 bis 19:25:40, Exit 0, 3 bestanden, 0 gescheitert

@@ -1,0 +1,10 @@
+NAK-380 Etappe 4 — Rotbeweis M-71 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Entwurfssatz §39.1 erfüllt (Belegzeile)
+Zustand und Vorbedingung: Kommentar `Spektrum.h:572-573`
+Zusage: der Satz „SuperFlux-artiger Maximumfilter über Nachbarbins mit positivem Log-Magnitude-Delta und adaptiver Median/MAD-Schwelle … reduziert Vibrato-Fehltrigger; ein einfacher Peakpfad bleibt“ ist Punkt für Punkt belegt: M-42 (Bins, Maximumfilter, positive Deltas), M-44 (echte MAD), M-56 (Vibrato ≤ 1 statt 6), M-60 (Peakpfad); keine Berichtigung des Entwurfs (A-5)
+Test je Sprache: keine eigene Prüfung; Beleg über die genannten Zeilen
+Rotbeweisspalte (Etikett): heute rot (Bruch am Wortlaut, Validierung Teil C `:297-301`); die Rotbeweise stehen in den genannten Zeilen
+
+
+
+Kommentar ueber dem Fluss (Spektrum.h) woertlich nach §8.4. Belegzeile: Maximumfilter und positive Deltas M-42 (m42-w0, m42-betrag), echte MAD M-44 (m44-mittel), Vibrato M-56 (m50-relativ), Peakpfad M-60 (m60-peakpfad) - alle JA.

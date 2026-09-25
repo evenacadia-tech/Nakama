@@ -1,8 +1,11 @@
 #pragma once
 
+#include "../core/analysis/Fft.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 namespace nakama::test::nak380
@@ -226,5 +229,225 @@ struct M36Pegelrechteck
     double faktorLaut;
     GaussRauschen rauschen;
 };
+
+//==============================================================================
+// NAK-380 Etappe 4 (§7.2): Null-, Impuls- und Referenzkorpus des Detektors.
+// Jedes Signal ist eine reine Funktion von Sampleindex, Parametern und Saat;
+// alle Signale sind L = R und werden als float32 gespeichert, weil der
+// Engine-Eingang float ist.
+
+inline constexpr std::uint64_t kM47Saat = 0x03800001ull;
+inline constexpr std::uint64_t kW1Saat  = 0x03800003ull;
+inline constexpr std::uint64_t kW2Saat  = 0x03800004ull;
+inline constexpr std::uint64_t kW3Saat  = 0x03800005ull;
+inline constexpr std::uint64_t kP1Saat  = 0x03800007ull;
+inline constexpr std::uint64_t kP2Saat  = 0x03800008ull;
+
+/** W1 bis W3 (und M-47 (a)): Gauss-Weissrauschen aus SplitMix64 und
+    Box-Muller mit Standardabweichung `sigma`, `samples` Werte. */
+inline std::vector<float> weissMono (std::uint64_t saat, double sigma, std::uint64_t samples)
+{
+    GaussRauschen g { saat };
+    std::vector<float> aus ((std::size_t) samples);
+    for (auto& v : aus)
+        v = (float) (sigma * g.naechstes());
+    return aus;
+}
+
+/** P1/P2: rosa Rauschen nach Paul Kellet (sieben Pole) auf Gauss-Weiss.
+
+    Normierung ANALYTISCH statt am Lauf: `leistungsverstaerkung()` ist die
+    Summe der quadrierten Impulsantwort des Filters (fuer Weiss mit Varianz 1
+    die Ausgangsvarianz, 9,318 bei diesen Koeffizienten; die Summe laeuft, bis
+    der langsamste Pol 0,99886 auf unter 1e-40 abgeklungen ist). Damit haengt
+    der Pegel weder an der Saat noch an der Laenge. */
+class RosaRauschen
+{
+public:
+    RosaRauschen (std::uint64_t saat, double rms) noexcept
+        : weiss (saat), skala (rms / std::sqrt (leistungsverstaerkung())) {}
+
+    double naechstes() noexcept
+    {
+        const double w = weiss.naechstes();
+        return skala * filter (w);
+    }
+
+    static double leistungsverstaerkung() noexcept
+    {
+        Zustand z;
+        double summe = 0.0;
+        for (int n = 0; n < 100000; ++n)
+        {
+            const double h = z.schritt (n == 0 ? 1.0 : 0.0);
+            summe += h * h;
+        }
+        return summe;
+    }
+
+private:
+    struct Zustand
+    {
+        double b0 {}, b1 {}, b2 {}, b3 {}, b4 {}, b5 {}, b6 {};
+        double schritt (double w) noexcept
+        {
+            b0 = 0.99886 * b0 + w * 0.0555179;
+            b1 = 0.99332 * b1 + w * 0.0750759;
+            b2 = 0.96900 * b2 + w * 0.1538520;
+            b3 = 0.86650 * b3 + w * 0.3104856;
+            b4 = 0.55000 * b4 + w * 0.5329522;
+            b5 = -0.7616 * b5 - w * 0.0168980;
+            const double aus = b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362;
+            b6 = w * 0.115926;
+            return aus;
+        }
+    };
+
+    double filter (double w) noexcept { return zustand.schritt (w); }
+
+    GaussRauschen weiss;
+    Zustand zustand;
+    double skala;
+};
+
+inline std::vector<float> rosaMono (std::uint64_t saat, double rms, std::uint64_t samples)
+{
+    RosaRauschen r { saat, rms };
+    std::vector<float> aus ((std::size_t) samples);
+    for (auto& v : aus)
+        v = (float) r.naechstes();
+    return aus;
+}
+
+/** E-380-13: Selbstpruefung eines Rosa-Signals an der INTEGRIERTEN Groesse.
+    Fuer S(f) = C/f ist die Oktavbandleistung P[f/sqrt2, f*sqrt2] = C*ln 2
+    konstant; geprueft werden die zehn Oktaven um 1000*2^(i-5) Hz (31,25 Hz
+    bis 16 kHz), geschaetzt nach Welch (Hann, 65 536 Punkte, 50 %). Rueckgabe:
+    die groesste Abweichung benachbarter Oktaven in dB; das Soll ist <= 1,0 dB.
+    Nur die Leistungsdichte faellt um 3,0103 dB je Oktave, die Bandleistung
+    nicht. */
+inline double rosaGroessteOktavdifferenzDb (const std::vector<float>& x, double fs,
+                                            std::vector<double>* oktavenDb = nullptr)
+{
+    constexpr int n = 65536;
+    nakama::analyse::Fft fft;
+    fft.vorbereiten (n);
+    std::vector<double> fenster ((std::size_t) n), arbeit ((std::size_t) n);
+    for (int i = 0; i < n; ++i)
+        fenster[(std::size_t) i] = 0.5 - 0.5 * std::cos (kZweiPi * (double) i / (double) n);
+    std::vector<double> psd ((std::size_t) (n / 2 + 1), 0.0);
+    int segmente = 0;
+    for (std::size_t start = 0; start + (std::size_t) n <= x.size(); start += (std::size_t) (n / 2))
+    {
+        for (int i = 0; i < n; ++i)
+            arbeit[(std::size_t) i] = (double) x[start + (std::size_t) i] * fenster[(std::size_t) i];
+        fft.transformiere (arbeit.data());
+        for (int k = 0; k <= n / 2; ++k)
+            psd[(std::size_t) k] += fft.leistung (k);
+        ++segmente;
+    }
+    if (segmente == 0)
+        return std::numeric_limits<double>::infinity();
+    const double df = fs / (double) n;
+    std::vector<double> db;
+    for (int i = 0; i < 10; ++i)
+    {
+        const double mitte = 1000.0 * std::pow (2.0, (double) (i - 5));
+        const int von = (int) std::ceil (mitte / std::sqrt (2.0) / df);
+        const int bis = (int) std::ceil (mitte * std::sqrt (2.0) / df);
+        double summe = 0.0;
+        for (int k = von; k < bis && k <= n / 2; ++k)
+            summe += psd[(std::size_t) k];
+        db.push_back (10.0 * std::log10 (summe / (double) segmente + 1.0e-300));
+    }
+    double groesste = 0.0;
+    for (std::size_t i = 1; i < db.size(); ++i)
+        groesste = std::max (groesste, std::abs (db[i] - db[i - 1]));
+    if (oktavenDb != nullptr)
+        *oktavenDb = db;
+    return groesste;
+}
+
+/** S1: Sinus 440 Hz, Amplitude 0,5, in double gerechnet, float32 gespeichert. */
+inline std::vector<float> s1Sinus (std::uint64_t samples, double fs = kSamplerate)
+{
+    std::vector<float> aus ((std::size_t) samples);
+    for (std::uint64_t n = 0; n < samples; ++n)
+        aus[(std::size_t) n] = (float) (0.5 * std::sin (kZweiPi * 440.0 * (double) n / fs));
+    return aus;
+}
+
+/** S2: Saegezahn 110 Hz aus 20 Obertoenen mit Amplituden 1/h, die Spitze der
+    Periode (auf 200 001 Phasenpunkten ausgewertet) auf 0,5 normiert. */
+inline std::vector<float> s2Saegezahn (std::uint64_t samples, double fs = kSamplerate)
+{
+    const auto reihe = [] (double phase)
+    {
+        double s = 0.0;
+        for (int h = 1; h <= 20; ++h)
+            s += std::sin (kZweiPi * (double) h * phase) / (double) h;
+        return s;
+    };
+    double spitze = 0.0;
+    for (int i = 0; i <= 200000; ++i)
+        spitze = std::max (spitze, std::abs (reihe ((double) i / 200000.0)));
+    std::vector<float> aus ((std::size_t) samples);
+    for (std::uint64_t n = 0; n < samples; ++n)
+        aus[(std::size_t) n] = (float) (0.5 * reihe (110.0 * (double) n / fs) / spitze);
+    return aus;
+}
+
+/** V1: 440 Hz mit sechs Obertoenen (h = 1 bis 7, Amplituden 1/h), Vibrato
+    f(t) = 440 * 2^((50/1200) * sin(2*pi*5,5 Hz*t)). Die Phase ist das
+    Integral der Momentanfrequenz, als laufende Summe ueber die Samples
+    (phi[n] = 2*pi/fs * Summe f[0..n]). Die Teiltoene bewegen sich um
+    hoechstens +-50 Cent, je Hop der Hauptstufe (42,67 ms) aber um bis zu
+    2*pi*5,5*50*0,04267 = 73,7 Cent. */
+inline std::vector<float> v1Vibrato (std::uint64_t samples, double fs = kSamplerate)
+{
+    std::vector<float> aus ((std::size_t) samples);
+    double phase = 0.0;
+    for (std::uint64_t n = 0; n < samples; ++n)
+    {
+        const double t = (double) n / fs;
+        const double f = 440.0 * std::pow (2.0, (50.0 / 1200.0) * std::sin (kZweiPi * 5.5 * t));
+        phase += kZweiPi * f / fs;
+        double s = 0.0;
+        for (int h = 1; h <= 7; ++h)
+            s += std::sin ((double) h * phase) / (double) h;
+        aus[(std::size_t) n] = (float) s;
+    }
+    return aus;
+}
+
+/** I1: Klicks (ein Sample, +0,5) bei t = 2,0 s + 0,25 s * i, i = 0 bis 111. */
+inline std::vector<std::uint64_t> i1Klicks()
+{
+    std::vector<std::uint64_t> aus;
+    for (std::uint64_t i = 0; i < 112u; ++i)
+        aus.push_back (96000u + 12000u * i);
+    return aus;
+}
+
+/** I2/I3: Klickpaare bei t_j = 2,0 s + 0,5 s * j und t_j + `abstandSamples`,
+    j = 0 bis 55; Reihenfolge je Paar erst, dann zweiter Klick. */
+inline std::vector<std::uint64_t> klickPaare (std::uint64_t abstandSamples)
+{
+    std::vector<std::uint64_t> aus;
+    for (std::uint64_t j = 0; j < 56u; ++j)
+    {
+        aus.push_back (96000u + 24000u * j);
+        aus.push_back (96000u + 24000u * j + abstandSamples);
+    }
+    return aus;
+}
+
+inline void klicksEinsetzen (std::vector<float>& x, const std::vector<std::uint64_t>& klicks,
+                             double amplitude = 0.5)
+{
+    for (const auto k : klicks)
+        if (k < x.size())
+            x[(std::size_t) k] = (float) ((double) x[(std::size_t) k] + amplitude);
+}
 
 } // namespace nakama::test::nak380

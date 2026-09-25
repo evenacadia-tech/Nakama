@@ -1,0 +1,21 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m47-p0
+Matrixzeile: M-47; Zusagesatz: (b) SF = 59,49 dB < T_min, kein Ereignis (P0 im Log)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 705
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m47-p0/Spektrum.h
+Wortlaut vorher:
+        const double p0 = std::pow (10.0, kFlussP0Db / 10.0);
+Wortlaut nachher:
+        const double p0 = 0.0;
+  Bau EqCopSonde013DynamicsTest: 19:28:25 bis 19:28:32, Exit 0
+  Binary 19:28:31.748 juenger als Quelle 19:28:25.216: ja
+Lauf mit Mutation: --nak380 M-47 19:28:32 bis 19:28:32, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis  [SF 15300.0000, Soll 59.4756, T_min 459.000, Ereignisse 1]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-47 pegelbezug_p0 (b))
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus  [Ereignisse 0]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:28:32 bis 19:28:39, Exit 0
+  Binary nach Ruecknahme 19:28:39.255 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-47 19:28:39 bis 19:28:39, Exit 0, 2 bestanden, 0 gescheitert

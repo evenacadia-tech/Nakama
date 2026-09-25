@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m43-obergrenze
+Matrixzeile: M-43; Zusagesatz: Obergrenze min(17 959,39 Hz, Kappe): K = 1530 bei 48 kHz
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 660
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m43-obergrenze/Spektrum.h
+Wortlaut vorher:
+        const int bis = std::min ((int) std::ceil (oben / df) - 1, kHauptPunkte / 2);
+Wortlaut nachher:
+        const int bis = kHauptPunkte / 2;
+  Bau EqCopSonde013DynamicsTest: 19:26:10 bis 19:26:17, Exit 0
+  Binary 19:26:17.231 juenger als Quelle 19:26:10.736: ja
+Lauf mit Mutation: --nak380 M-43 19:26:17 bis 19:26:17, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 2046, 32736 B]
+    [ROT]  380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 2046, 32736 B]
+    [ROT]  380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 2, K 2047, 32752 B]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 48.0 kHz, k = 3 bis 1532)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:26:17 bis 19:26:25, Exit 0
+  Binary nach Ruecknahme 19:26:24.718 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-43 19:26:25 bis 19:26:25, Exit 0, 4 bestanden, 0 gescheitert

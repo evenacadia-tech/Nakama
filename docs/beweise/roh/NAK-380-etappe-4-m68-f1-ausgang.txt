@@ -1,0 +1,35 @@
+NAK-380 Etappe 4 — Pflichterfassung M-68 (Golden-Klasse (i), E-380-18)
+Zweck: die 76 F1-Ausgangsbytes des Fingerprints einmal mit dem UNVERAENDERTEN
+Code erfassen; danach nur bytegleicher Vergleich, nie Nachzug (§8.4).
+
+Kopf
+- Matrixzeile: M-68 (Fingerprint behaelt den Bandfluss)
+- Bein: B22 EqCopSonde013FingerprintGoldenTest, Fall `380/M-68 fingerprint_unveraendert`
+- HEAD: 21853aa1a8936115831411d6c5966ba9560ef7b0 (Basis der Etappe 4), Produktcode unveraendert
+  (`git diff --stat HEAD -- eq-copilot/plugin/core` leer)
+- Produktdateien bei der Erfassung (SHA-256, gleich HEAD):
+  B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183  eq-copilot/plugin/core/analysis/FeatureEngine.h
+  1D1E5CA27AEE5647AE2DF7B41EE0E3F888E799EA546079934BA350BD6AE36BBA  eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+  1B4CA39C298C7BBE964B55B1B636E4CC09AAB6CF08B61BE03F0D2777EDD0FB53  eq-copilot/plugin/core/analysis/featureengine/Zeit.h
+  4A4E17135A68BDAF69E5E82FAFDDF5364B615D9C2D006F05D37D3E73553C774E  eq-copilot/plugin/core/analysis/featureengine/Fingerprint.h
+- Binary: eq-copilot/build/plugin/EqCopSonde013FingerprintGoldenTest_artefacts/Release/EqCopSonde013FingerprintGoldenTest.exe,
+  gebaut 25.09.2026 18:55:54.130 (Bau 18:55 Uhr, Exit 0; einzige Warnung C4458 in Stereo.h, vorbestehend)
+- Aufruf: EqCopSonde013FingerprintGoldenTest.exe --nak380-erfassen, 25.09.2026 18:56:18 Uhr, Exit 0
+
+Signal (§7.2 F1)
+- `akkord (0.4, 220.0)` aus Sonde013FingerprintGoldenTest.cpp (Dreiklang 220 Hz, 220·2^(4/12), 220·2^(7/12), Summe/3·0,4), L = R
+- 30 s = 1 440 000 Samples bei 48 kHz, Block 512 (2 812 volle Bloecke, der letzte Block 256 Samples),
+  eine frische Engine (`std::make_unique<FeatureEngine>`, `vorbereiten (48000.0)`), kein Passagenfenster
+
+Ergebnis
+- Fingerprint gesetzt: 1, Fenster: 701
+- 76 Ausgangsbytes, Reihenfolge bandEnergie[32], chroma[12], onset[32]:
+00 00 00 00 00 00 00 00 00 ff f4 fd a0 3e 17 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+b3 16 00 6e a3 0d 1f ff 00 00 01 56 b7 ba ac ea
+e0 c9 f1 d3 c5 be 92 c7 dd 97 ff b9 dc e9 bf 7e
+d8 d7 00 00 00 00 00 00 00 00 00 00
+- SHA-256 der 76 Bytes: F0D5C170BF6ED8FC7BAAF9375AB5930820E98CA87DE2017D32379CA644000612
+- Eingefroren als `kNak380F1Bytes` in eq-copilot/plugin/tests/Sonde013FingerprintGoldenTest.cpp;
+  der Vergleich laeuft nach dem Umbau unveraendert (Rotbeleg: temporaere Mutation
+  `fingerprintSchritt` erhaelt den Binfluss, docs/beweise/roh/NAK-380-rot-M-68.txt).

@@ -1,0 +1,26 @@
+NAK-380 Etappe 4 — Rotbeweis M-50 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Nullkorpus W1
+Zustand und Vorbedingung: 48 kHz, Block 512; Weißrauschen L = R, σ = 0,1 (−20 dBFS), 30 s, SplitMix64 und Box-Muller, Saat 0x3800003 (§7 W1)
+Zusage: höchstens 1 Ereignis in 30 s (Schranke); vor dem Etappe-4-Produktumbau wird der exakte Altzähler mit unverändertem Code für genau dieses W1 in `docs/beweise/roh/NAK-380-etappe-4-m50-w1-altzaehler.txt` (Zielpfad, anzulegen) erfasst und dient ausschließlich als Pflicht-Altvergleich; erst nach dessen Rotlauf wird der exakte neue Zähler ≤ 1 zum Golden
+Test je Sprache: C++: B5 NEU `380/M-50 nullkorpus_W1`
+Rotbeweisspalte (Etikett): heute rot: Der Nachbau `b11_ursache.py:9-11` mit `default_rng(5)` liefert laut `b11_ursache.out:1` 19, `b11_fluss.py:70-72` mit den Saaten 100 bis 107 laut `b11_fluss.out:2` 13 bis 24 Ereignisse je 30 s; diese anderen Signale belegen nur das Etikett, nie den W1-Altinhalt. Vor dem ersten Etappe-4-Produktedit wird der Altzähler mit unverändertem Code für genau W1 erfasst und in `docs/beweise/roh/NAK-380-etappe-4-m50-w1-altzaehler.txt` (Zielpfad, anzulegen) dokumentiert; der neue Code läuft gegen genau diese Referenz rot. Nach dem Bau macht die Mutation ρ = 0 und T_min = 0 (rein relative Schwelle wie heute, jetzt mit der kleineren echten MAD) die Zusage mit mehr als 1 Ereignis rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B5, `--nak380 M-50`):
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ROT]  380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 18, Golden 0; 0.8960 sF, 1.6213 sF, 2.4320 sF, 5.5040 sF, 6.5707 sF, 7.4667 sF, 9.9840 sF, 10.9227 sF, ...]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-50`):
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m50-altzaehler (eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp:1403): Golden-Klasse (ii): der neue Code laeuft gegen den Altzaehler 18 rot
+    Wortlaut: `sig::weissMono (sig::kW1Saat, 0.1, kDreissig), 0);` -> `sig::weissMono (sig::kW1Saat, 0.1, kDreissig), 18);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m50-altzaehler.txt
+  - m50-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): hoechstens 1 Ereignis in 30 s (rein relative Schwelle: rho = 0, T_min = 0)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med)` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m50-relativ.txt

@@ -1,0 +1,24 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m61-zeit
+Matrixzeile: M-61; Zusagesatz: genau ein Ereignis mit stromSample in [7,0 s - N_H/fs, 7,0 s] (Ereigniszeit aus dem Blockanfang statt dem Fensteranfang)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 845
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m61-zeit/Spektrum.h
+Wortlaut vorher:
+                e.stromSample = s.fensterStromStart;
+Wortlaut nachher:
+                e.stromSample = rahmenStartBlock.stromVon;
+  Bau EqCopAnalysisGoldenTest: 19:51:16 bis 19:51:32, Exit 0
+  Binary 19:51:32.264 juenger als Quelle 19:51:16.985: ja
+Lauf mit Mutation: --nak380 M-61 19:51:32 bis 19:51:33, Exit 0
+Gefallene Pruefungen:
+    (keine)
+Die Zusage faellt an der erwarteten Pruefung: NEIN (erwartet: 380/M-61 wiederbeginn_nach_stille: genau ein Ereignis)
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.282 dB (Soll <= 1,0), Oktaven 57.74/57.97/57.69/57.72/57.72/57.73/57.81/57.72/57.74/57.74 dB; RMS 0.09955 gegen 0.10000 (-0.039 dB)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9333 sFP (Sample 332800)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -100.0000 bis -100.0000 dB; 6,859 s: -100.0000 bis -100.0000 dB]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert  [Stand 21 -> 21, Fuellung 32 -> 32]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopAnalysisGoldenTest: 19:51:33 bis 19:51:49, Exit 0
+  Binary nach Ruecknahme 19:51:48.746 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-61 19:51:49 bis 19:51:49, Exit 0, 4 bestanden, 0 gescheitert

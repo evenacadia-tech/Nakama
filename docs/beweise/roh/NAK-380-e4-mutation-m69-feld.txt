@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m69-feld
+Matrixzeile: M-69; Zusagesatz: kein Feld: staerke_mad bleibt 0 bis 1000
+Datei: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+Zeile (Etappenstand): 1280
+SHA-256 vor der Mutation: 93264B9B51CB6E2F73DD805A70845AE312F12CA6C3C09A7C6418DB3AF452C833; Sicherung eq-copilot/build/nak380-sicherung/e4/m69-feld/eq-ipc-v3.schema.json
+Wortlaut vorher:
+    "staerke_mad": { "type": "number", "minimum": 0, "maximum": 1000 },
+Wortlaut nachher:
+    "staerke_mad": { "type": "number", "minimum": 0, "maximum": 2000 },
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:18 bis 19:48:19, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m69_staerke_benannt: kein Feld - dynamics_ereignis fuehrt genau die sechs Felder, staerke_mad 0 bis 1000 — ['band_zentrum_hz', 'dauer_samples', 'qualitaet_fluss', 'qualitaet_peak', 'sample_offset', 'staerke_mad']
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kein Feld)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 93264B9B51CB6E2F73DD805A70845AE312F12CA6C3C09A7C6418DB3AF452C833: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:19 bis 19:48:19, Exit 0, Pruefungen: 7 bestanden, 0 gescheitert

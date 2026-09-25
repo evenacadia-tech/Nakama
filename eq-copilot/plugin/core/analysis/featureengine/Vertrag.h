@@ -281,7 +281,7 @@ struct Ereignis
     std::uint64_t epoche  { 0 };
     std::uint64_t segment { 0 };
 
-    float staerke      { 0.0f };   // Fluss ueber der adaptiven Schwelle, in MAD
+    float staerke      { 0.0f };   // Flussereignis: κ·(SF − Median)/(T_eff − Median), ≥ κ bei Auslösung, ≤ 1000; Peakereignis: Crest über Schwelle in dB
     float bandZentrumHz{ 0.0f };   // Schwerpunkt des positiven Flusses
     float dauerMs      { 0.0f };   // Fensterhop — die Aufloesung, nicht mehr
     bool  qualitaetFluss { false };

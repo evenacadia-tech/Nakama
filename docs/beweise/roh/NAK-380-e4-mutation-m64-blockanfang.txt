@@ -1,0 +1,58 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m64-blockanfang
+Matrixzeile: M-64; Zusagesatz: stromSample je Rate ueber alle Blockgroessen identisch
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 845
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m64-blockanfang/Spektrum.h
+Wortlaut vorher:
+                e.stromSample = s.fensterStromStart;
+Wortlaut nachher:
+                e.stromSample = rahmenStartBlock.stromVon;
+  Bau EqCopAnalysisGoldenTest: 19:34:47 bis 19:35:04, Exit 0
+  Binary 19:35:04.203 juenger als Quelle 19:34:47.812: ja
+Lauf mit Mutation:  19:35:04 bis 19:35:17, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 112, genau einer 90, ohne Treffer 22 (3.500 s, 4.250 s, 5.000 s, 5.750 s, 6.500 s, 7.250 s, 11.500 s, 12.250 s), mehrfach 0, Fehlalarme 22]
+    [ROT]  380/M-58 impulskorpus_I2: genau 56 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 56, genau einer 51, ohne Treffer 5 (11.520 s, 13.020 s, 14.520 s, 27.520 s, 29.020 s), mehrfach 0, Fehlalarme 5]
+    [ROT]  380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 105, genau einer 80, ohne Treffer 30 (3.500 s, 5.000 s, 5.100 s, 6.500 s, 6.600 s, 8.100 s, 8.600 s, 10.100 s), mehrfach 2, Fehlalarme 21]
+    [ROT]  und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf
+    [ROT]  Eventzeit ist der 4096er-Fensteranfang und unabhaengig vom 512er Hostblock
+    [ROT]  impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse nicht  [0 von 5 Raten; erster Stempel je Rate: 44.1kHz:202860, 48kHz:206400, 88.2kHz:202860, 96kHz:201600, 192kHz:192000]
+    [ROT]  (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 (0 <= t0 - stromSample < 4096) - die Schranke kommt aus kHauptPunkte, nicht aus dem Hop  [14 von 25; t0 - Stempel je Rate: 3476, -64, 3476, 4736, 14336]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: impulse_time_is_stable_over_block_sizes_and_sample_rates (a))
+Unter derselben Mutation gruen gebliebene Pruefungen: 284
+    [ok]   380/M-01 evidenzintervall_und_framezahl  [Intervall 1.0 s; Evidenzframes Soll/Ist 54/54]
+    [ok]   380/M-01 binbelegung_aus_testzugang  [belegt 196; unbelegt 25]
+    [ok]   380/M-01 evidenz_und_p50_bits_je_frame  [0 abweichende Frames von 54]
+    [ok]   380/M-01 evidenz_feinband_ist_dichte  [Referenz 10log10(2 sigma^2/fs)=-63.8021 dBFS/Hz; groesster Fehler Band 30 mit n_b=1: 0.3651 dB bei Toleranz 0.6907 dB; Verstoesse 0]
+    [ok]   380/M-01 systematik_ueber_belegte_baender  [Mittelabweichung -0.00417 dB; Toleranz 0,05000 dB ueber 196 Baender]
+    [ok]   380/M-01 p50_je_belegtem_feinband  [groesster Abstand Band 55 mit n_b=2: 0.6056 dB; Toleranz 1,5000 dB; Verstoesse 0]
+    [ok]   380/M-02 jede_livegruppe_hat_messbeitrag  [64 von 64 Gruppen mit Beitrag]
+    [ok]   380/M-02 livegruppe_ist_bandleistung_weiss  [Spanne 28.4148 dB, Referenz 28.5313 dB; groesster Gruppenfehler 0.2505 dB]
+    [ok]   380/M-03 livegruppe_leere_feinbaender_ergaenzt  [Gruppe 0 -59.2921 dBFS, Referenz Dichte mal 2,7477 Hz -59.4122 dBFS]
+    [ok]   380/M-04 livegruppen_summe_parseval  [Summe -21.2695 dBFS, Referenz -21.2665 dBFS]
+    [ok]   380/M-05 livegruppe_sinus_leistung  [Gruppe 35 -9.3000 dBFS, Referenz 10log10(A^2/2)=-9,0309 dBFS]
+    [ok]   380/M-08 livegruppe_traegerrand  [W0h Gruppe 63 -10.8773 gegen -10.8809 dBFS; S3 A=1 Gruppe 35 -3.3000 gegen -3,0103 dBFS]
+    [ok]   380/M-11 bandbreiten_aus_gitter  [221 Breiten, Summe 17929.032399789 Hz; hex64 b0/b120/b220 3fec77d2b45dde00/403c77d2b45dddc0/407ff44e07b18980]
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-51 nullkorpus_W2: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-51 nullkorpus_W2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-52 nullkorpus_W3: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-52 nullkorpus_W3: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.177 dB (Soll <= 1,0), Oktaven 57.79/57.86/57.69/57.80/57.82/57.86/57.79/57.80/57.77/57.77 dB; RMS 0.10030 gegen 0.10000 (0.026 dB)]
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-54 nullkorpus_S1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-54 nullkorpus_S1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-55 nullkorpus_S2: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-55 nullkorpus_S2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-56 nullkorpus_V1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-56 nullkorpus_V1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopAnalysisGoldenTest: 19:35:17 bis 19:35:33, Exit 0
+  Binary nach Ruecknahme 19:35:33.411 juenger als Quelle: ja
+Lauf nach Ruecknahme:  19:35:33 bis 19:35:46, Exit 1, Ergebnis: 290 bestanden, 1 Fehler.
+  noch rot:
+    [ROT]  380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 105, genau einer 105, ohne Treffer 7 (5.100 s, 8.600 s, 12.100 s, 15.600 s, 21.100 s, 24.600 s, 28.100 s), mehrfach 0, Fehlalarme 0]

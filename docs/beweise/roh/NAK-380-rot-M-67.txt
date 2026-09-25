@@ -1,0 +1,17 @@
+NAK-380 Etappe 4 — Rotbeweis M-67 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Koinzidenz eingeordnet
+Zustand und Vorbedingung: Quelle und Master stationär: beide Onsetreihen 0 in jedem Fenster
+Zusage: `None` (keine Streuung), Rangkomponente 0, weder Beleg noch Gegenbeleg; keine Schwelle zu ziehen
+Test je Sprache: Rust: A4 bestehend (`broker/tests/sonde014_hypothese.rs:1503`, „konstante Onsetreihe“)
+Rotbeweisspalte (Etikett): Regressionswache: Mutation Korrelation liefert bei Nullvarianz 1,0 statt `None` → Rangkomponente 1,0 → rot
+
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m67-nullvarianz (broker/src/coordinator/hypothese/messung.rs:313): Koinzidenz bei Nullvarianz None, Rangkomponente 0
+    Wortlaut: `if var_a <= 0.0 || var_b <= 0.0 {
+        return None;` -> `if var_a <= 0.0 || var_b <= 0.0 {
+        return Some(1.0);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m67-nullvarianz.txt
+
+Rust, A4: bestehender Test hoch_verlangt_einen_belegten_zusammenhang in broker/tests/sonde014_hypothese.rs (nur gelesen). Mutation im Produkt broker/src/coordinator/hypothese/messung.rs `return None;` -> `return Some(1.0);` bei Nullvarianz (m67-nullvarianz), `cargo test --test sonde014_hypothese hoch_verlangt_einen_belegten_zusammenhang`: JA.

@@ -1,0 +1,30 @@
+NAK-380 Etappe 4 — Rotbeweis M-60 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Peakpfad bleibt
+Zustand und Vorbedingung: bestehende B5-Fälle Abschnitt I2 `short_impulse_triggers_peak_path_only`, `flux_event_carries_flux_quality`, `both_paths_yield_one_event` (SONDE-013 M-86)
+Zusage: unverändert grün; ein reines Peakereignis trägt `staerke` = Crest über Schwelle in dB (`Spektrum.h:697-699`); lösen Fluss und Peak im selben Frame aus, entsteht genau ein Ereignis mit beiden Bits
+Test je Sprache: C++: B5 bestehend
+Rotbeweisspalte (Etikett): Regressionswache: Mutation `Spektrum.h:676-677` Peakpfad aus → `short_impulse_triggers_peak_path_only` rot
+
+Basisstand-Gegenprobe: nicht gefahren - Regressionswache; die Einheitspruefungen entstehen mit dem Testzugang dieser Etappe.
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-60`):
+    [ok]   380/M-60 peakpfad_bleibt: ein reines Peakereignis traegt staerke = Crest ueber Schwelle in dB  [Ereignisse 1, staerke 14.0206 (Soll 14.0206), Bits Peak 1 Fluss 0]
+    [ok]   380/M-60 peakpfad_bleibt: loesen Fluss und Peak im selben Frame aus, entsteht genau ein Ereignis mit beiden Bits  [Ereignisse 1, staerke 6.0000 (Soll 6,0), Bits Peak 1 Fluss 1]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m60-peakpfad (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:821): Peakpfad bleibt: short_impulse_triggers_peak_path_only
+    Wortlaut: `peakAus = steigungDb > kPeakSteigungSchwelleDb` -> `peakAus = false && steigungDb > kPeakSteigungSchwelleDb`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m60-peakpfad.txt
+  - m60-peakstaerke (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:859): ein reines Peakereignis traegt staerke = Crest ueber Schwelle in dB
+    Wortlaut: `: (float) (crestDb - kPeakCrestSchwelleDb);` -> `: (float) crestDb;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m60-peakstaerke.txt
+  - m60-zwei (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:864): loesen Fluss und Peak im selben Frame aus, entsteht genau ein Ereignis mit beiden Bits
+    Wortlaut: `ereignisAblegen (e);
+            d.letzteEreignisStrom = s.fensterStromStart;` -> `ereignisAblegen (e);
+            if (flussAus && peakAus)
+                ereignisAblegen (e);
+            d.letzteEreignisStrom = s.fensterStromStart;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m60-zwei.txt
+
+Regressionswache (bestehende B5-Faelle short_impulse_triggers_peak_path_only, flux_event_carries_flux_quality, both_paths_yield_one_event bleiben am Endstand gruen) plus zwei Einheitspruefungen ueber den B5-Testzugang fuer die Saetze, die die bestehenden Faelle nicht einzeln messen: reines Peakereignis mit staerke = Crest - 12 dB (m60-peakstaerke, JA) und genau ein Ereignis mit beiden Bits (m60-zwei, JA). Befund beim Messen: both_paths_yield_one_event bleibt auch mit abgeschaltetem Peakpfad gruen, weil ein Flussereignis mit hohem Crest das Peakbit als Zusatzbit traegt (Spektrum.h, unveraendert seit SONDE-013) - deshalb die Einheit. Mutation Peakpfad aus (m60-peakpfad): short_impulse_triggers_peak_path_only rot (JA).

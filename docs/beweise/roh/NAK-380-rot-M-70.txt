@@ -1,0 +1,76 @@
+NAK-380 Etappe 4 — Rotbeweis M-70 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · R-380-7 · Versionsschritt Etappe 4 und geführte Schwellen
+Zustand und Vorbedingung: neue Fassung in `metriken-v1.json` mit P0 (−100 dBFS je Bin), Filterbreite 50 Cent, H = 32, κ = 3, ρ = 1, T_min-Faktor 0,05 dB je Bin, Sperrzeit 50 ms als geführte Schwellen; `kFeatureMetricsVersion`, `METRICS_VERSION` gehoben
+Zusage: A5 findet jede geführte Schwelle mit Wert an ihrer Stelle im Code; die Nullkorpusfälle M-50 bis M-56 fallen am alten Wert
+Test je Sprache: Python: A5 bestehend `metrics_version_bindet_schwellen`, NEU `nak380_m70_fassung_etappe_4`
+Rotbeweisspalte (Etikett): heute nicht messbar; Mutation Sperrzeit im Code 50 → 60 ohne Registereintrag → A5 rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein A5, `--nak380 M-70`):
+    Pruefungen: 0 bestanden, 13 gescheitert
+    ROT: nak380_m70_fassung_etappe_4: FeatureEngine nennt 20260927 — 20260926
+    ROT: nak380_m70_fassung_etappe_4: vergleichbarkeit.rs nennt 20260927 — '20260926'
+    ROT: nak380_m70_fassung_etappe_4: prepost.rs nennt 20260927 — '20260926'
+    ROT: nak380_m70_fassung_etappe_4: aktuell ist 20260927 — aktuell=20260926
+    ROT: nak380_m70_fassung_etappe_4: seit nennt NAK-380 Etappe 4 — None
+    ROT: nak380_m70_fassung_etappe_4: Eintraege der Fassung 20260926 unveraendert uebernommen — schwellen/kPeakSteigungSchwelleDb, schwellen/kPeakCrestSchwelleDb, schwellen/kKohaerenzSchwellePhase, schwellen/kKonvergenzSpanneDb, schwellen/kKonfidenzAbdeckungStark, schwellen/kKonfidenzAbdeckungMittel, schwellen/GATE_ZEITUEBERDECKUNG, schwellen/GATE_QUELLEN_JACCARD, schwellen/GATE_MATERIAL_COSINE, schwellen/GATE_ABDECKUNG, schwellen/GATE_KORRELATIONSSPITZE, schwellen/GATE_PEAK_TO_SIDELOBE, schwellen/G
+    ROT: nak380_m70_fassung_etappe_4: kFlussP0Db steht mit dem Registerwert in FeatureEngine.h — nicht im Block schwellen der Fassung
+    ROT: nak380_m70_fassung_etappe_4: kFlussFilterCent steht mit dem Registerwert in FeatureEngine.h — nicht im Block schwellen der Fassung
+    ROT: nak380_m70_fassung_etappe_4: kFlussHistorie steht mit dem Registerwert in FeatureEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+    ROT: nak380_m70_fassung_etappe_4: kFlussKappa steht mit dem Registerwert in FeatureEngine.h — nicht im Block schwellen der Fassung
+    ROT: nak380_m70_fassung_etappe_4: kFlussRho steht mit dem Registerwert in FeatureEngine.h — nicht im Block schwellen der Fassung
+    ROT: nak380_m70_fassung_etappe_4: kFlussTminDbJeBin steht mit dem Registerwert in FeatureEngine.h — nicht im Block schwellen der Fassung
+    ROT: nak380_m70_fassung_etappe_4: kSperrzeitMs steht mit dem Registerwert in FeatureEngine.h — nicht im Block schwellen der Fassung
+    Exit 2
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-70`):
+    Pruefungen: 13 bestanden, 0 gescheitert
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m70-feature (eq-copilot/plugin/core/analysis/FeatureEngine.h:89): kFeatureMetricsVersion = 20260927
+    Wortlaut: `kFeatureMetricsVersion = 20260927u;` -> `kFeatureMetricsVersion = 20260928u;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-feature.txt
+  - m70-prepost (broker/src/coordinator/prepost.rs:206): METRICS_VERSION prepost.rs = 20260927
+    Wortlaut: `pub const METRICS_VERSION: u32 = 20260927;` -> `pub const METRICS_VERSION: u32 = 20260928;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-prepost.txt
+  - m70-vergleichbarkeit (broker/src/coordinator/vergleichbarkeit.rs:149): METRICS_VERSION vergleichbarkeit.rs = 20260927
+    Wortlaut: `pub const METRICS_VERSION: u32 = 20260927;` -> `pub const METRICS_VERSION: u32 = 20260928;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-vergleichbarkeit.txt
+  - m70-aktuell (eq-copilot/schemas/v3/metriken-v1.json:20): aktuell = 20260927 im Register
+    Wortlaut: `"aktuell": 20260927,` -> `"aktuell": 20260926,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-aktuell.txt
+  - m70-seit (eq-copilot/schemas/v3/metriken-v1.json:422): seit nennt NAK-380 Etappe 4
+    Wortlaut: `"seit": "NAK-380 Etappe 4",` -> `"seit": "NAK-380 Etappe 4x",`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-seit.txt
+  - m70-uebernahme (eq-copilot/schemas/v3/metriken-v1.json:292): Eintraege der Fassung 20260926 unveraendert uebernommen
+    Wortlaut: `Die Konfidenzschwellen bleiben unverändert.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.0,` -> `Die Konfidenzschwellen bleiben unverändert.",
+      "schwellen": {
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.5,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-uebernahme.txt
+  - m70-p0 (eq-copilot/plugin/core/analysis/FeatureEngine.h:181): kFlussP0Db = -100.0 an seiner Codestelle
+    Wortlaut: `inline constexpr double kFlussP0Db = -100.0;` -> `inline constexpr double kFlussP0Db = -90.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-p0.txt
+  - m70-filtercent (eq-copilot/plugin/core/analysis/FeatureEngine.h:185): kFlussFilterCent = 50.0
+    Wortlaut: `inline constexpr double kFlussFilterCent = 50.0;` -> `inline constexpr double kFlussFilterCent = 45.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-filtercent.txt
+  - m70-historie (eq-copilot/plugin/core/analysis/FeatureEngine.h:190): kFlussHistorie = 32
+    Wortlaut: `inline constexpr int kFlussHistorie = 32;` -> `inline constexpr int kFlussHistorie = 30;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-historie.txt
+  - m70-kappa (eq-copilot/plugin/core/analysis/FeatureEngine.h:193): kFlussKappa = 3.0
+    Wortlaut: `inline constexpr double kFlussKappa = 3.0;` -> `inline constexpr double kFlussKappa = 3.5;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-kappa.txt
+  - m70-rho (eq-copilot/plugin/core/analysis/FeatureEngine.h:196): kFlussRho = 1.0
+    Wortlaut: `inline constexpr double kFlussRho = 1.0;` -> `inline constexpr double kFlussRho = 1.5;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-rho.txt
+  - m70-tmin (eq-copilot/plugin/core/analysis/FeatureEngine.h:202): kFlussTminDbJeBin = 0.30 (kalibriert)
+    Wortlaut: `inline constexpr double kFlussTminDbJeBin = 0.30;` -> `inline constexpr double kFlussTminDbJeBin = 0.35;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-tmin.txt
+  - m70-sperrzeit (eq-copilot/plugin/core/analysis/FeatureEngine.h:207): kSperrzeitMs = 50.0 (Matrix: 50 -> 60 ohne Registereintrag)
+    Wortlaut: `inline constexpr double kSperrzeitMs = 50.0;` -> `inline constexpr double kSperrzeitMs = 60.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m70-sperrzeit.txt
+
+A5: nak380_m70_fassung_etappe_4 prueft vier Versionsstellen, `seit`, die Uebernahme der Fassung 20260926 und sieben Detektorschwellen einzeln ueber den Kernkonstantenindex; je Stelle eine Mutation (m70-feature, m70-prepost, m70-vergleichbarkeit, m70-aktuell, m70-seit, m70-uebernahme, m70-p0, m70-filtercent, m70-historie, m70-kappa, m70-rho, m70-tmin, m70-sperrzeit), alle JA. Die Nullkorpusfaelle M-50 bis M-56 fallen am alten Wert (Basisstand, §35.2).

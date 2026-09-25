@@ -1,0 +1,17 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m69-mad
+Matrixzeile: M-69; Zusagesatz: bei greifender relativer Schwelle die echte MAD
+Datei: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+Zeile (Etappenstand): 1270
+SHA-256 vor der Mutation: 93264B9B51CB6E2F73DD805A70845AE312F12CA6C3C09A7C6418DB3AF452C833; Sicherung eq-copilot/build/nak380-sicherung/e4/m69-mad/eq-ipc-v3.schema.json
+Wortlaut vorher:
+    (bei greifender relativer Schwelle die echte MAD)
+Wortlaut nachher:
+    (bei greifender relativer Schwelle die mittlere MAD)
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:17 bis 19:48:17, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m69_staerke_benannt: bei greifender relativer Schwelle die echte MAD
+      ROT: nak380_m69_staerke_benannt: hoechstens 1000
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: bei greifender relativer Schwelle die echte MAD)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 93264B9B51CB6E2F73DD805A70845AE312F12CA6C3C09A7C6418DB3AF452C833: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:17 bis 19:48:17, Exit 0, Pruefungen: 7 bestanden, 0 gescheitert

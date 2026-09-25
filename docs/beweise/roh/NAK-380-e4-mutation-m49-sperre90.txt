@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m49-sperre90
+Matrixzeile: M-49; Zusagesatz: 2 Hops (85,33 ms): zwei Ereignisse
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 834
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m49-sperre90/Spektrum.h
+Wortlaut vorher:
+    || (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= kSperrzeitMs * s.fs;
+Wortlaut nachher:
+    || (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= 90.0 * s.fs;
+  Bau EqCopSonde013DynamicsTest: 19:29:08 bis 19:29:15, Exit 0
+  Binary 19:29:15.690 juenger als Quelle 19:29:08.618: ja
+Lauf mit Mutation: --nak380 M-49 19:29:15 bis 19:29:16, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-49 sperrzeit_50ms: 48 kHz, Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse  [Ereignisse 1]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-49 sperrzeit_50ms: Konstante kSperrzeitMs = 50,0  [50.000]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, zwei steigende Ueberschreitungen im Abstand 1 Hop (42,67 ms) ergeben ein Ereignis  [Ereignisse 1]
+    [ok]   380/M-49 sperrzeit_50ms: 44,1 kHz, 1 Hop (46,44 ms) ein Ereignis, 2 Hops (92,88 ms) zwei  [1 / 2]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:29:16 bis 19:29:22, Exit 0
+  Binary nach Ruecknahme 19:29:22.338 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-49 19:29:22 bis 19:29:22, Exit 0, 4 bestanden, 0 gescheitert

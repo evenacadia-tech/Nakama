@@ -1,0 +1,28 @@
+NAK-380 Etappe 4 — Rotbeweis M-59 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Impulskorpus I3 (zwei Klicks über der Sperrzeit)
+Zustand und Vorbedingung: wie M-57 mit demselben nach E-380-13 selbstgeprüften P2, Klickpaare im Abstand 100 ms alle 500 ms = 56 Paare (§7 I3)
+Zusage: genau 112 Ereignisse
+Test je Sprache: C++: B5 NEU `380/M-59 impulskorpus_I3`
+Rotbeweisspalte (Etikett): heute rot (Zusatzereignisse wie M-57); nach dem Bau Mutation Sperrzeit 150 ms → 56 → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B5, `--nak380 M-59`):
+    [ok]   380/M-59 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-59 impulskorpus_I3: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+    [ROT]  380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 111, genau einer 77, ohne Treffer 18 (3.100 s, 3.600 s, 5.100 s, 8.600 s, 10.600 s, 12.100 s, 12.600 s, 13.600 s), mehrfach 17, Fehlalarme 0]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-59`):
+    [ok]   380/M-59 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-59 impulskorpus_I3: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+    [ROT]  380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 105, genau einer 105, ohne Treffer 7 (5.100 s, 8.600 s, 12.100 s, 15.600 s, 21.100 s, 24.600 s, 28.100 s), mehrfach 0, Fehlalarme 0]
+    Exit 1
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m59-sperre150 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:834): genau 112 Ereignisse (Sperrzeit 150 ms)
+    Wortlaut: `|| (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= kSperrzeitMs * s.fs;` -> `|| (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= 150.0 * s.fs;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m59-sperre150.txt
+  - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m53-rosa.txt
+
+Endstand ROT: 105 von 112 Ereignissen, ohne Treffer bei 5,1/8,6/12,1/15,6/21,1/24,6/28,1 s (je der zweite Klick eines Paars im Abstand 100 ms). Kein Wertesatz aus rho, T_min und H haelt V1 und I3 zugleich (Manifest §35.4, §35.9 Punkt 1). Die Schranke 112 ist nicht gelockert. Mutation Sperrzeit 150 ms (m59-sperre150) macht den Fall zusaetzlich rot (JA): sie trifft die Zusage "je Paar zwei Ereignisse" an derselben Pruefung.

@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m70-sperrzeit
+Matrixzeile: M-70; Zusagesatz: kSperrzeitMs = 50.0 (Matrix: 50 -> 60 ohne Registereintrag)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 207
+SHA-256 vor der Mutation: 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1; Sicherung eq-copilot/build/nak380-sicherung/e4/m70-sperrzeit/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr double kSperrzeitMs = 50.0;
+Wortlaut nachher:
+    inline constexpr double kSperrzeitMs = 60.0;
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:31 bis 19:48:31, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: kSperrzeitMs steht mit dem Registerwert in FeatureEngine.h — Code 60.0 (FeatureEngine.h), Register 50.0 ('eq-copilot/plugin/core/analysis/FeatureEngine.h')
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kSperrzeitMs steht)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:31 bis 19:48:31, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

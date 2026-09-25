@@ -1,0 +1,28 @@
+NAK-380 Etappe 4 — Rotbeweis M-53 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Nullkorpus P1
+Zustand und Vorbedingung: wie M-50, nach E-380-13 selbstgeprüftes rosa Rauschen L = R, −20 dBFS (§7 P1: benachbarte integrierte Oktavbandleistungen 31,5 Hz bis 16 kHz weichen höchstens 1,0 dB ab)
+Zusage: höchstens 1 Ereignis in 30 s
+Test je Sprache: C++: B5 NEU `380/M-53 nullkorpus_P1`
+Rotbeweisspalte (Etikett): heute rot nach Analogie (rein relative Schwelle, pegel- und spektrumsunabhängig 19 bei W1 bis W3), am Basisstand im Etappenabschnitt gefahren; Mutation wie M-50 → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B5, `--nak380 M-53`):
+    [ok]   380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.177 dB (Soll <= 1,0), Oktaven 57.79/57.86/57.69/57.80/57.82/57.86/57.79/57.80/57.77/57.77 dB; RMS 0.10030 gegen 0.10000 (0.026 dB)]
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ROT]  380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 22, Golden 0; 3.1573 sF, 3.2427 sF, 4.9920 sFP, 5.4613 sF, 6.3573 sF, 10.3680 sF, 10.6240 sF, 10.9653 sF, ...]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-53`):
+    [ok]   380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.177 dB (Soll <= 1,0), Oktaven 57.79/57.86/57.69/57.80/57.82/57.86/57.79/57.80/57.77/57.77 dB; RMS 0.10030 gegen 0.10000 (0.026 dB)]
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m50-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): hoechstens 1 Ereignis in 30 s (rein relative Schwelle: rho = 0, T_min = 0)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med)` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m50-relativ.txt
+  - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m53-rosa.txt

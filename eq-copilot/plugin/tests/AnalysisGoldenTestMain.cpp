@@ -31,6 +31,7 @@
 
 #include <juce_core/juce_core.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
@@ -69,6 +70,46 @@ struct FeatureEngineTestzugang
         const auto& stufe = Gitter::evidenzMitte (band) < FeatureEngine::kTrennungHz
                           ? e.bass : e.haupt;
         return stufe.bandBis[(std::size_t) band];
+    }
+
+    // NAK-380 Etappe 4 (M-61): die zwei Traeger der Zusage A-6 — Vorframe
+    // ueber alle Frames, Historie nur aus aktiven.
+    static double vorframeMaxDb (const FeatureEngine& e) noexcept
+    {
+        const auto& v = e.detektor[0].vorframe;
+        return v.empty() ? 0.0 : *std::max_element (v.begin(), v.end());
+    }
+
+    static double vorframeMinDb (const FeatureEngine& e) noexcept
+    {
+        const auto& v = e.detektor[0].vorframe;
+        return v.empty() ? 0.0 : *std::min_element (v.begin(), v.end());
+    }
+
+    static int historieStand (const FeatureEngine& e) noexcept    { return e.detektor[0].stand; }
+    static int historieGefuellt (const FeatureEngine& e) noexcept { return e.detektor[0].gefuellt; }
+
+    // NAK-380 Etappe 4 (M-60): genau ein Detektorschritt mit gesetztem
+    // Rahmenzustand (Rahmenpeak, Quadratsumme ueber 1000 Samples, voriger
+    // Rahmenpeak) und voller Historie aus 32 Nullen (T_eff = T_min).
+    static int peakSchritt (FeatureEngine& e, double sf, double peak, double rms, double vorigerPeak) noexcept
+    {
+        auto& d = e.detektor[0];
+        for (auto& h : d.historie)
+            h = 0.0;
+        d.stand = 0;
+        d.gefuellt = kFlussHistorie;
+        d.sfVorher = 0.0;
+        d.letztesEreignisGueltig = false;
+        e.rahmenPeak = peak;
+        e.rahmenSamples = 1000u;
+        e.rahmenSummeQuadrat = rms * rms * 1000.0;
+        e.vorigerRahmenPeak = vorigerPeak;
+        e.peakEreignisImRahmen = false;
+        e.haupt.fensterStromStart = 480000u;
+        const int vorher = e.ereignisAnzahlJetzt();
+        e.detektorSchritt (e.haupt, sf, 1000.0);
+        return e.ereignisAnzahlJetzt() - vorher;
     }
 };
 } // namespace nakama::analyse
@@ -1201,12 +1242,467 @@ __declspec(noinline) void nak380DichteUndBandleistung()
                 + juce::String::toHexString ((juce::int64) bitsVon (breite (120))) + "/"
                 + juce::String::toHexString ((juce::int64) bitsVon (breite (220))));
 }
+
+//==============================================================================
+// NAK-380 Etappe 4: Ereignisdetektor nach §39.1 (M-50 bis M-62, Korpus §7).
+//
+// Zaehlregeln (§7.3): der Ring wird nach jedem gebauten Frame gelesen und mit
+// `ereignisseEntnommen()` quittiert; `ereignisseVerworfen()` muss am Ende 0
+// sein, sonst ist die Zaehlung ungueltig und der Fall rot. Alle Signale sind
+// L = R, 48 kHz, Block 512 (der letzte Block traegt den Rest).
+//
+// Hergeleitete Zaehlgroessen (R-380-8, nicht aus dem Lauf): 30 s sind
+// 30*48000 = 1 440 000 Samples; die Hauptstufe (4096 Punkte, Hop 2048)
+// schliesst floor((1 440 000 - 4096)/2048) + 1 = 702 Fenster; der erste hat
+// keinen Vorframe, die Historie traegt nach 1 + 32 = 33 aktiven Fenstern
+// 32 Werte, also ab Sample 4096 + 32*2048 = 69 632 (1,4507 s).
+
+bool nak380Waehlt (const char* nur, const char* id)
+{
+    return nur == nullptr || std::strcmp (nur, id) == 0;
+}
+
+struct Nak380Korpus
+{
+    std::vector<Ereignis> ereignisse;
+    std::uint64_t verworfen { 0 };
+    std::uint64_t samples { 0 };
+};
+
+/** Ein Korpuslauf auf einer frischen Engine im Heap (NAK-175). `seekBei`
+    (Stromsample, Vielfaches der Blockgroesse) laesst die Projektzeit dort um
+    `seekSprung` springen (Grenzgrund zeitSprung, Muster G2). */
+__declspec(noinline) std::unique_ptr<Nak380Korpus> nak380Korpuslauf (
+    const std::vector<float>& mono, std::uint64_t seekBei = 0, std::int64_t seekSprung = 0)
+{
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+    auto engine = std::make_unique<FeatureEngine>();
+    engine->vorbereiten (fs);
+    auto aus = std::make_unique<Nak380Korpus>();
+    std::vector<float> audio ((std::size_t) block * 2u);
+    std::uint64_t strom = 0;
+    std::int64_t projekt = 0;
+    const auto samples = (std::uint64_t) mono.size();
+    const auto entnehmen = [&]
+    {
+        for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+            aus->ereignisse.push_back (engine->ereignis (i));
+        engine->ereignisseEntnommen();
+    };
+    while (strom < samples)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+                                                                     samples - strom);
+        for (std::uint32_t i = 0; i < anzahl; ++i)
+            audio[(std::size_t) i * 2u] = audio[(std::size_t) i * 2u + 1u]
+                = mono[(std::size_t) (strom + i)];
+        if (seekSprung != 0 && strom == seekBei)
+            projekt += seekSprung;
+        rt::StampedBlock b;
+        b.stromVon = strom;
+        b.sampleCount = anzahl;
+        b.segment = 0;
+        b.startFolge = 0;
+        b.kanaele = 2;
+        b.tapMaske = 1;
+        b.projectSampleStart = projekt;
+        b.sampleRate = fs;
+        b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+        const bool frame = engine->nimmBlock (b, audio.data());
+        strom += anzahl;
+        projekt += (std::int64_t) anzahl;
+        if (frame)
+            entnehmen();
+    }
+    entnehmen();
+    aus->verworfen = engine->ereignisseVerworfen();
+    aus->samples = strom;
+    return aus;
+}
+
+juce::String nak380Zeiten (const std::vector<Ereignis>& ev, std::size_t hoechstens = 8)
+{
+    juce::String s;
+    for (std::size_t i = 0; i < ev.size() && i < hoechstens; ++i)
+        s << (i ? ", " : "") << juce::String ((double) ev[i].stromSample / 48000.0, 4) << " s"
+          << (ev[i].qualitaetFluss ? "F" : "") << (ev[i].qualitaetPeak ? "P" : "");
+    if (ev.size() > hoechstens)
+        s << ", ...";
+    return s;
+}
+
+/** M-50 bis M-56: Nullkorpus. Schranke hoechstens 1 Ereignis in 30 s; der
+    Golden prueft die gemessene Zahl exakt (feste Saat, §7.3). */
+__declspec(noinline) void nak380Nullfall (const char* id, const char* name,
+                                          const std::vector<float>& signal, int golden)
+{
+    const auto lauf = nak380Korpuslauf (signal);
+    const int n = (int) lauf->ereignisse.size();
+    pruefe (lauf->samples == 1440000u && lauf->verworfen == 0u,
+            juce::String ("380/") + id + " " + name + ": Vorbedingung 1 440 000 Samples, kein Ringverlust",
+            juce::String ((juce::int64) lauf->samples) + " Samples, verworfen "
+                + juce::String ((juce::int64) lauf->verworfen));
+    pruefe (n <= 1 && n == golden,
+            juce::String ("380/") + id + " " + name + ": hoechstens 1 Ereignis in 30 s, exakt der Golden",
+            "Ereignisse " + juce::String (n) + ", Golden " + juce::String (golden)
+                + (n > 0 ? "; " + nak380Zeiten (lauf->ereignisse) : juce::String()));
+}
+
+/** E-380-13 vor jedem Rosa-Nutzer: Oktavbandleistung konstant (Nachbarn
+    <= 1,0 dB) und Pegel = Soll-RMS. Die Pegeltoleranz 0,5 dB: die Varianz
+    eines korrelierten Gaussprozesses aus 1 440 000 Samples mit der
+    Zeitkonstante des langsamsten Pols (1/(1-0,99886) = 877 Samples) hat rund
+    1 440 000/877 = 1 642 unabhaengige Anteile, relative Streuung
+    sqrt(2/1642) = 3,5 % = 0,15 dB; 0,5 dB sind 3,3 sigma. */
+__declspec(noinline) bool nak380RosaGeprueft (const char* id, const std::vector<float>& x,
+                                              double rms)
+{
+    std::vector<double> okt;
+    const double diff = nakama::test::nak380::rosaGroessteOktavdifferenzDb (x, 48000.0, &okt);
+    double summe = 0.0;
+    for (const float v : x) summe += (double) v * (double) v;
+    const double ist = std::sqrt (summe / (double) x.size());
+    const double abweichungDb = 20.0 * std::log10 (ist / rms);
+    const bool ok = diff <= 1.0 && std::abs (abweichungDb) <= 0.5;
+    juce::String baender;
+    for (std::size_t i = 0; i < okt.size(); ++i)
+        baender << (i ? "/" : "") << juce::String (okt[i], 2);
+    pruefe (ok, juce::String ("380/") + id + " rosa_selbstpruefung_E-380-13",
+            "groesste Nachbardifferenz " + juce::String (diff, 3) + " dB (Soll <= 1,0), Oktaven "
+                + baender + " dB; RMS " + juce::String (ist, 5) + " gegen " + juce::String (rms, 5)
+                + " (" + juce::String (abweichungDb, 3) + " dB)");
+    return ok;
+}
+
+/** M-57 bis M-59: Impulskorpus. Ein Ereignis trifft Klick c, wenn sein
+    `stromSample` in [c - N_H, c] liegt (N_H = 4096 bei 48 kHz); je Klick
+    (bei I2: je Paar) zaehlt hoechstens ein Treffer, jedes Ereignis ausserhalb
+    aller Fenster ist ein Fehlalarm (§7.3). */
+__declspec(noinline) void nak380Impulsfall (const char* id, const char* name,
+                                            const std::vector<std::uint64_t>& klicks,
+                                            bool paarweise, int soll)
+{
+    auto x = nakama::test::nak380::rosaMono (nakama::test::nak380::kP2Saat, 0.01, 1440000u);
+    nak380RosaGeprueft (id, x, 0.01);
+    nakama::test::nak380::klicksEinsetzen (x, klicks);
+    const auto lauf = nak380Korpuslauf (x);
+    constexpr std::uint64_t nH = 4096;
+    const std::size_t ziele = paarweise ? klicks.size() / 2 : klicks.size();
+    std::vector<int> treffer (ziele, 0);
+    int fremd = 0;
+    for (const auto& e : lauf->ereignisse)
+    {
+        bool zugeordnet = false;
+        for (std::size_t z = 0; z < ziele && ! zugeordnet; ++z)
+        {
+            const auto passt = [&] (std::uint64_t c)
+            { return e.stromSample <= c && c - e.stromSample <= nH; };
+            const bool hit = paarweise ? (passt (klicks[2 * z]) || passt (klicks[2 * z + 1]))
+                                       : passt (klicks[z]);
+            if (hit) { ++treffer[z]; zugeordnet = true; }
+        }
+        if (! zugeordnet) ++fremd;
+    }
+    int genauEiner = 0, keiner = 0, mehrere = 0;
+    juce::String verfehlt;
+    for (std::size_t z = 0; z < ziele; ++z)
+    {
+        if (treffer[z] == 1) ++genauEiner;
+        else if (treffer[z] == 0)
+        {
+            ++keiner;
+            if (keiner <= 8)
+                verfehlt << (keiner > 1 ? ", " : "")
+                         << juce::String ((double) klicks[paarweise ? 2 * z + 1 : z] / 48000.0, 3) << " s";
+        }
+        else ++mehrere;
+    }
+    const int n = (int) lauf->ereignisse.size();
+    pruefe (lauf->verworfen == 0u && (int) ziele == (paarweise ? 56 : (int) klicks.size()),
+            juce::String ("380/") + id + " " + name + ": Vorbedingung Klickzahl aus der Formel, kein Ringverlust",
+            juce::String ((int) klicks.size()) + " Klicks, " + juce::String ((int) ziele)
+                + " Ziele, verworfen " + juce::String ((juce::int64) lauf->verworfen));
+    pruefe (n == soll && genauEiner == (int) ziele && fremd == 0,
+            juce::String ("380/") + id + " " + name + ": genau " + juce::String (soll)
+                + " Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren",
+            "Ereignisse " + juce::String (n) + ", genau einer " + juce::String (genauEiner)
+                + ", ohne Treffer " + juce::String (keiner)
+                + (keiner > 0 ? " (" + verfehlt + ")" : juce::String())
+                + ", mehrfach " + juce::String (mehrere) + ", Fehlalarme " + juce::String (fremd));
+}
+
+__declspec(noinline) void nak380Detektor (const char* nur)
+{
+    namespace sig = nakama::test::nak380;
+    std::cout << "\n== NAK-380 Etappe 4 - Ereignisdetektor nach §39.1 ==" << std::endl;
+    constexpr std::uint64_t kDreissig = 1440000u;   // 30 s bei 48 kHz
+
+    if (nak380Waehlt (nur, "M-50"))
+        nak380Nullfall ("M-50", "nullkorpus_W1", sig::weissMono (sig::kW1Saat, 0.1, kDreissig), 0);
+    if (nak380Waehlt (nur, "M-51"))
+        nak380Nullfall ("M-51", "nullkorpus_W2", sig::weissMono (sig::kW2Saat, 0.01, kDreissig), 0);
+    if (nak380Waehlt (nur, "M-52"))
+        nak380Nullfall ("M-52", "nullkorpus_W3", sig::weissMono (sig::kW3Saat, 0.00316, kDreissig), 0);
+    if (nak380Waehlt (nur, "M-53"))
+    {
+        const auto p1 = sig::rosaMono (sig::kP1Saat, 0.1, kDreissig);
+        nak380RosaGeprueft ("M-53", p1, 0.1);
+        nak380Nullfall ("M-53", "nullkorpus_P1", p1, 0);
+    }
+    if (nak380Waehlt (nur, "M-54"))
+        nak380Nullfall ("M-54", "nullkorpus_S1", sig::s1Sinus (kDreissig), 0);
+    if (nak380Waehlt (nur, "M-55"))
+        nak380Nullfall ("M-55", "nullkorpus_S2", sig::s2Saegezahn (kDreissig), 0);
+    if (nak380Waehlt (nur, "M-56"))
+        nak380Nullfall ("M-56", "nullkorpus_V1", sig::v1Vibrato (kDreissig), 0);
+
+    // M-57: 112 Klicks, (29,75 - 2,0)/0,25 + 1 = 112. M-58/M-59: 56 Paare,
+    // (29,5 - 2,0)/0,5 + 1 = 56; Abstand 20 ms = 960 und 100 ms = 4 800 Samples.
+    if (nak380Waehlt (nur, "M-57"))
+        nak380Impulsfall ("M-57", "impulskorpus_I1", sig::i1Klicks(), false, 112);
+    if (nak380Waehlt (nur, "M-58"))
+        nak380Impulsfall ("M-58", "impulskorpus_I2", sig::klickPaare (960u), true, 56);
+    if (nak380Waehlt (nur, "M-59"))
+        nak380Impulsfall ("M-59", "impulskorpus_I3", sig::klickPaare (4800u), false, 112);
+
+    // M-60 (Peakpfad bleibt): die zwei Saetze der Zusage, die die bestehenden
+    // B5-Faelle nicht einzeln messen, als Einheit ueber den Testzugang. Rahmen:
+    // Peak 1,0, RMS 0,05 (Crest 26,02 dB), voriger Rahmenpeak 0,1 (Steigung
+    // 20 dB) - beide ueber 12 dB, der Peakpfad loest aus. (a) SF = 0 < T_eff:
+    // reines Peakereignis mit staerke = Crest - 12 dB = 14,0206. (b) SF =
+    // 2*T_min: beide Pfade im selben Schritt, genau EIN Ereignis mit beiden
+    // Bits und der Flussstaerke kappa*(SF - 0)/(T_min - 0) = 6.
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+    if (nak380Waehlt (nur, "M-60"))
+    {
+        const double crestErwartet = 20.0 * std::log10 (1.0 / 0.05) - nakama::analyse::kPeakCrestSchwelleDb;
+        auto a = std::make_unique<FeatureEngine>();
+        a->vorbereiten (48000.0);
+        const int na = FeatureEngineTestzugang::peakSchritt (*a, 0.0, 1.0, 0.05, 0.1);
+        const bool aEins = na == 1 && a->ereignisAnzahlJetzt() == 1;
+        const float sa = aEins ? a->ereignis (0).staerke : -1.0f;
+        pruefe (aEins && a->ereignis (0).qualitaetPeak && ! a->ereignis (0).qualitaetFluss
+                    && std::abs ((double) sa - crestErwartet) < 1.0e-4,
+                "380/M-60 peakpfad_bleibt: ein reines Peakereignis traegt staerke = Crest ueber Schwelle in dB",
+                "Ereignisse " + juce::String (na) + ", staerke " + juce::String (sa, 4) + " (Soll "
+                    + juce::String (crestErwartet, 4) + ")"
+                    + (aEins ? juce::String (", Bits Peak ") + (a->ereignis (0).qualitaetPeak ? "1" : "0")
+                                   + " Fluss " + (a->ereignis (0).qualitaetFluss ? "1" : "0")
+                             : juce::String()));
+        auto b = std::make_unique<FeatureEngine>();
+        b->vorbereiten (48000.0);
+        const double tMin = nakama::analyse::kFlussTminDbJeBin * (double) b->detektorBinAnzahl();
+        const int nb = FeatureEngineTestzugang::peakSchritt (*b, 2.0 * tMin, 1.0, 0.05, 0.1);
+        const bool bEins = nb == 1 && b->ereignisAnzahlJetzt() == 1;
+        const float sb = bEins ? b->ereignis (0).staerke : -1.0f;
+        pruefe (bEins && b->ereignis (0).qualitaetPeak && b->ereignis (0).qualitaetFluss
+                    && std::abs ((double) sb - 2.0 * nakama::analyse::kFlussKappa) < 1.0e-5,
+                "380/M-60 peakpfad_bleibt: loesen Fluss und Peak im selben Frame aus, entsteht genau ein "
+                "Ereignis mit beiden Bits",
+                "Ereignisse " + juce::String (nb) + ", staerke " + juce::String (sb, 4) + " (Soll 6,0)"
+                    + (bEins ? juce::String (", Bits Peak ") + (b->ereignis (0).qualitaetPeak ? "1" : "0")
+                                   + " Fluss " + (b->ereignis (0).qualitaetFluss ? "1" : "0")
+                             : juce::String()));
+    }
+#endif
+
+    // M-61 (A-6): R1 = P2 -20 dBFS 0 bis 5 s, digitale Stille 5 bis 7 s,
+    // dasselbe P2 7 bis 12 s. Genau ein Ereignis, sein Fensteranfang in
+    // [7,0 s - 4096/48000 s, 7,0 s] = [331 904, 336 000]. Dazu die zwei
+    // Traegerhaelften der Zusage am Testzugang: das letzte aktive Fenster vor
+    // der Stille schliesst bei 4096 + 117*2048 = 243 712 (es traegt noch 384
+    // Rosa-Samples), ab dem Fenster [241 664, 245 760) ist alles Stille. Bei
+    // 5,504 s (264 192 = 516*512, dort schliesst das Fenster [260 096,
+    // 264 192)) und 6,859 s (329 216 = 643*512) liegen davor und dazwischen
+    // nur inaktive Fenster - dazwischen schliessen 31, kein Vielfaches von
+    // 32 (nach genau 32 Schritten stuende der Ring wieder gleich; der erste
+    // Entwurf mit 331 264 lag genau dort). Der Vorframe traegt in jedem Detektor-Bin
+    // 10*log10(0 + P0) = -100 dB (er laeuft ueber inaktive Frames), und
+    // Stand und Fuellung der Historie sind an beiden Punkten gleich (sie
+    // nimmt nur aktive).
+    if (nak380Waehlt (nur, "M-61"))
+    {
+        auto r1 = sig::rosaMono (sig::kP2Saat, 0.1, 576000u);
+        nak380RosaGeprueft ("M-61", r1, 0.1);
+        std::fill (r1.begin() + 240000, r1.begin() + 336000, 0.0f);
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (48000.0);
+        std::vector<float> audio (1024u);
+        std::vector<Ereignis> ev;
+        std::uint64_t strom = 0;
+        double vorframeMax55 = 0.0, vorframeMin55 = 0.0, vorframeMax69 = 0.0, vorframeMin69 = 0.0;
+        int stand55 = -1, stand69 = -2, gefuellt55 = -1, gefuellt69 = -2;
+        while (strom < r1.size())
+        {
+            const auto anzahl = (std::uint32_t) std::min<std::uint64_t> (512u, r1.size() - strom);
+            for (std::uint32_t i = 0; i < anzahl; ++i)
+                audio[(std::size_t) i * 2u] = audio[(std::size_t) i * 2u + 1u]
+                    = r1[(std::size_t) (strom + i)];
+            rt::StampedBlock b;
+            b.stromVon = strom;
+            b.sampleCount = anzahl;
+            b.segment = 0;
+            b.startFolge = 0;
+            b.kanaele = 2;
+            b.tapMaske = 1;
+            b.projectSampleStart = (std::int64_t) strom;
+            b.sampleRate = 48000.0;
+            b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                    | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+            const bool frame = engine->nimmBlock (b, audio.data());
+            strom += anzahl;
+            if (frame)
+            {
+                for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+                    ev.push_back (engine->ereignis (i));
+                engine->ereignisseEntnommen();
+            }
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+            // 264 192 und 329 216 sind Vielfache von 512: der Messpunkt liegt
+            // genau hinter dem Block, der dort endet.
+            if (strom == 264192u || strom == 329216u)
+            {
+                const bool frueh = strom == 264192u;
+                (frueh ? vorframeMax55 : vorframeMax69) = FeatureEngineTestzugang::vorframeMaxDb (*engine);
+                (frueh ? vorframeMin55 : vorframeMin69) = FeatureEngineTestzugang::vorframeMinDb (*engine);
+                (frueh ? stand55 : stand69) = FeatureEngineTestzugang::historieStand (*engine);
+                (frueh ? gefuellt55 : gefuellt69) = FeatureEngineTestzugang::historieGefuellt (*engine);
+            }
+#endif
+        }
+        for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+            ev.push_back (engine->ereignis (i));
+        const bool eines = ev.size() == 1u;
+        const bool lage = eines && ev[0].stromSample >= 331904u && ev[0].stromSample <= 336000u;
+        pruefe (strom == 576000u && engine->ereignisseVerworfen() == 0u && eines && lage,
+                "380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]",
+                "Ereignisse " + juce::String ((int) ev.size()) + (ev.empty() ? juce::String()
+                    : "; " + nak380Zeiten (ev) + " (Sample "
+                        + juce::String ((juce::int64) ev[0].stromSample) + ")"));
+        // Toleranz 1e-9 dB: 10*log10(10^(-10)) ist in double nicht zwingend
+        // bitgenau -100; ein Vorframe aus dem letzten aktiven Fenster laege
+        // um Dutzende dB darueber.
+        const auto beiP0 = [] (double db) { return std::abs (db + 100.0) < 1.0e-9; };
+        pruefe (beiP0 (vorframeMax55) && beiP0 (vorframeMin55)
+                    && beiP0 (vorframeMax69) && beiP0 (vorframeMin69),
+                "380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der "
+                "Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB",
+                "5,504 s: " + juce::String (vorframeMin55, 4) + " bis " + juce::String (vorframeMax55, 4)
+                    + " dB; 6,859 s: " + juce::String (vorframeMin69, 4) + " bis "
+                    + juce::String (vorframeMax69, 4) + " dB");
+        pruefe (stand55 == stand69 && gefuellt55 == gefuellt69 && gefuellt55 == nakama::analyse::kFlussHistorie,
+                "380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und "
+                "Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert",
+                "Stand " + juce::String (stand55) + " -> " + juce::String (stand69) + ", Fuellung "
+                    + juce::String (gefuellt55) + " -> " + juce::String (gefuellt69));
+    }
+
+    // M-62: Grenze leert Vorframe und Historie. P2 -20 dBFS; Seek bei 10 s
+    // (Stromsample 480 000 = 937,5 Bloecke, also der Block ab 480 256 =
+    // 938*512 traegt den Sprung). Damit jede Haelfte der Zusage in beide
+    // Richtungen fallen kann, traegt das Material nach dem Seek zwei Kanten:
+    // (1) es laeuft ab der Grenze um 14 dB lauter - ein ueberlebender
+    // Vorframe saehe im ersten Frame einen Anstieg um 14 dB in jedem Bin;
+    // (2) von 0,3 s bis 0,6 s nach der Grenze faellt es um 34 dB und springt
+    // danach zurueck - ein Anstieg um 34 dB innerhalb der ersten 32 Frames
+    // nach der Grenze (0,6 s < 4096 + 32*2048 Samples = 1,45 s), den nur eine
+    // uebernommene volle Historie bewerten koennte.
+    if (nak380Waehlt (nur, "M-62"))
+    {
+        constexpr std::uint64_t kSeek = 938u * 512u;              // 480 256
+        auto x = sig::rosaMono (sig::kP2Saat, 0.1, 720000u);
+        nak380RosaGeprueft ("M-62", x, 0.1);
+        const double laut = std::pow (10.0, 14.0 / 20.0);
+        const double leise = std::pow (10.0, -20.0 / 20.0);
+        for (std::size_t i = (std::size_t) kSeek; i < x.size(); ++i)
+        {
+            const bool delle = i >= (std::size_t) kSeek + 14400u && i < (std::size_t) kSeek + 28800u;
+            x[i] = (float) ((double) x[i] * (delle ? leise : laut));
+        }
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (48000.0);
+        std::vector<float> audio (1024u);
+        std::uint64_t strom = 0;
+        std::int64_t projekt = 0;
+        std::vector<Ereignis> ev;
+        bool vorGrenzeGueltig = false, nachGrenzeGueltig = true;
+        while (strom < x.size())
+        {
+            for (std::uint32_t i = 0; i < 512u; ++i)
+                audio[(std::size_t) i * 2u] = audio[(std::size_t) i * 2u + 1u]
+                    = x[(std::size_t) (strom + i)];
+            if (strom == kSeek)
+            {
+                vorGrenzeGueltig = engine->flussBinVorgaengerGueltig();
+                projekt += 480000;                     // 10 s vorwaerts, wie G2
+            }
+            rt::StampedBlock b;
+            b.stromVon = strom;
+            b.sampleCount = 512u;
+            b.segment = 0;
+            b.startFolge = 0;
+            b.kanaele = 2;
+            b.tapMaske = 1;
+            b.projectSampleStart = projekt;
+            b.sampleRate = 48000.0;
+            b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                    | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+            const bool frame = engine->nimmBlock (b, audio.data());
+            if (strom == kSeek)
+                nachGrenzeGueltig = engine->flussBinVorgaengerGueltig();
+            strom += 512u;
+            projekt += 512;
+            if (frame)
+            {
+                for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+                    ev.push_back (engine->ereignis (i));
+                engine->ereignisseEntnommen();
+            }
+        }
+        for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+            ev.push_back (engine->ereignis (i));
+        const bool seek = engine->grenzenMitGrund (Grenzgrund::zeitSprung) == 1u;
+        pruefe (seek && vorGrenzeGueltig,
+                "380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig",
+                juce::String ("zeitSprung ") + juce::String ((juce::int64) engine->grenzenMitGrund (Grenzgrund::zeitSprung))
+                    + ", Vorframe vor der Grenze " + (vorGrenzeGueltig ? "gueltig" : "ungueltig"));
+        pruefe (! nachGrenzeGueltig,
+                "380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch",
+                nachGrenzeGueltig ? "wahr" : "falsch");
+        int ersterFrame = 0, vorVollerHistorie = 0;
+        // Erster Hauptstufen-Frame nach der Grenze: Fensteranfang 480 256;
+        // volle Historie danach erst nach 1 + 32 Frames, also Fensteranfaenge
+        // bis 480 256 + 32*2048 = 545 792 ohne Ereignis.
+        for (const auto& e : ev)
+        {
+            if (e.stromSample == kSeek) ++ersterFrame;
+            if (e.stromSample >= kSeek && e.stromSample <= kSeek + 32u * 2048u) ++vorVollerHistorie;
+        }
+        pruefe (ersterFrame == 0 && vorVollerHistorie == 0 && ev.empty(),
+                "380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze "
+                "und keines, bevor die Historie wieder 32 aktive Frames traegt",
+                "Ereignisse gesamt " + juce::String ((int) ev.size()) + ", im ersten Frame "
+                    + juce::String (ersterFrame) + ", vor voller Historie " + juce::String (vorVollerHistorie)
+                    + (ev.empty() ? juce::String() : "; " + nak380Zeiten (ev)));
+    }
+}
 } // namespace
 
 //==============================================================================
-int main()
+int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
+    // NAK-380 Etappe 4: `--nak380 M-nn` faehrt nur diesen Detektorfall
+    // (Rotbeweise nach §8.1: nur der betroffene Fall).
+    if (argc == 3 && std::strcmp (argv[1], "--nak380") == 0)
+    {
+        nak380Detektor (argv[2]);
+        std::cout << "\n-----------------------------------------" << std::endl;
+        std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
     std::cout << "== Nakama SONDE-009 - FeatureEngine v2: Zeit, Validity, Events, Baender ==" << std::endl;
     std::cout << "Gate: \"Drop/Seek/Loop trennt jedes offene Fenster.\"" << std::endl;
     std::cout << "Stufen: Bass " << FeatureEngine::kBassPunkte << " (Hop "
@@ -1215,6 +1711,7 @@ int main()
               << FeatureEngine::kTrennungHz << " Hz." << std::endl << std::endl;
 
     nak380DichteUndBandleistung();
+    nak380Detektor (nullptr);
 
     //==========================================================================
     std::cout << "== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==" << std::endl;
@@ -2441,7 +2938,10 @@ int main()
         // nie erreicht hat.
         //
         // Der Reiz liegt im Signal: ein Onset feuert nur, wenn der Fluss
-        // Median+3·MAD ueber die letzten 16 Fenster ueberschreitet, und stille
+        // Median+3·MAD ueber die letzten 16 Fenster ueberschreitet (seit
+        // NAK-380 Etappe 4: T_eff = max(med+3·MAD, 2·med, T_min) ueber 32
+        // aktive Frames, 50 ms Sperrzeit; der Ausschlag alle vier Hops liegt
+        // weiter darueber und ausserhalb der Sperrzeit), und stille
         // Fenster gehen gar nicht erst in die Flussrechnung (das Aktivitaetsgate
         // greift davor).  Ein strenger Wechsel laut/leise feuert deshalb NIE
         // (bei acht hohen und acht tiefen Werten liegt die Schwelle bei 2H-L).
@@ -2745,22 +3245,28 @@ int main()
         // Ein streuender Boden ueberschreitet sie gelegentlich, ein
         // streuungsarmer drueckt MAD gegen null und macht sie zum
         // Haarausloeser - gemessen wurden beide Faelle (E-d 10 von 25
-        // beziehungsweise 15 von 25, Manifest Paragraph 6).  Die Auswahl
+        // beziehungsweise 15 von 25, Manifest Paragraph 6).  Seit NAK-380
+        // Etappe 4 traegt die Schwelle zusaetzlich den Rauschbodenbezug
+        // (1+rho)*med und den Absolutbezug T_min (Spektrum.h); die Auswahl
+        // bleibt trotzdem t0-frei.  Die Auswahl
         // "staerkstes Flussereignis" ist ebenso t0-frei und traegt: der
         // Impuls liegt rund 26 dB ueber dem Boden, und ein Bodenereignis
         // ueberschreitet die Schwelle definitionsgemaess nur knapp.  Dass
         // der Abstand wirklich gross ist, misst E-d mit dem Faktor zehn.
         //
-        // ⚠️ DER BODEN MUSS STREUEN.  `flussAus` verlangt ausdruecklich
-        // `mad > 0.0`; ein exakt stiller oder streng periodischer Boden
-        // ergaebe MAD 0 und GAR KEIN Ereignis - der Fall waere gruen, ohne
-        // etwas gemessen zu haben.  Deshalb ein leiser Rauschboden, und
-        // deshalb ist "es gibt ueberhaupt ein Ereignis" eine eigene Zusage.
+        // ⚠️ DER BODEN MUSS STREUEN.  `flussAus` verlangte bis NAK-380
+        // Etappe 4 ausdruecklich `mad > 0.0`; ein exakt stiller oder streng
+        // periodischer Boden ergab MAD 0 und GAR KEIN Ereignis - der Fall
+        // waere gruen, ohne etwas gemessen zu haben.  Seit Etappe 4 verlangt
+        // er `T_eff - med > 0`, und T_min haelt die Schwelle auch bei MAD 0
+        // oben.  Deshalb ein leiser Rauschboden, und deshalb ist "es gibt
+        // ueberhaupt ein Ereignis" eine eigene Zusage.
         //
         // ⚠️ DIE LAGE.  Die adaptive Schwelle greift erst bei voller
-        // Flusshistorie (`kFlussHistorie` = 16); das erste Fenster schliesst
-        // bei 4096, jedes weitere nach 2048 Samples, die Schwelle steht also
-        // ab Sample 34816.  t0 = 100 * 2048 + 1536 = 206336 liegt weit
+        // Flusshistorie (`kFlussHistorie`, seit NAK-380 Etappe 4 32 aktive
+        // Frames statt 16); das erste Fenster schliesst bei 4096, jedes
+        // weitere nach 2048 Samples, die Schwelle steht also ab dem Fenster,
+        // das bei 71680 schliesst (vorher 34816).  t0 = 100 * 2048 + 1536 = 206336 liegt weit
         // dahinter, und die 1536 setzen den Impuls in die ERSTE Haelfte des
         // spaeteren der beiden enthaltenden Fenster (Hann-Gewicht 0,854
         // gegen 0,146).
@@ -2829,7 +3335,10 @@ int main()
                         // Sinusschwankung liegt bei pi/2 ~ 1,57 MAD - weit
                         // unter den 3 MAD der Schwelle. Der Boden kann also
                         // nicht ausloesen, der Impuls mit rund 26 dB darueber
-                        // schon.
+                        // schon.  (Seit NAK-380 Etappe 4 fasst die Historie
+                        // 32 Hops = zwei Schwebungsperioden, und T_min liegt
+                        // zusaetzlich unter der Schwelle; der Sweep ist am
+                        // Endstand gefahren, Stempel unveraendert 202752.)
                         const double w = kZweiPiL * (double) n / 32768.0;
                         return (float) (0.05 * (std::sin (w * 680.0)
                                                 + std::sin (w * 681.0)));
@@ -2839,7 +3348,9 @@ int main()
                 z.ereignisse = e.ereignisAnzahlJetzt();
                 // Die Auswahl: das STAERKSTE Flussereignis des Laufs - ohne
                 // jeden Bezug auf t0.  `staerke` ist bei einem Flussereignis
-                // (fluss - med) / mad, also dieselbe Einheit fuer alle; reine
+                // seit NAK-380 Etappe 4 kappa*(SF - med)/(T_eff - med), auf
+                // 1000 geklemmt (vorher (fluss - med) / mad), also dieselbe
+                // Einheit fuer alle; reine
                 // Peakereignisse tragen statt dessen einen Crest in dB und
                 // bleiben deshalb aussen vor.
                 float beste = -1.0f, zweitbeste = -1.0f;

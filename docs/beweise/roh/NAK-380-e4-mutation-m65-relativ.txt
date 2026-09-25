@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m65-relativ
+Matrixzeile: M-65; Zusagesatz: Onsetsumme 0 in jedem Evidenzfenster (rein relative Schwelle)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 786
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m65-relativ/Spektrum.h
+Wortlaut vorher:
+            const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
+Wortlaut nachher:
+            const double tMin = 0.0;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);
+  Bau EqCopSonde013EventWireTest: 19:36:14 bis 19:36:26, Exit 0
+  Binary 19:36:25.708 juenger als Quelle 19:36:14.011: ja
+Lauf mit Mutation: --nak380 M-65 19:36:26 bis 19:36:26, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme Summe staerke_mad = 0 in jedem Evidenzfenster  [32 Fenster mit Summe > 0, groesste Summe 14.861, verloren 0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung 93 gebaute Snapshots, davon 89 nach voller Historie, jeder durch Textriegel und Schema  [93 Snapshots, nicht gebaut 0, nach voller Historie 89, Riegelfehler 0, Schemafehler 0]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013EventWireTest: 19:36:26 bis 19:36:39, Exit 0
+  Binary nach Ruecknahme 19:36:39.340 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-65 19:36:39 bis 19:36:40, Exit 0, 2 bestanden, 0 gescheitert

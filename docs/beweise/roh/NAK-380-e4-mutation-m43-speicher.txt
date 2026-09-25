@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m43-speicher
+Matrixzeile: M-43; Zusagesatz: Vorframe und Filterpuffer 2*K*8 B <= 26 656 B
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 613
+SHA-256 vor der Mutation: FA7114CAA3B6549E7192542BAE8EA9253C1A5CD2AE7244A2CB4DAF0F00A9348B; Sicherung eq-copilot/build/nak380-sicherung/e4/m43-speicher/FeatureEngine.h
+Wortlaut vorher:
+                d.vorframe.assign ((std::size_t) d.binAnzahl, kFlussP0Db);
+Wortlaut nachher:
+                d.vorframe.assign ((std::size_t) (2 * d.binAnzahl), kFlussP0Db);
+  Bau EqCopSonde013DynamicsTest: 19:26:25 bis 19:26:32, Exit 0
+  Binary 19:26:32.343 juenger als Quelle 19:26:25.088: ja
+Lauf mit Mutation: --nak380 M-43 19:26:32 bis 19:26:32, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1666, 39984 B]
+    [ROT]  380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 36720 B]
+    [ROT]  380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 2, K 765, 18360 B]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 44.1 kHz, k = 3 bis 1668)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s]
+Ruecknahme aus der Sicherung, SHA-256 FA7114CAA3B6549E7192542BAE8EA9253C1A5CD2AE7244A2CB4DAF0F00A9348B: gleich
+  Bau EqCopSonde013DynamicsTest: 19:26:32 bis 19:26:40, Exit 0
+  Binary nach Ruecknahme 19:26:39.806 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-43 19:26:40 bis 19:26:40, Exit 0, 4 bestanden, 0 gescheitert

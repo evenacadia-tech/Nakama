@@ -1,0 +1,21 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m46-rho0
+Matrixzeile: M-46; Zusagesatz: T_eff = (1 + rho)*med = 600: 599 kein Ereignis
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 787
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m46-rho0/Spektrum.h
+Wortlaut vorher:
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
+Wortlaut nachher:
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);
+  Bau EqCopSonde013DynamicsTest: 19:27:40 bis 19:27:48, Exit 0
+  Binary 19:27:47.609 juenger als Quelle 19:27:40.257: ja
+Lauf mit Mutation: --nak380 M-46 19:27:48 bis 19:27:48, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-46 rauschbodenbezug: T_eff = (1 + rho)*med = 600, SF = 599 loest nicht aus  [T_eff 600.000, Ereignisse 1]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: SF = 599 loest nicht aus)
+Unter derselben Mutation gruen gebliebene Pruefungen: 1
+    [ok]   380/M-46 rauschbodenbezug: SF = 601 loest genau ein Ereignis aus  [Ereignisse 1]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:27:48 bis 19:27:55, Exit 0
+  Binary nach Ruecknahme 19:27:55.379 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-46 19:27:55 bis 19:27:55, Exit 0, 2 bestanden, 0 gescheitert

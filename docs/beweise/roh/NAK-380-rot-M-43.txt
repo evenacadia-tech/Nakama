@@ -1,0 +1,37 @@
+NAK-380 Etappe 4 — Rotbeweis M-43 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Binbereich und Speicher des Vorframes
+Zustand und Vorbedingung: `vorbereiten` bei 44,1, 48 und 96 kHz (vor Etappe 6)
+Zusage: Detektor-Bins k mit 30,36 Hz ≤ k·Δf < min(17 959,39 Hz, Kappe): K = 1666 (44,1 kHz, k = 3 bis 1668), 1530 (48 kHz, k = 3 bis 1532), 765 (96 kHz, Δf 23,44 Hz, k = 2 bis 766), nachgerechnet; Vorframe und Filterpuffer 2·K·8 B ≤ 26 656 B, im Heap in `vorbereiten`
+Test je Sprache: C++: B18 NEU `380/M-43 detektor_binbereich`
+Rotbeweisspalte (Etikett): heute nicht messbar; Mutation Untergrenze k = 0 → K = 1533 bei 48 kHz → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B18, `--nak380 M-43`):
+    [ROT]  380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von -1, K -1, 0 B]
+    [ROT]  380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von -1, K -1, 0 B]
+    [ROT]  380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von -1, K -1, 0 B]
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-43`):
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1666, 26656 B]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 2, K 765, 12240 B]
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m43-untergrenze (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:658): Untergrenze 30,36 Hz: K = 1530 bei 48 kHz (k = 3 bis 1532)
+    Wortlaut: `const int von = (int) std::ceil (Gitter::evidenzKante (0) / df);` -> `const int von = 0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m43-untergrenze.txt
+  - m43-obergrenze (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:660): Obergrenze min(17 959,39 Hz, Kappe): K = 1530 bei 48 kHz
+    Wortlaut: `const int bis = std::min ((int) std::ceil (oben / df) - 1, kHauptPunkte / 2);` -> `const int bis = kHauptPunkte / 2;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m43-obergrenze.txt
+  - m43-speicher (eq-copilot/plugin/core/analysis/FeatureEngine.h:613): Vorframe und Filterpuffer 2*K*8 B <= 26 656 B
+    Wortlaut: `d.vorframe.assign ((std::size_t) d.binAnzahl, kFlussP0Db);` -> `d.vorframe.assign ((std::size_t) (2 * d.binAnzahl), kFlussP0Db);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m43-speicher.txt
+  - m43-heap (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:726): im Heap in vorbereiten, keine Allokation im Flussschritt
+    Wortlaut: `zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+    flussFilterRechnen();` -> `zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+    { std::vector<double> nak380Mutation (d.vorframe); zentrumHz += 0.0 * nak380Mutation[0]; }
+    flussFilterRechn`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m43-heap.txt

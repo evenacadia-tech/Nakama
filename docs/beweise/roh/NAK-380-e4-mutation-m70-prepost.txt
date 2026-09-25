@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m70-prepost
+Matrixzeile: M-70; Zusagesatz: METRICS_VERSION prepost.rs = 20260927
+Datei: broker/src/coordinator/prepost.rs
+Zeile (Etappenstand): 206
+SHA-256 vor der Mutation: 62D1E012BE5DD60281022D7FF60528A8B374255CC74907C74DFEF0E5EBE7590D; Sicherung eq-copilot/build/nak380-sicherung/e4/m70-prepost/prepost.rs
+Wortlaut vorher:
+    pub const METRICS_VERSION: u32 = 20260927;
+Wortlaut nachher:
+    pub const METRICS_VERSION: u32 = 20260928;
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:22 bis 19:48:22, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: prepost.rs nennt 20260927 — '20260928'
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: prepost.rs nennt 20260927)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 62D1E012BE5DD60281022D7FF60528A8B374255CC74907C74DFEF0E5EBE7590D: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:22 bis 19:48:22, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

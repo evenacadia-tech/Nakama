@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m70-kappa
+Matrixzeile: M-70; Zusagesatz: kFlussKappa = 3.0
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 193
+SHA-256 vor der Mutation: 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1; Sicherung eq-copilot/build/nak380-sicherung/e4/m70-kappa/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr double kFlussKappa = 3.0;
+Wortlaut nachher:
+    inline constexpr double kFlussKappa = 3.5;
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:29 bis 19:48:29, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: kFlussKappa steht mit dem Registerwert in FeatureEngine.h — Code 3.5 (FeatureEngine.h), Register 3.0 ('eq-copilot/plugin/core/analysis/FeatureEngine.h')
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kFlussKappa steht)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:29 bis 19:48:29, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

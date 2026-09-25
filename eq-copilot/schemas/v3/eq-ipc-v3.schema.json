@@ -1267,7 +1267,7 @@
     },
 
     "dynamics_ereignis": {
-      "description": "Ein Eintrag des DynamicsEvent-Stroms (§39.1). Der Detektor hat ZWEI unabhaengige Ausloeser: spektraler Fluss und - eigenstaendig - Peaksteigung mit Crest. Welcher gefeuert hat, sagen die zwei Qualitaetsbits; loesen beide im selben Rahmen aus, entsteht GENAU EIN Ereignis mit beiden Bits. Dass mindestens eines der beiden Bits gesetzt sein muss, kann dieses Schema nicht ausdruecken - JSON Schema hat keinen Feldvergleich; die Regel gehoert dem Erzeuger und wird von EqCopAnalysisGoldenTest gemessen, nicht hier behauptet.",
+      "description": "Ein Eintrag des DynamicsEvent-Stroms (§39.1). Der Detektor hat ZWEI unabhaengige Ausloeser: spektraler Fluss und - eigenstaendig - Peaksteigung mit Crest. Welcher gefeuert hat, sagen die zwei Qualitaetsbits; loesen beide im selben Rahmen aus, entsteht GENAU EIN Ereignis mit beiden Bits. Dass mindestens eines der beiden Bits gesetzt sein muss, kann dieses Schema nicht ausdruecken - JSON Schema hat keinen Feldvergleich; die Regel gehoert dem Erzeuger und wird von EqCopAnalysisGoldenTest gemessen, nicht hier behauptet. Die Staerke eines Flussereignisses ist die Ueberschreitung in Vielfachen der auf kappa = 3 normierten Schwellendistanz (bei greifender relativer Schwelle die echte MAD), hoechstens 1000; ein reines Peakereignis traegt den Crest ueber der Schwelle in dB (NAK-380 R-380-2).",
       "type": "object",
       "required": ["sample_offset", "staerke_mad", "band_zentrum_hz", "dauer_samples", "qualitaet_fluss", "qualitaet_peak"],
       "additionalProperties": false,

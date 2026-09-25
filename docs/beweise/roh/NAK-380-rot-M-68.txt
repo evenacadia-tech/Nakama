@@ -1,0 +1,19 @@
+NAK-380 Etappe 4 — Rotbeweis M-68 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Fingerprint behält den Bandfluss
+Zustand und Vorbedingung: Akkord (§7 F1), 30 s, 48 kHz; am unveränderten Etappenstart einmalige Erfassung vor dem Umbau
+Zusage: genau 76 Ausgangsbytes werden vor dem Umbau einmal mit dem unveränderten Code erfasst, als Hexliteral im B22-Fall und mit SHA-256 in `docs/beweise/roh/NAK-380-etappe-4-m68-f1-ausgang.txt` (Zielpfad, anzulegen) festgehalten und danach bytegleich verglichen; `fingerprintSchritt` bekommt weiter den Bandfluss (`Spektrum.h:623-629`); kein Nachzug nach dem Umbau
+Test je Sprache: C++: B22 NEU `380/M-68 fingerprint_unveraendert`
+Rotbeweisspalte (Etikett): Regressionswache, Golden-Klasse (i): die vor dem Umbau erfasste Hexreferenz ist der Vergleichsanker; Mutation `fingerprintSchritt` erhält den neuen Binfluss → Onsetverlauf und mindestens ein Byte verschieden → rot; danach nur bytegleiche Rücknahme, nie Golden-Nachzug
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B22, `--nak380 M-68`):
+    [ok]   380/M-68 fingerprint_unveraendert: die 76 F1-Ausgangsbytes sind bytegleich zur am Etappenstart erfassten Referenz (Bandfluss im Fingerprint)  [0 von 76 Byte verschieden, Fenster 701]
+    Exit 0
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-68`):
+    [ok]   380/M-68 fingerprint_unveraendert: die 76 F1-Ausgangsbytes sind bytegleich zur am Etappenstart erfassten Referenz (Bandfluss im Fingerprint)  [0 von 76 Byte verschieden, Fenster 701]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m68-binfluss (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:639): fingerprintSchritt bekommt weiter den Bandfluss: 76 Bytes bytegleich
+    Wortlaut: `fingerprintSchritt (s, fluss);` -> `fingerprintSchritt (s, detektor.empty() ? fluss : detektor[0].sfVorher);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m68-binfluss.txt

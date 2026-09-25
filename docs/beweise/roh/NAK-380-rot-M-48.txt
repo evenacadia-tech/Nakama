@@ -1,0 +1,19 @@
+NAK-380 Etappe 4 — Rotbeweis M-48 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Spitzenwahl: lokales Maximum
+Zustand und Vorbedingung: Testzugang: SF-Folge 0, 500, 450, 400 dB über vier Hauptstufen-Frames (48 kHz, Hop 42,67 ms), T_eff = 76,5
+Zusage: genau ein Ereignis am Frame mit 500; 450 liegt in der Sperrzeit und ist kein lokales Maximum, 400 (85,3 ms nach 500, außerhalb der Sperrzeit) ist kein lokales Maximum
+Test je Sprache: C++: B18 NEU `380/M-48 spitzenwahl_lokales_maximum`
+Rotbeweisspalte (Etikett): heute rot (Basis: jede Überschreitung ein Ereignis, drei Ereignisse, nachgerechnet); nach dem Bau Mutation Bedingung SF(n) ≥ SF(n − 1) weg → 400 löst aus → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B18, `--nak380 M-48`):
+    [ROT]  380/M-48 spitzenwahl_lokales_maximum: 0, A, 0,9A, 0,8A ergibt genau ein Ereignis (am Frame mit A)  [A = 153.000, Ereignisse 3]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-48`):
+    [ok]   380/M-48 spitzenwahl_lokales_maximum: 0, A, 0,9A, 0,8A ergibt genau ein Ereignis (am Frame mit A)  [A = 918.000, Ereignisse 1]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m48-lokal (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:837): Spitzenwahl lokales Maximum: genau ein Ereignis
+    Wortlaut: `sf > tEff && sf >= d.sfVorher && sperreFrei` -> `sf > tEff && sperreFrei`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m48-lokal.txt

@@ -1,0 +1,15 @@
+NAK-380 Etappe 4 — Rotbeweis M-64 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Zeitlage über Blockgrößen und Raten
+Zustand und Vorbedingung: bestehender NAK-182-Sweep in B5: Impuls bei Stromsample 206336, Blockgrößen 1, 333, 512, 2048, 16384, Raten 44,1/48/88,2/96/192 kHz
+Zusage: `stromSample` je Rate über alle Blockgrößen identisch und in [Impuls − N_H(fs), Impuls]
+Test je Sprache: C++: B5 bestehend
+Rotbeweisspalte (Etikett): Regressionswache: Mutation Ereigniszeit aus dem Blockanfang statt aus dem Fensteranfang (`Spektrum.h:687` `s.fensterStromStart`) → der Wert hängt an der Blockgröße → rot
+
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m64-blockanfang (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:845): stromSample je Rate ueber alle Blockgroessen identisch
+    Wortlaut: `e.stromSample = s.fensterStromStart;` -> `e.stromSample = rahmenStartBlock.stromVon;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m64-blockanfang.txt
+
+Regressionswache (bestehender NAK-182-Sweep in B5): am Endstand je Rate 202 752 bei allen fuenf Blockgroessen, gleich dem Kanon an 8308a3d8; Mutation Ereigniszeit aus dem Blockanfang (m64-blockanfang) -> (a) rot (JA).

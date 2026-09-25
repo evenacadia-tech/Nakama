@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m44-mittel
+Matrixzeile: M-44; Zusagesatz: MAD = Median der Absolutabweichungen (0,0, nicht 1,25)
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 894
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m44-mittel/Spektrum.h
+Wortlaut vorher:
+        mad = 0.5 * (d.sortiert[n / 2 - 1] + d.sortiert[n / 2]);
+Wortlaut nachher:
+        mad = 0.0;
+        for (std::size_t i = 0; i < n; ++i)
+            mad += d.sortiert[i];
+        mad /= (double) n;
+  Bau EqCopSonde013DynamicsTest: 19:26:55 bis 19:27:02, Exit 0
+  Binary 19:27:02.374 juenger als Quelle 19:26:55.181: ja
+Lauf mit Mutation: --nak380 M-44 19:27:02 bis 19:27:02, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-44 echte_mad_schief: Median 1,0, MAD = Median der Absolutabweichungen = 0,0, med + 3*MAD = 1,0 (nicht 4,75)  [Median 1.000000, MAD 1.250000]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-44 echte_mad_schief)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopSonde013DynamicsTest: 19:27:02 bis 19:27:10, Exit 0
+  Binary nach Ruecknahme 19:27:09.750 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-44 19:27:10 bis 19:27:10, Exit 0, 1 bestanden, 0 gescheitert

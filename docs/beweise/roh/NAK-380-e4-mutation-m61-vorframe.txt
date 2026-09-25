@@ -1,0 +1,25 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m61-vorframe
+Matrixzeile: M-61; Zusagesatz: Vorframe ueber alle Frames: in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 486
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m61-vorframe/Spektrum.h
+Wortlaut vorher:
+            if (&s == &haupt)
+                flussVorframeSchritt (s);
+Wortlaut nachher:
+            if (&s == &haupt)
+                (void) 0;
+  Bau EqCopAnalysisGoldenTest: 19:49:39 bis 19:49:54, Exit 0
+  Binary 19:49:54.409 juenger als Quelle 19:49:39.088: ja
+Lauf mit Mutation: --nak380 M-61 19:49:54 bis 19:49:55, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -99.9995 bis -75.0972 dB; 6,859 s: -99.9995 bis -75.0972 dB]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: der Vorframe laeuft ueber inaktive Frames)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.282 dB (Soll <= 1,0), Oktaven 57.74/57.97/57.69/57.72/57.72/57.73/57.81/57.72/57.74/57.74 dB; RMS 0.09955 gegen 0.10000 (-0.039 dB)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9547 sFP (Sample 333824)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert  [Stand 21 -> 21, Fuellung 32 -> 32]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopAnalysisGoldenTest: 19:49:55 bis 19:50:11, Exit 0
+  Binary nach Ruecknahme 19:50:11.199 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-61 19:50:11 bis 19:50:11, Exit 0, 4 bestanden, 0 gescheitert

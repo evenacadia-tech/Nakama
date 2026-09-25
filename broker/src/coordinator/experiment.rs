@@ -1725,3 +1725,52 @@ pub fn cluster(signifikant: &[bool], mindestlaenge: usize) -> Vec<(usize, usize)
     }
     aus
 }
+
+#[cfg(test)]
+mod nak380_tests {
+    use super::*;
+
+    /// NAK-380 M-66 (R-380-2): die Transient-Guardrail bleibt bei 2,0 und
+    /// wird gegen den neuen Detektor eingeordnet (Manifest §35). Onsetmittel
+    /// Basis 0,0 und Resultat 2,0 bzw. 2,01: `w > schwelle` reisst erst
+    /// ueber 2,0. Die Groesse bleibt eine Summe von Ereignisstaerken je
+    /// Evidenzfenster (C++-Haelfte M-65: bei stationaerem Rauschen 0 in jedem
+    /// Fenster). Alle anderen Guardrails fehlen hier absichtlich nicht als
+    /// "nicht gemessen", sondern sind schlicht `None`; die Achse haengt dann
+    /// allein an der Transientgroesse.
+    fn messung_mit_transient(basis: f64, resultat: f64) -> Resultatmessung {
+        Resultatmessung {
+            band_delta_db: vec![0.0],
+            band_gueltig: vec![true],
+            abdeckung_baseline: 0.9,
+            abdeckung_resultat: 0.9,
+            klasse_baseline: "mittel".into(),
+            klasse_resultat: "mittel".into(),
+            guardrail_transient: Some(resultat - basis),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn nak380_m66_guardrail_transient_grenze() {
+        let gleich = messung_mit_transient(0.0, 2.0)
+            .achsen(&KLASSENORDNUNG)
+            .befunde(None)
+            .guardrails;
+        assert_eq!(
+            gleich,
+            Achsenbefund::Unveraendert,
+            "Onsetmittel 0,0 -> 2,0 reisst nicht (w > schwelle)"
+        );
+        let darueber = messung_mit_transient(0.0, 2.01)
+            .achsen(&KLASSENORDNUNG)
+            .befunde(None)
+            .guardrails;
+        assert_eq!(
+            darueber,
+            Achsenbefund::Verschlechtert,
+            "Onsetmittel 0,0 -> 2,01 reisst"
+        );
+        assert_eq!(GUARDRAIL_TRANSIENT, 2.0, "Schwelle der Transient-Guardrail bleibt 2,0");
+    }
+}

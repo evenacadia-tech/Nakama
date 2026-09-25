@@ -1,0 +1,31 @@
+NAK-380 Etappe 4 — Rotbeweis M-49 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Sperrzeit 50 ms
+Zustand und Vorbedingung: Testzugang: zwei steigende Überschreitungen im Abstand 1 Hop (42,67 ms) bzw. 2 Hops (85,33 ms), 48 kHz
+Zusage: 1 Hop: ein Ereignis; 2 Hops: zwei Ereignisse; Konstante `kSperrzeitMs = 50.0` (SuperFlux „combination_width“, hier auf das Hopraster von 42,67 bzw. 46,44 ms gelegt)
+Test je Sprache: C++: B18 NEU `380/M-49 sperrzeit_50ms`
+Rotbeweisspalte (Etikett): heute rot (Basis: direkt folgende Ereignisse, gemessen `b11_fluss.out`: 8 bei „Akkord + 30 Klicks“); nach dem Bau Mutation Sperrzeit 0 → 1-Hop-Fall zwei Ereignisse → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B18, `--nak380 M-49`):
+    [ok]   380/M-49 sperrzeit_50ms: Konstante kSperrzeitMs = 50,0  [50.000]
+    [ROT]  380/M-49 sperrzeit_50ms: 48 kHz, zwei steigende Ueberschreitungen im Abstand 1 Hop (42,67 ms) ergeben ein Ereignis  [Ereignisse 2]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse  [Ereignisse 2]
+    [ROT]  380/M-49 sperrzeit_50ms: 44,1 kHz, 1 Hop (46,44 ms) ein Ereignis, 2 Hops (92,88 ms) zwei  [2 / 2]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-49`):
+    [ok]   380/M-49 sperrzeit_50ms: Konstante kSperrzeitMs = 50,0  [50.000]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, zwei steigende Ueberschreitungen im Abstand 1 Hop (42,67 ms) ergeben ein Ereignis  [Ereignisse 1]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse  [Ereignisse 2]
+    [ok]   380/M-49 sperrzeit_50ms: 44,1 kHz, 1 Hop (46,44 ms) ein Ereignis, 2 Hops (92,88 ms) zwei  [1 / 2]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m49-sperre0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:834): 1 Hop (42,67 ms): ein Ereignis
+    Wortlaut: `|| (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= kSperrzeitMs * s.fs;` -> `|| (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= 0.0 * s.fs;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m49-sperre0.txt
+  - m49-sperre90 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:834): 2 Hops (85,33 ms): zwei Ereignisse
+    Wortlaut: `|| (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= kSperrzeitMs * s.fs;` -> `|| (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= 90.0 * s.fs;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m49-sperre90.txt
+  - m49-konstante (eq-copilot/plugin/core/analysis/FeatureEngine.h:207): Konstante kSperrzeitMs = 50.0
+    Wortlaut: `inline constexpr double kSperrzeitMs = 50.0;` -> `inline constexpr double kSperrzeitMs = 60.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m49-konstante.txt

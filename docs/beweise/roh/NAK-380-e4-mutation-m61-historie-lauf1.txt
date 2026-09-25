@@ -1,0 +1,32 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m61-historie
+Matrixzeile: M-61; Zusagesatz: Historie nur aus aktiven Frames: Stand und Fuellung zwischen 5,5 s und 6,9 s unveraendert
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 678
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m61-historie/Spektrum.h
+Wortlaut vorher:
+        if (binFlussSchritt (s, sf, zentrumHz))
+            detektor[0].sfVorher = sf;
+Wortlaut nachher:
+        if (binFlussSchritt (s, sf, zentrumHz))
+        {
+            auto& d = detektor[0];
+            d.sfVorher = sf;
+            d.historie[(std::size_t) d.stand] = sf;
+            d.stand = (d.stand + 1) % kFlussHistorie;
+            if (d.gefuellt < kFlussHistorie) ++d.gefuellt;
+        }
+  Bau EqCopAnalysisGoldenTest: 19:46:37 bis 19:46:53, Exit 0
+  Binary 19:46:53.431 juenger als Quelle 19:46:37.016: ja
+Lauf mit Mutation: --nak380 M-61 19:46:53 bis 19:46:54, Exit 0
+Gefallene Pruefungen:
+    (keine)
+Die Zusage faellt an der erwarteten Pruefung: NEIN (erwartet: die Historie nimmt nur aktive Frames)
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.282 dB (Soll <= 1,0), Oktaven 57.74/57.97/57.69/57.72/57.72/57.73/57.81/57.72/57.74/57.74 dB; RMS 0.09955 gegen 0.10000 (-0.039 dB)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9547 sFP (Sample 333824)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -100.0000 bis -100.0000 dB; 6,901 s: -100.0000 bis -100.0000 dB]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,901 s (nur inaktive Frames) unveraendert  [Stand 31 -> 31, Fuellung 32 -> 32]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopAnalysisGoldenTest: 19:46:54 bis 19:47:10, Exit 0
+  Binary nach Ruecknahme 19:47:10.285 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-61 19:47:10 bis 19:47:10, Exit 0, 4 bestanden, 0 gescheitert

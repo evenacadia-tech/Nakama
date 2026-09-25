@@ -1,0 +1,28 @@
+NAK-380 Etappe 4 — Rotbeweis M-57 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Impulskorpus I1 (Trefferrate)
+Zustand und Vorbedingung: 48 kHz, Block 512; nach E-380-13 selbstgeprüftes rosa Rauschen −40 dBFS (§7 P2) und Klicks (ein Sample, Amplitude 0,5) alle 250 ms von 2,0 s bis 29,75 s = 112 Klicks (§7 I1)
+Zusage: genau 112 Ereignisse, je Klick genau eines mit `stromSample` in [Klick − N_H, Klick] (N_H = 4096 bei 48 kHz), keine weiteren
+Test je Sprache: C++: B5 NEU `380/M-57 impulskorpus_I1`
+Rotbeweisspalte (Etikett): heute rot (Basis: zusätzliche Ereignisse aus dem Rauschboden und direkt folgende, gemessen `b11_fluss.out` „Akkord + 30 Klicks (Soll 30): 40“); nach dem Bau Mutation ρ = 0 und T_min = 0 → Zusatzereignisse → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B5, `--nak380 M-57`):
+    [ok]   380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+    [ROT]  380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 148, genau einer 76, ohne Treffer 0, mehrfach 36, Fehlalarme 0]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-57`):
+    [ok]   380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB)]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel, kein Ringverlust  [112 Klicks, 112 Ziele, verworfen 0]
+    [ok]   380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 112, genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m50-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): hoechstens 1 Ereignis in 30 s (rein relative Schwelle: rho = 0, T_min = 0)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med)` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m50-relativ.txt
+  - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m53-rosa.txt

@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m70-p0
+Matrixzeile: M-70; Zusagesatz: kFlussP0Db = -100.0 an seiner Codestelle
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 181
+SHA-256 vor der Mutation: 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1; Sicherung eq-copilot/build/nak380-sicherung/e4/m70-p0/FeatureEngine.h
+Wortlaut vorher:
+    inline constexpr double kFlussP0Db = -100.0;
+Wortlaut nachher:
+    inline constexpr double kFlussP0Db = -90.0;
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:25 bis 19:48:26, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m70_fassung_etappe_4: kFlussP0Db steht mit dem Registerwert in FeatureEngine.h — Code -90.0 (FeatureEngine.h), Register -100.0 ('eq-copilot/plugin/core/analysis/FeatureEngine.h')
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kFlussP0Db steht)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 6B95FB71B0B6D0F711923095C92A4B68FA6FB1277FA4A427EE84C4D5F27DCBB1: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-70 19:48:26 bis 19:48:26, Exit 0, Pruefungen: 13 bestanden, 0 gescheitert

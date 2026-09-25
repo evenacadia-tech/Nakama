@@ -1,0 +1,19 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m66-schwelle1
+Matrixzeile: M-66; Zusagesatz: 2,0 reisst nicht (Schwelle 2,0)
+Datei: broker/src/coordinator/experiment.rs
+Zeile (Etappenstand): 575
+SHA-256 vor der Mutation: 623D489E741C7F2636563DEE82F0225865B61249A069E1386D108208FD0DF114; Sicherung eq-copilot/build/nak380-sicherung/e4/m66-schwelle1/experiment.rs
+Wortlaut vorher:
+    pub const GUARDRAIL_TRANSIENT: f64 = 2.0;
+Wortlaut nachher:
+    pub const GUARDRAIL_TRANSIENT: f64 = 1.0;
+Lauf mit Mutation: test --manifest-path broker/Cargo.toml --color never --lib nak380_m66 19:48:31 bis 19:48:34, Exit 101
+Gefallene Pruefungen:
+    test coordinator::experiment::nak380_tests::nak380_m66_guardrail_transient_grenze ... FAILED
+    thread 'coordinator::experiment::nak380_tests::nak380_m66_guardrail_transient_grenze' (306712) panicked at src\coordinator\experiment.rs:1760:9:
+    assertion `left == right` failed: Onsetmittel 0,0 -> 2,0 reisst nicht (w > schwelle)
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 309 filtered out; finished in 0.00s
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 2,0 reisst nicht)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 623D489E741C7F2636563DEE82F0225865B61249A069E1386D108208FD0DF114: gleich
+Lauf nach Ruecknahme: test --manifest-path broker/Cargo.toml --color never --lib nak380_m66 19:48:34 bis 19:48:37, Exit 0, test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 309 filtered out; finished in 0.00s

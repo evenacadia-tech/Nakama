@@ -11,9 +11,11 @@
 //                        Fenster rechnen lassen.
 //   rechneFenster        Fenstern, transformieren, Bandenergien bilden.
 //   summeBereich         Energiesumme ueber einen Binbereich.
-//   flussSchritt, medianDerHistorie, ereignisAblegen
-//                        Spektralfluss, sein laufender Median und die
-//                        Ereignisse, die daraus entstehen.
+//   flussSchritt, binFlussSchritt, flussFilterRechnen, detektorSchritt,
+//   medianUndMad, detektorLeeren, ereignisAblegen
+//                        Bandfluss fuer den Fingerprint, der Binfluss-Detektor
+//                        nach T-380-5 (NAK-380 Etappe 4) und die Ereignisse,
+//                        die daraus entstehen.
 //
 // NaN-Ehrlichkeit (CLAUDE.md): nicht-endliche Werte werden verriegelt und
 // gezaehlt, Nyquist wird gekappt, und ohne genuegend endliche Nachbarn gibt es
@@ -474,8 +476,17 @@ inline void FeatureEngine::rechneFenster (Stufe& s) noexcept
 
     // Nur AKTIVE Fenster gehen in die Bandakkus.  Stille wuerde den
     // Mittelwert zu einer Aussage ueber die Pausen machen.
+    //
+    // NAK-380 A-6 (M-61): der Detektor-Vorframe laeuft dagegen ueber ALLE
+    // Hauptstufen-Frames, auch die inaktiven; Historie und Ereignisse bleiben
+    // den aktiven. Sonst verglich ein Wiederbeginn nach Stille mit dem
+    // Spektrum vor der Pause und waere kein Onset.
     if (! aktiv)
+    {
+        if (&s == &haupt)
+            flussVorframeSchritt (s);
         return;
+    }
 
     bool hatBandBeitrag = false;
     for (int b = 0; b < Gitter::evidenzBaender; ++b)
@@ -569,17 +580,25 @@ inline double FeatureEngine::summeBereich (const Stufe& s, int von, int bis) noe
 
 //== Ereignisse ===========================================================
 
-/** SuperFlux-artiger spektraler Fluss (§39.1) mit adaptiver Median/MAD-
-    Schwelle, plus einfachem Peakpfad als Gegenbeleg.
+/** SuperFlux-Fluss (§39.1; Boeck/Widmer, DAFx-13, Gl. 5 und 6) auf den
+    Bins der Hauptstufe: Maximumfilter ±50 Cent über den Vorframe, positive
+    Log-Deltas, Schwelle aus Median und echter MAD über 32 aktive Frames mit
+    Rauschboden- und Absolutbezug, Spitzenwahl mit 50 ms Sperrzeit; der
+    einfache Peakpfad bleibt als Gegenbeleg.
 
-    🔑 Der Vorgaenger (`vorigesSpektrum`) ist genau die Groesse, die eine
-    Grenze ueberbruecken WUERDE, wenn man ihn stehen liesse — und zwar
-    unsichtbar, weil kein Puffer dabei waechst.  `grenzeZiehen()` setzt ihn
-    deshalb ungueltig.  Der Golden prueft das eigens: ein Fluss, der ueber
-    einen Seek hinweg gerechnet wird, meldet einen Onset, den es nicht gab. */
+    Der BANDfluss (log10 der Bandmittel gegen den vorigen aktiven Frame) wird
+    hier weiter gerechnet, aber nur noch fuer den Onsetverlauf des
+    Fingerprints (SONDE-013 M-26): seine 76 Bytes sind eine Wache und duerfen
+    sich durch den Detektorumbau nicht aendern (NAK-380 M-68, T-380-5).
+
+    🔑 Beide Vorgaenger (`vorigesSpektrum` und der Detektor-Vorframe) sind
+    genau die Groesse, die eine Grenze ueberbruecken WUERDE, wenn man sie
+    stehen liesse — und zwar unsichtbar, weil kein Puffer dabei waechst.
+    `grenzeZiehen()` setzt beide ungueltig (NAK-380 M-62). */
 inline void FeatureEngine::flussSchritt (Stufe& s) noexcept
 {
-    double fluss = 0.0, zentrumZaehler = 0.0, zentrumNenner = 0.0;
+    // ── Bandfluss fuer den Fingerprint (unveraendert seit SONDE-013) ────
+    double fluss = 0.0;
     const bool hatteVorgaenger = vorigesSpektrumGueltig;
 
     for (int b = 0; b < Gitter::evidenzBaender; ++b)
@@ -598,48 +617,174 @@ inline void FeatureEngine::flussSchritt (Stufe& s) noexcept
         {
             const double delta = logJetzt - vorigesSpektrum[(std::size_t) b];
             if (delta > 0.0)
-            {
                 fluss += delta;
-                zentrumZaehler += delta * Gitter::evidenzMitte (b);
-                zentrumNenner  += delta;
-            }
         }
         vorigesSpektrum[(std::size_t) b] = logJetzt;
     }
     vorigesSpektrumGueltig = true;
-    if (! hatteVorgaenger)
-        return;                     // erster Rahmen nach einer Grenze: kein Fluss
 
-    // SONDE-013 M-26: der Fingerprint bekommt DENSELBEN Fluss wie der
-    // Detektor - ohne dessen Schwelle. Hier zaehlt der Verlauf, nicht das
-    // Ereignis; ihn zweimal zu rechnen waere zwei Wahrheiten ueber
-    // dieselbe Groesse.
-    //
     // M-25/M-27: bei gesetztem Passagenfenster zaehlt nur ein Analysefenster,
     // dessen SAEMTLICHE Samples in der Passage lagen. `s.punkte` ist seine
     // Laenge; liegt das juengste Sample ausserhalb weiter als diese Laenge
     // zurueck, war das Fenster sauber. Ein Fingerprint aus einem Fenster,
     // das die Passagengrenze ueberlappt, beschriebe zwei Stellen der Musik.
-    const bool fpFensterSauber =
-        ! passagenfenster.gesetzt
-        || ! hatSampleAusserhalb
-        || verarbeiteteSamples - letztesSampleAusserhalb
-               > (std::uint64_t) s.punkte;
-    if (fpFensterSauber)
-        fingerprintSchritt (s, fluss);
-
-    // Adaptive Schwelle: Median + 3·MAD ueber die Historie.  Erst ab voller
-    // Historie — eine Schwelle aus drei Werten ist keine Schwelle, und ein
-    // Detektor, der am Anfang jeder Epoche wild feuert, waere genau das
-    // Gegenteil dessen, was dieses Ticket verspricht.
-    if (flussGefuellt >= kFlussHistorie)
+    if (hatteVorgaenger)                // erster Rahmen nach einer Grenze: kein Fluss
     {
-        const double med = medianDerHistorie();
-        double madSumme = 0.0;
-        for (int i = 0; i < kFlussHistorie; ++i)
-            madSumme += std::abs (flussHistorie[(std::size_t) i] - med);
-        const double mad = madSumme / (double) kFlussHistorie;
-        const double schwelle = med + 3.0 * mad;
+        const bool fpFensterSauber =
+            ! passagenfenster.gesetzt
+            || ! hatSampleAusserhalb
+            || verarbeiteteSamples - letztesSampleAusserhalb
+                   > (std::uint64_t) s.punkte;
+        if (fpFensterSauber)
+            fingerprintSchritt (s, fluss);
+    }
+
+    // ── Binfluss, Schwelle, Spitzenwahl (T-380-5) ───────────────────────
+    double sf = 0.0, zentrumHz = 0.0;
+    if (binFlussSchritt (s, sf, zentrumHz))
+        detektorSchritt (s, sf, zentrumHz);
+}
+
+/** NAK-380 M-43: die Detektor-Bins der Hauptstufe - k mit
+    Gitterkante(0) <= k*df < min(Gitterkante(221), Kappe), also 30,36 Hz bis
+    unter 17 959,39 Hz und nie ueber 18 kHz oder 0,95*Nyquist. Kein DC-Bin
+    (das Gitter beginnt ueber 0 Hz). Bei einer Rate, fuer die kein Bin in
+    diesen Bereich faellt, ist K = 0 und der Detektor schweigt. */
+inline void FeatureEngine::detektorBinsBestimmen() noexcept
+{
+    const double df = sr / (double) kHauptPunkte;
+    const double oben = std::min (Gitter::evidenzKante (Gitter::evidenzBaender),
+                                  std::min (kObergrenzeHz, kNyquistAnteil * sr * 0.5));
+    const int von = (int) std::ceil (Gitter::evidenzKante (0) / df);
+    // Groesstes k mit k*df < oben: ceil(oben/df) - 1, nie ueber Nyquist.
+    const int bis = std::min ((int) std::ceil (oben / df) - 1, kHauptPunkte / 2);
+    auto& d = detektor[0];
+    d.binVon = von;
+    d.binAnzahl = bis >= von ? bis - von + 1 : 0;
+}
+
+inline int FeatureEngine::flussFilterBreite (int k, double faktor) noexcept
+{
+    const int w = (int) std::ceil ((double) k * faktor);
+    return w < 1 ? 1 : w;
+}
+
+/** A-6 (NAK-380 M-61): ein INAKTIVER Hauptstufen-Frame schreibt nur den
+    Detektor-Vorframe fort und merkt seinen Fluss als SF(n-1) fuer die
+    Spitzenwahl; Historie und Ereignisse bleiben den aktiven Frames. */
+inline void FeatureEngine::flussVorframeSchritt (const Stufe& s) noexcept
+{
+    double sf = 0.0, zentrumHz = 0.0;
+    if (binFlussSchritt (s, sf, zentrumHz))
+        detektor[0].sfVorher = sf;
+}
+
+/** Binfluss SF(n) = Summe_k max(0, L(n,k) - Lmax(n-1,k)) ueber die K
+    Detektor-Bins, dazu der Schwerpunkt der positiven Deltas in Hz. Schreibt
+    den Vorframe fort und rechnet das Maximumfilter fuer den naechsten Frame.
+    `false`: es gab keinen gueltigen Vorframe (erster Frame nach Start oder
+    Grenze) - dann ist `sf` 0 und bedeutungslos.
+
+    L = 10*log10(p + P0) mit p = psd*df: P0 = 10^(kFlussP0Db/10) haelt den
+    Logarithmus endlich (kein log(0) in digitaler Stille) und laesst
+    Aenderungen weit unter -100 dBFS je Bin nicht zaehlen. Ein nicht endlicher
+    oder negativer Binwert geht als 0 ein - die Samples sind vor der FFT
+    verriegelt, dies ist nur die letzte Sperre vor dem Logarithmus. Je Frame
+    K Logarithmen, keine Allokation. */
+inline bool FeatureEngine::binFlussSchritt (const Stufe& s, double& sf, double& zentrumHz) noexcept
+{
+    sf = 0.0;
+    zentrumHz = 0.0;
+    if (detektor.empty())
+        return false;
+    auto& d = detektor[0];
+    const int anzahl = d.binAnzahl;
+    if (anzahl <= 0 || (int) d.vorframe.size() != anzahl)
+        return false;
+    const double binBreiteHz = s.fs / (double) s.punkte;
+    const double p0 = std::pow (10.0, kFlussP0Db / 10.0);
+    const bool hatteVorgaenger = d.vorgaengerGueltig;
+    double zaehler = 0.0;
+    for (int i = 0; i < anzahl; ++i)
+    {
+        const int k = d.binVon + i;
+        double p = s.psd[(std::size_t) k] * binBreiteHz;
+        if (! (p >= 0.0) || ! std::isfinite (p))
+            p = 0.0;
+        const double l = 10.0 * std::log10 (p + p0);
+        if (hatteVorgaenger)
+        {
+            const double delta = l - d.filter[(std::size_t) i];
+            if (delta > 0.0)
+            {
+                sf += delta;
+                zaehler += delta * (double) k * binBreiteHz;
+            }
+        }
+        d.vorframe[(std::size_t) i] = l;
+    }
+    zentrumHz = sf > 0.0 ? zaehler / sf : 0.0;
+    flussFilterRechnen();
+    d.vorgaengerGueltig = true;
+    return hatteVorgaenger;
+}
+
+/** Das Maximumfilter (SuperFlux Gl. 5) ueber den Vorframe:
+    Lmax_i = max ueber j mit |j - i| <= w_(von+i), begrenzt auf den
+    Detektorbereich. Gleitendes Maximum ueber eine monotone Warteschlange:
+    jeder Index wird genau einmal eingereiht und hoechstens einmal entfernt,
+    also O(K) je Frame. Beide Fensterraender steigen monoton, weil
+    w_(k+1) - w_k in {0, 1} liegt (der Faktor 0,0293 ist kleiner als 1);
+    darum haelt die Schlange hoechstens w_i + w_(i-1) + 2 <= 2*w_max + 2
+    Indizes - genau die Ringgroesse aus `vorbereiten`. */
+inline void FeatureEngine::flussFilterRechnen() noexcept
+{
+    auto& d = detektor[0];
+    const int anzahl = d.binAnzahl;
+    const auto platz = (std::uint32_t) d.schlange.size();
+    if (anzahl <= 0 || platz == 0u)
+        return;
+    const double faktor = std::exp2 (kFlussFilterCent / 1200.0) - 1.0;
+    std::uint32_t kopf = 0, ende = 0;           // belegt: [kopf, ende)
+    int naechster = 0;
+    for (int i = 0; i < anzahl; ++i)
+    {
+        const int w = flussFilterBreite (d.binVon + i, faktor);
+        const int von = std::max (0, i - w);
+        const int bis = std::min (anzahl - 1, i + w);
+        for (; naechster <= bis; ++naechster)
+        {
+            const double v = d.vorframe[(std::size_t) naechster];
+            while (ende > kopf
+                   && d.vorframe[(std::size_t) d.schlange[(std::size_t) ((ende - 1u) % platz)]] <= v)
+                --ende;
+            d.schlange[(std::size_t) (ende % platz)] = naechster;
+            ++ende;
+        }
+        while (d.schlange[(std::size_t) (kopf % platz)] < von)
+            ++kopf;
+        d.filter[(std::size_t) i]
+            = d.vorframe[(std::size_t) d.schlange[(std::size_t) (kopf % platz)]];
+    }
+}
+
+/** Schwelle, Spitzenwahl und Sperrzeit fuer EINEN aktiven Hauptstufen-Frame
+    mit Binfluss `sf` (T-380-5), dazu der unveraenderte Peakpfad (SONDE-013
+    M-86). Erst ab voller Historie - eine Schwelle aus drei Werten ist keine
+    Schwelle; danach geht `sf` in die Historie und wird SF(n-1). */
+inline void FeatureEngine::detektorSchritt (const Stufe& s, double sf, double zentrumHz) noexcept
+{
+    if (detektor.empty())
+        return;
+    auto& d = detektor[0];
+    if (d.gefuellt >= kFlussHistorie)
+    {
+        double med = 0.0, mad = 0.0;
+        medianUndMad (med, mad);
+        // T_eff = max(med + kappa*MAD, (1 + rho)*med, T_min): die relative
+        // Schwelle, der Rauschbodenbezug und die absolute Mindestschwelle.
+        const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
 
         const double peakDb = rahmenPeak > 0.0 ? 20.0 * std::log10 (rahmenPeak) : -200.0;
         const double rms = rahmenSamples > 0
@@ -676,7 +821,20 @@ inline void FeatureEngine::flussSchritt (Stufe& s) noexcept
             peakAus = steigungDb > kPeakSteigungSchwelleDb
                    && crestDb > kPeakCrestSchwelleDb;
         }
-        const bool flussAus = fluss > schwelle && mad > 0.0;
+
+        // Spitzenwahl online (SuperFlux §2.3, post_max = 0): lokales Maximum
+        // gegen SF(n-1). Sperrzeit gegen die Zeit des LETZTEN Ereignisses in
+        // Samples - auch ein Peakereignis sperrt, damit ein Impuls, den der
+        // Peakpfad im ersten und der Fluss im naechsten Fenster sieht, EIN
+        // Ereignis bleibt (M-57). Ein Fensteranfang vor dem letzten Ereignis
+        // (nur nach einer Grenze moeglich, die die Zeit ohnehin leert) sperrt
+        // nicht.
+        const bool sperreFrei = ! d.letztesEreignisGueltig
+            || s.fensterStromStart < d.letzteEreignisStrom
+            || (double) (s.fensterStromStart - d.letzteEreignisStrom) * 1000.0 >= kSperrzeitMs * s.fs;
+        // Nenner der Staerke: T_eff - med >= max(rho*med, T_min - med) > 0.
+        const double nenner = tEff - med;
+        const bool flussAus = sf > tEff && sf >= d.sfVorher && sperreFrei && nenner > 0.0;
 
         // Loesen beide im selben Schritt aus, entsteht GENAU EIN Ereignis
         // mit beiden Bits (M-86). Zwei Ereignisse waeren zwei Zeitpunkte,
@@ -689,40 +847,71 @@ inline void FeatureEngine::flussSchritt (Stufe& s) noexcept
             e.projektSample = s.fensterProjektStart;
             e.epoche  = transportEpoche;
             e.segment = segmentInEpoche;
-            // Die Staerke bleibt die Flussstaerke, WENN es eine gibt.
-            // Ein reines Peakereignis hat keine Flussueberschreitung —
-            // es traegt statt dessen seinen Crest ueber der Schwelle,
-            // in derselben Einheit wie es gemessen wurde (dB). Eine
-            // erfundene MAD-Zahl waere eine Staerke ohne Messung.
+            // Flussereignis: kappa*(SF - med)/(T_eff - med) - bei
+            // Ausloesung >= kappa, auf die Vertragsgrenze 1000 geklemmt; bei
+            // greifender relativer Schwelle ist das die Ueberschreitung in
+            // echten MAD. Ein reines Peakereignis hat keine
+            // Flussueberschreitung und traegt seinen Crest ueber der
+            // Schwelle in dB. Eine erfundene MAD-Zahl waere eine Staerke
+            // ohne Messung.
             e.staerke = flussAus
-                ? (float) ((fluss - med) / mad)
+                ? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)
                 : (float) (crestDb - kPeakCrestSchwelleDb);
-            e.bandZentrumHz = zentrumNenner > 0.0
-                ? (float) (zentrumZaehler / zentrumNenner) : 0.0f;
+            e.bandZentrumHz = zentrumHz > 0.0 ? (float) zentrumHz : 0.0f;
             e.dauerMs = (float) (1000.0 * (double) s.hop / s.fs);
             e.qualitaetFluss = flussAus;
             e.qualitaetPeak = peakAus || (flussAus && crestDb > kPeakCrestSchwelleDb);
             ereignisAblegen (e);
+            d.letzteEreignisStrom = s.fensterStromStart;
+            d.letztesEreignisGueltig = true;
             if (peakAus)
                 peakEreignisImRahmen = true;
         }
     }
 
-    flussHistorie[(std::size_t) flussStand] = fluss;
-    flussStand = (flussStand + 1) % kFlussHistorie;
-    if (flussGefuellt < kFlussHistorie) ++flussGefuellt;
+    d.historie[(std::size_t) d.stand] = sf;
+    d.stand = (d.stand + 1) % kFlussHistorie;
+    if (d.gefuellt < kFlussHistorie) ++d.gefuellt;
+    d.sfVorher = sf;
 }
 
-inline double FeatureEngine::medianDerHistorie() noexcept
+/** Median und ECHTE MAD (Median der Absolutabweichungen vom Median) der
+    Historie, gerade Anzahl: Mittel der beiden mittleren Werte. Die mittlere
+    Abweichung waere bei einer schiefen Verteilung (wenige grosse Ausreisser)
+    groesser und die Schwelle stumpfer (NAK-380 M-44). Sortiert wird im
+    festen Puffer, keine Allokation. */
+inline void FeatureEngine::medianUndMad (double& med, double& mad) noexcept
 {
-    for (int i = 0; i < kFlussHistorie; ++i)
-        flussSortiert[(std::size_t) i] = flussHistorie[(std::size_t) i];
-    std::sort (flussSortiert.begin(), flussSortiert.end());
-    // Gerade Anzahl: Mittel der beiden mittleren.  Der Median ist hier eine
-    // Schwellenbasis, keine Kennzahl — die genaue Konvention ist egal,
-    // solange sie EINE ist.
-    return 0.5 * (flussSortiert[(std::size_t) (kFlussHistorie / 2 - 1)]
-                + flussSortiert[(std::size_t) (kFlussHistorie / 2)]);
+    auto& d = detektor[0];
+    constexpr auto n = (std::size_t) kFlussHistorie;
+    for (std::size_t i = 0; i < n; ++i)
+        d.sortiert[i] = d.historie[i];
+    std::sort (d.sortiert.begin(), d.sortiert.end());
+    med = 0.5 * (d.sortiert[n / 2 - 1] + d.sortiert[n / 2]);
+    for (std::size_t i = 0; i < n; ++i)
+        d.sortiert[i] = std::abs (d.historie[i] - med);
+    std::sort (d.sortiert.begin(), d.sortiert.end());
+    mad = 0.5 * (d.sortiert[n / 2 - 1] + d.sortiert[n / 2]);
+}
+
+/** Der Rueckweg des Detektors: dieselben Traeger fuer `zuruecksetzen` und
+    `grenzeZiehen` (starten<->stoppen, NAK-380 M-62). Die Puffer selbst
+    bleiben angelegt; ihr Inhalt ist ohne gueltigen Vorframe bedeutungslos und
+    wird trotzdem auf P0 gesetzt, damit kein Wert der alten Epoche stehen
+    bleibt. */
+inline void FeatureEngine::detektorLeeren() noexcept
+{
+    if (detektor.empty())
+        return;
+    auto& d = detektor[0];
+    for (auto& v : d.vorframe) v = kFlussP0Db;
+    for (auto& v : d.filter)   v = kFlussP0Db;
+    d.vorgaengerGueltig = false;
+    d.stand = 0;
+    d.gefuellt = 0;
+    d.sfVorher = 0.0;
+    d.letzteEreignisStrom = 0;
+    d.letztesEreignisGueltig = false;
 }
 
 /** Fester Ring, drop-oldest.  Ein Ereignisstrom, der bei Ueberlast waechst,

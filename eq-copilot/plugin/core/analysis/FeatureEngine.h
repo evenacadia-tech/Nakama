@@ -86,7 +86,7 @@ namespace nakama::analyse
 /** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
     dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
     weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260926u;
+inline constexpr std::uint32_t kFeatureMetricsVersion = 20260927u;
 
 /*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
 
@@ -104,6 +104,13 @@ inline constexpr std::uint32_t kFeatureMetricsVersion = 20260926u;
     Brokerverbraucher einer Leistung integriert die Dichte nun mit der
     Bandbreite des eingefrorenen Gitters. Gleiche Felder tragen damit eine
     korrigierte Messaussage; der Schritt darf nicht still bleiben.
+
+    Warum die Zahl mit NAK-380 Etappe 4 steigt (20260927): der
+    Ereignisdetektor rechnet seit dieser Fassung den SuperFlux-Fluss auf den
+    Bins der Hauptstufe mit Maximumfilter, echter MAD, absoluter
+    Mindestschwelle und Spitzenwahl mit Sperrzeit (T-380-5). Dieselben Felder
+    `dynamics_ereignis` tragen damit andere Ereignisse und eine andere
+    `staerke`; die sieben Detektorschwellen sind gefuehrt.
 
     Die Schwellen dieser Fassung stehen in
     `eq-copilot/schemas/v3/metriken-v1.json`; **A5**
@@ -152,6 +159,56 @@ inline constexpr double kPeakSteigungSchwelleDb = 12.0;
     bis SONDE-013 als nacktes Literal im Detektor; er ist damit dieselbe
     Kalibrierungsfalle gewesen, die §5.3 Risiko 5 beschreibt. */
 inline constexpr double kPeakCrestSchwelleDb = 12.0;
+
+/*  NAK-380 Etappe 4 (T-380-5, R-380-2): der Ereignisdetektor nach §39.1.
+
+    Je Hauptstufen-Frame n und Detektor-Bin k (30,36 Hz <= k*df <
+    min(17 959,39 Hz, Kappe), K Bins): L(n,k) = 10*log10(p(n,k) + P0) mit der
+    Binleistung p = psd*df; Fluss SF(n) = Summe_k max(0, L(n,k) - Lmax(n-1,k)),
+    Lmax = Maximum ueber ±w_k Bins des Vorframes (SuperFlux, Boeck/Widmer,
+    DAFx-13, Gl. 5 und 6). Schwelle T_eff = max(med + kappa*MAD,
+    (1 + rho)*med, T_min) aus Median und echter MAD der letzten H aktiven
+    Frames, T_min = kFlussTminDbJeBin*K. Ein Flussereignis braucht einen
+    aktiven Frame, SF(n) > T_eff, SF(n) >= SF(n-1) und kSperrzeitMs seit dem
+    letzten Ereignis. Der Vorframe laeuft ueber ALLE Hauptstufen-Frames, die
+    Historie nur ueber aktive (A-6). Die sieben Werte sind gefuehrt
+    (`metriken-v1.json`, Fassung 20260927); Herleitungen im Manifest NAK-380
+    §8.0 T-380-5, die Kalibrierung von T_min in §35. */
+
+/** P0 in dBFS je Bin. 34 dB ueber den Rauschboeden von 16-Bit-Dither (-134),
+    24 Bit (-177) und float32-Rundung (etwa -183 dBFS je Bin bei 4096 Punkten),
+    17 dB unter dem Binpegel von -50-dBFS-Weissrauschen (-83 dBFS). */
+inline constexpr double kFlussP0Db = -100.0;
+
+/** Halbe Breite des Maximumfilters: ±50 Cent (ein Viertelton, ±1 Band der
+    SuperFlux-Filterbank); w_k = max(1, ceil(k*(2^(50/1200) - 1))) Bins. */
+inline constexpr double kFlussFilterCent = 50.0;
+
+/** H: Historie der adaptiven Schwelle in AKTIVEN Hauptstufen-Frames (1,37 s
+    bei 48 kHz). Die ersten H Frames nach Start oder Grenze bleiben ohne
+    Ereignis. */
+inline constexpr int kFlussHistorie = 32;
+
+/** kappa: Vielfaches der echten MAD ueber dem Median. */
+inline constexpr double kFlussKappa = 3.0;
+
+/** rho: Rauschbodenbezug, T_eff >= (1 + rho)*Median. */
+inline constexpr double kFlussRho = 1.0;
+
+/** Absolute Mindestschwelle je Detektor-Bin in dB, T_min = Wert*K.
+    Startwert 0,05 dB; kalibriert am Null- und Impulskorpus auf 0,30 dB
+    (Manifest NAK-380 §35: das Vibrato V1 erreicht SF bis 414,6 dB =
+    0,271 dB je Bin, das Weiss- und Rosarauschen bis 245,8 dB). */
+inline constexpr double kFlussTminDbJeBin = 0.30;
+
+/** Sperrzeit: Mindestabstand zweier Ereignisse in ms (SuperFlux
+    combination_width); sperrt bei 44,1 und 48 kHz genau den Folgeframe, in
+    dem ein Impuls wegen 50 % Ueberlappung ein zweites Mal erscheint. */
+inline constexpr double kSperrzeitMs = 50.0;
+
+/** Obergrenze der Flussstaerke: die Vertragsgrenze von `staerke_mad`
+    (`eq-ipc-v3.schema.json`, 0 bis 1000), keine Kalibrierung. */
+inline constexpr double kFlussStaerkeMax = 1000.0;
 
 /** Wie viele gueltige Welch-Frames ein Band mindestens braucht, damit seine
     Kohaerenz ueberhaupt einen Wert bekommt (SONDE-013 M-11, §40.1 woertlich:
@@ -360,6 +417,31 @@ struct HeadroomVerteilung
 };
 
 
+/** NAK-380 Etappe 4 (T-380-5): der Zustand des Binfluss-Detektors.
+
+    Vorframe L(n-1,k) und Filterpuffer Lmax(n-1,k) je Detektor-Bin (2*K*8 B,
+    bei 44,1 kHz 26 656 B), der Ring der monotonen Warteschlange des
+    gleitenden Maximums (2*w_max + 2 Plaetze), die Historie der aktiven Frames
+    (kFlussHistorie Werte, 2*32*8 B mit dem Sortierpuffer), SF(n-1) fuer die
+    Spitzenwahl und die Zeit des letzten Ereignisses fuer die Sperrzeit. Alle
+    laengenabhaengigen Traeger sind Vektoren, angelegt in `vorbereiten`; der
+    Flussschritt alloziert nichts. */
+struct FlussDetektor
+{
+    std::vector<double> vorframe, filter;
+    std::vector<int>    schlange;
+    std::vector<double> historie, sortiert;
+    int  binVon { 0 }, binAnzahl { 0 };
+    bool vorgaengerGueltig { false };
+    int  stand { 0 }, gefuellt { 0 };
+    /// SF(n-1): der Fluss des vorigen Hauptstufen-Frames, auch eines
+    /// inaktiven (A-6).
+    double sfVorher { 0.0 };
+    /// Fensteranfang (Strom) des letzten Ereignisses.
+    std::uint64_t letzteEreignisStrom { 0 };
+    bool letztesEreignisGueltig { false };
+};
+
 /** NAK-283 M-59: diese Fassung erklaert `FeatureEngineTestzugang` zum Freund.
     Ein Test definiert die Struktur nur, wenn der Zugang existiert; das Produkt
     definiert und ruft sie nie. */
@@ -447,8 +529,8 @@ public:
     static constexpr double kEvidenzIntervallMaxS = 1.0;    // 1 Hz
     /** Feste Obergrenze des Ereignisstroms (§33 "feste Obergrenzen"). */
     static constexpr int kEreignisPlaetze = 64;
-    /** Historie der adaptiven Flussschwelle (Median/MAD, §39.1). */
-    static constexpr int kFlussHistorie = 16;
+    // Die Historie der adaptiven Flussschwelle ist seit NAK-380 Etappe 4 die
+    // gefuehrte Namensraumkonstante `kFlussHistorie` (oben, H = 32).
 
     //== Einrichtung ==========================================================
 
@@ -517,9 +599,23 @@ public:
         evidenzVerteilung.assign ((std::size_t) Gitter::evidenzBaender,
                                   VerteilungsRing {});
         ereignisse.assign ((std::size_t) kEreignisPlaetze, Ereignis {});
-        flussHistorie.assign ((std::size_t) kFlussHistorie, 0.0);
-        flussSortiert.assign ((std::size_t) kFlussHistorie, 0.0);
         vorigesSpektrum.assign ((std::size_t) Gitter::evidenzBaender, 0.0);
+        // NAK-380 Etappe 4 (M-43, M-72): der Detektor im Heap, nur hier
+        // angelegt - Vorframe und Filterpuffer je Detektor-Bin (2*K*8 B), der
+        // Ring der monotonen Warteschlange (2*w_max + 2 Plaetze, w_max die
+        // Filterbreite am obersten Detektor-Bin) und die Historie.
+        detektor.assign (1u, FlussDetektor {});
+        detektorBinsBestimmen();      // Bins der Hauptstufe im Gitterbereich
+        {
+            auto& d = detektor[0];
+            d.historie.assign ((std::size_t) kFlussHistorie, 0.0);
+            d.sortiert.assign ((std::size_t) kFlussHistorie, 0.0);
+            d.vorframe.assign ((std::size_t) d.binAnzahl, kFlussP0Db);
+            d.filter.assign ((std::size_t) d.binAnzahl, kFlussP0Db);
+            d.schlange.assign (d.binAnzahl > 0
+                ? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1) + 2)
+                : (std::size_t) 0, 0);
+        }
 
         kL.entwerfen (sr);
         kR.entwerfen (sr);
@@ -609,8 +705,7 @@ public:
         evidenzContinuousErwartet = 0;
         for (auto& v : vorigesSpektrum) v = 0.0;
         vorigesSpektrumGueltig = false;
-        flussStand = 0;
-        flussGefuellt = 0;
+        detektorLeeren();             // NAK-380 M-62: dieselben Traeger wie grenzeZiehen
         vorigerRahmenPeak = 0.0;
         peakEreignisImRahmen = false;
         fingerprintLeeren();
@@ -914,6 +1009,21 @@ public:
     int fuellstandLoudnessZelle() const noexcept { return zelleStand; }
     int fuellstandKurzLoudness() const noexcept  { return kurzGefuellt; }
     bool flussHatVorgaenger() const noexcept     { return vorigesSpektrumGueltig; }
+    /** NAK-380 M-62: traegt der Binfluss-Detektor einen gueltigen Vorframe?
+        Nach `vorbereiten`, `zuruecksetzen` und jeder Grenze falsch, bis der
+        naechste Hauptstufen-Frame geschlossen ist. */
+    bool flussBinVorgaengerGueltig() const noexcept
+    { return ! detektor.empty() && detektor[0].vorgaengerGueltig; }
+    /** NAK-380 M-43: erster Detektor-Bin der Hauptstufe und die Zahl K der
+        Detektor-Bins (30,36 Hz <= k*df < min(17 959,39 Hz, Kappe)). */
+    int detektorBinVon() const noexcept    { return detektor.empty() ? 0 : detektor[0].binVon; }
+    int detektorBinAnzahl() const noexcept { return detektor.empty() ? 0 : detektor[0].binAnzahl; }
+    /** NAK-380 M-42: halbe Breite des Maximumfilters am Hauptstufen-Bin k in
+        Bins, w_k = max(1, ceil(k*(2^(kFlussFilterCent/1200) - 1))). */
+    static int flussFilterBreite (int k) noexcept
+    {
+        return flussFilterBreite (k, std::exp2 (kFlussFilterCent / 1200.0) - 1.0);
+    }
 
     /** Fuellstand der BANDAKKUS — der Traeger, an dem T2-1 unsichtbar war.
 
@@ -1217,7 +1327,15 @@ private:
 
     void flussSchritt (Stufe& s) noexcept;
 
-    double medianDerHistorie() noexcept;
+    // NAK-380 Etappe 4 (T-380-5): der Binfluss-Detektor.
+    void detektorBinsBestimmen() noexcept;
+    static int flussFilterBreite (int k, double faktor) noexcept;
+    void flussVorframeSchritt (const Stufe& s) noexcept;
+    bool binFlussSchritt (const Stufe& s, double& sf, double& zentrumHz) noexcept;
+    void flussFilterRechnen() noexcept;
+    void detektorSchritt (const Stufe& s, double sf, double zentrumHz) noexcept;
+    void medianUndMad (double& med, double& mad) noexcept;
+    void detektorLeeren() noexcept;
 
     void ereignisAblegen (const Ereignis& e) noexcept;
 
@@ -1337,8 +1455,8 @@ private:
     // nur bei denen ueber dem Aktivgate. Ein einzelner Zaehler koennte
     // "keine Fenster gesehen" nicht von "nur Stille gesehen" trennen.
     /// Ein Ring je Band, rund 58 KiB. Er liegt im HEAP und nicht als Feld
-    /// im Objekt — genau wie `kurzZellen`, `ereignisse` und `flussHistorie`
-    /// daneben. Der Grund ist gemessen: als Feld sprengten zwei Engines
+    /// im Objekt — genau wie `kurzZellen`, `ereignisse` und der Flussdetektor
+    /// (`detektor`) daneben. Der Grund ist gemessen: als Feld sprengten zwei Engines
     /// nebeneinander (die Zwillingsprobe G13 in B5) den 1-MiB-Stack mit
     /// STATUS_STACK_OVERFLOW. Angelegt wird er in `vorbereiten()`, also auf
     /// dem Nachrichtenthread; der Audiothread alloziert weiterhin nie.
@@ -1486,9 +1604,16 @@ private:
     bool   peakEreignisImRahmen { false };
     std::vector<Ereignis> ereignisse;
     int ereignisStand { 0 }, ereignisAnzahl { 0 };
-    std::vector<double> vorigesSpektrum, flussHistorie, flussSortiert;
+    /// Bandfluss-Vorgaenger (log10 der Bandmittel) - traegt seit NAK-380
+    /// Etappe 4 nur noch den Onsetverlauf des Fingerprints (M-68).
+    std::vector<double> vorigesSpektrum;
     bool vorigesSpektrumGueltig { false };
-    int  flussStand { 0 }, flussGefuellt { 0 };
+    /// NAK-380 Etappe 4 (T-380-5): der Binfluss-Detektor, genau EIN Element
+    /// im HEAP, angelegt in `vorbereiten` (`FlussDetektor`). Als Felder im
+    /// Objekt sprengten seine 112 B je Instanz den Stack von B5 (gemessen
+    /// beim Bau dieser Etappe: STATUS_STACK_OVERFLOW 0xC00000FD, NAK-175) -
+    /// derselbe Grund wie bei `headroomRing`.
+    std::vector<FlussDetektor> detektor;
 
     // Zeitbuch
     echtzeit::StampedBlock vorigerBlock {};

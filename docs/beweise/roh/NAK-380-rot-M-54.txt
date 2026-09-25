@@ -1,0 +1,21 @@
+NAK-380 Etappe 4 — Rotbeweis M-54 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · Nullkorpus S1
+Zustand und Vorbedingung: wie M-50, Sinus 440 Hz, Amplitude 0,5, als float32 gerechnet, L = R (§7 S1)
+Zusage: höchstens 1 Ereignis in 30 s
+Test je Sprache: C++: B5 NEU `380/M-54 nullkorpus_S1`
+Rotbeweisspalte (Etikett): heute rot: 91 (gemessen `b11_float32.out`); Mutation T_min = 0 → Haarauslöser → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B5, `--nak380 M-54`):
+    [ok]   380/M-54 nullkorpus_S1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ROT]  380/M-54 nullkorpus_S1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 109, Golden 0; 0.8960 sF, 1.2800 sF, 1.3653 sF, 1.7493 sF, 1.8347 sF, 2.2187 sF, 2.3040 sF, 2.6880 sF, ...]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-54`):
+    [ok]   380/M-54 nullkorpus_S1: Vorbedingung 1 440 000 Samples, kein Ringverlust  [1440000 Samples, verworfen 0]
+    [ok]   380/M-54 nullkorpus_S1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m54-tmin0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): hoechstens 1 Ereignis (T_min = 0: Haarausloeser)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;` -> `const double tMin = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m54-tmin0.txt

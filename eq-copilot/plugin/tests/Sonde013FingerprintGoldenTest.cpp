@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -147,12 +148,84 @@ int byteSumme (const std::uint8_t* d, int n)
     for (int i = 0; i < n; ++i) s += d[i];
     return s;
 }
+
+/** NAK-380 M-68 (Golden-Klasse (i), E-380-18): die 76 Ausgangsbytes des
+    Fingerprints fuer F1 (§7.2: `akkord (0.4, 220.0)`, 30 s = 1 440 000
+    Samples bei 48 kHz, Block 512, der letzte Block 256 Samples), EINMAL am
+    unveraenderten Etappenstart `21853aa1` erfasst
+    (`docs/beweise/roh/NAK-380-etappe-4-m68-f1-ausgang.txt`, dort mit
+    SHA-256) und hier eingefroren. Der Fingerprint bekommt nach dem Umbau des
+    Detektors weiter den BANDfluss (`Spektrum.h`, `fingerprintSchritt`); ein
+    Nachzug dieser Bytes ueber einen Erzeugerlauf ist verboten. */
+constexpr std::uint8_t kNak380F1Bytes[76] = {
+    // bandEnergie[32]
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xf4, 0xfd, 0xa0, 0x3e, 0x17, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    // chroma[12]
+    0xb3, 0x16, 0x00, 0x6e, 0xa3, 0x0d, 0x1f, 0xff, 0x00, 0x00, 0x01, 0x56,
+    // onset[32]
+    0xb7, 0xba, 0xac, 0xea, 0xe0, 0xc9, 0xf1, 0xd3, 0xc5, 0xbe, 0x92, 0xc7, 0xdd, 0x97, 0xff, 0xb9,
+    0xdc, 0xe9, 0xbf, 0x7e, 0xd8, 0xd7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+__declspec(noinline) void nak380M68 (bool erfassen)
+{
+    abschnitt ("380/M-68 fingerprint_unveraendert");
+    auto halter = std::make_unique<FeatureEngine>();
+    halter->vorbereiten (48000.0);
+    Speiser s { *halter };
+    const auto f1 = akkord (0.4, 220.0);
+    constexpr std::uint64_t kF1Samples = 30u * 48000u;   // 1 440 000
+    while (s.strom < kF1Samples)
+    {
+        s.frames = (int) std::min<std::uint64_t> (512u, kF1Samples - s.strom);
+        s.fahre (f1, 1);
+    }
+    const auto fp = halter->fingerprint();
+    std::uint8_t ist[76] {};
+    for (int i = 0; i < Fingerprint::kBaender; ++i) ist[i] = fp.bandEnergie[i];
+    for (int i = 0; i < Fingerprint::kChroma; ++i)  ist[Fingerprint::kBaender + i] = fp.chroma[i];
+    for (int i = 0; i < Fingerprint::kOnsets; ++i)
+        ist[Fingerprint::kBaender + Fingerprint::kChroma + i] = fp.onset[i];
+    if (erfassen)
+    {
+        std::cout << "F1-Ausgangsbytes (76, Reihenfolge bandEnergie[32], chroma[12], onset[32]), "
+                  << "Fenster " << fp.fenster << ", gesetzt " << (fp.gesetzt ? 1 : 0) << ":" << std::endl;
+        for (int i = 0; i < 76; ++i)
+            std::cout << juce::String::toHexString ((int) ist[i]).paddedLeft ('0', 2).toRawUTF8()
+                      << (i % 16 == 15 ? "\n" : " ");
+        std::cout << std::endl;
+        return;
+    }
+    int verschieden = 0;
+    for (int i = 0; i < 76; ++i)
+        verschieden += ist[i] != kNak380F1Bytes[i] ? 1 : 0;
+    pruefe (fp.gesetzt && verschieden == 0,
+            "380/M-68 fingerprint_unveraendert: die 76 F1-Ausgangsbytes sind bytegleich zur "
+            "am Etappenstart erfassten Referenz (Bandfluss im Fingerprint)",
+            juce::String (verschieden) + " von 76 Byte verschieden, Fenster "
+                + juce::String ((int) fp.fenster));
+}
 } // namespace
 
-int main()
+int main (int argc, char* argv[])
 {
     std::cout << "== Nakama SONDE-013 - Content-Fingerprint einer Passage (§32.4) =="
               << std::endl;
+
+    if (argc == 2 && std::strcmp (argv[1], "--nak380-erfassen") == 0)
+    {
+        nak380M68 (true);
+        return 0;
+    }
+    if (argc == 3 && std::strcmp (argv[1], "--nak380") == 0 && std::strcmp (argv[2], "M-68") == 0)
+    {
+        nak380M68 (false);
+        std::cout << "\n-----------------------------------------" << std::endl;
+        std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
+    nak380M68 (false);
 
     // ── Die Vorbedingung: er entsteht ueberhaupt, und nicht zu frueh ──────
     abschnitt ("Der Fingerprint braucht genug Material - vorher gibt es keinen");

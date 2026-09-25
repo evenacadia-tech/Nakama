@@ -1,0 +1,25 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m62-historie
+Matrixzeile: M-62; Zusagesatz: kein Ereignis, bevor die Historie wieder 32 aktive Frames traegt
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 910
+SHA-256 vor der Mutation: EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4; Sicherung eq-copilot/build/nak380-sicherung/e4/m62-historie/Spektrum.h
+Wortlaut vorher:
+        d.stand = 0;
+        d.gefuellt = 0;
+        d.sfVorher = 0.0;
+Wortlaut nachher:
+        d.sfVorher = 0.0;
+  Bau EqCopAnalysisGoldenTest: 19:47:43 bis 19:47:59, Exit 0
+  Binary 19:47:58.971 juenger als Quelle 19:47:43.656: ja
+Lauf mit Mutation: --nak380 M-62 19:47:59 bis 19:47:59, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 1, im ersten Frame 0, vor voller Historie 1; 10.5600 sFP]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: keines, bevor die Historie wieder 32 aktive Frames traegt)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.085 dB (Soll <= 1,0), Oktaven 57.89/57.80/57.73/57.66/57.71/57.75/57.81/57.73/57.74/57.75 dB; RMS 0.09904 gegen 0.10000 (-0.084 dB)]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+    [ok]   380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [falsch]
+Ruecknahme aus der Sicherung, SHA-256 EBD085D028E713B110EED5E488ADEFA0333FC1B4498101ED078B8D12288198D4: gleich
+  Bau EqCopAnalysisGoldenTest: 19:47:59 bis 19:48:16, Exit 0
+  Binary nach Ruecknahme 19:48:15.759 juenger als Quelle: ja
+Lauf nach Ruecknahme: --nak380 M-62 19:48:16 bis 19:48:16, Exit 0, 4 bestanden, 0 gescheitert

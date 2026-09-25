@@ -1,0 +1,16 @@
+NAK-380 Etappe 4 — Mutationsprotokoll m69-peak
+Matrixzeile: M-69; Zusagesatz: reines Peakereignis: Crest ueber der Schwelle in dB
+Datei: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+Zeile (Etappenstand): 1270
+SHA-256 vor der Mutation: 93264B9B51CB6E2F73DD805A70845AE312F12CA6C3C09A7C6418DB3AF452C833; Sicherung eq-copilot/build/nak380-sicherung/e4/m69-peak/eq-ipc-v3.schema.json
+Wortlaut vorher:
+    traegt den Crest ueber der Schwelle in dB (NAK-380 R-380-2).
+Wortlaut nachher:
+    traegt den Crest in dB (NAK-380 R-380-2).
+Lauf mit Mutation: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:18 bis 19:48:18, Exit 2
+Gefallene Pruefungen:
+      ROT: nak380_m69_staerke_benannt: reines Peakereignis traegt den Crest ueber der Schwelle in dB
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: reines Peakereignis traegt den Crest)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Ruecknahme aus der Sicherung, SHA-256 93264B9B51CB6E2F73DD805A70845AE312F12CA6C3C09A7C6418DB3AF452C833: gleich
+Lauf nach Ruecknahme: tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-69 19:48:18 bis 19:48:18, Exit 0, Pruefungen: 7 bestanden, 0 gescheitert

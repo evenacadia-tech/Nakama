@@ -1,0 +1,23 @@
+NAK-380 Etappe 4 — Rotbeweis M-65 (Bauer Opus 5.5 xhigh, 25.09.2026)
+Matrixzeile §6.3: DSP-22 · R-380-2 · Transient-Guardrail eingeordnet, C++-Hälfte
+Zustand und Vorbedingung: 48 kHz, Weißrauschen L = R −20 dBFS, 30 s, Evidenzintervall 0,25 s
+Zusage: Onsetsumme Σ `staerke` je Evidenzfenster = 0 in jedem Fenster nach voller Historie; damit reißt die Guardrail bei stationärem Rauschen nie
+Test je Sprache: C++: B16 NEU `380/M-65 onsetsumme_null_bei_rauschen`
+Rotbeweisspalte (Etikett): heute rot: Mittel 0,73, SD 1,59 je Fenster, Guardrail bei 4+4 Fenstern in 7,0 % gerissen (gemessen `b11_guardrail.out`); nach dem Bau Mutation wie M-50 → Summe > 0 → rot
+
+Basisstand-Gegenprobe (unveraendertes Produkt, HEAD 21853aa1, Bein B16, `--nak380 M-65`):
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung 93 gebaute Snapshots, davon 89 nach voller Historie, jeder durch Textriegel und Schema  [93 Snapshots, nicht gebaut 0, nach voller Historie 89, Riegelfehler 0, Schemafehler 0]
+    [ROT]  380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme Summe staerke_mad = 0 in jedem Evidenzfenster  [16 Fenster mit Summe > 0, groesste Summe 7.323, verloren 0]
+    Exit 1
+Endstand (kalibriert, alle Ruecknahmen erfolgt, eq-copilot/build/nak380-e4-end, `--nak380 M-65`):
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung 93 gebaute Snapshots, davon 89 nach voller Historie, jeder durch Textriegel und Schema  [93 Snapshots, nicht gebaut 0, nach voller Historie 89, Riegelfehler 0, Schemafehler 0]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme Summe staerke_mad = 0 in jedem Evidenzfenster  [0 Fenster mit Summe > 0, groesste Summe 0.000, verloren 0]
+    Exit 0
+
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m65-relativ (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:786): Onsetsumme 0 in jedem Evidenzfenster (rein relative Schwelle)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med)` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m65-relativ.txt

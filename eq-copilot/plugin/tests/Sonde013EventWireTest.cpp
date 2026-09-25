@@ -50,6 +50,47 @@ namespace rt = nakama::echtzeit;
 using nakama::analyse::FeatureEngine;
 using nakama::analyse::FeatureFrame;
 
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+namespace nakama::analyse
+{
+/** NAK-380 Nacharbeit 1 (T-380-11, Befund D3): der eigene, nur lesende
+    Testzugang dieses Programms fuer die Referenz der Flussstaerke (M-63).
+    Er liest je geschlossenem Hauptstufen-Frame Fensteranfang und SF und die
+    Historie der aktiven Frames, dazu die Zahl der verarbeiteten Samples;
+    er ruft keine Produktfunktion und schreibt nichts. Das Produkt definiert
+    und ruft ihn nie (Freund in `FeatureEngine.h`). */
+struct FeatureEngineTestzugang
+{
+    /** Fensteranfang des zuletzt geschlossenen Hauptstufen-Frames:
+        `fensterStromStart` steht nach `rechneFenster` schon auf dem naechsten
+        Fenster (+= hop), der geschlossene liegt einen Hop davor; vor dem
+        ersten geschlossenen Fenster 0. */
+    static std::uint64_t letzterFensterStart (const FeatureEngine& e) noexcept
+    {
+        const auto hop = (std::uint64_t) e.haupt.hop;
+        return e.haupt.fensterStromStart >= hop ? e.haupt.fensterStromStart - hop : 0u;
+    }
+    /** SF(n) des zuletzt geschlossenen Frames (`sfVorher` nach dem Schritt). */
+    static double letzterFluss (const FeatureEngine& e) noexcept
+    {
+        return e.detektor.empty() ? 0.0 : e.detektor[0].sfVorher;
+    }
+    static int historieGefuellt (const FeatureEngine& e) noexcept
+    {
+        return e.detektor.empty() ? 0 : e.detektor[0].gefuellt;
+    }
+    /** Kopie der Historie (Reihenfolge des Rings; die Referenz sortiert selbst). */
+    static std::vector<double> historie (const FeatureEngine& e)
+    {
+        return e.detektor.empty() ? std::vector<double> {} : e.detektor[0].historie;
+    }
+    /** Von der Engine verarbeitete Samples (je Sample einmal gezaehlt, nur
+        `zuruecksetzen` setzt ihn auf 0). */
+    static std::uint64_t verarbeitet (const FeatureEngine& e) noexcept { return e.verarbeiteteSamples; }
+};
+} // namespace nakama::analyse
+#endif
+
 namespace
 {
 int bestanden = 0;
@@ -603,7 +644,17 @@ struct Nak380Wirelauf
 {
     int snapshots { 0 }, nichtGebaut { 0 }, riegelfehler { 0 }, schemafehler { 0 };
     int flussMotor { 0 }, flussMotorAusserhalb { 0 }, flussDraht { 0 }, flussDrahtAusserhalb { 0 };
-    std::uint64_t verloren { 0 };
+    std::uint64_t verloren { 0 };                   // Summe `verloren` am Draht
+    std::uint64_t verworfenMotor { 0 };             // ereignisseVerworfen() am Laufende (§7.3)
+    std::uint64_t samples { 0 };                    // vom Laeufer gespeist
+    std::uint64_t engineSamples { 0 };              // von der Engine verarbeitet (Testzugang)
+    // Wertpruefung je Flussereignis der Engine gegen die Referenz (Befund D3)
+    int wertGeprueft { 0 }, wertOhneReferenz { 0 }, wertAbweichend { 0 }, wertMedPositiv { 0 };
+    double groessteAbweichungRel { 0.0 };
+    juce::String wertBeispiele;
+    // Drahtwert gegen Engine-Wert desselben Ereignisses (Befund D3)
+    int drahtGleich { 0 }, drahtUngleich { 0 }, drahtOhnePartner { 0 };
+    juce::String drahtBeispiele;
     double groessteStaerke { 0.0 }, kleinsteStaerke { 1.0e30 };
     std::vector<double> onsetsumme;                 // je gebautem Snapshot Summe staerke_mad
     std::vector<std::uint64_t> baustelle;           // je gebautem Snapshot die Stromposition
@@ -611,10 +662,37 @@ struct Nak380Wirelauf
     std::vector<double> drahtStaerken;              // alle Flussstaerken am Draht
 };
 
+/*  NAK-380 Nacharbeit 1 (Befunde D1, D3, D5): der Wirelaeufer
+    - speist Bloecke von min(512, Rest) Samples und zaehlt die gespeisten
+      Samples; die Engine meldet die verarbeiteten (Testzugang);
+    - merkt sich je geschlossenem Hauptstufen-Frame Fensteranfang, SF und die
+      Referenz der Staerke aus der Historie VOR diesem Frame
+      (`staerkeReferenz`, Median und echte MAD im Test gerechnet, kappa 3,
+      rho 1, T_min 0,10*1530 = 153,0 dB als Matrixzahlen, §6.3 in der Fassung
+      §38.2); ein Block von 512 Samples schliesst hoechstens ein Fenster
+      (Hop 2048), ein neuer Fensteranfang heisst: genau eines;
+    - prueft jedes Flussereignis der Engine genau einmal (beim Entnehmen nach
+      einem gebauten Snapshot, der Rest am Laufende) gegen seine Referenz:
+      Toleranz |ref| * (2^-24 + 2^-50) - Produkt und Referenz rechnen dieselbe
+      Formel in double (hoechstens 2^-50 relativ auseinander: T_eff aus einem
+      max, dessen Kandidat med + kappa*MAD einmal mehr runden darf, 2 ulp von
+      T_eff und T_eff/(T_eff - med) <= 2; je 2^-53 fuer SF - med, T_eff - med,
+      *kappa, /Nenner), das Produkt speichert float (halbe Stufe <= |x|*2^-24);
+    - prueft jedes Flussereignis am Draht gegen das Engine-Ereignis desselben
+      Fensteranfangs: exakt als float. Der Serialisierer schreibt den float
+      als double mit 15 signifikanten Stellen (`wireZahl`, relativer Fehler
+      <= 5e-15), JUCE liest ihn mit strtod (<= 1 ulp): der gelesene Wert
+      liegt weit innerhalb einer halben float-Stufe (6e-8 relativ) um den
+      float, also ergibt (float) Drahtwert genau den Engine-float;
+    - zaehlt den Verlust des Rings (Engine) und `verloren` am Draht getrennt. */
 __declspec(noinline) std::unique_ptr<Nak380Wirelauf> nak380Wirelauf (const std::vector<float>& mono)
 {
+    namespace sig = nakama::test::nak380;
+    using nakama::analyse::FeatureEngineTestzugang;
     constexpr double fs = 48000.0;
     constexpr int block = 512;
+    constexpr double kKappa = 3.0, kRho = 1.0;
+    const double tMin = 0.10 * 1530.0;
     auto engine = std::make_unique<FeatureEngine>();
     engine->vorbereiten (fs);
     auto aus = std::make_unique<Nak380Wirelauf>();
@@ -627,6 +705,55 @@ __declspec(noinline) std::unique_ptr<Nak380Wirelauf> nak380Wirelauf (const std::
     std::uint64_t strom = 0;
     std::int64_t projekt = 0;
     std::uint64_t letzteVerluste = 0;
+
+    struct FrameRef { std::uint64_t start { 0 }; double sf { 0.0 }; bool voll { false }; sig::StaerkeReferenz ref; };
+    std::vector<FrameRef> frames;
+    frames.reserve (1024u);
+    auto histVorher = FeatureEngineTestzugang::historie (*engine);
+    int gefuelltVorher = FeatureEngineTestzugang::historieGefuellt (*engine);
+    std::uint64_t letzterStart = FeatureEngineTestzugang::letzterFensterStart (*engine);
+
+    const auto motorPruefen = [&] (const nakama::analyse::Ereignis& e)
+    {
+        if (! e.qualitaetFluss)
+            return;
+        ++aus->flussMotor;
+        const double st = (double) e.staerke;
+        if (! (std::isfinite (st) && st >= 3.0 && st <= 1000.0))
+            ++aus->flussMotorAusserhalb;
+        const FrameRef* r = nullptr;
+        for (auto it = frames.rbegin(); it != frames.rend() && r == nullptr; ++it)
+            if (it->start == e.stromSample)
+                r = &*it;
+        if (r == nullptr || ! r->voll || ! r->ref.gueltig)
+        {
+            ++aus->wertOhneReferenz;
+            aus->wertBeispiele << " ohne Referenz " << juce::String ((juce::int64) e.stromSample) << ";";
+            return;
+        }
+        ++aus->wertGeprueft;
+        if (r->ref.med > 0.0)
+            ++aus->wertMedPositiv;
+        const double abweichung = std::abs (st - r->ref.staerke);
+        const double toleranz = std::abs (r->ref.staerke) * (std::ldexp (1.0, -24) + std::ldexp (1.0, -50));
+        aus->groessteAbweichungRel = std::max (aus->groessteAbweichungRel,
+                                               abweichung / std::max (std::abs (r->ref.staerke), 1.0e-300));
+        if (! (abweichung <= toleranz))
+        {
+            ++aus->wertAbweichend;
+            if (aus->wertAbweichend <= 4)
+                aus->wertBeispiele << " " << juce::String ((juce::int64) e.stromSample) << ": Engine "
+                                   << juce::String (st, 6) << " gegen Referenz " << juce::String (r->ref.staerke, 6)
+                                   << " (SF " << juce::String (r->sf, 3) << ", med " << juce::String (r->ref.med, 3)
+                                   << ", T_eff " << juce::String (r->ref.tEff, 3) << ");";
+        }
+        else if (r->ref.med > 0.0 && aus->wertMedPositiv <= 2)
+            aus->wertBeispiele << " " << juce::String ((juce::int64) e.stromSample) << ": "
+                               << juce::String (st, 6) << " = Referenz (SF " << juce::String (r->sf, 3)
+                               << ", med " << juce::String (r->ref.med, 3) << ", T_eff "
+                               << juce::String (r->ref.tEff, 3) << ");";
+    };
+
     while (strom < mono.size())
     {
         const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
@@ -648,21 +775,26 @@ __declspec(noinline) std::unique_ptr<Nak380Wirelauf> nak380Wirelauf (const std::
         const bool frame = engine->nimmBlock (b, audio.data());
         strom += anzahl;
         projekt += (std::int64_t) anzahl;
+        const auto start = FeatureEngineTestzugang::letzterFensterStart (*engine);
+        if (start != letzterStart)
+        {
+            FrameRef r;
+            r.start = start;
+            r.sf = FeatureEngineTestzugang::letzterFluss (*engine);
+            r.voll = gefuelltVorher >= 32 && histVorher.size() == 32u;
+            if (r.voll)
+                r.ref = sig::staerkeReferenz (r.sf, histVorher, kKappa, kRho, tMin);
+            frames.push_back (r);
+            letzterStart = start;
+            histVorher = FeatureEngineTestzugang::historie (*engine);
+            gefuelltVorher = FeatureEngineTestzugang::historieGefuellt (*engine);
+        }
         if (! frame || ! engine->frame().evidenzFrisch)
             continue;
         const auto& f = engine->frame();
         const int n = engine->ereignisAnzahlJetzt();
         for (int i = 0; i < n; ++i)
-        {
             puffer[(std::size_t) i] = engine->ereignis (i);
-            const auto& e = puffer[(std::size_t) i];
-            if (! e.qualitaetFluss)
-                continue;
-            ++aus->flussMotor;
-            const double st = (double) e.staerke;
-            if (! (std::isfinite (st) && st >= 3.0 && st <= 1000.0))
-                ++aus->flussMotorAusserhalb;
-        }
         const auto verworfen = engine->ereignisseVerworfen();
         nakama::evidenz::Ereignisstrom ereignisse;
         ereignisse.eintraege = puffer.data();
@@ -679,6 +811,9 @@ __declspec(noinline) std::unique_ptr<Nak380Wirelauf> nak380Wirelauf (const std::
             ++aus->nichtGebaut;
             continue;
         }
+        // Jedes Engine-Ereignis genau einmal: hier, bevor der Ring entnommen wird.
+        for (int i = 0; i < n; ++i)
+            motorPruefen (puffer[(std::size_t) i]);
         aus->baustelle.push_back (strom);
         juce::String riegel;
         if (! nakama::vertrag::textriegel (json, riegel))
@@ -695,14 +830,34 @@ __declspec(noinline) std::unique_ptr<Nak380Wirelauf> nak380Wirelauf (const std::
                 summe += st;
                 if ((bool) eintrag.getProperty ("qualitaet_fluss", false))
                 {
+                    const auto sample = f.evidenzStromStart
+                        + (std::uint64_t) (juce::int64) eintrag.getProperty ("sample_offset", 0);
                     ++aus->flussDraht;
-                    aus->drahtSamples.push_back (f.evidenzStromStart
-                        + (std::uint64_t) (juce::int64) eintrag.getProperty ("sample_offset", 0));
+                    aus->drahtSamples.push_back (sample);
                     aus->drahtStaerken.push_back (st);
                     aus->groessteStaerke = std::max (aus->groessteStaerke, st);
                     aus->kleinsteStaerke = std::min (aus->kleinsteStaerke, st);
                     if (! (std::isfinite (st) && st >= 3.0 && st <= 1000.0))
                         ++aus->flussDrahtAusserhalb;
+                    const nakama::analyse::Ereignis* partner = nullptr;
+                    for (int i = 0; i < n && partner == nullptr; ++i)
+                        if (puffer[(std::size_t) i].qualitaetFluss && puffer[(std::size_t) i].stromSample == sample)
+                            partner = &puffer[(std::size_t) i];
+                    if (partner == nullptr)
+                    {
+                        ++aus->drahtOhnePartner;
+                        aus->drahtBeispiele << " ohne Engine-Ereignis " << juce::String ((juce::int64) sample) << ";";
+                    }
+                    else if ((float) st == partner->staerke)
+                        ++aus->drahtGleich;
+                    else
+                    {
+                        ++aus->drahtUngleich;
+                        if (aus->drahtUngleich <= 4)
+                            aus->drahtBeispiele << " " << juce::String ((juce::int64) sample) << ": Draht "
+                                                << juce::String (st, 9) << " gegen Engine "
+                                                << juce::String ((double) partner->staerke, 9) << ";";
+                    }
                 }
             }
         aus->verloren += (std::uint64_t) (juce::int64) ereignisFeld.getProperty ("verloren", 0);
@@ -710,7 +865,60 @@ __declspec(noinline) std::unique_ptr<Nak380Wirelauf> nak380Wirelauf (const std::
         engine->ereignisseEntnommen();
         letzteVerluste = verworfen;
     }
+    // Was nach dem letzten gebauten Snapshot noch im Ring steht, wird auf der
+    // Engineseite ebenso geprueft (§7.3: jedes Ereignis gelesen).
+    for (int i = 0; i < engine->ereignisAnzahlJetzt(); ++i)
+        motorPruefen (engine->ereignis (i));
+    aus->verworfenMotor = engine->ereignisseVerworfen();
+    aus->samples = strom;
+    aus->engineSamples = FeatureEngineTestzugang::verarbeitet (*engine);
     return aus;
+}
+
+/** E-380-13 vor jedem Rosa-Nutzer (Befund D4): die Kopffunktion des
+    Erzeugers, als eigener Prueffall dieses Programms gemeldet. */
+bool nak380RosaGeprueft (const juce::String& fall, const std::vector<float>& x, double rms)
+{
+    const auto r = nakama::test::nak380::rosaSelbstpruefung (x, rms);
+    pruefe (r.ok, "380/" + fall + " rosa_selbstpruefung_E-380-13", juce::String (r.meldung));
+    return r.ok;
+}
+
+/** Die Pruefungen der Zusage M-63 (Fassung §39.2) fuer EINEN Wirelauf, je
+    Satz eine eigene Pruefung (Befunde D1, D3, D5, Z1). */
+void nak380M63Pruefungen (const juce::String& fall, const Nak380Wirelauf& l, std::uint64_t soll,
+                          const char* herleitung, bool medPositivVerlangt)
+{
+    const juce::String kopf = "380/M-63 staerke_begrenzt: " + fall + " - ";
+    pruefe (l.samples == soll && l.engineSamples == soll,
+            kopf + "Vorbedingung gespeiste Samplezahl = " + juce::String ((juce::int64) soll) + " ("
+                + herleitung + "), Laeufer und Engine",
+            "gespeist " + juce::String ((juce::int64) l.samples) + ", von der Engine verarbeitet "
+                + juce::String ((juce::int64) l.engineSamples));
+    pruefe (l.verworfenMotor == 0u,
+            kopf + "Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0",
+            "verworfen " + juce::String ((juce::int64) l.verworfenMotor));
+    pruefe (l.verloren == 0u,
+            kopf + "kein Verlust am Draht, Summe verloren = 0",
+            "verloren " + juce::String ((juce::int64) l.verloren) + " in " + juce::String (l.snapshots)
+                + " Snapshots, nicht gebaut " + juce::String (l.nichtGebaut));
+    pruefe (l.flussMotor > 0 && l.flussMotorAusserhalb == 0,
+            kopf + "jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]",
+            juce::String (l.flussMotor) + " Flussereignisse, ausserhalb " + juce::String (l.flussMotorAusserhalb));
+    pruefe (l.wertGeprueft > 0 && l.wertGeprueft == l.flussMotor && l.wertOhneReferenz == 0
+                && l.wertAbweichend == 0 && (! medPositivVerlangt || l.wertMedPositiv > 0),
+            kopf + "jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), "
+                   "Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet"
+                + (medPositivVerlangt ? juce::String (", darunter mit med > 0") : juce::String()),
+            juce::String (l.wertGeprueft) + " geprueft, med > 0 bei " + juce::String (l.wertMedPositiv)
+                + ", ohne Referenz " + juce::String (l.wertOhneReferenz) + ", abweichend "
+                + juce::String (l.wertAbweichend) + ", groesste relative Abweichung "
+                + juce::String (l.groessteAbweichungRel, 3, true) + ";" + l.wertBeispiele);
+    pruefe (l.flussDraht > 0 && l.drahtGleich == l.flussDraht && l.drahtUngleich == 0 && l.drahtOhnePartner == 0,
+            kopf + "jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)",
+            "am Draht " + juce::String (l.flussDraht) + ", gleich " + juce::String (l.drahtGleich)
+                + ", ungleich " + juce::String (l.drahtUngleich) + ", ohne Engine-Ereignis "
+                + juce::String (l.drahtOhnePartner) + ";" + l.drahtBeispiele);
 }
 
 __declspec(noinline) void nak380StaerkeUndOnsetsumme (const char* nur)
@@ -732,17 +940,24 @@ __declspec(noinline) void nak380StaerkeUndOnsetsumme (const char* nur)
         // Fensteranfang 192 512: der groesste Fluss ueberhaupt, 1530 Bins je
         // rund 75 dB ueber P0. Nach jeder Stille laeuft P2 weiter, damit das
         // Evidenzfenster mit dem Klick Konvergenz traegt und gebaut wird.
+        //
+        // Nacharbeit 1: je Lauf die Saetze der Zusage (Fassung §39.2) als
+        // eigene Pruefungen (`nak380M63Pruefungen`): gespeiste Samplezahl,
+        // Ringverlust der Engine, Verlust am Draht, Bereich, Wert gegen die
+        // Referenz, Draht = Engine. Der Klick +100 auf Stille ist der Fall, an
+        // dem die Klammer 1000 greift (Referenz ueber 1000 -> 1000). Die
+        // Pruefung "Textriegel und Schema gueltig" ist fuer die Staerke eine
+        // Regressionswache ohne Rotzusage: der Serialisierer laesst Werte
+        // ausserhalb [0, 1000] gar nicht auf den Draht (Befund Z1).
+        // Vorher E-380-13 am unveraenderten Rosa-Puffer (Befund D4).
         auto x = sig::rosaMono (sig::kP2Saat, 0.1, 240000u);
+        nak380RosaGeprueft ("M-63 (Aufwaermmaterial des Stillefalls)", x, 0.1);
         std::fill (x.begin() + 96000, x.begin() + 147456, 0.0f);
         std::fill (x.begin() + 184320, x.begin() + 196608, 0.0f);
         x[145408u] = 1.0f;
         x[194560u] = 100.0f;
         const auto stille = nak380Wirelauf (x);
-        pruefe (stille->flussMotor >= 2 && stille->flussMotorAusserhalb == 0,
-                "380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt "
-                "eine endliche staerke in [3, 1000]",
-                juce::String (stille->flussMotor) + " Flussereignisse, ausserhalb "
-                    + juce::String (stille->flussMotorAusserhalb));
+        nak380M63Pruefungen ("Klick auf Stille", *stille, 240000u, "5 s * 48 000, 468 Bloecke + Rest 384", false);
         juce::String staerken;
         bool klickVoll = false, klickHundert = false;
         for (std::size_t i = 0; i < stille->drahtStaerken.size(); ++i)
@@ -755,7 +970,7 @@ __declspec(noinline) void nak380StaerkeUndOnsetsumme (const char* nur)
         pruefe (klickVoll && klickHundert && stille->flussDrahtAusserhalb == 0
                     && stille->riegelfehler == 0 && stille->schemafehler == 0,
                 "380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am "
-                "serialisierten Wire-Text, jedes Flussereignis mit staerke_mad in [3, 1000], "
+                "serialisierten Wire-Text; Regressionswache: staerke_mad in [3, 1000], "
                 "Textriegel und Schema gueltig",
                 "am Draht " + juce::String (stille->flussDraht) + " (" + staerken + "), verloren "
                     + juce::String ((juce::int64) stille->verloren) + ", nicht gebaut "
@@ -771,6 +986,8 @@ __declspec(noinline) void nak380StaerkeUndOnsetsumme (const char* nur)
         auto s1 = sig::s1Sinus (192000u);
         s1[145408u] = (float) ((double) s1[145408u] + 1.0);
         const auto sinus = nak380Wirelauf (s1);
+        nak380M63Pruefungen ("Klick auf stehendem Sinus", *sinus, 192000u, "4 s * 48 000, 375 Bloecke, Rest 0",
+                             false);
         bool klickAufSinus = false;
         juce::String sinusStaerken;
         for (std::size_t i = 0; i < sinus->drahtStaerken.size(); ++i)
@@ -779,28 +996,25 @@ __declspec(noinline) void nak380StaerkeUndOnsetsumme (const char* nur)
                           << juce::String (sinus->drahtStaerken[i], 3);
             klickAufSinus = klickAufSinus || sinus->drahtSamples[i] == 143360u;
         }
-        pruefe (sinus->flussMotor >= 1 && sinus->flussMotorAusserhalb == 0 && klickAufSinus
-                    && sinus->flussDrahtAusserhalb == 0 && sinus->riegelfehler == 0
+        pruefe (klickAufSinus && sinus->flussDrahtAusserhalb == 0 && sinus->riegelfehler == 0
                     && sinus->schemafehler == 0,
                 "380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis "
-                "reist mit staerke_mad in [3, 1000], Textriegel und Schema gueltig",
-                juce::String (sinus->flussMotor) + " Flussereignisse der Engine, ausserhalb "
-                    + juce::String (sinus->flussMotorAusserhalb) + "; am Draht " + juce::String (sinus->flussDraht)
-                    + " (" + sinusStaerken + "), verloren " + juce::String ((juce::int64) sinus->verloren));
+                "reist am Draht; Regressionswache: staerke_mad in [3, 1000], Textriegel und Schema gueltig",
+                juce::String (sinus->flussMotor) + " Flussereignisse der Engine; am Draht "
+                    + juce::String (sinus->flussDraht) + " (" + sinusStaerken + "), verloren "
+                    + juce::String ((juce::int64) sinus->verloren));
 
-        // Korpus I1 (§7.2): P2 -40 dBFS plus 112 Klicks.
+        // Korpus I1 (§7.2): P2 -40 dBFS plus 112 Klicks; E-380-13 am
+        // unveraenderten Rosa-Puffer vor den Klicks (Befund D4).
         auto i1 = sig::rosaMono (sig::kP2Saat, 0.01, 1440000u);
+        nak380RosaGeprueft ("M-63 (Korpus I1)", i1, 0.01);
         sig::klicksEinsetzen (i1, sig::i1Klicks());
         const auto korpus = nak380Wirelauf (i1);
-        pruefe (korpus->flussMotor > 0 && korpus->flussMotorAusserhalb == 0,
-                "380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine "
-                "endliche staerke in [3, 1000]",
-                juce::String (korpus->flussMotor) + " Flussereignisse, ausserhalb "
-                    + juce::String (korpus->flussMotorAusserhalb));
+        nak380M63Pruefungen ("Korpus I1", *korpus, 1440000u, "30 s * 48 000, 2812 Bloecke + Rest 256", true);
         pruefe (korpus->flussDraht > 0 && korpus->flussDrahtAusserhalb == 0
                     && korpus->riegelfehler == 0 && korpus->schemafehler == 0,
-                "380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt "
-                "staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema",
+                "380/M-63 staerke_begrenzt: Korpus I1 - Regressionswache: jedes Flussereignis am Draht "
+                "mit staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema",
                 "am Draht " + juce::String (korpus->flussDraht) + ", kleinste "
                     + juce::String (korpus->kleinsteStaerke, 3) + ", groesste "
                     + juce::String (korpus->groessteStaerke, 3) + ", verloren "
@@ -839,12 +1053,25 @@ __declspec(noinline) void nak380StaerkeUndOnsetsumme (const char* nur)
                 juce::String (lauf->snapshots) + " Snapshots, nicht gebaut " + juce::String (lauf->nichtGebaut)
                     + ", nach voller Historie " + juce::String (nachHistorie) + ", Riegelfehler "
                     + juce::String (lauf->riegelfehler) + ", Schemafehler " + juce::String (lauf->schemafehler));
-        pruefe (mitSumme == 0 && lauf->verloren == 0u,
+        // Nacharbeit 1 (Befunde D1, D5): gespeiste Samplezahl und beide
+        // Verlustzaehler je als eigene Pruefung, unabhaengig von der Summe.
+        pruefe (lauf->samples == 1440000u && lauf->engineSamples == 1440000u,
+                "380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung gespeiste Samplezahl = 1440000 "
+                "(30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine",
+                "gespeist " + juce::String ((juce::int64) lauf->samples) + ", von der Engine verarbeitet "
+                    + juce::String ((juce::int64) lauf->engineSamples));
+        pruefe (lauf->verworfenMotor == 0u,
+                "380/M-65 onsetsumme_null_bei_rauschen: Zaehlregel 7.3 - kein Ringverlust der Engine, "
+                "ereignisseVerworfen() = 0",
+                "verworfen " + juce::String ((juce::int64) lauf->verworfenMotor));
+        pruefe (lauf->verloren == 0u,
+                "380/M-65 onsetsumme_null_bei_rauschen: kein Verlust am Draht, Summe verloren = 0",
+                "verloren " + juce::String ((juce::int64) lauf->verloren));
+        pruefe (mitSumme == 0,
                 "380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme Summe staerke_mad = 0 in jedem "
                 "Evidenzfenster",
                 juce::String (mitSumme) + " Fenster mit Summe > 0, groesste Summe "
-                    + juce::String (groesste, 3) + ", verloren "
-                    + juce::String ((juce::int64) lauf->verloren));
+                    + juce::String (groesste, 3));
     }
 }
 } // namespace

@@ -1,0 +1,27 @@
+NAK-380 Etappe 4, Nacharbeit 1 (25.09.2026) — Mutationsprotokoll m62-historie
+Matrixzeile: M-62; Zusagesatz: keines, bevor die Historie wieder 32 aktive Frames traegt
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 924
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m62-historie/0-Spektrum.h
+Wortlaut vorher:
+        d.stand = 0;
+        d.gefuellt = 0;
+        d.sfVorher = 0.0;
+Wortlaut nachher:
+        d.sfVorher = 0.0;
+  Bau EqCopAnalysisGoldenTest: 23:55:24 bis 23:55:39, Exit 0
+  Binary EqCopAnalysisGoldenTest 23:55:39.570 juenger als Quelle 23:55:24.377: ja
+Lauf mit Mutation: EqCopAnalysisGoldenTest --nak380 M-62 23:55:39 bis 23:55:40, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 1, im ersten Frame 0, vor voller Historie 1; 10.5600 sFP]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie)
+Unter derselben Mutation gruen gebliebene Pruefungen: 5
+    [ok]   380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.085 dB (Soll <= 1,0), Oktaven 57.89/57.80/57.73/57.66/57.71/57.75/57.81/57.73/57.74/57.75 dB; RMS 0.09904 gegen 0.10000 (-0.084 dB), 720000 Samples]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung gespeiste Samplezahl = 720000 (15 s * 48 000, 1406 Bloecke + Rest 128), Laeufer und Engine  [Puffer 720000, gespeist 720000, von der Engine verarbeitet 720000]
+    [ok]   380/M-62 grenze_leert_detektor: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+    [ok]   380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [falsch]
+Ruecknahme aus der Sicherung (0-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopAnalysisGoldenTest: 23:55:40 bis 23:55:56, Exit 0
+  Binary EqCopAnalysisGoldenTest 23:55:55.836 juenger als Quelle 23:55:40.203: ja
+Lauf nach Ruecknahme: EqCopAnalysisGoldenTest --nak380 M-62 23:55:56 bis 23:55:56, Exit 0, 6 bestanden, 0 gescheitert

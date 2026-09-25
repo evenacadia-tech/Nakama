@@ -1,0 +1,44 @@
+NAK-380 Etappe 4, Nacharbeit 1 (25.09.2026) — Mutationsprotokoll m63-draht
+Matrixzeile: M-63; Zusagesatz: Drahtwert = Engine-Wert desselben Ereignisses
+Begruendung der Mutation: der Serialisierer schreibt die Staerke auf eine ganze Zahl abgerundet; der Wert bleibt in [3, 1000], Textriegel und Schema bleiben gueltig
+Datei: eq-copilot/plugin/vertrag/NakamaEvidenz.cpp
+Zeile (Nacharbeitsstand): 559
+SHA-256 vor der Mutation: 0E55070531B53FB1591E8E855AEF889189118722304C6878D66C932E332BBBA1; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m63-draht/0-NakamaEvidenz.cpp
+Wortlaut vorher:
+                liste += zahlJson ((double) e.staerke);
+Wortlaut nachher:
+                liste += zahlJson (std::floor ((double) e.staerke));
+  Bau EqCopSonde013EventWireTest: 23:59:55 bis 23:59:58, Exit 0
+  Binary EqCopSonde013EventWireTest 23:59:58.599 juenger als Quelle 23:59:55.426: ja
+Lauf mit Mutation: EqCopSonde013EventWireTest --nak380 M-63 23:59:58 bis 23:59:59, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)  [am Draht 3, gleich 2, ungleich 1, ohne Engine-Ereignis 0; 196608: Draht 16.000000000 gegen Engine 16.746870041;]
+    [ROT]  380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)  [am Draht 64, gleich 0, ungleich 64, ohne Engine-Ereignis 0; 129024: Draht 14.000000000 gegen Engine 14.737808228; 141312: Draht 28.000000000 gegen Engine 28.527614594; 153600: Draht 54.000000000 gegen Engine 54.951385498; 165888: Draht 71.000000000 gegen Engine 71.770660400;]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Korpus I1 - jedes Flussereignis am Draht traegt den Engine-Wert | Klick auf Stille - jedes Flussereignis am Draht traegt den Engine-Wert)
+Unter der Mutation gruen erwartet (Trennschaerfe): ja (Korpus I1 - Regressionswache | Korpus I1 - jedes Flussereignis traegt staerke = min(1000)
+Unter derselben Mutation gruen gebliebene Pruefungen: 21
+    [ok]   380/M-63 (Aufwaermmaterial des Stillefalls) rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.295 dB (Soll <= 1,0), Oktaven 57.81/57.90/57.84/57.54/57.67/57.78/57.73/57.70/57.74/57.76 dB; RMS 0.09932 gegen 0.10000 (-0.059 dB), 240000 Samples]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - Vorbedingung gespeiste Samplezahl = 240000 (5 s * 48 000, 468 Bloecke + Rest 384), Laeufer und Engine  [gespeist 240000, von der Engine verarbeitet 240000]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - kein Verlust am Draht, Summe verloren = 0  [verloren 0 in 15 Snapshots, nicht gebaut 4]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [3 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet  [3 geprueft, med > 0 bei 3, ohne Referenz 0, abweichend 0, groesste relative Abweichung 2.458e-08; 143360: 1000.000000 = Referenz (SF 53586.956, med 50.486, T_eff 153.000); 192512: 1000.000000 = Referenz (SF 114784.866, med 61.901, T_eff 153.000);]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am serialisierten Wire-Text; Regressionswache: staerke_mad in [3, 1000], Textriegel und Schema gueltig  [am Draht 3 (143360:1000.000, 192512:1000.000, 196608:16.000), verloren 0, nicht gebaut 4, Riegelfehler 0, Schemafehler 0 in 15 Snapshots]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - Vorbedingung gespeiste Samplezahl = 192000 (4 s * 48 000, 375 Bloecke, Rest 0), Laeufer und Engine  [gespeist 192000, von der Engine verarbeitet 192000]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - kein Verlust am Draht, Summe verloren = 0  [verloren 0 in 12 Snapshots, nicht gebaut 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [1 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet  [1 geprueft, med > 0 bei 1, ohne Referenz 0, abweichend 0, groesste relative Abweichung 0.000e+00; 143360: 1000.000000 = Referenz (SF 52493.497, med 0.002, T_eff 153.000);]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)  [am Draht 1, gleich 1, ungleich 0, ohne Engine-Ereignis 0;]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis reist am Draht; Regressionswache: staerke_mad in [3, 1000], Textriegel und Schema gueltig  [1 Flussereignisse der Engine; am Draht 1 (143360:1000.000), verloren 0]
+    [ok]   380/M-63 (Korpus I1) rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine  [gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - kein Verlust am Draht, Summe verloren = 0  [verloren 0 in 93 Snapshots, nicht gebaut 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [65 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet, darunter mit med > 0  [65 geprueft, med > 0 bei 65, ohne Referenz 0, abweichend 0, groesste relative Abweichung 5.684e-08; 129024: 14.737808 = Referenz (SF 518.788, med 59.510, T_eff 153.000); 141312: 28.527615 = Referenz (SF 960.063, med 58.154, T_eff 153.000);]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - Regressionswache: jedes Flussereignis am Draht mit staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema  [am Draht 64, kleinste 3.000, groesste 83.000, verloren 0, Riegelfehler 0, Schemafehler 0 in 93 Snapshots]
+Ruecknahme aus der Sicherung (0-NakamaEvidenz.cpp), SHA-256 0E55070531B53FB1591E8E855AEF889189118722304C6878D66C932E332BBBA1: gleich
+  Bau EqCopSonde013EventWireTest: 23:59:59 bis 00:00:03, Exit 0
+  Binary EqCopSonde013EventWireTest 00:00:03.242 juenger als Quelle 23:59:59.779: ja
+Lauf nach Ruecknahme: EqCopSonde013EventWireTest --nak380 M-63 00:00:03 bis 00:00:04, Exit 0, 23 bestanden, 0 gescheitert

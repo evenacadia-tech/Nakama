@@ -93,3 +93,22 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
     Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m53-rosa.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: unveraendert; Nacharbeit 1 (Befunde D1, D5, D7): ueber den gemeinsamen Laeufer, gespeiste Samplezahl 576 000 und Verlustzaehler 0 je als eigene Pruefung, Toleranz des Vorframes 4 x Budget = 1,8e-13 dB
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B5, `--nak380 M-61`, Binary 00:00:49.565):
+    [ok]   380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.282 dB (Soll <= 1,0), Oktaven 57.74/57.97/57.69/57.72/57.72/57.73/57.81/57.72/57.74/57.74 dB; RMS 0.09955 gegen 0.10000 (-0.039 dB), 576000 Samples]
+    [ok]   380/M-61 wiederbeginn_nach_stille: Vorbedingung gespeiste Samplezahl = 576000 (12 s * 48 000, 1125 Bloecke, Rest 0), Laeufer und Engine  [Puffer 576000, gespeist 576000, von der Engine verarbeitet 576000]
+    [ok]   380/M-61 wiederbeginn_nach_stille: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9547 sFP (Sample 333824)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -100.0000 bis -100.0000 dB; 6,859 s: -100.0000 bis -100.0000 dB; Toleranz 1.782e-13 dB]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert  [Stand 21 -> 21, Fuellung 32 -> 32]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - n1-verlust (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:935): Verlustzaehler am Ende 0 als eigene Pruefung; M-63: ereignisseVerworfen() = 0 und verloren = 0
+    Wortlaut: `if (ereignisAnzahl == kEreignisPlaetze)
+        ++zEreignisseVerworfen;               // das aelteste faellt` -> `++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+    if (zEreignisseVerworfen > 0u)
+        return;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-n1-verlust.txt

@@ -44,3 +44,21 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
     Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m53-rosa.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: unveraendert; Nacharbeit 1 (Befund D5, gemeinsamer Laeufer): Klickzahl, gespeiste Samplezahl und Verlustzaehler je als eigene Pruefung (gilt fuer M-57 bis M-59 ueber `nak380Impulsfall`)
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B5, `--nak380 M-57`, Binary 00:00:49.565):
+    [ok]   380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel  [112 Klicks, 112 Ziele]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-57 impulskorpus_I1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 112, genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - n1-verlust (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:935): Verlustzaehler am Ende 0 als eigene Pruefung; M-63: ereignisseVerworfen() = 0 und verloren = 0
+    Wortlaut: `if (ereignisAnzahl == kEreignisPlaetze)
+        ++zEreignisseVerworfen;               // das aelteste faellt` -> `++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+    if (zEreignisseVerworfen > 0u)
+        return;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-n1-verlust.txt

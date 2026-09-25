@@ -49,3 +49,19 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m49-konstante (eq-copilot/plugin/core/analysis/FeatureEngine.h:229): Konstante kSperrzeitMs = 50,0
     Wortlaut: `inline constexpr double kSperrzeitMs = 50.0;` -> `inline constexpr double kSperrzeitMs = 60.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m49-konstante.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: unveraendert; Nacharbeit 1 (Befund D2): die Ereignisse liegen an den erwarteten Hops, 1 Hop {2048}, 2 Hops {2048, 6144}, bei 48 und 44,1 kHz je als eigene Pruefung
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B18, `--nak380 M-49`, Binary 00:01:18.649):
+    [ok]   380/M-49 sperrzeit_50ms: Konstante kSperrzeitMs = 50,0  [50.000]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, zwei steigende Ueberschreitungen im Abstand 1 Hop (42,67 ms) ergeben ein Ereignis  [Ereignisse 1]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse  [Ereignisse 2]
+    [ok]   380/M-49 sperrzeit_50ms: 44,1 kHz, 1 Hop (46,44 ms) ein Ereignis, 2 Hops (92,88 ms) zwei  [1 / 2]
+    [ok]   380/M-49 sperrzeit_50ms: 48 kHz, die Ereignisse liegen an den erwarteten Hops - 1 Hop {2048}, 2 Hops {2048, 6144}  [{2048} / {2048, 6144}]
+    [ok]   380/M-49 sperrzeit_50ms: 44,1 kHz, die Ereignisse liegen an den erwarteten Hops - 1 Hop {2048}, 2 Hops {2048, 6144}  [{2048} / {2048, 6144}]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m49-zeit (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:859): die Ereignisse liegen an den erwarteten Hops (M-49); Frame mit 500 (M-48)
+    Wortlaut: `e.stromSample = s.fensterStromStart;` -> `e.stromSample = s.fensterStromStart + (std::uint64_t) s.hop;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m49-zeit.txt

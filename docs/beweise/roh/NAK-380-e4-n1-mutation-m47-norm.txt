@@ -1,0 +1,26 @@
+NAK-380 Etappe 4, Nacharbeit 1 (25.09.2026) — Mutationsprotokoll m47-norm
+Matrixzeile: M-47 (a); Zusagesatz: Vorbedingung: je Abschnitt empirisch auf die Rahmenenergie -90 bzw. -70 dBFS normiert (gemessen, Toleranz hergeleitet)
+Begruendung der Mutation: der Erzeuger skaliert wieder nur mit der theoretischen Standardabweichung (Stand vor Nacharbeit 1); die endliche Stichprobe traegt ihre eigene Energie
+Datei: eq-copilot/plugin/tests/Nak380Pruefsignale.h
+Zeile (Nacharbeitsstand): 291
+SHA-256 vor der Mutation: FE6F9346B9CEB57204C3E540B92A5AB20EDCE225B5CE6E9C7EE0180E6925B7B9; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m47-norm/0-Nak380Pruefsignale.h
+Wortlaut vorher:
+            const double faktor = std::sqrt (std::pow (10.0, sollDb[a] / 10.0) / eIst);
+Wortlaut nachher:
+            const double faktor = std::sqrt (std::pow (10.0, sollDb[a] / 10.0));
+  Bau EqCopSonde013DynamicsTest: 23:52:39 bis 23:52:44, Exit 0
+  Binary EqCopSonde013DynamicsTest 23:52:44.532 juenger als Quelle 23:52:39.415: ja
+Lauf mit Mutation: EqCopSonde013DynamicsTest --nak380 M-47 23:52:44 bis 23:52:45, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-47 pegelbezug_p0 (a): Vorbedingung je Abschnitt empirisch auf die Rahmenenergie -90 bzw. -70 dBFS normiert, gemessen  [Abschnitt 0: -90.008189921 dBFS (Soll -90.0, Abweichung 8.190e-03, Toleranz 2 x Budget 1.036e-06); Abschnitt 1: -70.019141888 dBFS (Soll -70.0, Abweichung 1.914e-02, Toleranz 2 x Budget 1.036e-06)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: (a): Vorbedingung je Abschnitt empirisch)
+Unter der Mutation gruen erwartet (Trennschaerfe): ja (Sprung von -90 auf -70 dBFS unter dem Aktivgate)
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-47 pegelbezug_p0 (a): Vorbedingung gespeiste Samplezahl = 480 000 (10 s * 48 000, 937 Bloecke + Rest 256), Laeufer und Engine  [gespeist 480000, von der Engine verarbeitet 480000]
+    [ok]   380/M-47 pegelbezug_p0 (a): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus  [Ereignisse 0]
+    [ok]   380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis  [SF 59.475633440860, Soll 59.475633440860, Abweichung 0.000e+00, Toleranz 4 x Budget = 1.195e-09, T_min 153.000, Ereignisse 0]
+Ruecknahme aus der Sicherung (0-Nak380Pruefsignale.h), SHA-256 FE6F9346B9CEB57204C3E540B92A5AB20EDCE225B5CE6E9C7EE0180E6925B7B9: gleich
+  Bau EqCopSonde013DynamicsTest: 23:52:45 bis 23:52:49, Exit 0
+  Binary EqCopSonde013DynamicsTest 23:52:49.519 juenger als Quelle 23:52:45.018: ja
+Lauf nach Ruecknahme: EqCopSonde013DynamicsTest --nak380 M-47 23:52:49 bis 23:52:49, Exit 0, 5 bestanden, 0 gescheitert

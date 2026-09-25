@@ -24,3 +24,34 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m47-p0 (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:705): (b) SF = 59,49 dB < T_min, kein Ereignis (P0 im Log)
     Wortlaut: `const double p0 = std::pow (10.0, kFlussP0Db / 10.0);` -> `const double p0 = 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-mutation-m47-p0.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: Fassung §39.2: (a) Weissrauschen L = R, Saat 0x3800001, je Abschnitt empirisch auf die Rahmenenergie -90 bzw. -70 dBFS normiert (gemessen, Toleranz 2 x Budget = 1,04e-6 dB hergeleitet); Ring nach jedem Frame entnommen; gespeiste Samplezahl 480 000 (Laeufer und Engine), Verlustzaehler 0 und kein Ereignis je als eigene Pruefung; (b) SF = 59,48 dB gegen die Referenz mit Toleranz 4 x Budget = 1,2e-9 dB
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B18, `--nak380 M-47`, Binary 00:01:18.649):
+    [ok]   380/M-47 pegelbezug_p0 (a): Vorbedingung je Abschnitt empirisch auf die Rahmenenergie -90 bzw. -70 dBFS normiert, gemessen  [Abschnitt 0: -90.000000001 dBFS (Soll -90.0, Abweichung 5.923e-10, Toleranz 2 x Budget 1.036e-06); Abschnitt 1: -70.000000000 dBFS (Soll -70.0, Abweichung 3.336e-10, Toleranz 2 x Budget 1.036e-06)]
+    [ok]   380/M-47 pegelbezug_p0 (a): Vorbedingung gespeiste Samplezahl = 480 000 (10 s * 48 000, 937 Bloecke + Rest 256), Laeufer und Engine  [gespeist 480000, von der Engine verarbeitet 480000]
+    [ok]   380/M-47 pegelbezug_p0 (a): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus  [Ereignisse 0]
+    [ok]   380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis  [SF 59.475633440860, Soll 59.475633440860, Abweichung 0.000e+00, Toleranz 4 x Budget = 1.195e-09, T_min 153.000, Ereignisse 0]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m47-norm (eq-copilot/plugin/tests/Nak380Pruefsignale.h:291): Vorbedingung: je Abschnitt empirisch auf die Rahmenenergie -90 bzw. -70 dBFS normiert (gemessen, Toleranz hergeleitet)
+    Wortlaut: `const double faktor = std::sqrt (std::pow (10.0, sollDb[a] / 10.0) / eIst);` -> `const double faktor = std::sqrt (std::pow (10.0, sollDb[a] / 10.0));`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m47-norm.txt
+  - m47-aktiv (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:486): kein Ereignis (Regressionswache; Matrixmutation Ereignisausloesung ohne Aktivitaetsbedingung)
+    Wortlaut: `if (&s == &haupt)
+            flussVorframeSchritt (s);` -> `if (&s == &haupt)
+            flussSchritt (s);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m47-aktiv.txt
+  - m47-verlust (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:486 und eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:935): Verlustzaehler am Ende 0 als eigene Pruefung (Laeufer B18 M-47 (a))
+    Wortlaut: `if (&s == &haupt)
+            flussVorframeSchritt (s); | if (ereignisAnzahl == kEreignisPlaetze)
+        ++zEreignisseVerworfen;               // das aelteste faellt` -> `if (&s == &haupt)
+            flussSchritt (s); | ++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+    if (zEreignisseVerworfen > 0u)
+        return;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m47-verlust.txt
+  - m47-rest (eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp:766): Vorbedingung gespeiste Samplezahl = 480 000, Laeufer und Engine
+    Wortlaut: `while (s.strom < (std::uint64_t) x.size())` -> `while (s.strom + 512u <= (std::uint64_t) x.size())`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m47-rest.txt

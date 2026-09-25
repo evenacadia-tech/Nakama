@@ -55,3 +55,40 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m53-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:294): E-380-13: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
     Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m53-rosa.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: Fassung §39.2: Vorbedingung ergaenzt "gespeiste Samplezahl = 720 000 verriegelt, Restblock 128 Samples gespeist"; Zusage ergaenzt "ereignisseVerworfen() = 0"; kein Ereignis im ersten Frame nach der Grenze und keines vor 32 aktiven Frames; Auskunft direkt nach der Grenze falsch; ueber den gemeinsamen Laeufer
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B5, `--nak380 M-62`, Binary 00:00:49.565):
+    [ok]   380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.085 dB (Soll <= 1,0), Oktaven 57.89/57.80/57.73/57.66/57.71/57.75/57.81/57.73/57.74/57.75 dB; RMS 0.09904 gegen 0.10000 (-0.084 dB), 720000 Samples]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung gespeiste Samplezahl = 720000 (15 s * 48 000, 1406 Bloecke + Rest 128), Laeufer und Engine  [Puffer 720000, gespeist 720000, von der Engine verarbeitet 720000]
+    [ok]   380/M-62 grenze_leert_detektor: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+    [ok]   380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [falsch]
+    [ok]   380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 0, im ersten Frame 0, vor voller Historie 0]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m62-rest (eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp:1344): Vorbedingung gespeiste Samplezahl = Signallaenge (720 000 bzw. 1 440 000), Laeufer und Engine
+    Wortlaut: `while (strom < samples)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,` -> `while (strom + (std::uint64_t) block <= samples)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m62-rest.txt
+  - m62-leeren (eq-copilot/plugin/core/analysis/featureengine/Zeit.h:500): Auskunft flussBinVorgaengerGueltig() direkt nach der Grenze falsch; kein Ereignis im ersten Frame nach der Grenze (Matrixmutation Leeren in grenzeZiehen weg)
+    Wortlaut: `detektorLeeren();` -> `// detektorLeeren();`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m62-leeren.txt
+  - m62-historie (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:924): keines, bevor die Historie wieder 32 aktive Frames traegt
+    Wortlaut: `d.stand = 0;
+    d.gefuellt = 0;
+    d.sfVorher = 0.0;` -> `d.sfVorher = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m62-historie.txt
+  - m62-verlust (eq-copilot/plugin/core/analysis/featureengine/Zeit.h:500 und eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:935): ereignisseVerworfen() = 0 (Zusage ergaenzt, Fassung §39.2)
+    Wortlaut: `detektorLeeren(); | if (ereignisAnzahl == kEreignisPlaetze)
+        ++zEreignisseVerworfen;               // das aelteste faellt` -> `// detektorLeeren(); | ++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+    if (zEreignisseVerworfen > 0u)
+        return;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m62-verlust.txt
+  - n1-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:335): Selbstpruefung der Kopffunktion vor jedem Rosa-Nutzer: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-n1-rosa.txt

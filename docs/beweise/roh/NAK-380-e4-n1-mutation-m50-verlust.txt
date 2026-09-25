@@ -1,0 +1,37 @@
+NAK-380 Etappe 4, Nacharbeit 1 (25.09.2026) — Mutationsprotokoll m50-verlust
+Matrixzeile: M-50 bis M-56 (Nullfall), Zaehlregel 7.3; Zusagesatz: Verlustzaehler am Ende 0 als eigene Pruefung (Laeufer B5, Nullkorpus)
+Begruendung der Mutation: Doppelmutation: die Matrixmutation m50-relativ (rho = 0, T_min = 0) erzeugt Fehlalarme, n1-verlust verliert jedes und zaehlt es; der Ring verliert jedes Ereignis und zaehlt jeden Verlust mit dem Produktzaehler zEreignisseVerworfen (Verwerfen bei Kapazitaet 0); die Mutation umgeht den Zaehler nicht; der Golden 'hoechstens 1 Ereignis' bleibt gruen, nur die Verlustpruefung sieht den Verlust
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 800
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m50-verlust/0-Spektrum.h
+Wortlaut vorher:
+            const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
+Wortlaut nachher:
+            const double tMin = 0.0;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 935
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m50-verlust/1-Spektrum.h
+Wortlaut vorher:
+        if (ereignisAnzahl == kEreignisPlaetze)
+            ++zEreignisseVerworfen;               // das aelteste faellt
+Wortlaut nachher:
+        ++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+        if (zEreignisseVerworfen > 0u)
+            return;
+  Bau EqCopAnalysisGoldenTest: 23:57:23 bis 23:57:39, Exit 0
+  Binary EqCopAnalysisGoldenTest 23:57:38.978 juenger als Quelle 23:57:23.580: ja
+Lauf mit Mutation: EqCopAnalysisGoldenTest --nak380 M-50 23:57:39 bis 23:57:39, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-50 nullkorpus_W1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 36]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-50 nullkorpus_W1: Zaehlregel 7.3)
+Unter der Mutation gruen erwartet (Trennschaerfe): ja (hoechstens 1 Ereignis in 30 s)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+Ruecknahme aus der Sicherung (1-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+Ruecknahme aus der Sicherung (0-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopAnalysisGoldenTest: 23:57:39 bis 23:57:56, Exit 0
+  Binary EqCopAnalysisGoldenTest 23:57:55.855 juenger als Quelle 23:57:39.774: ja
+Lauf nach Ruecknahme: EqCopAnalysisGoldenTest --nak380 M-50 23:57:56 bis 23:57:56, Exit 0, 3 bestanden, 0 gescheitert

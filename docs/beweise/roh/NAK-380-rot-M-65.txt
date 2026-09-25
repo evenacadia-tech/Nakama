@@ -35,3 +35,32 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
         const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);` -> `const double tMin = 0.0;
         const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m65-relativ.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: unveraendert; Nacharbeit 1 (Befunde D1, D5): gespeiste Samplezahl 1 440 000, Ringverlust der Engine 0 und verloren am Draht 0 je als eigene Pruefung, getrennt von der Onsetsumme
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B16, `--nak380 M-65`, Binary 00:00:39.374):
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung 93 gebaute Snapshots, davon 89 nach voller Historie, jeder durch Textriegel und Schema  [93 Snapshots, nicht gebaut 0, nach voller Historie 89, Riegelfehler 0, Schemafehler 0]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine  [gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: kein Verlust am Draht, Summe verloren = 0  [verloren 0]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme Summe staerke_mad = 0 in jedem Evidenzfenster  [0 Fenster mit Summe > 0, groesste Summe 0.000]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m65-verlust (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:800 und eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:935): ereignisseVerworfen() = 0 und verloren = 0 als eigene Pruefungen (Laeufer B16, W1)
+    Wortlaut: `const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin); | if (ereignisAnzahl == kEreignisPlaetze)
+        ++zEreignisseVerworfen;               // das aelteste faellt` -> `const double tMin = 0.0;
+        const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin); | ++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+    if (zEreignisseVerworfen > 0u)
+        return;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m65-verlust.txt
+  - m63-rest (eq-copilot/plugin/tests/Sonde013EventWireTest.cpp:757): Vorbedingung gespeiste Samplezahl = Signallaenge, Laeufer und Engine
+    Wortlaut: `while (strom < mono.size())
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+                                                                     mono.size() - strom);` -> `while (strom + (std::uint64_t) block <= mono.size())
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+                                                                     mono.size() - strom);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m63-rest.txt

@@ -1,0 +1,39 @@
+NAK-380 Etappe 4, Nacharbeit 1 (25.09.2026) — Mutationsprotokoll m47-verlust
+Matrixzeile: M-47 (a), Zaehlregel 7.3; Zusagesatz: Verlustzaehler am Ende 0 als eigene Pruefung (Laeufer B18 M-47 (a))
+Begruendung der Mutation: Doppelmutation: m47-aktiv erzeugt Ereignisse unter dem Gate, n1-verlust verliert jedes und zaehlt es; der Ring verliert jedes Ereignis und zaehlt jeden Verlust mit dem Produktzaehler zEreignisseVerworfen (Verwerfen bei Kapazitaet 0); die Mutation umgeht den Zaehler nicht; die Zusagepruefung 'kein Ereignis' bleibt gruen, nur die Verlustpruefung sieht den Verlust
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 486
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m47-verlust/0-Spektrum.h
+Wortlaut vorher:
+            if (&s == &haupt)
+                flussVorframeSchritt (s);
+Wortlaut nachher:
+            if (&s == &haupt)
+                flussSchritt (s);
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 935
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m47-verlust/1-Spektrum.h
+Wortlaut vorher:
+        if (ereignisAnzahl == kEreignisPlaetze)
+            ++zEreignisseVerworfen;               // das aelteste faellt
+Wortlaut nachher:
+        ++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+        if (zEreignisseVerworfen > 0u)
+            return;
+  Bau EqCopSonde013DynamicsTest: 23:53:04 bis 23:53:11, Exit 0
+  Binary EqCopSonde013DynamicsTest 23:53:11.314 juenger als Quelle 23:53:04.506: ja
+Lauf mit Mutation: EqCopSonde013DynamicsTest --nak380 M-47 23:53:11 bis 23:53:11, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-47 pegelbezug_p0 (a): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 1]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: (a): Zaehlregel 7.3 - kein Ringverlust)
+Unter der Mutation gruen erwartet (Trennschaerfe): ja (Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus)
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-47 pegelbezug_p0 (a): Vorbedingung je Abschnitt empirisch auf die Rahmenenergie -90 bzw. -70 dBFS normiert, gemessen  [Abschnitt 0: -90.000000001 dBFS (Soll -90.0, Abweichung 5.923e-10, Toleranz 2 x Budget 1.036e-06); Abschnitt 1: -70.000000000 dBFS (Soll -70.0, Abweichung 3.336e-10, Toleranz 2 x Budget 1.036e-06)]
+    [ok]   380/M-47 pegelbezug_p0 (a): Vorbedingung gespeiste Samplezahl = 480 000 (10 s * 48 000, 937 Bloecke + Rest 256), Laeufer und Engine  [gespeist 480000, von der Engine verarbeitet 480000]
+    [ok]   380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus  [Ereignisse 0]
+    [ok]   380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis  [SF 59.475633440860, Soll 59.475633440860, Abweichung 0.000e+00, Toleranz 4 x Budget = 1.195e-09, T_min 153.000, Ereignisse 0]
+Ruecknahme aus der Sicherung (1-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+Ruecknahme aus der Sicherung (0-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013DynamicsTest: 23:53:11 bis 23:53:19, Exit 0
+  Binary EqCopSonde013DynamicsTest 23:53:18.633 juenger als Quelle 23:53:11.978: ja
+Lauf nach Ruecknahme: EqCopSonde013DynamicsTest --nak380 M-47 23:53:19 bis 23:53:19, Exit 0, 5 bestanden, 0 gescheitert

@@ -376,6 +376,18 @@ struct FeatureEngineTestzugang
     {
         return e.ereignisAnzahlJetzt() > 0 ? e.ereignis (e.ereignisAnzahlJetzt() - 1).staerke : -1.0f;
     }
+
+    /** NAK-380 Nacharbeit 1 (Befund D2): Fensteranfang des zuletzt
+        abgelegten Ereignisses; die Zusagen, die einen Frame nennen, pruefen
+        ihn am Ereignis. */
+    static std::uint64_t letzterEreignisStrom (const FeatureEngine& e) noexcept
+    {
+        return e.ereignisAnzahlJetzt() > 0 ? e.ereignis (e.ereignisAnzahlJetzt() - 1).stromSample : ~0ull;
+    }
+
+    /** NAK-380 Nacharbeit 1 (Befund D1): von der Engine verarbeitete
+        Samples (je Sample einmal gezaehlt, nur `zuruecksetzen` setzt ihn auf 0). */
+    static std::uint64_t verarbeitet (const FeatureEngine& e) noexcept { return e.verarbeiteteSamples; }
 };
 } // namespace nakama::analyse
 #endif
@@ -627,18 +639,191 @@ std::vector<double> historie (double a, int anzahlA, double b)
     return h;
 }
 
-/** Frische Engine bei 48 kHz, Historie gesetzt; faehrt die SF-Folge ab
-    `stromStart` 0 im Hopraster `hopSamples` und zaehlt die Ereignisse. */
-int folge (const std::vector<double>& hist, const std::vector<double>& sf,
-           std::uint64_t hopSamples = kHop, double fs = kFs)
+/** Frische Engine bei `fs`, Historie gesetzt; faehrt die SF-Folge ab
+    `stromStart` 0 im Hopraster `hopSamples` (Frame i hat den Fensteranfang
+    i*hopSamples) und liefert je Ereignis seinen `stromSample` in der
+    Reihenfolge der Ablage (NAK-380 Nacharbeit 1, Befund D2: die Zusagen,
+    die einen Frame nennen, pruefen ihn; die Anzahl ist die Laenge). */
+std::vector<std::uint64_t> folgeZeiten (const std::vector<double>& hist, const std::vector<double>& sf,
+                                        std::uint64_t hopSamples = kHop, double fs = kFs)
 {
     auto e = std::make_unique<FeatureEngine>();
     e->vorbereiten (fs);
     FeatureEngineTestzugang::historieSetzen (*e, hist);
-    int n = 0;
+    std::vector<std::uint64_t> zeiten;
     for (std::size_t i = 0; i < sf.size(); ++i)
-        n += FeatureEngineTestzugang::detektorSchritt (*e, sf[i], (std::uint64_t) i * hopSamples);
-    return n;
+    {
+        const int neu = FeatureEngineTestzugang::detektorSchritt (*e, sf[i], (std::uint64_t) i * hopSamples);
+        // Ein Detektorschritt legt hoechstens ein Ereignis ab (Spektrum.h,
+        // detektorSchritt); mehr waere selbst ein Befund und bleibt sichtbar.
+        for (int k = 0; k < neu; ++k)
+            zeiten.push_back (FeatureEngineTestzugang::letzterEreignisStrom (*e));
+    }
+    return zeiten;
+}
+
+/** Nur die Anzahl (M-45, M-46: ihre Zusagen nennen keinen Frame). */
+int folge (const std::vector<double>& hist, const std::vector<double>& sf,
+           std::uint64_t hopSamples = kHop, double fs = kFs)
+{
+    return (int) folgeZeiten (hist, sf, hopSamples, fs).size();
+}
+
+juce::String zeitenText (const std::vector<std::uint64_t>& z)
+{
+    juce::String s;
+    for (std::size_t i = 0; i < z.size(); ++i)
+        s << (i ? ", " : "") << juce::String ((juce::int64) z[i]);
+    return "{" + s + "}";
+}
+
+/** Abstand zur naechsten darstellbaren double-Zahl ueber |v| (1 ulp). */
+double ulp (double v)
+{
+    v = std::abs (v);
+    return std::nextafter (v, std::numeric_limits<double>::infinity()) - v;
+}
+
+/** Rechenbudget eines Pegels L = 10*log10(10^(db/10) + P0) in dB (NAK-380
+    Nacharbeit 1, Befund D7), fuer den Weg des Produkts (psd = 10^(db/10)/df
+    im Testzugang, dort p = psd*df) und fuer `pegelMitP0` zugleich: Eingang
+    (p + P0) relativ <= 2^-50 (zwei pow, je <= 2 ulp) + 2^-52 (/df und *df)
+    + 2^-53 (Addition) -> 10/ln10 mal diese Summe; log10 <= 2 ulp seines
+    Ergebnisses, mal 10; die Multiplikation mit 10 <= 0,5 ulp(L). */
+double pegelBudget (double db)
+{
+    const double l = pegelMitP0 (db);
+    return 10.0 / std::log (10.0) * (std::ldexp (1.0, -50) + std::ldexp (1.0, -52) + std::ldexp (1.0, -53))
+         + 10.0 * 2.0 * ulp (l / 10.0) + 0.5 * ulp (l);
+}
+
+/** Toleranz der float-Staerke gegen ihre double-Referenz (M-63, Befund D3):
+    Produkt und `staerkeReferenz` rechnen dieselbe Formel in double; ihre
+    Ergebnisse liegen hoechstens 2^-50 relativ auseinander (T_eff aus einem
+    max, dessen Kandidat med + kappa*MAD einmal mehr runden darf: hoechstens
+    2 ulp von T_eff und T_eff/(T_eff - med) <= 2, also 2^-51 auf den
+    Nenner; je 2^-53 fuer SF - med, T_eff - med, *kappa, /Nenner). Das
+    Produkt speichert float: hoechstens eine halbe float-Stufe, <= |x|*2^-24. */
+double staerkeToleranz (double referenz)
+{
+    return std::abs (referenz) * (std::ldexp (1.0, -24) + std::ldexp (1.0, -50));
+}
+
+/** M-47 (a) (Nacharbeit 1, Befund D6): Weissrauschen L = R, Saat 0x3800001,
+    0 bis 5 s auf die Rahmenenergie -90 dBFS, 5 bis 10 s auf -70 dBFS
+    EMPIRISCH normiert (`weissAbschnitteNormiert`), beide unter dem Aktivgate
+    -60 dB (`Spektrum.h`, Energie je Hauptstufen-Fenster): 30 bzw. 10 dB
+    Abstand; die Energieschaetzung eines Hann-Fensters aus 4096 Punkten
+    streut um sqrt(3,89/4096) = 3,1 % (0,13 dB), ein Fenster ueber der
+    Stufe liegt zwischen beiden Pegeln - der kleinste Abstand bleibt ueber
+    9 dB. Der Lauf speist alle 480 000 Samples (937 Bloecke und ein Rest von
+    256), entnimmt den Ring nach jedem Frame (§7.3) und verriegelt
+    Samplezahl, Verlustzaehler und Zusage je als eigene Pruefung.
+
+    Toleranz der gemessenen Abschnittsenergie (Befund D7): jedes Sample wird
+    nach der Normierung als float gespeichert, x_f = x(1 + d) mit |d| <= 2^-24,
+    also x_f^2 relativ <= 2^-23 + 2^-48; die Normierung in double (pow <= 2
+    ulp, Division, sqrt, Produkt) <= 2^-50; die zwei fortlaufenden Summen
+    ueber n = 240 000 positive Werte (Erzeuger und Messung) <= 2 n 2^-53 =
+    5,3e-11; Budget relativ 1,19e-7, in dB 10/ln10 * 1,19e-7 = 5,2e-7 dB.
+    Toleranz = 2 x Budget. Ohne Normierung wiche die Energie der endlichen
+    Stichprobe um rund 0,013 dB (1 sigma) ab. */
+__declspec(noinline) void nak380PegelbezugNormiert()
+{
+    namespace sig = nakama::test::nak380;
+    const std::vector<std::uint64_t> grenzen { 0u, 240000u, 480000u };
+    const std::vector<double> sollDb { -90.0, -70.0 };
+    const auto x = sig::weissAbschnitteNormiert (sig::kM47Saat, grenzen, sollDb);
+    bool normiert = x.size() == 480000u;
+    juce::String energien;
+    for (std::size_t a = 0; a < sollDb.size() && x.size() == 480000u; ++a)
+    {
+        const auto n = grenzen[a + 1] - grenzen[a];
+        double summe = 0.0;
+        for (auto i = grenzen[a]; i < grenzen[a + 1]; ++i)
+            summe += (double) x[(std::size_t) i] * (double) x[(std::size_t) i];
+        const double istDb = 10.0 * std::log10 (summe / (double) n);
+        const double budget = 10.0 / std::log (10.0)
+                            * (std::ldexp (1.0, -23) + std::ldexp (1.0, -48) + std::ldexp (1.0, -50)
+                               + 2.0 * (double) n * std::ldexp (1.0, -53));
+        const double abweichung = std::abs (istDb - sollDb[a]);
+        normiert = normiert && abweichung <= 2.0 * budget;
+        energien << (a ? "; " : "") << "Abschnitt " << (int) a << ": " << juce::String (istDb, 9)
+                 << " dBFS (Soll " << juce::String (sollDb[a], 1) << ", Abweichung "
+                 << juce::String (abweichung, 3, true) << ", Toleranz 2 x Budget "
+                 << juce::String (2.0 * budget, 3, true) << ")";
+    }
+    pruefe (normiert,
+            "380/M-47 pegelbezug_p0 (a): Vorbedingung je Abschnitt empirisch auf die Rahmenenergie "
+            "-90 bzw. -70 dBFS normiert, gemessen",
+            (x.size() == 480000u ? juce::String() : "Puffer " + juce::String ((juce::int64) x.size()) + "; ")
+                + energien);
+    auto e = std::make_unique<FeatureEngine>();
+    e->vorbereiten (kFs);
+    Speiser s { *e };
+    int ereignisse = 0;
+    const std::function<float (std::uint64_t)> f = [&x] (std::uint64_t n) { return x[(std::size_t) n]; };
+    while (s.strom < (std::uint64_t) x.size())
+    {
+        s.frames = (int) std::min<std::uint64_t> (512u, (std::uint64_t) x.size() - s.strom);
+        if (s.sende (f))
+        {
+            ereignisse += e->ereignisAnzahlJetzt();
+            e->ereignisseEntnommen();
+        }
+    }
+    ereignisse += e->ereignisAnzahlJetzt();
+    const auto verarbeitet = FeatureEngineTestzugang::verarbeitet (*e);
+    pruefe (s.strom == 480000u && verarbeitet == 480000u,
+            "380/M-47 pegelbezug_p0 (a): Vorbedingung gespeiste Samplezahl = 480 000 (10 s * 48 000, "
+            "937 Bloecke + Rest 256), Laeufer und Engine",
+            "gespeist " + juce::String ((juce::int64) s.strom) + ", von der Engine verarbeitet "
+                + juce::String ((juce::int64) verarbeitet));
+    pruefe (e->ereignisseVerworfen() == 0u,
+            "380/M-47 pegelbezug_p0 (a): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0",
+            "verworfen " + juce::String ((juce::int64) e->ereignisseVerworfen()));
+    pruefe (ereignisse == 0,
+            "380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus",
+            "Ereignisse " + juce::String (ereignisse));
+}
+
+/** M-63, Wertezusage ueber den Testzugang (Nacharbeit 1, Befund D3): die
+    Staerke eines Flussereignisses bei med > 0 gegen die unabhaengige
+    Referenz `staerkeReferenz` (Nak380Pruefsignale.h). Historie der M-46:
+    16 x 160 und 16 x 200 dB -> med 180, MAD 20, T_eff = max(240, 360, 153) =
+    360 (kappa 3, rho 1, T_min 0,10*1530 als Matrixzahlen). (i) SF = 361:
+    3*(361 - 180)/(360 - 180) = 3,016 67; unter der Mutation (SF - med) -> SF
+    waere es 3*361/180 = 6,016 67. (ii) SF = 60 360: 3*(60 360 - 180)/180 =
+    1003 -> geklemmt 1000; ohne Klammer 1003. Toleranz `staerkeToleranz`. */
+__declspec(noinline) void nak380StaerkeWert()
+{
+    namespace sig = nakama::test::nak380;
+    const auto h = historie (160.0, 16, 200.0);
+    const double tMinMatrix = 0.10 * 1530.0;
+    struct Fall { double sf; const char* text; };
+    const Fall faelle[] = {
+        { 361.0, "SF = 361 bei med 180, T_eff 360: staerke = 3*(SF - med)/(T_eff - med) = 3,01667" },
+        { 60360.0, "SF = 60 360 bei med 180: 3*(SF - med)/(T_eff - med) = 1003, auf 1000 geklemmt" }
+    };
+    for (const auto& fall : faelle)
+    {
+        const auto ref = sig::staerkeReferenz (fall.sf, h, 3.0, 1.0, tMinMatrix);
+        auto e = std::make_unique<FeatureEngine>();
+        e->vorbereiten (kFs);
+        FeatureEngineTestzugang::historieSetzen (*e, h);
+        const int n = FeatureEngineTestzugang::detektorSchritt (*e, fall.sf, 0u);
+        const float st = FeatureEngineTestzugang::letzteStaerke (*e);
+        const bool flussEreignis = n == 1 && e->ereignisAnzahlJetzt() == 1 && e->ereignis (0).qualitaetFluss;
+        const double abweichung = std::abs ((double) st - ref.staerke);
+        pruefe (ref.gueltig && ref.med == 180.0 && ref.mad == 20.0 && ref.tEff == 360.0 && flussEreignis
+                    && abweichung <= staerkeToleranz (ref.staerke),
+                juce::String ("380/M-63 staerke_wert_med_positiv: ") + fall.text,
+                "Referenz med " + juce::String (ref.med, 3) + ", MAD " + juce::String (ref.mad, 3) + ", T_eff "
+                    + juce::String (ref.tEff, 3) + ", staerke " + juce::String (ref.staerke, 9) + "; Engine "
+                    + juce::String ((double) st, 9) + " (Ereignisse " + juce::String (n) + "), Abweichung "
+                    + juce::String (abweichung, 3, true) + ", Toleranz "
+                    + juce::String (staerkeToleranz (ref.staerke), 3, true));
+    }
 }
 } // namespace nak380e4
 
@@ -685,9 +870,20 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
         pruefe (nullBisNeun,
                 "380/M-42 superflux_maximumfilter: d = 1 bis 9 ergibt Fluss 0,0 dB (Bin 101 im Fenster)",
                 werte);
-        pruefe (std::abs (d10 - sollD10) <= 1.0e-9,
+        // Toleranz (Nacharbeit 1, Befund D7): der Fluss 0,0 fuer d <= 9 ist
+        // exakt (jedes Delta ist <= 0, SF bleibt die Startnull) und wird mit
+        // == verglichen. Fuer d = 10 traegt SF genau ein Delta L(-20) - L(-120);
+        // alle anderen Bins liefern L(-120) - L(-120) = 0 exakt (gleiche Rechnung
+        // auf gleicher Eingabe). Budget: je Pegel `pegelBudget` (Produkt und
+        // Referenz je einmal: 2 x (1,6e-14 + 4,8e-14) dB) plus je eine Rundung
+        // der Differenz (2 x 0,5 ulp(79,96) = 1,4e-14 dB), zusammen rund 1,4e-13
+        // dB; Toleranz = 4 x Budget.
+        const double budgetD10 = 2.0 * (pegelBudget (-20.0) + pegelBudget (-120.0)) + ulp (sollD10);
+        pruefe (std::abs (d10 - sollD10) <= 4.0 * budgetD10,
                 "380/M-42 superflux_maximumfilter: d = 10 ergibt L(-20) - L(-120) = 79,96 dB in genau einem Bin",
-                "ist " + juce::String (d10, 6) + ", Soll " + juce::String (sollD10, 6));
+                "ist " + juce::String (d10, 15) + ", Soll " + juce::String (sollD10, 15) + ", Abweichung "
+                    + juce::String (std::abs (d10 - sollD10), 3, true) + ", Toleranz 4 x Budget = "
+                    + juce::String (4.0 * budgetD10, 3, true));
     }
 
     if (nak380Waehlt (nur, "M-43"))
@@ -749,7 +945,10 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
                                          + " Bins abweichend");
         }
         // Heap in vorbereiten: danach alloziert der Lauf nichts mehr (auch
-        // nicht der Flussschritt). 2 s W1, Block 512, Puffer vorher angelegt.
+        // nicht der Flussschritt). 2 s W1 = 96 000 Samples, Block 512, Puffer
+        // vorher angelegt; 187 volle Bloecke und ein Restblock von 256 Samples
+        // (Nacharbeit 1: Kopie, sampleCount und Fortschreibung auf min(512,
+        // Rest) begrenzt, gespeist werden alle 96 000).
         auto e = std::make_unique<FeatureEngine>();
         e->vorbereiten (kFs);
         const auto w1 = nakama::test::nak380::weissMono (nakama::test::nak380::kW1Saat, 0.1, 96000u);
@@ -758,21 +957,25 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
         b.segment = 0; b.startFolge = 0; b.kanaele = 2; b.tapMaske = 1; b.sampleRate = kFs;
         b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
                 | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
-        b.sampleCount = 512u;
+        std::uint64_t gespeist = 0;
         allokationen = 0;
         zaehleAllokationen = true;
-        for (std::uint64_t strom = 0; strom + 512u <= w1.size(); strom += 512u)
+        while (gespeist < w1.size())
         {
-            for (std::uint32_t i = 0; i < 512u; ++i)
-                audio[(std::size_t) i * 2u] = audio[(std::size_t) i * 2u + 1u] = w1[(std::size_t) (strom + i)];
-            b.stromVon = strom;
-            b.projectSampleStart = (std::int64_t) strom;
+            const auto anzahl = (std::uint32_t) std::min<std::uint64_t> (512u, w1.size() - gespeist);
+            for (std::uint32_t i = 0; i < anzahl; ++i)
+                audio[(std::size_t) i * 2u] = audio[(std::size_t) i * 2u + 1u] = w1[(std::size_t) (gespeist + i)];
+            b.stromVon = gespeist;
+            b.projectSampleStart = (std::int64_t) gespeist;
+            b.sampleCount = anzahl;
             (void) e->nimmBlock (b, audio.data());
+            gespeist += anzahl;
         }
         zaehleAllokationen = false;
-        pruefe (allokationen == 0u,
+        pruefe (allokationen == 0u && gespeist == 96000u,
                 "380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)",
-                juce::String ((juce::int64) allokationen) + " Allokationen in 2 s");
+                juce::String ((juce::int64) allokationen) + " Allokationen in 2 s, gespeist "
+                    + juce::String ((juce::int64) gespeist) + " Samples");
     }
 
     if (nak380Waehlt (nur, "M-44"))
@@ -830,22 +1033,7 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
     if (nak380Waehlt (nur, "M-47"))
     {
         abschnitt ("380/M-47 pegelbezug_p0");
-        // (a) W (Saat 0x3800001) auf -90 dBFS bis 5 s, dann -70 dBFS bis 10 s:
-        // Rahmenenergie sigma^2 = -90 bzw. -70 dB, beide unter dem Aktivgate
-        // -60 dB -> kein Ereignis.
-        auto x = nakama::test::nak380::weissMono (nakama::test::nak380::kM47Saat, 1.0, 480000u);
-        for (std::size_t i = 0; i < x.size(); ++i)
-            x[i] = (float) ((double) x[i] * (i < 240000u ? std::pow (10.0, -90.0 / 20.0)
-                                                         : std::pow (10.0, -70.0 / 20.0)));
-        auto e = std::make_unique<FeatureEngine>();
-        e->vorbereiten (kFs);
-        Speiser s { *e };
-        int ereignisse = 0;
-        s.fahreGenau ([&x] (std::uint64_t n) { return x[(std::size_t) n]; }, 480000u);
-        ereignisse = e->ereignisAnzahlJetzt();
-        pruefe (ereignisse == 0 && e->ereignisseVerworfen() == 0u,
-                "380/M-47 pegelbezug_p0 (a): Sprung von -90 auf -70 dBFS unter dem Aktivgate loest nichts aus",
-                "Ereignisse " + juce::String (ereignisse));
+        nak380PegelbezugNormiert();
         // (b) Vorframe alle Bins -130 dBFS, Frame alle Bins -120 dBFS, aktiv:
         // SF = 1530 * 10*log10((1e-12 + 1e-10)/(1e-13 + 1e-10)) = 59,49 dB < T_min.
         auto eb = std::make_unique<FeatureEngine>();
@@ -853,11 +1041,25 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
         const double sf = FeatureEngineTestzugang::binFluss (*eb, spektrum (-130.0, -1, 0.0),
                                                               spektrum (-120.0, -1, 0.0));
         const double sollSf = 1530.0 * (pegelMitP0 (-120.0) - pegelMitP0 (-130.0));
+        // Toleranz (Nacharbeit 1, Befund D7): SF ist die Summe von K = 1530
+        // gleichen Deltas L(-120) - L(-130) (das Maximum ueber gleiche
+        // Vorframewerte ist dieser Wert selbst). Budget: der Fehler eines
+        // Deltas (je Pegel `pegelBudget`, 4,8e-14 dB) wiederholt sich in allen
+        // K Summanden, auf beiden Seiten: 2 x K x (4,8e-14 + 4,8e-14) = 2,9e-10
+        // dB; dazu die fortlaufende Summation im Produkt, K - 1 Rundungen von
+        // hoechstens 0,5 ulp(59,5) = 3,6e-15 dB (5,4e-12 dB), und die
+        // Multiplikation 1530*Delta der Referenz (0,5 ulp(59,5)); zusammen rund
+        // 3,0e-10 dB. Toleranz = 4 x Budget.
+        const double k = 1530.0;
+        const double budgetSf = 2.0 * k * (pegelBudget (-120.0) + pegelBudget (-130.0))
+                              + k * 0.5 * ulp (sollSf);
         FeatureEngineTestzugang::historieSetzen (*eb, historie (0.0, 0, 0.0));
         const int n = FeatureEngineTestzugang::detektorSchritt (*eb, sf, 0u);
-        pruefe (std::abs (sf - sollSf) <= 1.0e-6 && sf < tMin48 && n == 0,
+        pruefe (std::abs (sf - sollSf) <= 4.0 * budgetSf && sf < tMin48 && n == 0,
                 "380/M-47 pegelbezug_p0 (b): -130 -> -120 dBFS je Bin ergibt SF = 59,49 dB < T_min, kein Ereignis",
-                "SF " + juce::String (sf, 4) + ", Soll " + juce::String (sollSf, 4) + ", T_min "
+                "SF " + juce::String (sf, 12) + ", Soll " + juce::String (sollSf, 12) + ", Abweichung "
+                    + juce::String (std::abs (sf - sollSf), 3, true) + ", Toleranz 4 x Budget = "
+                    + juce::String (4.0 * budgetSf, 3, true) + ", T_min "
                     + juce::String (tMin48, 3) + ", Ereignisse " + juce::String (n));
     }
 
@@ -871,10 +1073,20 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
         // 85,33 ms nach 500 (Sperrzeit frei) und ist kein lokales Maximum ->
         // genau ein Ereignis. Die Historie nimmt die Folge auf; der Median
         // bleibt 0, solange weniger als 16 Werte ungleich 0 sind.
-        const int n = folge (historie (0.0, 0, 0.0), { 0.0, 500.0, 450.0, 400.0 });
+        // Nacharbeit 1 (Befund D2): die Zusage nennt den Frame. Frame i hat
+        // den Fensteranfang i*2048; der Frame mit 500 ist i = 1, das Ereignis
+        // traegt stromSample = 1*2048 = 2048 (bei 450 waere es 4096).
+        const auto zeiten = folgeZeiten (historie (0.0, 0, 0.0), { 0.0, 500.0, 450.0, 400.0 });
+        const int n = (int) zeiten.size();
         pruefe (n == 1,
-                "380/M-48 spitzenwahl_lokales_maximum: 0, 500, 450, 400 ergibt genau ein Ereignis (am Frame mit 500)",
-                "T_eff = T_min = " + juce::String (tMin48, 3) + ", Ereignisse " + juce::String (n));
+                "380/M-48 spitzenwahl_lokales_maximum: 0, 500, 450, 400 ergibt genau ein Ereignis "
+                "(450 in der Sperrzeit und kein lokales Maximum, 400 kein lokales Maximum)",
+                "T_eff = T_min = " + juce::String (tMin48, 3) + ", Ereignisse " + juce::String (n)
+                    + ", stromSample " + zeitenText (zeiten));
+        pruefe (n == 1 && zeiten[0] == 1u * kHop,
+                "380/M-48 spitzenwahl_lokales_maximum: das Ereignis liegt am Frame mit 500, "
+                "stromSample = 1*2048 = 2048",
+                "stromSample " + zeitenText (zeiten) + ", Soll {2048}");
     }
 
     if (nak380Waehlt (nur, "M-49"))
@@ -891,20 +1103,38 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
                 juce::String (nakama::analyse::kSperrzeitMs, 3));
         // 48 kHz: 1 Hop = 2048/48000 = 42,67 ms < 50 -> ein Ereignis;
         // 2 Hops = 85,33 ms >= 50 -> zwei. 44,1 kHz: 46,44 ms bzw. 92,88 ms.
-        const int ein48 = folge (h, { 0.0, a, 1.1 * a });
-        const int zwei48 = folge (h, { 0.0, a, 1.0, 1.1 * a });
-        const int ein441 = folge (h, { 0.0, a, 1.1 * a }, kHop, 44100.0);
-        const int zwei441 = folge (h, { 0.0, a, 1.0, 1.1 * a }, kHop, 44100.0);
-        pruefe (ein48 == 1,
+        // Nacharbeit 1 (Befund D2): die Ereignisse liegen an den erwarteten
+        // Hops (Fensteranfang i*2048 bei beiden Raten): 1 Hop -> A bei i = 1,
+        // 2048 (1,1A bei 4096 gesperrt); 2 Hops -> 2048 und 6144.
+        const auto ein48 = folgeZeiten (h, { 0.0, a, 1.1 * a });
+        const auto zwei48 = folgeZeiten (h, { 0.0, a, 1.0, 1.1 * a });
+        const auto ein441 = folgeZeiten (h, { 0.0, a, 1.1 * a }, kHop, 44100.0);
+        const auto zwei441 = folgeZeiten (h, { 0.0, a, 1.0, 1.1 * a }, kHop, 44100.0);
+        pruefe (ein48.size() == 1u,
                 "380/M-49 sperrzeit_50ms: 48 kHz, zwei steigende Ueberschreitungen im Abstand 1 Hop "
                 "(42,67 ms) ergeben ein Ereignis",
-                "Ereignisse " + juce::String (ein48));
-        pruefe (zwei48 == 2,
+                "Ereignisse " + juce::String ((int) ein48.size()));
+        pruefe (zwei48.size() == 2u,
                 "380/M-49 sperrzeit_50ms: 48 kHz, Abstand 2 Hops (85,33 ms) ergibt zwei Ereignisse",
-                "Ereignisse " + juce::String (zwei48));
-        pruefe (ein441 == 1 && zwei441 == 2,
+                "Ereignisse " + juce::String ((int) zwei48.size()));
+        pruefe (ein441.size() == 1u && zwei441.size() == 2u,
                 "380/M-49 sperrzeit_50ms: 44,1 kHz, 1 Hop (46,44 ms) ein Ereignis, 2 Hops (92,88 ms) zwei",
-                juce::String (ein441) + " / " + juce::String (zwei441));
+                juce::String ((int) ein441.size()) + " / " + juce::String ((int) zwei441.size()));
+        const std::vector<std::uint64_t> sollEin { 1u * kHop }, sollZwei { 1u * kHop, 3u * kHop };
+        pruefe (ein48 == sollEin && zwei48 == sollZwei,
+                "380/M-49 sperrzeit_50ms: 48 kHz, die Ereignisse liegen an den erwarteten Hops - "
+                "1 Hop {2048}, 2 Hops {2048, 6144}",
+                zeitenText (ein48) + " / " + zeitenText (zwei48));
+        pruefe (ein441 == sollEin && zwei441 == sollZwei,
+                "380/M-49 sperrzeit_50ms: 44,1 kHz, die Ereignisse liegen an den erwarteten Hops - "
+                "1 Hop {2048}, 2 Hops {2048, 6144}",
+                zeitenText (ein441) + " / " + zeitenText (zwei441));
+    }
+
+    if (nak380Waehlt (nur, "M-63"))
+    {
+        abschnitt ("380/M-63 staerke_wert_med_positiv (Testzugang)");
+        nak380StaerkeWert();
     }
 #else
     juce::ignoreUnused (nur);

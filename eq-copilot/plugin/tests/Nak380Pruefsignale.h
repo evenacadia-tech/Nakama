@@ -3,9 +3,12 @@
 #include "../core/analysis/Fft.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <string>
+#include <system_error>
 #include <vector>
 
 namespace nakama::test::nak380
@@ -254,6 +257,44 @@ inline std::vector<float> weissMono (std::uint64_t saat, double sigma, std::uint
     return aus;
 }
 
+/** M-47 (a) (NAK-380 Nacharbeit 1, Befund D6): dasselbe Gauss-Weissrauschen
+    wie `weissMono (saat, 1.0, ...)`, aber je Abschnitt [grenzen[i],
+    grenzen[i+1]) EMPIRISCH auf die feste Rahmenenergie E_soll = 10^(sollDb[i]/10)
+    normiert: die Stichprobenenergie E_ist = Summe x^2 / n der sigma-1-Werte
+    wird in double gemessen und der Abschnitt mit sqrt(E_soll/E_ist)
+    skaliert, danach als float32 gespeichert. Die Normierung stellt die
+    Groesse selbst her; `sigma` waere nur die theoretische
+    Standardabweichung, und die endliche Stichprobe wiche davon um rund
+    sqrt(2/n) ab (240 000 Werte: 0,29 %, 0,013 dB). Gemessen wird die
+    hergestellte Energie im Test. Falsche Grenzen (nicht aufsteigend, nicht
+    eine mehr als Pegel, erste nicht 0) liefern einen leeren Puffer. */
+inline std::vector<float> weissAbschnitteNormiert (std::uint64_t saat,
+                                                   const std::vector<std::uint64_t>& grenzen,
+                                                   const std::vector<double>& sollDb)
+{
+    if (grenzen.size() != sollDb.size() + 1u || grenzen.size() < 2u || grenzen.front() != 0u)
+        return {};
+    for (std::size_t a = 1; a < grenzen.size(); ++a)
+        if (grenzen[a] <= grenzen[a - 1])
+            return {};
+    GaussRauschen g { saat };
+    std::vector<double> roh ((std::size_t) grenzen.back());
+    for (auto& v : roh)
+        v = g.naechstes();
+    std::vector<float> aus ((std::size_t) grenzen.back());
+    for (std::size_t a = 0; a + 1 < grenzen.size(); ++a)
+    {
+        double summe = 0.0;
+        for (auto i = grenzen[a]; i < grenzen[a + 1]; ++i)
+            summe += roh[(std::size_t) i] * roh[(std::size_t) i];
+        const double eIst = summe / (double) (grenzen[a + 1] - grenzen[a]);
+        const double faktor = std::sqrt (std::pow (10.0, sollDb[a] / 10.0) / eIst);
+        for (auto i = grenzen[a]; i < grenzen[a + 1]; ++i)
+            aus[(std::size_t) i] = (float) (faktor * roh[(std::size_t) i]);
+    }
+    return aus;
+}
+
 /** P1/P2: rosa Rauschen nach Paul Kellet (sieben Pole) auf Gauss-Weiss.
 
     Normierung ANALYTISCH statt am Lauf: `leistungsverstaerkung()` ist die
@@ -366,6 +407,106 @@ inline double rosaGroessteOktavdifferenzDb (const std::vector<float>& x, double 
     if (oktavenDb != nullptr)
         *oktavenDb = db;
     return groesste;
+}
+
+namespace detail
+{
+/** Festkommatext ohne Locale (std::to_chars), fuer Meldungen aus dem Kopf. */
+inline std::string festkomma (double v, int stellen)
+{
+    char puffer[64];
+    const auto r = std::to_chars (puffer, puffer + sizeof (puffer), v, std::chars_format::fixed, stellen);
+    return r.ec == std::errc() ? std::string (puffer, r.ptr) : std::string ("?");
+}
+} // namespace detail
+
+/** E-380-13 als Kopffunktion des Erzeugers (NAK-380 Nacharbeit 1, Befund
+    D4; Erzeugerbindung): jedes Programm ruft sie vor JEDEM Rosa-Nutzer am
+    unveraenderten Puffer auf (vor Stille, Klicks oder Pegelstufen) und
+    meldet das Ergebnis als eigenen Prueffall `380/<Fall>
+    rosa_selbstpruefung_E-380-13`. Zwei Bedingungen:
+    - Oktavbandleistung konstant: benachbarte Oktaven 31,25 Hz bis 16 kHz
+      weichen hoechstens 1,0 dB ab (§7.1, der E-380-13-Wert selbst).
+    - Pegel = Soll-RMS auf 0,5 dB. Herleitung: die Stichprobenleistung
+      P = Summe x^2 / N eines Gaussprozesses mit Autokorrelation rho(k) hat
+      die relative Varianz (2/N) * Summe_k rho(k)^2. Fuer das Kellet-Filter
+      ist Summe_k rho(k)^2 = 96,04 (aus der Impulsantwort, alle Verschiebungen
+      beider Richtungen; die Annahme "alles am langsamsten Pol" gaebe
+      (1 + a^2)/(1 - a^2) = 877 und waere nur eine Schranke). Kuerzester
+      Nutzer 240 000 Samples: sqrt(2*96,04/240 000) = 2,83 % = 0,121 dB, 0,5 dB
+      sind 4,1 sigma; 1 440 000 Samples: 0,050 dB, 10 sigma. Die Normierung
+      des Erzeugers ist analytisch (`leistungsverstaerkung`), der Erwartungswert
+      also der Soll-Pegel.
+    Rueckgabe wie bisher im B5-Helfer: Urteil und Meldung mit groesster
+    Nachbardifferenz, den zehn Oktavpegeln und dem RMS. Nicht endliche oder
+    leere Eingaben sind nie gruen (Vergleiche mit NaN sind falsch). */
+struct RosaSelbstpruefung
+{
+    bool ok { false };
+    double groessteDifferenzDb { 0.0 };
+    double rmsIst { 0.0 };
+    double abweichungDb { 0.0 };
+    std::vector<double> oktavenDb;
+    std::string meldung;
+};
+
+inline RosaSelbstpruefung rosaSelbstpruefung (const std::vector<float>& x, double rms,
+                                              double fs = kSamplerate)
+{
+    RosaSelbstpruefung e;
+    e.groessteDifferenzDb = rosaGroessteOktavdifferenzDb (x, fs, &e.oktavenDb);
+    double summe = 0.0;
+    for (const float v : x)
+        summe += (double) v * (double) v;
+    e.rmsIst = x.empty() ? 0.0 : std::sqrt (summe / (double) x.size());
+    e.abweichungDb = 20.0 * std::log10 (e.rmsIst / rms);
+    e.ok = e.groessteDifferenzDb <= 1.0 && std::abs (e.abweichungDb) <= 0.5;
+    std::string baender;
+    for (std::size_t i = 0; i < e.oktavenDb.size(); ++i)
+        baender += (i ? "/" : "") + detail::festkomma (e.oktavenDb[i], 2);
+    e.meldung = "groesste Nachbardifferenz " + detail::festkomma (e.groessteDifferenzDb, 3)
+              + " dB (Soll <= 1,0), Oktaven " + baender + " dB; RMS " + detail::festkomma (e.rmsIst, 5)
+              + " gegen " + detail::festkomma (rms, 5) + " (" + detail::festkomma (e.abweichungDb, 3)
+              + " dB), " + std::to_string (x.size()) + " Samples";
+    return e;
+}
+
+/** M-63 (NAK-380 Nacharbeit 1, Befund D3): unabhaengige Referenz der
+    Flussstaerke eines Ereignisses aus seinem Fluss SF und der Historie der
+    32 aktiven Frames VOR dem ausloesenden Frame. Median und echte MAD
+    (Median der Absolutabweichungen; gerade Anzahl: Mittel der zwei mittleren
+    Werte) werden hier gerechnet, nicht vom Produkt geliehen; kappa, rho und
+    T_min kommen als Zahlen der Matrix (§6.3, Fassung §38.2: kappa = 3,
+    rho = 1, T_min = 0,10 dB * K), nicht aus den Produktkonstanten.
+    T_eff = max(med + kappa*MAD, (1 + rho)*med, T_min); Staerke =
+    min(obergrenze, kappa*(SF - med)/(T_eff - med)). `gueltig` nur bei
+    gerader, nicht leerer Historie und Nenner > 0. */
+struct StaerkeReferenz
+{
+    bool gueltig { false };
+    double med { 0.0 }, mad { 0.0 }, tEff { 0.0 }, staerke { 0.0 };
+};
+
+inline StaerkeReferenz staerkeReferenz (double sf, std::vector<double> historie, double kappa,
+                                        double rho, double tMin, double obergrenze = 1000.0)
+{
+    StaerkeReferenz r;
+    const std::size_t n = historie.size();
+    if (n < 2u || n % 2u != 0u)
+        return r;
+    std::sort (historie.begin(), historie.end());
+    r.med = 0.5 * (historie[n / 2 - 1] + historie[n / 2]);
+    for (auto& v : historie)
+        v = std::abs (v - r.med);
+    std::sort (historie.begin(), historie.end());
+    r.mad = 0.5 * (historie[n / 2 - 1] + historie[n / 2]);
+    r.tEff = std::max (std::max (r.med + kappa * r.mad, (1.0 + rho) * r.med), tMin);
+    const double nenner = r.tEff - r.med;
+    if (! (nenner > 0.0))
+        return r;
+    r.staerke = std::min (obergrenze, kappa * (sf - r.med) / nenner);
+    r.gueltig = std::isfinite (r.staerke);
+    return r;
 }
 
 /** S1: Sinus 440 Hz, Amplitude 0,5, in double gerechnet, float32 gespeichert. */

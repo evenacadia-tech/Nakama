@@ -28,3 +28,21 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m48-lokal (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:851): 0, 500, 450, 400 ergibt genau ein Ereignis (Matrixmutation SF(n) >= SF(n-1) weg)
     Wortlaut: `const bool flussAus = sf > tEff && sf >= d.sfVorher && sperreFrei && nenner > 0.0;` -> `const bool flussAus = sf > tEff && sperreFrei && nenner > 0.0;`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m48-lokal.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: Fassung §39.2: genau ein Ereignis, dessen stromSample = 2 048 (Frame mit 500), Anzahl und Frame je als eigene Pruefung; Rotbeweis Bedingung SF(n) >= SF(n - 1) -> SF(n) <= SF(n - 1) -> Ereignis bei 450 -> Frameprufung rot
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B18, `--nak380 M-48`, Binary 00:01:18.649):
+    [ok]   380/M-48 spitzenwahl_lokales_maximum: 0, 500, 450, 400 ergibt genau ein Ereignis (450 in der Sperrzeit und kein lokales Maximum, 400 kein lokales Maximum)  [T_eff = T_min = 153.000, Ereignisse 1, stromSample {2048}]
+    [ok]   380/M-48 spitzenwahl_lokales_maximum: das Ereignis liegt am Frame mit 500, stromSample = 1*2048 = 2048  [stromSample {2048}, Soll {2048}]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m48-lokal (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:851): genau ein Ereignis (Matrixmutation SF(n) >= SF(n-1) weg -> 400 loest aus)
+    Wortlaut: `sf > tEff && sf >= d.sfVorher && sperreFrei` -> `sf > tEff && sperreFrei`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m48-lokal.txt
+  - m48-invers (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:851): das Ereignis liegt am Frame mit 500, stromSample = 2048
+    Wortlaut: `sf > tEff && sf >= d.sfVorher && sperreFrei` -> `sf > tEff && sf <= d.sfVorher && sperreFrei`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m48-invers.txt
+  - m49-zeit (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:859): die Ereignisse liegen an den erwarteten Hops (M-49); Frame mit 500 (M-48)
+    Wortlaut: `e.stromSample = s.fensterStromStart;` -> `e.stromSample = s.fensterStromStart + (std::uint64_t) s.hop;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m49-zeit.txt

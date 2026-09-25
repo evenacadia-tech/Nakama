@@ -57,3 +57,64 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m63-madnenner (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:872): Nenner >= max(med, T_min - med) > 0 auch bei kleinster MAD (Klick auf stehendem Sinus)
     Wortlaut: `? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)` -> `? (float) ((sf - med) / mad)`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n0-mutation-m63-madnenner.txt
+
+Nacharbeit 1, 25.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 bis D7 und Z1 der Erstpruefung 4, Matrixfassung §39.2; Stand uncommittet auf 7b4f7938; Laeufe nach Mitternacht am 26.09.2026)
+Zusage in der Fassung der Nacharbeit: Fassung §39.2: jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), im Test aus SF, med und T_eff des ausloesenden Frames unabhaengig gerechnet (Toleranz |ref|*(2^-24 + 2^-50)), mindestens ein Fall mit med > 0; Drahtwert = Engine-Wert (als float exakt); verloren = 0 und ereignisseVerworfen() = 0; der Wiretext passiert Textriegel und Schema (Regressionswache ohne Rotzusage, Z1); Rotbeweis Klammer 1000 weg -> Klick +100 auf Stille ueber 1000 -> Wertpruefung rot; (SF - med) -> SF -> Wertpruefung rot
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B16, `--nak380 M-63`, Binary 00:00:39.374):
+    [ok]   380/M-63 (Aufwaermmaterial des Stillefalls) rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.295 dB (Soll <= 1,0), Oktaven 57.81/57.90/57.84/57.54/57.67/57.78/57.73/57.70/57.74/57.76 dB; RMS 0.09932 gegen 0.10000 (-0.059 dB), 240000 Samples]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - Vorbedingung gespeiste Samplezahl = 240000 (5 s * 48 000, 468 Bloecke + Rest 384), Laeufer und Engine  [gespeist 240000, von der Engine verarbeitet 240000]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - kein Verlust am Draht, Summe verloren = 0  [verloren 0 in 15 Snapshots, nicht gebaut 4]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [3 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet  [3 geprueft, med > 0 bei 3, ohne Referenz 0, abweichend 0, groesste relative Abweichung 2.458e-08; 143360: 1000.000000 = Referenz (SF 53586.956, med 50.486, T_eff 153.000); 192512: 1000.000000 = Referenz (SF 114784.866, med 61.901, T_eff 153.000);]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)  [am Draht 3, gleich 3, ungleich 0, ohne Engine-Ereignis 0;]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf Stille - beide Klickereignisse reisen am serialisierten Wire-Text; Regressionswache: staerke_mad in [3, 1000], Textriegel und Schema gueltig  [am Draht 3 (143360:1000.000, 192512:1000.000, 196608:16.747), verloren 0, nicht gebaut 4, Riegelfehler 0, Schemafehler 0 in 15 Snapshots]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - Vorbedingung gespeiste Samplezahl = 192000 (4 s * 48 000, 375 Bloecke, Rest 0), Laeufer und Engine  [gespeist 192000, von der Engine verarbeitet 192000]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - kein Verlust am Draht, Summe verloren = 0  [verloren 0 in 12 Snapshots, nicht gebaut 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [1 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet  [1 geprueft, med > 0 bei 1, ohne Referenz 0, abweichend 0, groesste relative Abweichung 0.000e+00; 143360: 1000.000000 = Referenz (SF 52493.497, med 0.002, T_eff 153.000);]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus - jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)  [am Draht 1, gleich 1, ungleich 0, ohne Engine-Ereignis 0;]
+    [ok]   380/M-63 staerke_begrenzt: Klick auf stehendem Sinus (kleinste MAD) - das Klickereignis reist am Draht; Regressionswache: staerke_mad in [3, 1000], Textriegel und Schema gueltig  [1 Flussereignisse der Engine; am Draht 1 (143360:1000.000), verloren 0]
+    [ok]   380/M-63 (Korpus I1) rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine  [gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - kein Verlust am Draht, Summe verloren = 0  [verloren 0 in 93 Snapshots, nicht gebaut 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis der Engine traegt eine endliche staerke in [3, 1000]  [65 Flussereignisse, ausserhalb 0]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), Referenz aus SF, med und T_eff des ausloesenden Frames im Test gerechnet, darunter mit med > 0  [65 geprueft, med > 0 bei 65, ohne Referenz 0, abweichend 0, groesste relative Abweichung 5.684e-08; 129024: 14.737808 = Referenz (SF 518.788, med 59.510, T_eff 153.000); 141312: 28.527615 = Referenz (SF 960.063, med 58.154, T_eff 153.000);]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - jedes Flussereignis am Draht traegt den Engine-Wert desselben Ereignisses (als float exakt)  [am Draht 64, gleich 64, ungleich 0, ohne Engine-Ereignis 0;]
+    [ok]   380/M-63 staerke_begrenzt: Korpus I1 - Regressionswache: jedes Flussereignis am Draht mit staerke_mad in [3, 1000], jeder Snapshot passiert Textriegel und Schema  [am Draht 64, kleinste 3.807, groesste 83.193, verloren 0, Riegelfehler 0, Schemafehler 0 in 93 Snapshots]
+    Exit 0
+Endstand (eq-copilot/build/nak380-e4n1/end, Bein B18, `--nak380 M-63`, Binary 00:01:18.649):
+    [ok]   380/M-63 staerke_wert_med_positiv: SF = 361 bei med 180, T_eff 360: staerke = 3*(SF - med)/(T_eff - med) = 3,01667  [Referenz med 180.000, MAD 20.000, T_eff 360.000, staerke 3.016666667; Engine 3.016666651 (Ereignisse 1), Abweichung 1.589e-08, Toleranz 1.798e-07]
+    [ok]   380/M-63 staerke_wert_med_positiv: SF = 60 360 bei med 180: 3*(SF - med)/(T_eff - med) = 1003, auf 1000 geklemmt  [Referenz med 180.000, MAD 20.000, T_eff 360.000, staerke 1000.000000000; Engine 1000.000000000 (Ereignisse 1), Abweichung 0.000e+00, Toleranz 5.960e-05]
+    Exit 0
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e4n1/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m63-zaehler (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:872): jedes Flussereignis traegt staerke = min(1000, kappa*(SF - med)/(T_eff - med)), mindestens ein Fall mit med > 0
+    Wortlaut: `? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)` -> `? (float) std::min (kFlussStaerkeMax, kFlussKappa * sf / nenner)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m63-zaehler.txt
+  - m63-klammer (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:872): Klammer 1000: der Wert des Klicks +100 auf Stille ueberschreitet 1000 -> Wertpruefung rot (Rotbeweisspalte §39.2)
+    Wortlaut: `? (float) std::min (kFlussStaerkeMax, kFlussKappa * (sf - med) / nenner)` -> `? (float) (kFlussKappa * (sf - med) / nenner)`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m63-klammer.txt
+  - m63-draht (eq-copilot/plugin/vertrag/NakamaEvidenz.cpp:559): Drahtwert = Engine-Wert desselben Ereignisses
+    Wortlaut: `liste += zahlJson ((double) e.staerke);` -> `liste += zahlJson (std::floor ((double) e.staerke));`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m63-draht.txt
+  - n1-verlust (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:935): Verlustzaehler am Ende 0 als eigene Pruefung; M-63: ereignisseVerworfen() = 0 und verloren = 0
+    Wortlaut: `if (ereignisAnzahl == kEreignisPlaetze)
+        ++zEreignisseVerworfen;               // das aelteste faellt` -> `++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+    if (zEreignisseVerworfen > 0u)
+        return;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-n1-verlust.txt
+  - m63-rest (eq-copilot/plugin/tests/Sonde013EventWireTest.cpp:757): Vorbedingung gespeiste Samplezahl = Signallaenge, Laeufer und Engine
+    Wortlaut: `while (strom < mono.size())
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+                                                                     mono.size() - strom);` -> `while (strom + (std::uint64_t) block <= mono.size())
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block,
+                                                                     mono.size() - strom);`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Trennschaerfe: gruen wie erwartet; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m63-rest.txt
+  - n1-rosa (eq-copilot/plugin/tests/Nak380Pruefsignale.h:335): Selbstpruefung der Kopffunktion vor jedem Rosa-Nutzer: benachbarte Oktavbandleistungen weichen hoechstens 1,0 dB ab
+    Wortlaut: `b0 = 0.99886 * b0 + w * 0.0555179;` -> `b0 = 0.0;`
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-n1-rosa.txt

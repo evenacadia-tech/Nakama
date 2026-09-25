@@ -1,0 +1,39 @@
+NAK-380 Etappe 4, Nacharbeit 1 (25.09.2026) — Mutationsprotokoll m65-verlust
+Matrixzeile: M-65, Zaehlregel 7.3; Zusagesatz: ereignisseVerworfen() = 0 und verloren = 0 als eigene Pruefungen (Laeufer B16, W1)
+Begruendung der Mutation: Doppelmutation: m65-relativ (rho = 0, T_min = 0) erzeugt Ereignisse im Rauschen, n1-verlust verliert jedes und zaehlt es; der Ring verliert jedes Ereignis und zaehlt jeden Verlust mit dem Produktzaehler zEreignisseVerworfen (Verwerfen bei Kapazitaet 0); die Mutation umgeht den Zaehler nicht; die Onsetsumme bleibt 0, nur die Verlustpruefungen sehen den Verlust
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 800
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m65-verlust/0-Spektrum.h
+Wortlaut vorher:
+            const double tMin = kFlussTminDbJeBin * (double) d.binAnzahl;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
+Wortlaut nachher:
+            const double tMin = 0.0;
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + 0.0) * med), tMin);
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Nacharbeitsstand): 935
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e4n1/m65-verlust/1-Spektrum.h
+Wortlaut vorher:
+        if (ereignisAnzahl == kEreignisPlaetze)
+            ++zEreignisseVerworfen;               // das aelteste faellt
+Wortlaut nachher:
+        ++zEreignisseVerworfen;               // Mutation n1-verlust: der Ring nimmt kein Ereignis mehr an
+        if (zEreignisseVerworfen > 0u)
+            return;
+  Bau EqCopSonde013EventWireTest: 23:57:57 bis 23:58:09, Exit 0
+  Binary EqCopSonde013EventWireTest 23:58:08.910 juenger als Quelle 23:57:57.126: ja
+Lauf mit Mutation: EqCopSonde013EventWireTest --nak380 M-65 23:58:09 bis 23:58:09, Exit 1
+Gefallene Pruefungen:
+    [ROT]  380/M-65 onsetsumme_null_bei_rauschen: Zaehlregel 7.3 - kein Ringverlust der Engine, ereignisseVerworfen() = 0  [verworfen 36]
+    [ROT]  380/M-65 onsetsumme_null_bei_rauschen: kein Verlust am Draht, Summe verloren = 0  [verloren 35]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-65 onsetsumme_null_bei_rauschen: Zaehlregel 7.3 | M-65 onsetsumme_null_bei_rauschen: kein Verlust am Draht)
+Unter der Mutation gruen erwartet (Trennschaerfe): ja (Onsetsumme Summe staerke_mad = 0 in jedem)
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung 93 gebaute Snapshots, davon 89 nach voller Historie, jeder durch Textriegel und Schema  [93 Snapshots, nicht gebaut 0, nach voller Historie 89, Riegelfehler 0, Schemafehler 0]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000, 2812 Bloecke + Rest 256), Laeufer und Engine  [gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-65 onsetsumme_null_bei_rauschen: Onsetsumme Summe staerke_mad = 0 in jedem Evidenzfenster  [0 Fenster mit Summe > 0, groesste Summe 0.000]
+Ruecknahme aus der Sicherung (1-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+Ruecknahme aus der Sicherung (0-Spektrum.h), SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich
+  Bau EqCopSonde013EventWireTest: 23:58:09 bis 23:58:21, Exit 0
+  Binary EqCopSonde013EventWireTest 23:58:21.670 juenger als Quelle 23:58:09.930: ja
+Lauf nach Ruecknahme: EqCopSonde013EventWireTest --nak380 M-65 23:58:21 bis 23:58:22, Exit 0, 5 bestanden, 0 gescheitert

@@ -203,7 +203,7 @@ pub struct Paarhaelfte {
 // Goldens kalibriert."
 
 /// Die Fassung, deren Gates dieses Modul anwendet.
-pub const METRICS_VERSION: u32 = 20260925;
+pub const METRICS_VERSION: u32 = 20260926;
 
 /// Framekadenz der Feature-Telemetrie: ein Hop sind 100 ms.
 pub const FEATURE_HOP_MS: i64 = 100;

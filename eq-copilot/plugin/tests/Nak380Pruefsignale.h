@@ -177,4 +177,23 @@ inline std::vector<double> tabelle1Zellenergie (int fall)
     return aus;
 }
 
+/** Analytische Energie je 100-ms-Zelle des L2-Signals (§7 L2, R-380-11).
+    Eine Zelle umfasst 4 800 Samples bei 48 kHz, also genau 100 Perioden des
+    1-kHz-Sinus, und liegt ganz in einer Sekunde; ihre mittlere Energie ist
+    daher 0,5·a² mit a = `l2Amplitude` an ihrem ersten Sample (0,1 in
+    geraden, 0,01 in ungeraden Sekunden, laut ab Sample 0). Dieselbe Folge
+    speist der Produktlauf ueber `sinus1k (n, l2Amplitude (n))`. */
+inline std::vector<double> l2Zellenergie (int zellen)
+{
+    constexpr std::uint64_t zellenSamples = 4800u;
+    std::vector<double> aus;
+    aus.reserve ((std::size_t) zellen);
+    for (int z = 0; z < zellen; ++z)
+    {
+        const double a = l2Amplitude ((std::uint64_t) z * zellenSamples);
+        aus.push_back (0.5 * a * a);
+    }
+    return aus;
+}
+
 } // namespace nakama::test::nak380

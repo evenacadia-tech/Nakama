@@ -290,7 +290,6 @@
     "20260926": {
       "seit": "NAK-380 Etappe 3",
       "hinweis": "Die LRA-Kurzzeitfolge wird seit dieser Fassung mit 10 Hz geführt; die M1-Perzentile entstehen aus Mittelwerten von je acht Welch-Segmenten. Die Konfidenzschwellen bleiben unverändert.",
-      "broker_aktuell": 20260925,
       "schwellen": {
         "kPeakSteigungSchwelleDb": {
           "wert": 12.0,

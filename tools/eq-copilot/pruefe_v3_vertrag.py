@@ -2419,6 +2419,16 @@ def pruefe_nak380_etappe_3(lauf: Lauf, nur: str | None = None) -> None:
             versions_treffer is not None and versions_treffer.group(1) == "20260926",
             versions_treffer.group(1) if versions_treffer else "fehlt",
         )
+        # T-380-10/R-380-7 (§28): dieselbe Etappe hebt beide Broker-Fassungen;
+        # eine Fassung `aktuell` bindet Feature- und Brokerschwellen.
+        for rust_datei in ("vergleichbarkeit.rs", "prepost.rs"):
+            rust = _konstanten_aus_kern([WURZEL / "broker/src/coordinator" / rust_datei])
+            rust_version = rust.get("METRICS_VERSION", ("", ""))[0]
+            lauf.wahr(
+                f"nak380_m40_fassung_etappe_3: {rust_datei} nennt 20260926",
+                rust_version == "20260926",
+                repr(rust_version),
+            )
         lauf.wahr(
             "nak380_m40_fassung_etappe_3: aktuell ist 20260926",
             register.get("aktuell") == 20260926,
@@ -2453,10 +2463,9 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
 
     Deshalb hier drei Fragen an denselben Pfad:
 
-    1. Die vier Gates sind in der fuer den Broker benannten Fassung gefuehrt -
-       bei einem reinen Feature-Schritt ist das `broker_aktuell`, sonst
-       `aktuell`; so faellt kein unveraenderter Produktpfad aus dem Register.
-    2. Der Broker nennt diese Fassung des Registers (`METRICS_VERSION`).
+    1. Die vier Gates sind in der AKTUELLEN Fassung gefuehrt - nicht in einer
+       aelteren, aus der sie beim Fassungswechsel herausgefallen waeren.
+    2. Der Broker nennt dieselbe Fassung wie das Register (`METRICS_VERSION`).
     3. Im Produktpfad steht keine der vier Zahlen als nacktes Literal.
     """
     quelle = WURZEL / "broker/src/coordinator/vergleichbarkeit.rs"
@@ -2468,12 +2477,9 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
         # unbemerkt auf einer alten Kalibrierung stehenbleiben.
         pp = _konstanten_aus_kern([prepost])
         register_pp = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
-        aktuell_pp = str(register_pp.get("fassungen", {}).get(
-            str(register_pp.get("aktuell", "")), {}
-        ).get("broker_aktuell", register_pp.get("aktuell", "")))
         lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
-                  "auch der PRE/POST-Pfad nennt seine Fassung des Registers",
-                  pp.get("METRICS_VERSION", ("", ""))[0] == aktuell_pp,
+                  "auch der PRE/POST-Pfad nennt die Fassung des Registers",
+                  pp.get("METRICS_VERSION", ("", ""))[0] == str(register_pp.get("aktuell", "")),
                   f"prepost {pp.get('METRICS_VERSION', ('', ''))[0]!r}")
     if not quelle.exists() or not METRIKEN.exists():
         lauf.wahr("comparability_schwellen_haengen_an_metrics_version: Quellen vorhanden",
@@ -2483,10 +2489,8 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
     register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
     aktuell = str(register.get("aktuell", ""))
     eintrag = register.get("fassungen", {}).get(aktuell, {})
-    broker_aktuell = str(eintrag.get("broker_aktuell", aktuell))
-    broker_eintrag = register.get("fassungen", {}).get(broker_aktuell, {})
-    gefuehrt = dict(broker_eintrag.get("schwellen", {}))
-    gefuehrt.update(broker_eintrag.get("ganzzahlige_schwellen", {}))
+    gefuehrt = dict(eintrag.get("schwellen", {}))
+    gefuehrt.update(eintrag.get("ganzzahlige_schwellen", {}))
 
     gates = ("GATE_ZEITUEBERDECKUNG", "GATE_QUELLEN_JACCARD",
              "GATE_MATERIAL_COSINE", "GATE_ABDECKUNG")
@@ -2498,9 +2502,9 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
     konstanten = _konstanten_aus_kern([quelle])
     broker_version = konstanten.get("METRICS_VERSION", ("", ""))[0]
     lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
-              "der Broker nennt seine Fassung des Registers",
-              broker_version == broker_aktuell,
-              f"Broker {broker_version!r}, Register {broker_aktuell!r}")
+              "der Broker nennt die Fassung des Registers",
+              broker_version == aktuell,
+              f"Broker {broker_version!r}, Register {aktuell!r}")
 
     # Kein nacktes Literal im Pfad. Kommentare und die Konstantenzeilen
     # selbst sind genau die Stellen, an denen die Zahl stehen MUSS.

@@ -1184,7 +1184,7 @@ mod tests {
 
     #[test]
     fn nak380_m18_alte_und_neue_version_gelesen() {
-        for version in [20_260_904, 20_260_925] {
+        for version in [20_260_904, 20_260_925, 20_260_926] {
             let puffer = batch_mit_metrics_version(version);
             let verstoesse = pruefe(&puffer);
             assert!(verstoesse.is_empty(), "Version {version}: {verstoesse:?}");

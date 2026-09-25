@@ -1,6 +1,80 @@
-NAK-380 Etappe 3 Rotbeweis M-40, 25.09.2026
-FeatureEngine.h vorher SHA-256 FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186.
-Mutation wörtlich: `kFeatureMetricsVersion = 20260926u` -> `20260925u`.
-Nur A5 `nak380_m40_fassung_etappe_3`; Exitcode 2. Genau die Codeversionsprüfung fiel (20260925 statt 20260926); drei Registerprüfungen blieben grün.
-Die Zusage fällt an der erwarteten Prüfung: JA.
-Bytegleiche Rücknahme per Sicherung, SHA identisch; danach 4/0, Exitcode 0.
+NAK-380 Etappe 3, Nacharbeit 0: Rotbeweis M-40 nach §8.1, 25.09.2026 (ersetzt den Beleg aus §27)
+Bauer: Opus-5.5-Worker (Auftrag roh/NAK-380-nacharbeit-e3-0-auftrag.txt), Basis HEAD f8942067e58a574f5790889d833ab32b067b1303, Arbeitsstand uncommittet.
+
+1. Kopf
+Matrixzeile: M-40 (DSP-25, R-380-7, Versionsschritt FeatureEngine Etappe 3; wie M-19, T-380-10), Fassung §28:
+kFeatureMetricsVersion UND beide METRICS_VERSION des Brokers werden gehoben; eine Fassung aktuell bindet Feature- und
+Brokerschwellen; Code (C++ und beide Rust-Konstanten) und Register nennen dieselbe Fassung 20260926.
+Bein: A5 py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py (--abdeckung voll; Fall allein mit --nak380 M-40).
+Prüfungen: tools/eq-copilot/pruefe_v3_vertrag.py:2413-2447 (nak380_m40_fassung_etappe_3, sechs Prüfungen, davon neu
+die zwei Rust-Konstanten :2422-2431), :2226 (metrics_version_bindet_schwellen: Code und Register nennen dieselbe
+Version), :2450-2523 (pruefe_comparability_schwellen, Form von b04dfb7c). Zeilen am Arbeitsstand der Nacharbeit.
+Mutationen: Hälfte 1 eq-copilot/plugin/core/analysis/FeatureEngine.h:89; Hälfte 2 broker/src/coordinator/vergleichbarkeit.rs:149.
+
+2. Gegenprobe am Produktstand vor der Nacharbeit (Test zuerst)
+2a. A4 am unveränderten HEAD f8942067 (Register aktuell 20260926 mit broker_aktuell 20260925, beide METRICS_VERSION
+    20260925), cargo test --manifest-path broker/Cargo.toml --color never --no-fail-fast urteil_traegt_seine_kalibrierungsfassung,
+    15:49 Uhr, Exitcode 101:
+      tests\sonde013_passage.rs: test urteil_traegt_seine_kalibrierungsfassung ... FAILED
+        panicked at tests\sonde013_passage.rs:379:5: Register nennt eine andere Fassung als "aktuell": 20260925
+      tests\sonde013_prepost.rs: test urteil_traegt_seine_kalibrierungsfassung ... FAILED
+        panicked at tests\sonde013_prepost.rs:718:5: assertion failed: register.contains(&format!("\"aktuell\": {METRICS_VERSION}"))
+    Der Defekt T-380-10 bricht damit zwei bestehende A4-Tests; die Etappe 3 hatte A4 nicht gefahren (§27.4).
+2b. Neuer A5 (Rückbau und M-40-Erweiterung, Register ohne broker_aktuell) gegen die Rust-Konstanten 20260925,
+    15:51 Uhr, Exitcode 2, 859 bestanden, 4 gescheitert:
+      ROT: nak380_m40_fassung_etappe_3: vergleichbarkeit.rs nennt 20260926 — '20260925'
+      ROT: nak380_m40_fassung_etappe_3: prepost.rs nennt 20260926 — '20260925'
+      ROT: comparability_schwellen_haengen_an_metrics_version: auch der PRE/POST-Pfad nennt die Fassung des Registers — prepost '20260925'
+      ROT: comparability_schwellen_haengen_an_metrics_version: der Broker nennt die Fassung des Registers — Broker '20260925', Register '20260926'
+2c. Nach dem Heben beider Konstanten auf 20260926: A5 863/0, Exitcode 0; --nak380 M-40 6/0, Exitcode 0;
+    A4 urteil_traegt_seine_kalibrierungsfassung 2/0, Exitcode 0.
+
+3. Hälfte 1: kFeatureMetricsVersion zurück bei gehobenem Register
+SHA-256 vor der Mutation: B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183
+Sicherung: eq-copilot/build/nak380-sicherung/n0/FeatureEngine.h.m40a, SHA-256 identisch.
+Mutation wörtlich (15:53:27 Uhr):
+  vorher:  inline constexpr std::uint32_t kFeatureMetricsVersion = 20260926u;
+  nachher: inline constexpr std::uint32_t kFeatureMetricsVersion = 20260925u;
+SHA-256 mutiert: 0011118FF6F5DF6F5448492B2CEAF00C3F7466F52142BA4035D6CB8F52FCE59B
+Kein C++-Bau nötig (A5 liest den Quelltext); kein Binary wurde mit dieser Mutation gebaut.
+A5 voll, Exitcode 2, 861 bestanden, 2 gescheitert:
+  ROT: metrics_version_bindet_schwellen: Code und Register nennen dieselbe Version — Code '20260925', Register '20260926'
+  ROT: nak380_m40_fassung_etappe_3: FeatureEngine nennt 20260926 — 20260925
+--nak380 M-40, Exitcode 2: 5 bestanden, 1 gescheitert (FeatureEngine nennt 20260926 — 20260925).
+Die Zusage fällt an der erwarteten Prüfung: JA („Code und Register nennen dieselbe Version“ und M-40 an der C++-Konstante).
+Mitgefallen: keine weitere. Grün geblieben: die übrigen 861, darunter M-40 vergleichbarkeit.rs/prepost.rs nennen
+20260926, aktuell ist 20260926, seit nennt NAK-380 Etappe 3, Konfidenzschwellen unverändert, und alle
+comparability-Prüfungen.
+Rücknahme: bytegleich aus der Sicherung (kein git), SHA-256 danach B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183
+= vorher; LastWriteTime 15:53:41.177; A5 voll 863/0, Exitcode 0; --nak380 M-40 6/0, Exitcode 0;
+git diff --numstat -- eq-copilot/plugin/core/analysis/FeatureEngine.h: leer.
+
+4. Hälfte 2: METRICS_VERSION in vergleichbarkeit.rs zurück
+SHA-256 vor der Mutation: 1B2EB639942CC7D87711B15383B60113B110CA65908C35BAE144EAD6B8CCF754
+Sicherung: eq-copilot/build/nak380-sicherung/n0/vergleichbarkeit.rs.m40b, SHA-256 identisch.
+Mutation wörtlich (15:53:54 Uhr):
+  vorher:  pub const METRICS_VERSION: u32 = 20260926;
+  nachher: pub const METRICS_VERSION: u32 = 20260925;
+SHA-256 mutiert: 872068D18CDCC15AD6E92F11B182A50CC79B694F137EF7EB795B92999E0A7C0D (gleich dem Stand am HEAD f8942067)
+A5 voll, Exitcode 2, 861 bestanden, 2 gescheitert:
+  ROT: nak380_m40_fassung_etappe_3: vergleichbarkeit.rs nennt 20260926 — '20260925'
+  ROT: comparability_schwellen_haengen_an_metrics_version: der Broker nennt die Fassung des Registers — Broker '20260925', Register '20260926'
+--nak380 M-40, Exitcode 2: 5 bestanden, 1 gescheitert (vergleichbarkeit.rs nennt 20260926 — '20260925').
+Zusätzlich A4 unter derselben Mutation (cargo test ... --no-fail-fast urteil_traegt_seine_kalibrierungsfassung,
+Neubau der Testziele), Exitcode 101: sonde013_passage FAILED (Register nennt eine andere Fassung als "aktuell": 20260925),
+sonde013_prepost ok (prepost.rs unverändert 20260926).
+Die Zusage fällt an der erwarteten Prüfung: JA (M-40 an der Rust-Konstante und die Registerbindung des Brokers).
+Mitgefallen: keine weitere. Grün geblieben: die übrigen 861 A5-Prüfungen, darunter M-40 FeatureEngine und prepost.rs
+nennen 20260926, der PRE/POST-Pfad nennt die Fassung des Registers, metrics_version_bindet_schwellen.
+Rücknahme: bytegleich aus der Sicherung (kein git), SHA-256 danach 1B2EB639942CC7D87711B15383B60113B110CA65908C35BAE144EAD6B8CCF754
+= vorher; LastWriteTime 15:54:38.009; A5 voll 863/0, Exitcode 0; --nak380 M-40 6/0, Exitcode 0; A4
+urteil_traegt_seine_kalibrierungsfassung nach Neubau (Testbinaries 15:54:44 bis 15:54:49) 2/0, Exitcode 0;
+git diff zeigt in vergleichbarkeit.rs nur die gewollte Zeile 20260925 -> 20260926.
+
+5. Schlussläufe am Endstand
+A5 voll 15:56:31 bis 15:56:35 Uhr: 863 bestanden, 0 gescheitert, Exitcode 0 (vorher 861/0).
+A4-Filter 15:56:35 bis 15:56:42 Uhr, alle Exitcode 0: telemetrie 9/0 (mit nak380_m18_alte_und_neue_version_gelesen),
+prepost 2/0, vergleichbarkeit 1/0, hypothese 33/0, urteil_traegt_seine_kalibrierungsfassung 2/0.
+Broker Release: cargo build --release --manifest-path broker/Cargo.toml, 15:56:42 bis 15:57:01 Uhr, Exitcode 0;
+broker/target/release/eqcop-broker.exe 15:56:59.745, jünger als vergleichbarkeit.rs 15:54:38.009,
+prepost.rs 15:51:58.362 und telemetrie.rs 15:51:59.899.

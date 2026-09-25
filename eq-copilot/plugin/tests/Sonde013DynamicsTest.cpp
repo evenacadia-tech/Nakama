@@ -352,13 +352,42 @@ __declspec(noinline) void nak380LraMesskern (const char* nur)
                            (std::uint64_t) (70.0 * fs));
         double ist = 0.0;
         const bool gesetzt = FeatureEngineTestzugang::lraLesen (*engine, ist);
-        // Tech-3342-§5-Referenz der analytischen 10-Hz-Folge:
-        // 10*log10(0,6535/0,3730) = 2,435 LU; ±0,15 LU deckt das 0,1-LU-
-        // Histogrammraster und den float32/K-Filter-Einschwingrand.
-        constexpr double soll = 2.435;
-        pruefe (gesetzt && std::abs (ist - soll) <= 0.15,
-                "380/M-23 lra_ohne_aliasing",
-                "ist " + juce::String (ist, 3) + ", Referenz 2,435 +/-0,15 LU");
+        // R-380-11 (a): Referenz = lraReferenz (Tech 3342 §5, T-380-3) ueber
+        // die analytische 100-ms-Zellenenergie desselben L2-Signals,
+        // e_z = 0,5·a(z)², 700 Zellen (sig::l2Zellenergie). Im 3-s-Fenster
+        // nimmt der Einschaltanteil nur f = k/30 mit k = 10 … 20 an, die
+        // Energie ist ∝ f + (1 − f)·0,01. §5 trifft bei 671 Werten P10 bei
+        // k = 11 (Index round(670·0,10 + 1) = 68) und P95 bei k = 20 (Index
+        // round(670·0,95 + 1) = round(637,5) = 638, MATLAB-round und
+        // llround runden die halbe Stelle weg von null); nachgerechnet
+        // 10·log10(0,6700/0,3730) = 2,544 LU. ±0,15 LU deckt das
+        // 0,1-LU-Histogrammraster des Produkts und den Einschwingrand des
+        // K-Filters. Plausibilitaetsnotiz, keine Referenz: die geschlossene
+        // Form ueber eine kontinuierlich gleichverteilte Quote f ∈ [1/3, 2/3]
+        // ergaebe 2,435 LU.
+        const double referenz = sig::lraReferenz (sig::l2Zellenergie (700));
+        // R-380-11 (b): 1-Hz-Werte an ganzen Sekunden treffen nur f = 2/3
+        // und 1/3, also Aliaswert = 10·log10((2·e_laut + e_leise)
+        // / (e_laut + 2·e_leise)) = 10·log10(0,6700/0,3400) = 2,946 LU; der
+        // 10-Hz-Wert liegt mindestens 0,3 LU darunter.
+        const double aLaut  = sig::l2Amplitude (0u);
+        const double aLeise = sig::l2Amplitude ((std::uint64_t) fs);
+        const double eLaut  = 0.5 * aLaut * aLaut;
+        const double eLeise = 0.5 * aLeise * aLeise;
+        const double alias  = 10.0 * std::log10 ((2.0 * eLaut + eLeise)
+                                                 / (eLaut + 2.0 * eLeise));
+        const double abweichung = std::abs (ist - referenz);
+        const double abstand    = alias - ist;
+        const bool nahAnReferenz = gesetzt && abweichung <= 0.15;
+        const bool unterAlias    = gesetzt && abstand >= 0.3;
+        pruefe (nahAnReferenz && unterAlias, "380/M-23 lra_ohne_aliasing",
+                "ist " + juce::String (ist, 3) + " LU | (a) Referenz "
+                    + juce::String (referenz, 3) + " LU, Abweichung "
+                    + juce::String (abweichung, 3) + " <= 0,15: "
+                    + juce::String (nahAnReferenz ? "ja" : "nein")
+                    + " | (b) Aliaswert " + juce::String (alias, 3)
+                    + " LU, Abstand " + juce::String (abstand, 3) + " >= 0,3: "
+                    + juce::String (unterAlias ? "ja" : "nein"));
     }
 
     if (nak380Waehlt (nur, "M-29"))

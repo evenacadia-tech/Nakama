@@ -1,10 +1,60 @@
-NAK-380 Etappe 3 Rotbeweis M-23, 25.09.2026
-Datei vor der Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h
-SHA-256 vor der Mutation: FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186
-Mutation wörtlich: `kLraHopZellen = 1` -> `10`.
-Gefahrener Fall: B18 `380/M-23 lra_ohne_aliasing`; Exitcode 1.
-Gefallene Prüfung: 3,000 LU statt Referenz 2,435 +/-0,15 LU. Mitgefallen: keine.
-Die Zusage fällt an der erwarteten Prüfung: JA.
-Bytegleiche Rücknahme durch Zurückkopieren; SHA-256 danach identisch.
-Fall nach Rücknahme NICHT grün: 2,600 LU liegt 0,015 LU über der oberen Grenze 2,585; Exitcode 1. Toleranz nicht gelockert, Produktcode in Lautheit.h laut Ticketgrenze unverändert, offener Punkt in §27.
-Wiederholung nach der exakten Sampledauer-Härtung: SHA-256 vor/nach der Mutation B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183; 3,000 LU, Exitcode 1; Zusagezeile JA. Der zurückgenommene Fall bleibt mit 2,600 LU offen.
+NAK-380 Etappe 3, Nacharbeit 0: Rotbeweis M-23 nach §8.1, 25.09.2026 (ersetzt den Beleg aus §27)
+Bauer: Opus-5.5-Worker (Auftrag roh/NAK-380-nacharbeit-e3-0-auftrag.txt), Basis HEAD f8942067e58a574f5790889d833ab32b067b1303, Arbeitsstand uncommittet.
+
+1. Kopf
+Matrixzeile: M-23 (DSP-25, Abtastung ohne Aliasing), Fassung §28 nach Regel R-380-11 (§28.1).
+Zusage, zwei Hälften in einer Prüfung:
+ (a) LRA = lraReferenz (T-380-3, Tech 3342 §5) über die analytische 100-ms-Zellenenergie desselben L2-Signals
+     (e_z = 0,5·a(z)², 700 Zellen, sig::l2Zellenergie) ± 0,15 LU;
+ (b) der Wert liegt mindestens 0,3 LU unter dem 1-Hz-Aliaswert 10·log10((2·e_laut + e_leise)/(e_laut + 2·e_leise))
+     = 10·log10(0,6700/0,3400) = 2,946 LU.
+Bein: B18 EqCopSonde013DynamicsTest, Fall 380/M-23 lra_ohne_aliasing (Aufruf --nak380 M-23).
+Prüfung: eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp:383-390; Referenz :368; Aliaswert :373-378; Hilfe
+eq-copilot/plugin/tests/Nak380Pruefsignale.h:180-197 (l2Zellenergie). Zeilen am Arbeitsstand der Nacharbeit.
+Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:419 (kLraHopZellen).
+
+2. Messwerte am Arbeitsstand (B18 voll 86/0, Exitcode 0)
+Produktwert:          2,600 LU
+Diskrete Referenz:    2,544 LU (aus dem Lauf, lraReferenz (l2Zellenergie (700)); Messwert, kein Golden im Test)
+Abweichung:           0,056 LU <= 0,15
+Aliaswert:            2,946 LU (aus den Amplituden von l2Amplitude gerechnet)
+Abstand zum Aliaswert: 0,346 LU >= 0,3 (Rand zur Grenze 2,946 - 0,3 = 2,646 LU: 0,046 LU)
+Nachrechnung außerhalb des Tests (py -3.13, derselbe §5-Algorithmus über dieselbe Zellfolge): 671 Kurzzeitwerte,
+keiner absolut oder relativ gegatet; P10-Index round(670·0,10 + 1) = 68 (k = 11), P95-Index round(637,5) = 638
+(k = 20); LRA 2,5436597 LU; Aliaswert 2,9459589 LU.
+Gegenprobe am unveränderten HEAD f8942067 (alter Fall gegen die geschlossene Form), 15:49 Uhr:
+  [ROT]  380/M-23 lra_ohne_aliasing  [ist 2.600, Referenz 2,435 +/-0,15 LU]
+  0 bestanden, 1 gescheitert; Exitcode 1
+
+3. Sicherung
+SHA-256 vor der Mutation: B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183
+Sicherung: eq-copilot/build/nak380-sicherung/n0/FeatureEngine.h.m23, SHA-256 identisch.
+
+4. Mutation wörtlich (15:55:08 Uhr)
+vorher:  static constexpr int kLraHopZellen = 1;
+nachher: static constexpr int kLraHopZellen = 10;
+SHA-256 mutiert: 17C45EBE1592FCE91CD400CB2121418A5A2B9889F8F8D15EB6BB4BA1C2A2836B
+
+5. Bau und Lauf unter der Mutation
+VS-CMake --build eq-copilot/build --config Release --target EqCopSonde013DynamicsTest, 15:55:08 bis 15:55:15 Uhr,
+Exitcode 0; übersetzt TelemetryClient.cpp, NakamaEvidenz.cpp (NakamaKern) und Sonde013DynamicsTest.cpp;
+Binary 15:55:15.119 jünger als FeatureEngine.h 15:55:08.721.
+EqCopSonde013DynamicsTest.exe --nak380 M-23, Exitcode 1:
+  [ROT]  380/M-23 lra_ohne_aliasing  [ist 3.000 LU | (a) Referenz 2.544 LU, Abweichung 0.456 <= 0,15: nein | (b) Aliaswert 2.946 LU, Abstand -0.054 >= 0,3: nein]
+  0 bestanden, 1 gescheitert
+Gefallene Prüfung: 380/M-23 lra_ohne_aliasing an beiden Hälften: (a) 3,000 LU liegt 0,456 LU neben der diskreten
+Referenz 2,544 LU (> 0,15); (b) 3,000 LU liegt 0,054 LU über dem Aliaswert 2,946 LU statt mindestens 0,3 LU darunter.
+Die Zusage fällt an der erwarteten Prüfung: JA (beide Hälften).
+Mitgefallen: keine im gefahrenen Fall. Zusätzlich unter derselben Mutation --nak380 M-21: Exitcode 1,
+  [ROT]  380/M-21 lra_zehn_kurzzeitwerte_je_sekunde  [ist 73, soll 721] (eigene Matrixzeile mit derselben Mutation, §6.2; erwartet).
+Grün geblieben: keine weitere Prüfung gefahren (nur der betroffene Fall).
+
+6. Rücknahme
+Bytegleich aus der Sicherung zurückkopiert (kein git); SHA-256 danach
+B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183 = Schritt 3; LastWriteTime 15:55:37.506.
+Neubau 15:55:37 bis 15:55:43 Uhr, Exitcode 0 (dieselben drei Übersetzungseinheiten); Binary 15:55:43.928 jünger als
+FeatureEngine.h 15:55:37.506, Sonde013DynamicsTest.cpp 15:50:10.642 und Nak380Pruefsignale.h 15:49:35.140.
+--nak380 M-23, Exitcode 0:
+  [ok]   380/M-23 lra_ohne_aliasing  [ist 2.600 LU | (a) Referenz 2.544 LU, Abweichung 0.056 <= 0,15: ja | (b) Aliaswert 2.946 LU, Abstand 0.346 >= 0,3: ja]
+B18 voll 15:56:05 bis 15:56:16 Uhr: 86 bestanden, 0 gescheitert, Exitcode 0 (vorher 85/1).
+git diff --numstat -- eq-copilot/plugin/core/analysis/FeatureEngine.h: leer.

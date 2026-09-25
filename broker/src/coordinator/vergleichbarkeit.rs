@@ -146,7 +146,7 @@ pub struct Vergleichsurteil {
 /// A5 haelt sie gegen `aktuell` in `metriken-v1.json` (M-29) - dieselbe
 /// Bindung, die `kFeatureMetricsVersion` auf der Sondenseite hat. Wer hier
 /// eine Zahl aendert und die Fassung stehen laesst, faellt rot.
-pub const METRICS_VERSION: u32 = 20260925;
+pub const METRICS_VERSION: u32 = 20260926;
 
 /// Zeitueberdeckung fuer eine STARKE Vergleichbarkeit (§43.2: 95 %).
 pub const GATE_ZEITUEBERDECKUNG: f64 = 0.95;

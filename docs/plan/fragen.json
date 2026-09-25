@@ -125,17 +125,6 @@
    "wo": "docs/audits/2026-09-23-dsp-fachpruefung/BEFUNDE.md DSP-08; EINORDNUNG.md; docs/beweise/roh/NAK-379-dsp-validierung-teil-A.md; docs/offene-punkte.md NAK-384, NAK-385",
    "seit": "23.09.",
    "status": "offen"
-  },
-  {
-   "id": "U65",
-   "dringlichkeit": "wenn du dazu kommst — vor NAK-313 Etappe 8; bis zu deiner Antwort gilt: heute ersetzt die zweite Datei still die erste, nach Etappe 7 wird der zweite Export abgelehnt und die erste Datei bleibt",
-   "art": "Produktentscheid (Verhalten)",
-   "titel": "Zweimal „Festhalten“ in derselben Sekunde: sollen beide Messstände erhalten bleiben?",
-   "was": "Im Fenster einer Gen-Instanz, die nicht als Hauptprogramm läuft (etwa als Messpunkt aus einem älteren Projekt), sichert der Knopf „Festhalten“ den aktuellen Messstand als Datei in einen gemeinsamen Ordner – nicht zu verwechseln mit dem geplanten Festhalten des Spektrumbilds. Der Dateiname besteht nur aus Datum, Uhrzeit auf die Sekunde genau und dem Namen der Instanz. Entsteht in derselben Sekunde ein zweiter Export mit demselben Namen – ein schneller Doppelklick, zwei Instanzen mit gleichem Namen (etwa eine geklonte Spur) oder zwei ohne Namen –, ersetzt die zweite Datei heute die erste ohne jeden Hinweis; beide Male heißt es „Festgehalten“ mit demselben Dateinamen. (1) Empfohlen: beide bleiben erhalten; die zweite Datei bekommt einen kleinen Zusatz im Namen, und die Meldung nennt genau die Datei, die entstanden ist. Gelöscht wird weiterhin nichts automatisch – das ist schon heute so; in diesem seltenen Fall liegt nur eine Datei mehr im Ordner. (2) Die zweite ersetzt die erste, aber die Meldung sagt es ausdrücklich („ersetzt den Export von 19:15:07“). Einschränkung: speichern zwei Instanzen gleichzeitig, erfährt nur die zweite davon. (3) Der zweite Export wird abgelehnt: „In dieser Sekunde gibt es schon einen Export mit diesem Namen – bitte gleich noch einmal.“ Die vorhandene Datei bleibt unberührt, der zweite Klick zählt nicht. Welche Variante willst du?",
-   "warum": "Audit-Befund T3-14-04 (Arbeitsübersicht W33), an der Quelle bestätigt (NAK-313 Validierung Teil C). Keine Zusage entscheidet es: es gibt keine Regel von dir, ob ein Export eine vorhandene Datei ersetzen darf. Nakamas Hintergrunddienst legt seine eigenen Berichte im selben Ordner schon heute nach Weg 1 ab. In allen drei Wegen wird ein abgebrochenes Schreiben künftig als Fehler gemeldet statt als Erfolg, und die Meldung nennt immer die Datei, die wirklich entstanden ist (Regel R-313-10, gebaut vor deiner Antwort). Die Reaktion auf die Kollision selbst wird erst nach deiner Antwort gebaut (Planschritt S25l, Ticket NAK-313, Etappe 8).",
-   "wo": "docs/beweise/NAK-313.md §2 R-313-10 und §3; docs/beweise/roh/NAK-313-quellvalidierung-teil-C.md (Frage 2); docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-14-04, Arbeitsübersicht W33; docs/offene-punkte.md NAK-313",
-   "seit": "23.09.",
-   "status": "offen"
   }
  ],
  "geparkt": [
@@ -1048,6 +1037,17 @@
     "seit": "23.09.",
     "status": "offen"
    }
+  },
+  "U65": {
+   "wahl": "Beide bleiben erhalten (Empfohlen)",
+   "text": "Beide bleiben erhalten (Empfohlen) — Wahl per AskUserQuestion in der Dirigentensession e6e40a0d, Option wörtlich; die angebotenen Alternativen waren „Zweite ersetzt die erste, mit Hinweis“ und „Zweiter Export wird abgelehnt“. Frage im Wortlaut der Karte (titel, was) gestellt, mit dem Hinweis, dass ohne Antwort nach NAK-313 Etappe 7 der zweite Export abgelehnt wird und die erste Datei bleibt.",
+   "datum": "2026-09-25 11:26",
+   "status": "eingearbeitet",
+   "ergebnis": "Weg 1 ist Produktentscheid: bei einer Namenskollision des Messstand-Exports bleiben beide Dateien erhalten, die zweite bekommt einen eindeutigen Zusatz im Namen, die Meldung nennt genau die entstandene Datei; nichts wird ersetzt oder gelöscht. Abnahme design/abnahmen/2026-09-25-festhalten-doppelexport-beide-bleiben-u65.md; gebaut in NAK-313 Etappe 8 (Planschritt S25l) mit Matrixnachtrag, Rotbeweisen, Kanon und Erstprüfung 8; bis dahin gilt das Verhalten nach Etappe 7 (zweiter Export abgelehnt, erste Datei bleibt). Karte und Frage: docs/beweise/NAK-313.md §3, §36, §37.",
+   "titel": "Zweimal „Festhalten“ in derselben Sekunde: sollen beide Messstände erhalten bleiben?",
+   "art": "Produktentscheid (Verhalten)",
+   "seit": "23.09.",
+   "wo": "docs/beweise/NAK-313.md §2 R-313-10 und §3; docs/beweise/roh/NAK-313-quellvalidierung-teil-C.md (Frage 2); docs/audits/2026-09-15-tiefenaudit/BEFUNDE.md T3-14-04, Arbeitsübersicht W33; docs/offene-punkte.md NAK-313"
   }
  }
 }

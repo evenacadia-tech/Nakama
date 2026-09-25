@@ -11,13 +11,16 @@
 
 **Stand:** 2026-09-25 · Quellstand `15d94669` · **38 von 59 abgenommen** · 4 gebaut · 17 offen
 
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `15d94669` sind.
+
 `██████████████████████████▓▓░░░░░░░░░░░░` 64 % abgenommen · 71 % gebaut
 
 **Als Nächstes:** **S25m** `NAK-314` — ANGELEGT 18.09.2026 (Register NAK-314; Arbeitsübersicht Phase 16 W13, W14, W15, W16, W17, W25, W28). INHALT: 10 Befunde im Broker — T3-08-01 (Domain-Atomarität am 64er-Batchrand; NAK-157), T3-08-02 und T3-08-03 (Rücknahme vor Erstpersistenz nach Restore wieder gültig, Commit- und Publikationsordnung; NAK-269), T3-15-12 und T3-15-13 (degradierter Store trennt Clients im Sekundentakt, transienter Lesefehler lässt Routing fail-closed ohne Anzeige), T3-16-02 (verspätetes Ende einer alten Telemetrieverbindung entkoppelt die angenommene Nachfolgerin), T3-15-15 und T3-14-03 (Klonkonflikt ohne Löser mit dauerhaften Sperren, Unknown nach reinem Sonde-Abbruch ohne Rückweg), T3-16-03 (erfolgreich geschriebene P1-Evidenz geht beim gewöhnlichen Linkende verloren), T3-08-05 (vollständiger Loop-Wrap invalidiert gültige Evidenz entgegen M-53). Produktentscheide als Karten: Klon-Identität und Sperrenende, Empfangs-ACK oder gezählter Verlust. GRENZE: ACK erst nach vollständigem Commit, Replay idempotent, keine Callbacks auf abgemeldeter Sitzung, Konfliktrestore fail-closed, keine Sicherheitsneubewertung (S25i). BEWEIS: docs/beweise/NAK-314.md mit Matrix, Rotbeweisen in A4, A4-SI (store_crash_matrix), A22, B8, vollem Kanon GRÜN und Laufzeit-Arm.
 
 **Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S25g` · `S25i` · `S25l` · `S25q`
 
-**Bei dir liegen 12 Fragen** — `U11, U13, U26, U50, U52, U57, U60, U61, U62, U63, U64, U65`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 11 Fragen** — `U11, U13, U26, U50, U52, U57, U60, U61, U62, U63, U64`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 

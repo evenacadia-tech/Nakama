@@ -1,0 +1,5 @@
+NAK-380 Etappe 3 Rotbeweis M-30, 25.09.2026
+Vorher: FeatureEngine.h FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186; Lautheit.h CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE; metriken-v1.json 2985EA71A09C12FE77E3EDA2C549DD38D4930C58A4F774F3B0D52EC7EE2F4867.
+Drei getrennte Mutationen, jeweils nur A5 `nak380_m30_nicht_gefuehrte_werte_stimmen`: FeatureEngine-Kommentar `§3.1` -> `§2.2` (Exit 2, genau Feature-Prüfung rot); Lautheit-Kommentar `§3.1` -> `§2.2` (Exit 2, genau Lautheit-Prüfung rot); Register `kLraHopZellen = 1` -> `10` (Exit 2, Registertext und Codewertvergleich rot).
+Die Zusage fällt an der erwarteten Prüfung: JA (jede Vertragsstelle einzeln).
+Nach jeder Mutation Sicherung zurückkopiert; alle SHA-256 identisch. Danach M-30 4/0, Exitcode 0.

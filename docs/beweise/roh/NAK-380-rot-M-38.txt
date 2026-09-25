@@ -1,0 +1,7 @@
+NAK-380 Etappe 3 Rotbeweis M-38, 25.09.2026
+AnalyseEngine.cpp vorher SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.
+Die Matrixmutation „Rest als eigener Teilblock“ besitzt am Fensterende keinen Produkt-Hook. Formgültige Ersatzmutation derselben Start/Stop-Zusage: Reset füllt `teilblockSegmente` mit `1u` statt `0u`.
+Nur A2 `380/M-38 teilblock_raender`; Exitcode 1. floor(n/8)/Rest und Reset-Leerheit fielen für 221/221 Bänder; NaN-Grenze und Speicherzahl blieben grün.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme, SHA identisch; danach 4/0, Exitcode 0.
+Wiederholung nach der zusätzlichen Presence-Bit-Prüfung: SHA-256 vor/nach der Mutation F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; nur M-38, 3/2, Exitcode 1; floor/Rest und Reset-Leerheit fielen je 221/221, Presence-Bit, NaN-Grenze und Speicherzahl blieben grün; Zusagezeile JA. Nach Rücknahme 5/0.

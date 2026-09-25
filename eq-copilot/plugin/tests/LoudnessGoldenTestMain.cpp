@@ -41,20 +41,38 @@
 //
 // Exit 0 nur bei "LOUDNESS-GOLDEN OK".
 #include "analysis/LoudnessAccumulator.h"
+#include "analysis/FeatureEngine.h"
+#include "Nak380Pruefsignale.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <new>
 #include <sstream>
 #include <string>
 #include <vector>
 
 using nakama::analyse::LoudnessAccumulator;
+using nakama::analyse::FeatureEngine;
+
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+namespace nakama::analyse
+{
+struct FeatureEngineTestzugang
+{
+    static bool lraLesen (const FeatureEngine& e, double& heraus) noexcept
+    {
+        return e.lraLu (heraus);
+    }
+};
+} // namespace nakama::analyse
+#endif
 
 //==============================================================================
 namespace
@@ -250,11 +268,85 @@ namespace
         lcg = lcg * 1664525u + 1013904223u;
         return (double) (lcg >> 8) / (double) 0x01000000;
     }
+
+    void nak380Tabelle1Fall (int fall)
+    {
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+        namespace sig = nakama::test::nak380;
+        const int matrix = 23 + fall;
+        const int dauerS = fall == 4 ? 100 : 80;
+        const double normSoll[] = { 0.0, 10.0, 5.0, 20.0, 15.0 };
+        const std::string name = "380/M-" + std::to_string (matrix)
+                               + " tech3342_tabelle1_fall" + std::to_string (fall);
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (kFs);
+        engine->evidenzIntervallSetzen (1.0);
+
+        constexpr int block = 512;
+        const int bloecke = (int) std::ceil ((double) dauerS * kFs / (double) block);
+        std::vector<float> audio ((std::size_t) block * 2u);
+        std::uint64_t strom = 0;
+        for (int b = 0; b < bloecke; ++b)
+        {
+            for (int i = 0; i < block; ++i)
+            {
+                const auto n = strom + (std::uint64_t) i;
+                const double a = sig::tabelle1Amplitude (fall, (double) n / kFs);
+                const float v = sig::sinus1k (n, a, kFs);
+                audio[(std::size_t) i * 2u] = v;
+                audio[(std::size_t) i * 2u + 1u] = v;
+            }
+            nakama::echtzeit::StampedBlock stempel;
+            stempel.stromVon = strom;
+            stempel.sampleCount = block;
+            stempel.segment = 0;
+            stempel.startFolge = 0;
+            stempel.kanaele = 2;
+            stempel.tapMaske = 1;
+            stempel.projectSampleStart = (std::int64_t) strom;
+            stempel.sampleRate = kFs;
+            stempel.flags = nakama::echtzeit::kFlagKontextAnwesend
+                           | nakama::echtzeit::kFlagSpieltGueltig
+                           | nakama::echtzeit::kFlagSampleRateGueltig
+                           | nakama::echtzeit::kFlagSpielt
+                           | nakama::echtzeit::kFlagZeitGueltig;
+            engine->nimmBlock (stempel, audio.data());
+            strom += block;
+        }
+
+        double ist = 0.0;
+        const bool gesetzt = nakama::analyse::FeatureEngineTestzugang::lraLesen (*engine, ist);
+        const double referenz = sig::lraReferenz (sig::tabelle1Zellenergie (fall));
+        // Tech 3342 Tabelle 1 gibt ±1 LU vor. Die zweite, engere Toleranz
+        // ±0,1 LU ist das 0,1-LU-Histogrammraster gegen den unabhaengigen
+        // §5-Algorithmus ueber die analytische 10-Hz-Zellfolge.
+        pruefe (gesetzt && std::abs (ist - normSoll[fall]) <= 1.0,
+                name + ": Normwert +/-1 LU",
+                "ist=" + zahl (ist, 3) + " soll=" + zahl (normSoll[fall], 1));
+        pruefe (gesetzt && std::abs (ist - referenz) <= 0.1,
+                name + ": gleich der Tech-3342-§5-Referenz +/-0,1 LU",
+                "ist=" + zahl (ist, 3) + " ref=" + zahl (referenz, 3)
+                    + " Bloecke=" + std::to_string (bloecke));
+#else
+        pruefe (false, "380 Tabelle 1", "NAKAMA_FEATUREENGINE_TESTZUGANG fehlt");
+#endif
+    }
 }
 
 //==============================================================================
-int main()
+int main (int argc, char* argv[])
 {
+    if (argc == 3 && std::strcmp (argv[1], "--nak380") == 0)
+    {
+        const std::string id = argv[2];
+        if (id == "M-24") nak380Tabelle1Fall (1);
+        if (id == "M-25") nak380Tabelle1Fall (2);
+        if (id == "M-26") nak380Tabelle1Fall (3);
+        if (id == "M-27") nak380Tabelle1Fall (4);
+        std::cout << geprueft << " Pruefungen, " << fehler << " Fehler." << std::endl;
+        return fehler == 0 && geprueft > 0 ? 0 : 1;
+    }
+
     std::cout << "== Nakama SONDE-008 - EBU-Golden der fixed-memory Loudness ==" << std::endl;
     std::cout << "Referenz: die ausgebaute Rechnung (unbegrenzter Vektor + Zweitdurchgang)."
               << std::endl;
@@ -275,6 +367,11 @@ int main()
     std::cout << std::endl;
 
     double schlimmster = 0.0;
+
+    nak380Tabelle1Fall (1);
+    nak380Tabelle1Fall (2);
+    nak380Tabelle1Fall (3);
+    nak380Tabelle1Fall (4);
 
     // ── A · Konstantes Material: hier DARF nichts abweichen ────────────────
     std::cout << "== A - konstante Pegel (kein Block am Gate) ==" << std::endl;

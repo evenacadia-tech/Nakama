@@ -57,7 +57,7 @@ namespace eqcop
 // Mindestpegel — ohne ihn zaehlte die Haerte-Zone „50 % jenseits" auf einem
 // Track mit 0,24 % Energie ueber 2 kHz (Schulterlinie fiel steil, die Live-EMA
 // hielt nur Teppich; die Karten schwiegen korrekt, aber die Zahl log).
-inline constexpr const char* kMetricsVersion = "m4.1-2026-08-15";
+inline constexpr const char* kMetricsVersion = "m4.2-2026-09-25";
 
 // 1/24-Okt-Raster der LTAS — identisch zu analyze-track.py _log_spectrum():
 // edges = 30·2^(k/24), centers = √(edge·edge), 221 Bänder bis <18 kHz.
@@ -180,6 +180,8 @@ struct LautheitsTelemetrie
 
 class AnalyseEngine
 {
+    friend struct AnalyseEngineTestzugang;
+
 public:
     AnalyseEngine();
 
@@ -301,6 +303,12 @@ private:
     static constexpr int kHistMinDb = -130, kHistMaxDb = 10;
     static constexpr int kHistStufen = kHistMaxDb - kHistMinDb + 1;   // 141
     std::vector<juce::uint32> pegelHistogramm;    // [kLtasBaender * kHistStufen]
+    // NAK-380/T-380-4: Perzentile lesen ausschliesslich Mittelwerte aus je
+    // acht aktiven Welch-Segmenten. Der Segmentträger bleibt getrennt für die
+    // Abdeckung. Alle längenabhängigen Daten liegen im Heap.
+    std::vector<juce::uint32> teilblockHistogramm; // [kLtasBaender * kHistStufen]
+    std::vector<double> teilblockSumme;             // [kLtasBaender]
+    std::vector<juce::uint32> teilblockSegmente;    // [kLtasBaender], Rest verfällt
     std::array<double, kLtasBaender> teppichInaktivDb {};   // min über inaktive
     juce::uint64 inaktiveSegmente = 0;
     // Live-Hüllkurve §5.10.1: 3-s-EMA der Segment-Band-LEISTUNG (nie dB!),

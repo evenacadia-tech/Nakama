@@ -1,0 +1,8 @@
+NAK-380 Etappe 3 Rotbeweis M-28(a)/(b), 25.09.2026
+Dateien vor Mutation: FeatureEngine.h SHA-256 FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186; Lautheit.h SHA-256 CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE.
+(a) Mutation wörtlich: `kLraMindestSekunden = 60.0` -> `20.0`. Nur B18 M-28 gefahren; Exitcode 1; Abwesenheit nach 30 s fiel, Wertvergleich blieb grün.
+(b) Mutation wörtlich: `heraus = p95 - p10` -> `p95 - p10 + 1.5`. Nur B18 M-28 gefahren; Exitcode 1; Wertvergleich fiel bei 20,400 gegen 18,883 LU, Abwesenheit blieb grün.
+Die Zusage fällt an der erwarteten Prüfung: JA (beide Hälften getrennt).
+Beide Dateien per Sicherung bytegleich zurückkopiert; SHA-256 jeweils identisch. Danach 2/0, Exitcode 0.
+Altvergleich Klasse (ii): der alte 1-Hz-Inhalt 18,900 LU lag bereits innerhalb 18,883 +/-0,2 LU und trägt deshalb nach E-380-18 nicht den Ratenwechsel.
+Wiederholung nach der exakten Sampledauer-Härtung: FeatureEngine.h SHA-256 B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183, Lautheit.h SHA-256 F534D2395D200266E5A5602C0B2CFA0E5AAA916D9A5A90A015CAD5EB12E7C5FD; (a) 1/1 und (b) 1/1, jeweils Exitcode 1; beide Zusagezeilen JA; beide Rücknahmen hashgleich.

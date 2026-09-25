@@ -1,0 +1,1 @@
+Quelle: AnalyseEngine.cpp. Mutation: `kM1TeilblockSegmente = 8` -> `1`. Fälle M-32 bis M-35. Sicherung/Restore SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.

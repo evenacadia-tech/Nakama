@@ -1,0 +1,8 @@
+NAK-380 Etappe 3 Rotbeweis M-24, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/featureengine/Lautheit.h
+SHA-256 vor der Mutation: CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE
+Mutation wörtlich: `heraus = p95 - p10` -> `heraus = p95 - p10 + 1.5`.
+Gefahrener Fall: B9 `380/M-24 tech3342_tabelle1_fall1`; Exitcode 1.
+Gefallen: Normwert und unabhaengige §5-Referenz, 11,500 statt 10,000 LU. Beide Zusageprüfungen fielen; keine fremde Prüfung lief.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme; SHA-256 identisch. Fall danach 2/0, Exitcode 0.

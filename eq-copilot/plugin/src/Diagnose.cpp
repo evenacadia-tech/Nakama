@@ -181,8 +181,9 @@ static Befund resonanzKarte (const MessSnapshot& m, const ResonanzKandidat& k)
                  + u8 (" % der Musikzeit.");
     if (note.isNotEmpty())
         b.gemessen += u8 (" Als Note: ") + note + u8 (".");
-    // Charakter aus P95−P50 des Trägerbands (M3a): ruhiger Pegel → fester
-    // Absenker ist sicher; wellender Pegel → dynamisches Werkzeug passt.
+    // Charakter aus P95−P50 der Acht-Segment-Teilblöcke des Trägerbands
+    // (M3a/NAK-380): ruhiger Pegel → fester Absenker ist sicher; wellender
+    // Pegel → dynamisches Werkzeug passt. Texte und Schwellen 6/10 dB bleiben.
     double spanne = std::numeric_limits<double>::quiet_NaN();
     if (m.perzentileGueltig)
     {

@@ -1,0 +1,5 @@
+NAK-380 Etappe 3 Rotbeweis M-35, 25.09.2026
+AnalyseEngine.cpp vorher SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F; Mutation `kM1TeilblockSegmente = 8` -> `1`.
+Nur A2 `380/M-35 m1_bewegung_5p4db`; Exitcode 1; Median 9,00 dB außerhalb [4,9;7,4], Vorbedingung grün.
+Die Zusage fällt an der erwarteten Prüfung: JA. Keine fremde Prüfung.
+Bytegleiche Rücknahme, SHA identisch; Fall danach Exitcode 0.

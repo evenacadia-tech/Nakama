@@ -34,9 +34,12 @@
 #include <juce_core/juce_core.h>
 
 #include "../core/analysis/FeatureEngine.h"
+#include "Nak380Pruefsignale.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -165,6 +168,31 @@ struct Speiser
         if (gab != nullptr) *gab = irgendeiner;
         return letzter;
     }
+
+    /** Speist exakt `samples` weitere Samples; alle vollen Blöcke tragen die
+        vorgegebene Größe, nur der letzte darf als ehrlicher Teilblock kürzer
+        sein. Damit sind Matrixdauern keine aufgerundeten Laufwerte. */
+    FeatureFrame fahreGenau (const std::function<float (std::uint64_t)>& f,
+                             std::uint64_t samples, bool* gab = nullptr)
+    {
+        const int volleGroesse = frames;
+        const auto ziel = strom + samples;
+        bool irgendeiner = false;
+        FeatureFrame letzter {};
+        while (strom < ziel)
+        {
+            frames = (int) std::min<std::uint64_t> ((std::uint64_t) volleGroesse,
+                                                    ziel - strom);
+            if (sende (f))
+            {
+                irgendeiner = true;
+                letzter = engine.frame();
+            }
+        }
+        frames = volleGroesse;
+        if (gab != nullptr) *gab = irgendeiner;
+        return letzter;
+    }
 };
 
 std::function<float (std::uint64_t)> sinus (double amplitude, double hz, double sr)
@@ -192,6 +220,16 @@ namespace nakama::analyse
     erklaert ihn in `FeatureEngine.h` zum Freund; das Produkt ruft ihn nie. */
 struct FeatureEngineTestzugang
 {
+    static std::uint64_t lraGezaehlteWerte (const FeatureEngine& e) noexcept
+    {
+        return e.lraGezaehlt;
+    }
+
+    static bool lraLesen (const FeatureEngine& e, double& heraus) noexcept
+    {
+        return e.lraLu (heraus);
+    }
+
     static void nichtEndlichZaehlerSetzen (FeatureEngine& e, std::uint32_t rahmen,
                                            std::uint32_t evidenz) noexcept
     {
@@ -238,6 +276,179 @@ struct FeatureEngineTestzugang
 
 namespace
 {
+bool nak380Waehlt (const char* nur, const char* id)
+{
+    return nur == nullptr || std::strcmp (nur, id) == 0;
+}
+
+__declspec(noinline) void nak380LraMesskern (const char* nur)
+{
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+    using nakama::analyse::FeatureEngineTestzugang;
+    namespace sig = nakama::test::nak380;
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+
+    if (nak380Waehlt (nur, "M-21"))
+    {
+        abschnitt ("380/M-21 lra_zehn_kurzzeitwerte_je_sekunde");
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (fs);
+        engine->evidenzIntervallSetzen (1.0);
+        Speiser speiser { *engine };
+        speiser.frames = block;
+        speiser.fahreGenau ([] (std::uint64_t n) { return sig::sinus1k (n, 0.1); },
+                           (std::uint64_t) (75.0 * fs));
+        const auto ist = FeatureEngineTestzugang::lraGezaehlteWerte (*engine);
+        // 75 s / 0,1 s = 750 Zellen; Zelle 30 bis 750 einschliesslich:
+        // 750 - 30 + 1 = 721 Werte (Tech 3342 §3.1: mindestens 10 Hz).
+        pruefe (ist == 721u, "380/M-21 lra_zehn_kurzzeitwerte_je_sekunde",
+                "ist " + juce::String ((juce::int64) ist) + ", soll 721");
+    }
+
+    if (nak380Waehlt (nur, "M-22"))
+    {
+        abschnitt ("380/M-22 lra_sechzig_sekunden_bei_zehn_hertz");
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (fs);
+        engine->evidenzIntervallSetzen (1.0);
+        Speiser speiser { *engine };
+        speiser.frames = block;
+        const auto ton = [] (std::uint64_t n) { return sig::sinus1k (n, 0.1); };
+        speiser.fahreGenau (ton, (std::uint64_t) (62.5 * fs));
+        double lra = 0.0;
+        const auto n596 = FeatureEngineTestzugang::lraGezaehlteWerte (*engine);
+        const bool bei596Ohne = ! FeatureEngineTestzugang::lraLesen (*engine, lra);
+        speiser.fahreGenau (ton, (std::uint64_t) (0.3 * fs));
+        const auto n599 = FeatureEngineTestzugang::lraGezaehlteWerte (*engine);
+        const bool bei599Ohne = ! FeatureEngineTestzugang::lraLesen (*engine, lra);
+        speiser.fahreGenau (ton, (std::uint64_t) (0.1 * fs));
+        const auto n600 = FeatureEngineTestzugang::lraGezaehlteWerte (*engine);
+        const bool bei600Mit = FeatureEngineTestzugang::lraLesen (*engine, lra);
+        // 625/628/629 Zellen ergeben 596/599/600 Werte: n-30+1; die drei
+        // exakten Dauern umfassen 3.000.000/3.014.400/3.019.200 Samples.
+        pruefe (n596 == 596u && n599 == 599u && n600 == 600u
+                    && speiser.strom == 3'019'200u
+                    && bei596Ohne && bei599Ohne && bei600Mit,
+                "380/M-22 lra_sechzig_sekunden_bei_zehn_hertz",
+                "Werte " + juce::String ((juce::int64) n596) + "/"
+                    + juce::String ((juce::int64) n599) + "/"
+                    + juce::String ((juce::int64) n600) + "; 62,5 s ohne="
+                    + juce::String (bei596Ohne ? "ja" : "nein")
+                    + ", 62,8 s ohne=" + juce::String (bei599Ohne ? "ja" : "nein")
+                    + ", 62,9 s mit=" + juce::String (bei600Mit ? "ja" : "nein"));
+    }
+
+    if (nak380Waehlt (nur, "M-23"))
+    {
+        abschnitt ("380/M-23 lra_ohne_aliasing");
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (fs);
+        engine->evidenzIntervallSetzen (1.0);
+        Speiser speiser { *engine };
+        speiser.frames = block;
+        speiser.fahreGenau ([] (std::uint64_t n)
+                           { return sig::sinus1k (n, sig::l2Amplitude (n)); },
+                           (std::uint64_t) (70.0 * fs));
+        double ist = 0.0;
+        const bool gesetzt = FeatureEngineTestzugang::lraLesen (*engine, ist);
+        // Tech-3342-§5-Referenz der analytischen 10-Hz-Folge:
+        // 10*log10(0,6535/0,3730) = 2,435 LU; ±0,15 LU deckt das 0,1-LU-
+        // Histogrammraster und den float32/K-Filter-Einschwingrand.
+        constexpr double soll = 2.435;
+        pruefe (gesetzt && std::abs (ist - soll) <= 0.15,
+                "380/M-23 lra_ohne_aliasing",
+                "ist " + juce::String (ist, 3) + ", Referenz 2,435 +/-0,15 LU");
+    }
+
+    if (nak380Waehlt (nur, "M-29"))
+    {
+        abschnitt ("380/M-29 lra_nan_sperrt_dreissig_werte");
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (fs);
+        engine->evidenzIntervallSetzen (1.0);
+        Speiser speiser { *engine };
+        speiser.frames = block;
+        speiser.fahreGenau ([] (std::uint64_t n)
+        {
+            if (n == (std::uint64_t) (40.0 * sig::kSamplerate))
+                return std::numeric_limits<float>::quiet_NaN();
+            return sig::sinus1k (n, 0.1);
+        }, (std::uint64_t) (75.0 * fs));
+        const auto ist = FeatureEngineTestzugang::lraGezaehlteWerte (*engine);
+        // Ohne Ersatz 721 Werte (M-21); genau die 30 ueberlappenden 3-s-
+        // Fenster enthalten die Zelle des NaN-Samples: 721 - 30 = 691.
+        pruefe (ist == 691u, "380/M-29 lra_nan_sperrt_dreissig_werte",
+                "ist " + juce::String ((juce::int64) ist) + ", soll 691");
+    }
+
+    if (nak380Waehlt (nur, "M-28"))
+    {
+        abschnitt ("380/M-28 lra_below_sixty_seconds_is_not_a_number");
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (fs);
+        engine->evidenzIntervallSetzen (1.0);
+        Speiser speiser { *engine };
+        speiser.frames = block;
+        const auto wandernd = [] (std::uint64_t n)
+        {
+            const double t = (double) n / fs;
+            const double a = 0.30 * std::pow (10.0,
+                (-10.0 + 10.0 * std::sin (kZweiPi * t / 25.0)) / 20.0);
+            return sig::sinus1k (n, a);
+        };
+        speiser.fahreGenau (wandernd, (std::uint64_t) (30.0 * fs));
+        double bei30 = 0.0;
+        const bool vorzeitig = FeatureEngineTestzugang::lraLesen (*engine, bei30);
+        speiser.fahreGenau (wandernd, (std::uint64_t) (45.0 * fs));
+        double ist = 0.0;
+        const bool gesetzt = FeatureEngineTestzugang::lraLesen (*engine, ist);
+        std::vector<double> zellen;
+        zellen.reserve (750u);
+        for (int z = 0; z < 750; ++z)
+        {
+            double energie = 0.0;
+            for (int j = 0; j < 20; ++j)
+            {
+                const double t = 0.1 * ((double) z + ((double) j + 0.5) / 20.0);
+                const double a = 0.30 * std::pow (10.0,
+                    (-10.0 + 10.0 * std::sin (kZweiPi * t / 25.0)) / 20.0);
+                energie += 0.5 * a * a;
+            }
+            zellen.push_back (energie / 20.0);
+        }
+        const double referenz = sig::lraReferenz (zellen);
+        pruefe (! vorzeitig, "380/M-28(a) nach 30 s kein LRA-Wert");
+        // ±0,2 LU: 0,1-LU-Histogrammraster plus Zell-/float32-Rand; Referenz
+        // ist Tech 3342 §5 über die analytische 10-Hz-Hüllkurvenfolge.
+        pruefe (gesetzt && std::abs (ist - referenz) <= 0.2,
+                "380/M-28(b) LRA nach 75 s gegen §5-Referenz +/-0,2 LU",
+                "ist " + juce::String (ist, 3) + ", Referenz "
+                    + juce::String (referenz, 3));
+    }
+
+    if (nak380Waehlt (nur, "M-31"))
+    {
+        abschnitt ("380/M-31 material_ohne_dynamik_bleibt_nahe_null");
+        auto engine = std::make_unique<FeatureEngine>();
+        engine->vorbereiten (fs);
+        engine->evidenzIntervallSetzen (1.0);
+        Speiser speiser { *engine };
+        speiser.frames = block;
+        speiser.fahreGenau ([] (std::uint64_t n) { return sig::sinus1k (n, 0.2); },
+                           (std::uint64_t) (75.0 * fs));
+        double ist = 0.0;
+        const bool gesetzt = FeatureEngineTestzugang::lraLesen (*engine, ist);
+        pruefe (gesetzt && ist < 1.0,
+                "380/M-31 material_ohne_dynamik_bleibt_nahe_null",
+                "ist " + juce::String (ist, 3) + " LU, Grenze <1,0 LU");
+    }
+#else
+    juce::ignoreUnused (nur);
+    pruefe (false, "NAK-380 LRA-Testzugang", "NAKAMA_FEATUREENGINE_TESTZUGANG fehlt");
+#endif
+}
+
 __declspec(noinline) void nak380BandStereoUndLeereGruppe()
 {
     abschnitt ("NAK-380 Etappe 2  band_stereo und leere Gruppe");
@@ -300,12 +511,21 @@ __declspec(noinline) void nak380BandStereoUndLeereGruppe()
 }
 } // namespace
 
-int main()
+int main (int argc, char* argv[])
 {
     constexpr double fs = 48000.0;
     std::cout << "== Nakama SONDE-013 - Loudnessfenster, Headroom, Dynamik ==" << std::endl;
 
+    if (argc == 3 && std::strcmp (argv[1], "--nak380") == 0)
+    {
+        nak380LraMesskern (argv[2]);
+        std::cout << "\n-----------------------------------------" << std::endl;
+        std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
+        return fehler == 0 ? 0 : 1;
+    }
+
     nak380BandStereoUndLeereGruppe();
+    nak380LraMesskern (nullptr);
 
     // ── M-01: drei Fenster, nicht ein Fenster mit drei Namen ──────────────
     //

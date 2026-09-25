@@ -1,0 +1,9 @@
+NAK-380 Etappe 3 Rotbeweis M-21, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h
+SHA-256 vor der Mutation: FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186
+Mutation wörtlich: `kLraHopZellen = 1` -> `10`.
+Gefahrener Fall: B18 `380/M-21 lra_zehn_kurzzeitwerte_je_sekunde`; Exitcode 1.
+Gefallene Prüfung: 73 statt 721 Kurzzeitwerte. Mitgefallen: keine; grün geblieben: der Bau.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme durch Zurückkopieren; SHA-256 danach identisch. Fall nach Rücknahme: 721, Exitcode 0.
+Wiederholung nach der exakten Sampledauer-Härtung: SHA-256 vor/nach der Mutation B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183; 73 statt 721, Exitcode 1; Zusagezeile JA.

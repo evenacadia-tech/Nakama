@@ -1,0 +1,6 @@
+NAK-380 Etappe 3 Rotbeweis M-26, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/featureengine/Lautheit.h; SHA-256 CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE.
+Mutation wörtlich: `heraus = p95 - p10` -> `heraus = p95 - p10 + 1.5`.
+Nur B9 `380/M-26 tech3342_tabelle1_fall3` gefahren; Exitcode 1; Norm- und §5-Prüfung fielen bei 21,500 statt 20,000 LU; keine fremde Prüfung.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme per Sicherung, SHA-256 identisch; danach 2/0, Exitcode 0.

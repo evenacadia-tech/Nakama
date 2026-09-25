@@ -2325,8 +2325,8 @@ def pruefe_nak380_etappe_2(lauf: Lauf, schema: dict) -> None:
     neu = fassungen.get("20260925", {})
     alt = fassungen.get("20260904", {})
     lauf.wahr(
-        "nak380_m19_fassung_etappe_2: aktuell ist 20260925",
-        register.get("aktuell") == 20260925,
+        "nak380_m19_fassung_etappe_2: Fassung 20260925 bleibt registriert",
+        bool(neu),
         f"aktuell={register.get('aktuell')!r}",
     )
     lauf.wahr(
@@ -2341,6 +2341,100 @@ def pruefe_nak380_etappe_2(lauf: Lauf, schema: dict) -> None:
         and neu.get("ganzzahlige_schwellen") == alt.get("ganzzahlige_schwellen")
         and neu.get("nicht_gefuehrt") == alt.get("nicht_gefuehrt"),
     )
+
+
+def pruefe_nak380_etappe_3(lauf: Lauf, nur: str | None = None) -> None:
+    """NAK-380 M-30/M-40: Normtext, nicht gefuehrte Werte und Fassung 3."""
+    register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+    feature_pfad = WURZEL / "eq-copilot/plugin/core/analysis/FeatureEngine.h"
+    lautheit_pfad = WURZEL / "eq-copilot/plugin/core/analysis/featureengine/Lautheit.h"
+    feature = feature_pfad.read_text(encoding="utf-8")
+    lautheit = lautheit_pfad.read_text(encoding="utf-8")
+    feature_einzeilig = " ".join(feature.split())
+
+    if nur in (None, "M-30"):
+        lauf.wahr(
+            "nak380_m30_nicht_gefuehrte_werte_stimmen: FeatureEngine-Kommentar nennt §3.1",
+            "EBU Tech 3342 §3.1" in feature_einzeilig
+            and "10 Kurzzeitwerte je Sekunde" in feature_einzeilig,
+        )
+        lauf.wahr(
+            "nak380_m30_nicht_gefuehrte_werte_stimmen: Lautheit-Kommentar nennt je Zelle und 10 Hz",
+            "EBU Tech 3342 §3.1" in lautheit and "je Zelle" in lautheit and "10 Hz" in lautheit,
+        )
+
+    aktuell = str(register.get("aktuell", ""))
+    fassungen = register.get("fassungen", {})
+    eintrag = fassungen.get(aktuell, {})
+    nicht_gefuehrt = eintrag.get("nicht_gefuehrt", {}).get("werte", [])
+    lra_zeile = (
+        "kLraHopZellen = 1 (EBU Tech 3342 §3.1: mindestens 10 Hz "
+        "Abtastung der Kurzzeitlautheit)"
+    )
+    if nur in (None, "M-30"):
+        lauf.wahr(
+            "nak380_m30_nicht_gefuehrte_werte_stimmen: Register nennt §3.1 und Wert 1",
+            lra_zeile in nicht_gefuehrt,
+            repr([x for x in nicht_gefuehrt if "kLraHopZellen" in str(x)]),
+        )
+
+    code_werte = {
+        name: wert.rstrip("uf")
+        for name, wert in re.findall(
+            r"static\s+constexpr\s+(?:std::)?\w+\s+(k\w+)\s*=\s*([^;]+);",
+            feature,
+        )
+    }
+    abweichend = []
+    for zeile in nicht_gefuehrt:
+        treffer = re.match(r"^(k\w+)\s*=\s*(-?(?:\d+(?:\.\d*)?|\.\d+))(?=\s|,|\()", str(zeile))
+        if treffer is None:
+            continue
+        name, soll = treffer.groups()
+        ist = code_werte.get(name)
+        if ist is None:
+            abweichend.append(f"{name}: fehlt")
+            continue
+        try:
+            gleich = float(ist) == float(soll)
+        except ValueError:
+            gleich = False
+        if not gleich:
+            abweichend.append(f"{name}: Code {ist}, Register {soll}")
+    if nur in (None, "M-30"):
+        lauf.wahr(
+            "nak380_m30_nicht_gefuehrte_werte_stimmen: jeder kName-Wert stimmt mit dem Code",
+            not abweichend,
+            "; ".join(abweichend),
+        )
+
+    neu = fassungen.get("20260926", {})
+    alt = fassungen.get("20260925", {})
+    if nur in (None, "M-40"):
+        versions_treffer = re.search(
+            r"kFeatureMetricsVersion\s*=\s*(\d+)u", feature
+        )
+        lauf.wahr(
+            "nak380_m40_fassung_etappe_3: FeatureEngine nennt 20260926",
+            versions_treffer is not None and versions_treffer.group(1) == "20260926",
+            versions_treffer.group(1) if versions_treffer else "fehlt",
+        )
+        lauf.wahr(
+            "nak380_m40_fassung_etappe_3: aktuell ist 20260926",
+            register.get("aktuell") == 20260926,
+            f"aktuell={register.get('aktuell')!r}",
+        )
+        lauf.wahr(
+            "nak380_m40_fassung_etappe_3: seit nennt NAK-380 Etappe 3",
+            neu.get("seit") == "NAK-380 Etappe 3",
+            repr(neu.get("seit")),
+        )
+        lauf.wahr(
+            "nak380_m40_fassung_etappe_3: Konfidenzschwellen bleiben unveraendert",
+            bool(neu)
+            and neu.get("schwellen") == alt.get("schwellen")
+            and neu.get("ganzzahlige_schwellen") == alt.get("ganzzahlige_schwellen"),
+        )
 
 
 def pruefe_comparability_schwellen(lauf: Lauf) -> None:
@@ -2359,9 +2453,10 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
 
     Deshalb hier drei Fragen an denselben Pfad:
 
-    1. Die vier Gates sind in der AKTUELLEN Fassung gefuehrt - nicht in einer
-       aelteren, aus der sie beim Fassungswechsel herausgefallen waeren.
-    2. Der Broker nennt dieselbe Fassung wie das Register (`METRICS_VERSION`).
+    1. Die vier Gates sind in der fuer den Broker benannten Fassung gefuehrt -
+       bei einem reinen Feature-Schritt ist das `broker_aktuell`, sonst
+       `aktuell`; so faellt kein unveraenderter Produktpfad aus dem Register.
+    2. Der Broker nennt diese Fassung des Registers (`METRICS_VERSION`).
     3. Im Produktpfad steht keine der vier Zahlen als nacktes Literal.
     """
     quelle = WURZEL / "broker/src/coordinator/vergleichbarkeit.rs"
@@ -2373,9 +2468,12 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
         # unbemerkt auf einer alten Kalibrierung stehenbleiben.
         pp = _konstanten_aus_kern([prepost])
         register_pp = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+        aktuell_pp = str(register_pp.get("fassungen", {}).get(
+            str(register_pp.get("aktuell", "")), {}
+        ).get("broker_aktuell", register_pp.get("aktuell", "")))
         lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
-                  "auch der PRE/POST-Pfad nennt die Fassung des Registers",
-                  pp.get("METRICS_VERSION", ("", ""))[0] == str(register_pp.get("aktuell", "")),
+                  "auch der PRE/POST-Pfad nennt seine Fassung des Registers",
+                  pp.get("METRICS_VERSION", ("", ""))[0] == aktuell_pp,
                   f"prepost {pp.get('METRICS_VERSION', ('', ''))[0]!r}")
     if not quelle.exists() or not METRIKEN.exists():
         lauf.wahr("comparability_schwellen_haengen_an_metrics_version: Quellen vorhanden",
@@ -2385,8 +2483,10 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
     register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
     aktuell = str(register.get("aktuell", ""))
     eintrag = register.get("fassungen", {}).get(aktuell, {})
-    gefuehrt = dict(eintrag.get("schwellen", {}))
-    gefuehrt.update(eintrag.get("ganzzahlige_schwellen", {}))
+    broker_aktuell = str(eintrag.get("broker_aktuell", aktuell))
+    broker_eintrag = register.get("fassungen", {}).get(broker_aktuell, {})
+    gefuehrt = dict(broker_eintrag.get("schwellen", {}))
+    gefuehrt.update(broker_eintrag.get("ganzzahlige_schwellen", {}))
 
     gates = ("GATE_ZEITUEBERDECKUNG", "GATE_QUELLEN_JACCARD",
              "GATE_MATERIAL_COSINE", "GATE_ABDECKUNG")
@@ -2398,9 +2498,9 @@ def pruefe_comparability_schwellen(lauf: Lauf) -> None:
     konstanten = _konstanten_aus_kern([quelle])
     broker_version = konstanten.get("METRICS_VERSION", ("", ""))[0]
     lauf.wahr("comparability_schwellen_haengen_an_metrics_version: "
-              "der Broker nennt die Fassung des Registers",
-              broker_version == aktuell,
-              f"Broker {broker_version!r}, Register {aktuell!r}")
+              "der Broker nennt seine Fassung des Registers",
+              broker_version == broker_aktuell,
+              f"Broker {broker_version!r}, Register {broker_aktuell!r}")
 
     # Kein nacktes Literal im Pfad. Kommentare und die Konstantenzeilen
     # selbst sind genau die Stellen, an denen die Zahl stehen MUSS.
@@ -2454,6 +2554,12 @@ def main(argv: list[str]) -> int:
     manifest = json_laden_strikt((FIXTURES / "MANIFEST.json").read_text(encoding="utf-8"))
 
     lauf = Lauf()
+    if len(argv) == 2 and argv[0] == "--nak380":
+        pruefe_nak380_etappe_3(lauf, argv[1])
+        print(f"Pruefungen: {lauf.ok} bestanden, {len(lauf.fehler)} gescheitert")
+        for f in lauf.fehler:
+            print(f"  ROT: {f}")
+        return 2 if lauf.fehler else 0
     pruefe_textriegel(lauf)
     pruefe_wire_zahlklassen(lauf)
     pruefe_schema(lauf, schema)
@@ -2472,6 +2578,7 @@ def main(argv: list[str]) -> int:
     pruefe_produkteingaenge(lauf, schema)
     pruefe_metrikregister(lauf)
     pruefe_nak380_etappe_2(lauf, schema)
+    pruefe_nak380_etappe_3(lauf)
     pruefe_comparability_schwellen(lauf)
     pruefe_experiment_belegung(lauf, schema, reserviert)
 

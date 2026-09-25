@@ -1,0 +1,1 @@
+Quelle: AnalyseEngine.cpp. Mutation: `berechneAbdeckung` liest `teilblockHistogramm` statt `pegelHistogramm`. Fall M-37. Sicherung/Restore SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.

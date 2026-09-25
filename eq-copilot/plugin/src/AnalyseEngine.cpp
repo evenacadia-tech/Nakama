@@ -26,6 +26,7 @@ static constexpr int    kPeakMindestAbstand  = 6;      // 1/4 Okt (wie analyze b
 static constexpr int    kMaxKandidaten       = 6;
 static constexpr double kKonvergenzFensterS  = 10.0;   // „Kurve steht": Vergleichsfenster (AKTIVzeit)
 static constexpr int    kZonenTickZellen     = 10;     // 10 × 100 ms = 1 s Aktivzeit pro Zonen-Tick
+static constexpr juce::uint32 kM1TeilblockSegmente = 8; // T-380-4: Welch-Mittel je M1-Wert
 // m4.1 (Kalibrier-Runde 1): eine Zonen-Region ohne echten Pegel liefert keine
 // Zeitverlaufs-Evidenz — unter Teppich+10 dB ist die Schulterlinien-Geometrie
 // Rauschmathematik (Testtrack: „Haerte 50 %" bei 0,24 % Energie ueber 2 kHz).
@@ -163,6 +164,9 @@ bool AnalyseEngine::WelchStufe::schiebe (float l, float r, bool stereo,
 AnalyseEngine::AnalyseEngine()
 {
     pegelHistogramm.assign ((size_t) kLtasBaender * kHistStufen, 0);
+    teilblockHistogramm.assign ((size_t) kLtasBaender * kHistStufen, 0);
+    teilblockSumme.assign ((size_t) kLtasBaender, 0.0);
+    teilblockSegmente.assign ((size_t) kLtasBaender, 0u);
     teppichInaktivDb.fill (1e9);
 }
 
@@ -289,6 +293,9 @@ void AnalyseEngine::zuruecksetzen()
         a->excessSegmente.fill (0);
     }
     std::fill (pegelHistogramm.begin(), pegelHistogramm.end(), 0u);
+    std::fill (teilblockHistogramm.begin(), teilblockHistogramm.end(), 0u);
+    std::fill (teilblockSumme.begin(), teilblockSumme.end(), 0.0);
+    std::fill (teilblockSegmente.begin(), teilblockSegmente.end(), 0u);
     teppichInaktivDb.fill (1e9);
     inaktiveSegmente = 0;
     liveEmaLinear.fill (std::numeric_limits<double>::quiet_NaN());
@@ -501,6 +508,24 @@ void AnalyseEngine::segmentInBaender (const WelchStufe& stufe, const std::vector
         const int bin = juce::jlimit (0, kHistStufen - 1,
                                       (int) std::lround (dbWert[(size_t) b]) - kHistMinDb);
         ++pegelHistogramm[(size_t) b * kHistStufen + (size_t) bin];
+
+        // T-380-4: Ein M1-Histogrammwert steht erst nach acht aktiven
+        // Segmenten derselben zuständigen Stufe. Ein Rest bleibt im Akku und
+        // verfällt bei Reset; die Abdeckung liest weiterhin das Histogramm
+        // jedes einzelnen Segments oben.
+        teilblockSumme[(size_t) b] += dichte[(size_t) b];
+        auto& teilSegmente = teilblockSegmente[(size_t) b];
+        if (++teilSegmente == kM1TeilblockSegmente)
+        {
+            const double mittel = teilblockSumme[(size_t) b]
+                                / (double) kM1TeilblockSegmente;
+            const double teilDb = 10.0 * std::log10 (mittel * skala + 1e-30);
+            const int teilBin = juce::jlimit (0, kHistStufen - 1,
+                                              (int) std::lround (teilDb) - kHistMinDb);
+            ++teilblockHistogramm[(size_t) b * kHistStufen + (size_t) teilBin];
+            teilblockSumme[(size_t) b] = 0.0;
+            teilSegmente = 0u;
+        }
 
         // Live-Hüllkurve §5.10.1: 3-s-EMA über die LEISTUNG (nie über dB —
         // ein dB-Mittel ist ein geometrisches Mittel und fällt bei Musik mit
@@ -797,7 +822,7 @@ void AnalyseEngine::auswertenLeicht()
     fertig.revision = ++revisionZaehler;
 }
 
-// ── M3a: Band-Perzentile aus dem Pegelhistogramm (1-dB-Quantisierung) ───────
+// ── M3a/NAK-380: Band-Perzentile aus Acht-Segment-Teilblöcken (1 dB) ───────
 void AnalyseEngine::berechnePerzentile (MessSnapshot& s) const
 {
     s.perzentilP10.fill (std::numeric_limits<double>::quiet_NaN());
@@ -806,7 +831,7 @@ void AnalyseEngine::berechnePerzentile (MessSnapshot& s) const
     bool irgendeins = false;
     for (int b = 0; b < kLtasBaender; ++b)
     {
-        const auto* hist = pegelHistogramm.data() + (size_t) b * kHistStufen;
+        const auto* hist = teilblockHistogramm.data() + (size_t) b * kHistStufen;
         juce::uint64 gesamt = 0;
         for (int bin = 0; bin < kHistStufen; ++bin)
             gesamt += hist[bin];
@@ -928,6 +953,8 @@ void AnalyseEngine::finalisiereSkalar (MessSnapshot& s) const
 
 void AnalyseEngine::berechneAbdeckung (MessSnapshot& s) const
 {
+    // R-380-6 aendert nur die Perzentile: Abdeckung bleibt auf jedem einzelnen
+    // aktiven Welch-Segment im `pegelHistogramm` statt auf Teilblockmitteln.
     s.abdeckung.clear();
     for (int start = 0; start < kLtasBaender; start += 8)   // 8·(1/24) = 1/3 Okt
     {

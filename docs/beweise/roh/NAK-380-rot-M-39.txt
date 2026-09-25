@@ -1,0 +1,7 @@
+NAK-380 Etappe 3 Rotbeweis M-39, 25.09.2026
+Pflicht-Altvergleich zuerst: neuer Code m4.2 gegen alte Referenz SHA-256 573518B7E8E067AA5D437A90BA5132A932EEB3FDC7E21850C178282BBD3C8DBF; B30 Exitcode 1, `festhalten_bytegleich` erste Abweichung Byte 52, zwei Pfadprüfungen grün.
+Danach ausschließlich B30-Erzeuger: neue Referenz 35.550 Bytes, SHA-256 D05639C42C013F12961282B281ECD4CEFD25D3C7772A5AD018F5304A6EBB1938. Zweiter Erzeugerlauf lieferte denselben Hash.
+Mutationsdatei AnalyseEngine.h vorher SHA-256 62EF9054024A30A7EAEB8B780548964BAE369B17A2F4F505C13F927FC888CC6E; `kMetricsVersion = "m4.2-2026-09-25"` -> `"m4.1-2026-08-15"`.
+Nur B30 gefahren; Exitcode 1, `festhalten_bytegleich` fiel wieder bei Byte 52; übrige 213 Prüfungen grün.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Header per Sicherung bytegleich zurückkopiert, SHA identisch; finaler B30-Lauf siehe §27.

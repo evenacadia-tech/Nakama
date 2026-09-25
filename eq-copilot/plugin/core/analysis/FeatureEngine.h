@@ -86,7 +86,7 @@ namespace nakama::analyse
 /** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
     dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
     weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260925u;
+inline constexpr std::uint32_t kFeatureMetricsVersion = 20260926u;
 
 /*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
 
@@ -413,8 +413,10 @@ public:
         Kurzzeitwerte, nicht die Wanduhr (dieselbe Regel wie bei der
         Abdeckung, §48.2). */
     static constexpr double kLraMindestSekunden = 60.0;
-    /** Hop der LRA-Kurzzeitfolge: 1 s = 10 Zellen (EBU Tech 3342 §2.2). */
-    static constexpr int kLraHopZellen = 10;
+    /** Hop der LRA-Kurzzeitfolge: 1 Zelle = 100 ms, also 10 Kurzzeitwerte je
+        Sekunde (EBU Tech 3342 §3.1: „≥10 Hz sampling of the loudness level is
+        required“). */
+    static constexpr int kLraHopZellen = 1;
     /** Absolutes Gate der LRA-Verteilung in LUFS (EBU Tech 3342: -70). */
     static constexpr double kLraAbsGateLufs = -70.0;
     /** Relatives Gate der LRA-Verteilung, LU unter dem gegateten Mittel
@@ -1428,7 +1430,7 @@ private:
     /// Wie viele Samples der laufenden Loudnesszelle im Fenster lagen.
     std::uint32_t zelleImFensterSamples { 0 };
     /// LRA: Histogramm der gegateten Kurzzeitwerte plus der Zaehler, der die
-    /// 60-s-Regel traegt. `lraZellenSeitHop` erzeugt den 1-s-Hop. Beide
+    /// 60-s-Regel traegt. `lraZellenSeitHop` erzeugt den 100-ms-Hop. Beide
     /// fallen an jeder Grenze — siehe `grenzeZiehen()`.
     std::vector<std::uint32_t> lraHistogramm;
     std::uint64_t lraGezaehlt { 0 };

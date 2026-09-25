@@ -1,0 +1,1 @@
+Quelle: Lautheit.h. Mutation: Kommentar `§3.1` -> `§2.2`. Fall M-30, zweite Vertragsstelle. Sicherung/Restore SHA-256 CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE.

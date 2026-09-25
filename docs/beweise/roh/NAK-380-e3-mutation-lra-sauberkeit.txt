@@ -1,0 +1,2 @@
+Quelle: Lautheit.h. Mutation: Kurzzeit-Sauberkeitsbedingung formgültig mit `false &&` abgeschaltet. Fall M-29. Sicherung/Restore SHA-256 CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE.
+Wiederholung nach Testhärtung: Sicherung/Restore SHA-256 F534D2395D200266E5A5602C0B2CFA0E5AAA916D9A5A90A015CAD5EB12E7C5FD.

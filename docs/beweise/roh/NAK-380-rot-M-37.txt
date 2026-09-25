@@ -1,0 +1,7 @@
+NAK-380 Etappe 3 Rotbeweis M-37, 25.09.2026
+AnalyseEngine.cpp vorher SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.
+Mutation wörtlich in `berechneAbdeckung`: `pegelHistogramm[...]` -> `teilblockHistogramm[...]`.
+Nur A2 `380/M-37 abdeckung_zaehlt_segmente`; Exitcode 1. Alle 28 Dritteloktavgruppen des Kontrastlaufs wichen von der aus Einzelsegmenten berechneten Referenz ab; die 196 Bandzählerprüfungen blieben grün.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme, SHA identisch; danach 3/0, Exitcode 0.
+Wiederholung nach der Je-Band-Härtung: dieselbe Mutation bei SHA-256 F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; 221/221 Bandgleichheiten blieben grün, 28/28 Abdeckungsgruppen fielen, nur M-37 2/1 und Exitcode 1. Rücknahme hashgleich; danach nur M-37 3/0 und der volle A2-Lauf 258/0, jeweils Exitcode 0. Zusagezeile JA.

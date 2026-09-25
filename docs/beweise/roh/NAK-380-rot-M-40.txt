@@ -1,0 +1,6 @@
+NAK-380 Etappe 3 Rotbeweis M-40, 25.09.2026
+FeatureEngine.h vorher SHA-256 FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186.
+Mutation wörtlich: `kFeatureMetricsVersion = 20260926u` -> `20260925u`.
+Nur A5 `nak380_m40_fassung_etappe_3`; Exitcode 2. Genau die Codeversionsprüfung fiel (20260925 statt 20260926); drei Registerprüfungen blieben grün.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme per Sicherung, SHA identisch; danach 4/0, Exitcode 0.

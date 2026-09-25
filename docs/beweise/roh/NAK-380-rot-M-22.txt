@@ -1,0 +1,9 @@
+NAK-380 Etappe 3 Rotbeweis M-22, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/featureengine/Lautheit.h
+SHA-256 vor der Mutation: CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE
+Mutation wörtlich: `sekundenJeWert = kZelleSekunden * (double) kLraHopZellen` -> `sekundenJeWert = 1.0`.
+Gefahrener Fall: B18 `380/M-22 lra_sechzig_sekunden_bei_zehn_hertz`; Exitcode 1.
+Gefallene Prüfung: 62,5 s und 62,8 s trugen bereits einen Wert; 62,9 s blieb gesetzt. Mitgefallen: keine.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme durch Zurückkopieren; SHA-256 danach identisch. Fall danach Exitcode 0.
+Wiederholung nach der exakten Sampledauer-Härtung: SHA-256 vor/nach der Mutation F534D2395D200266E5A5602C0B2CFA0E5AAA916D9A5A90A015CAD5EB12E7C5FD; 596/599/600 Werte, aber falsch gesetzt/falsch gesetzt/gesetzt, Exitcode 1; Zusagezeile JA.

@@ -1,0 +1,6 @@
+NAK-380 Etappe 3 Rotbeweis M-32, 25.09.2026
+Datei vor Mutation: AnalyseEngine.cpp; SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.
+Mutation wörtlich: `kM1TeilblockSegmente = 8` -> `1`.
+Nur A2 `380/M-32 m1_rauschen_steht_ruhig`; Exitcode 1. 18/196 Bänder über 6 dB und 69/69 Einbinbänder über 4 dB, Maxima je 8,00 dB; Vorbedingung blieb grün.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme, SHA-256 identisch; Fall danach Exitcode 0.

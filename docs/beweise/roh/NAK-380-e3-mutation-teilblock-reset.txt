@@ -1,0 +1,2 @@
+Quelle: AnalyseEngine.cpp. Formgültige Ersatzmutation der Start/Stop-Zusage: Reset setzt Teilblockrest auf 1 statt 0. Fall M-38. Sicherung/Restore SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.
+Wiederholung nach Presence-Bit-Härtung: Sicherung/Restore SHA-256 F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; 3/2 rot, danach 5/0.

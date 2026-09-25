@@ -1,0 +1,1 @@
+Quelle: metriken-v1.json. Mutation: aktueller Registerwert `kLraHopZellen = 1` -> `10`. Fall M-30, dritte Vertragsstelle. Sicherung/Restore SHA-256 2985EA71A09C12FE77E3EDA2C549DD38D4930C58A4F774F3B0D52EC7EE2F4867.

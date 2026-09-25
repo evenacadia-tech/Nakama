@@ -62,7 +62,7 @@ inline void FeatureEngine::zelleSchliessen() noexcept
     kurzStand = (kurzStand + 1) % kKurzZellen;
     if (kurzGefuellt < kKurzZellen) ++kurzGefuellt;
 
-    // LRA (M-04, EBU Tech 3342): alle 10 Zellen — also 1 s Hop — geht der
+    // LRA (M-04, EBU Tech 3342 §3.1): je Zelle — also 10 Hz — geht der
     // aktuelle Kurzzeitwert ins Histogramm, sofern das VOLLE 3-s-Fenster
     // steht und der Wert das absolute Gate nimmt.  Nur diese gezaehlten
     // Werte tragen die 60-s-Regel; Stille laesst den Zaehler stehen.

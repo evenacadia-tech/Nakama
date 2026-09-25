@@ -1,0 +1,7 @@
+NAK-380 Etappe 3 Rotbeweis M-41, 25.09.2026
+M-41 ist laut Matrix dieselbe Audiothread-Allokationszusage und dieselbe Mutation wie M-20. Der Produktpfad PluginProcessor.cpp liegt ausdrücklich außerhalb der Etappe-3-Ticketpfade; deshalb wurde die belegte Mutation aus derselben laufenden Ticketarbeit nicht erneut geschrieben.
+Referenz: docs/beweise/roh/NAK-380-rot-M-20.txt. Datei vor und nach Mutation SHA-256 6D23AE41146030FFF0CCA8A9C3C853F13DC5E5B620E05904853C058E48D00F48.
+Mutation wörtlich dort: `std::vector<float> nak380Mutation(64, 0.0f);` am Anfang von `processBlock`.
+B4 Exitcode 1; genau vier Nullforderungen der Audiothread-Allokationswachen fielen, 117 Prüfungen blieben grün; Sicherung bytegleich zurückkopiert; B4 danach 121/0.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Aktuelle unveränderte Grenzwachen A1/A16/B1/B4 stehen in §27.

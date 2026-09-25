@@ -1,0 +1,6 @@
+NAK-380 Etappe 3 Rotbeweis M-36, 25.09.2026
+Diagnose.cpp vorher SHA-256 0A5CF0FC990AC763187801569BE125668A31DE95D5F7D0CE5F5A645F981177CB.
+Vorgesehene Mutation `spanne > 10.0` -> `> 0.5` blieb grün: der neue Achtsegmentwert der 116-Hz-Fixture ist im 1-dB-Raster exakt 0 dB. Sie belegt die Zusage daher nicht.
+Formgültige Ersatzmutation derselben Schwellenzusage: `spanne > 10.0` -> `> -0.5`. Nur A2 M-36 gefahren; Exitcode 1; genau fester-Absenker-Text und neue M-36-Werkzeugprüfung fielen, 96 Prüfungen blieben grün.
+Die Zusage fällt an der erwarteten Prüfung: JA (mit begründeter Ersatzmutation).
+Bytegleiche Rücknahme per Sicherung, SHA identisch; danach 98/0, Exitcode 0.

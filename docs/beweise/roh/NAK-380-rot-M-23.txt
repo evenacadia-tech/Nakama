@@ -1,0 +1,10 @@
+NAK-380 Etappe 3 Rotbeweis M-23, 25.09.2026
+Datei vor der Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h
+SHA-256 vor der Mutation: FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186
+Mutation wörtlich: `kLraHopZellen = 1` -> `10`.
+Gefahrener Fall: B18 `380/M-23 lra_ohne_aliasing`; Exitcode 1.
+Gefallene Prüfung: 3,000 LU statt Referenz 2,435 +/-0,15 LU. Mitgefallen: keine.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Bytegleiche Rücknahme durch Zurückkopieren; SHA-256 danach identisch.
+Fall nach Rücknahme NICHT grün: 2,600 LU liegt 0,015 LU über der oberen Grenze 2,585; Exitcode 1. Toleranz nicht gelockert, Produktcode in Lautheit.h laut Ticketgrenze unverändert, offener Punkt in §27.
+Wiederholung nach der exakten Sampledauer-Härtung: SHA-256 vor/nach der Mutation B836B6CE05274F7EE2FA6EB7A25043820CEB1F019D6B65FE008D7BD3E38F0183; 3,000 LU, Exitcode 1; Zusagezeile JA. Der zurückgenommene Fall bleibt mit 2,600 LU offen.

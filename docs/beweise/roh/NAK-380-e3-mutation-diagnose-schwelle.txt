@@ -1,0 +1,1 @@
+Quelle: Diagnose.cpp. Vorgabe `>0.5` blieb wegen gemessener 0-dB-Spanne grün; belegende formgültige Ersatzmutation `spanne > 10.0` -> `> -0.5`. Fall M-36. Sicherung/Restore SHA-256 0A5CF0FC990AC763187801569BE125668A31DE95D5F7D0CE5F5A645F981177CB.

@@ -105,7 +105,7 @@ Worker = frischer Opus-Hintergrundprozess im sichtbaren Checkout; Auftrag als
 er Werkzeugeintrag, der Worker startet „idle"):
 
 ```powershell
-claude "<selbsttragender Ticketauftrag>" --model opus --effort max --permission-mode dontAsk `
+claude "<selbsttragender Ticketauftrag>" --model opus --effort xhigh --permission-mode dontAsk `
   --name "nakama-<ticket>-<basis-kurz>-bau" --allowed-tools <liste, keine Wildcard> --bg
 ```
 
@@ -132,7 +132,7 @@ Beobachter als Hintergrundkommando derselben Session, mit `Monitor`
 ```powershell
 pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
   -WorkerId <id> -BaseSha <sha> -Aufsicht <LOCKER|NORMAL|ENG> `
-  -StartModel Opus -StartEffort max -DirigentSessionId <session-id>
+  -StartModel Opus -StartEffort xhigh -DirigentSessionId <session-id>
 ```
 
 Er meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und alte oder
@@ -332,11 +332,11 @@ löschen, `claude rm <worker-id>`, mit beendetem Beobachter, `CronList` und
 ### 3.6 Bauer und Prüfer
 
 Opus baut, Codex prüft (01.09.2026): Der Bauer ist ein frischer Opus-Worker
-(`opus` = 5.5), Effort `max` (22.09.2026, NAK-359), kompiliert, fährt Tests
+(`opus` = 5.5), Effort `xhigh` (25.09.2026, NAK-404; löst das `max` aus NAK-359 ab), kompiliert, fährt Tests
 und Kanon selbst (§3.5, abgekoppelt) und übergibt nie `NOT RUN`. Der Prüfer
 ist ein frischer Codex-Thread (§3.4). Codex an der Grenze → frischer
 Opus-Thread prüft;
-Opus-Prüfer und -Validierer immer `max`. Ab 90 % Claude-Woche (User 21.09.,
+Opus-Prüfer und -Validierer immer `xhigh` (NAK-404). Ab 90 % Claude-Woche (User 21.09.,
 25.09.2026, NAK-396) kein Opus-Lauf mehr, kein Halt: bis zum Claude-Reset
 baut Codex (`workspace-write`, `gpt-5.6-sol` xhigh) und prüft `gpt-6-astra`
 high, nie max; Claude nur Dirigent. Den Codex-Stand committet der Dirigent

@@ -1,5 +1,62 @@
-NAK-380 Etappe 3 Rotbeweis M-30, 25.09.2026
-Vorher: FeatureEngine.h FFC2F7944903C73D424F9FAB86ACF85BE2EF27FA23ACD1F37A895A55133E6186; Lautheit.h CE6AF9BB29B7D66D747023CEA9412495E63F8A40F7E5BF084BF58A7B080A58FE; metriken-v1.json 2985EA71A09C12FE77E3EDA2C549DD38D4930C58A4F774F3B0D52EC7EE2F4867.
-Drei getrennte Mutationen, jeweils nur A5 `nak380_m30_nicht_gefuehrte_werte_stimmen`: FeatureEngine-Kommentar `§3.1` -> `§2.2` (Exit 2, genau Feature-Prüfung rot); Lautheit-Kommentar `§3.1` -> `§2.2` (Exit 2, genau Lautheit-Prüfung rot); Register `kLraHopZellen = 1` -> `10` (Exit 2, Registertext und Codewertvergleich rot).
-Die Zusage fällt an der erwarteten Prüfung: JA (jede Vertragsstelle einzeln).
-Nach jeder Mutation Sicherung zurückkopiert; alle SHA-256 identisch. Danach M-30 4/0, Exitcode 0.
+NAK-380 Etappe 3, Nacharbeit 1: Rotbeweis M-30 nach §8.1, 25.09.2026 (ersetzt den Beleg aus §27; Vorgänger: git show 8308a3d8:docs/beweise/roh/NAK-380-rot-M-30.txt)
+Bauer: Opus-5.5-Worker (Auftrag roh/NAK-380-nacharbeit-e3-1-auftrag.txt), Basis HEAD 3b888f56938cfff41bb12d905dedb210aff4759e, Arbeitsstand uncommittet.
+
+1. Kopf
+Matrixzeile: M-30 (DSP-25, Kommentar und Register nennen §3.1) in der Fassung §31 (§31.2); Befund D4 (§31.1).
+Bein: A5 tools/eq-copilot/pruefe_v3_vertrag.py; Einzelfall py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30
+(11 Prüfungen), voll py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung (870).
+Prüfstellen (Arbeitsstand): pruefe_nak380_etappe_3 (Teil M-30), _kern_konstantenindex, _cpp_ohne_kommentare, _cpp_zahl.
+Mutationsdatei: eq-copilot/schemas/v3/metriken-v1.json (Fassung 20260926, Zeilen 405 bis 419 am HEAD; CRLF, -text; am
+Endstand bytegleich zum HEAD, SHA-256 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE).
+
+2. Index und Zerlegung
+Index: jede `static constexpr`- und `inline constexpr`-Definition `kName = Wert;` aller 18 Kernheader unter
+eq-copilot/plugin/core/analysis/ (rekursiv), auf Namensraumebene und in Klassen; Kommentare, Zeichenketten und
+Zeichenliterale vorher geleert (Ziffertrenner bleiben). Schlüssel: einfacher Name, Name mit innerster Klasse, bei
+Schachtelung die volle Kette; 124 Schlüssel, einziger mehrdeutiger kPi (KGewichtung.h und TruePeak.h, kein Registername).
+Zerlegung: jedes Paar `kName = Zahl` und `Klasse::kName = Zahl` jedes nicht_gefuehrt-Eintrags der Fassung `aktuell`
+(20260926), mehrere Paare je Eintrag; jede Nennung `kName =` muss ein lesbares Paar sein. Ein Name ohne Codefund, ein
+mehrdeutiger Name oder ein abweichender Wert ist rot.
+Paare am Endstand (7) und ihre Codefunde: kLraMindestSekunden = 60 → 60.0, kLraAbsGateLufs = -70 → -70.0,
+kLraRelGateLu = -20 → -20.0, kLraHopZellen = 1 → 1, kEreignisPlaetze = 64 → 64 (alle static constexpr in der Klasse
+FeatureEngine, FeatureEngine.h); kVerteilungPlaetze = 64 → 64 (inline constexpr im Namensraum, FeatureEngine.h:124);
+Vergleichspegel::kMindestSekunden = 0.4 → 0.4 (static constexpr in der Klasse Vergleichspegel, Vergleichspegel.h:42).
+Grünstand: --nak380 M-30 11/0, Exitcode 0; A5 voll 870/0, Exitcode 0 (vorher 863/0: eine Sammelprüfung durch acht ersetzt).
+
+3. Sicherung und Rücknahme
+Jede Mutation einzeln im Eintrag der Fassung 20260926 (Anker `"20260926": {`, Stelle danach eindeutig), Sicherung
+eq-copilot/build/nak380-sicherung/n1/metriken-v1.json.<Kürzel>, SHA-256 vorher = nachher 84C60296…8ECE; Mutation und
+Rücknahme bytegenau (CRLF bleibt), Rücknahme durch Zurückkopieren, nie über git; danach --nak380 M-30 11/0 und A5 870/0.
+Einzelheiten, Hashes und die Namen der grün gebliebenen Prüfungen: roh/NAK-380-e3-n1-mutation-<Kürzel>.txt.
+
+4. Zusagesatz → Prüfzeile → Mutation → rot
+Satz | Zusagesatz (Fassung §31) | Prüfzeile | Mutation metriken-v1.json (Fassung 20260926) | rot | Kürzel
+1 | Kommentar FeatureEngine.h nennt „EBU Tech 3342 §3.1“ | „nak380_m30_…: FeatureEngine-Kommentar nennt §3.1“ | unverändert aus Etappe 3: §3.1 → §2.2 im Kommentar (Vorgängerfassung dieser Datei) | ja (Etappe 3) | —
+1 | Kommentar Lautheit.h | „…: Lautheit-Kommentar nennt je Zelle und 10 Hz“ | unverändert aus Etappe 3 | ja (Etappe 3) | —
+2 | Registereintrag lautet „kLraHopZellen = 1 (EBU Tech 3342 §3.1: …)“ | „…: Register nennt §3.1 und Wert 1“ | :411 kLraHopZellen = 1 → 10 (in m30-lra-werte) | ja | m30-lra-werte
+3 | jedes Paar einzeln, zweiter Wert eines Eintrags (inline constexpr) | „…: kVerteilungPlaetze = 65 steht so im Code“ | :412 kVerteilungPlaetze = 64 → 65 | ja, nur diese | m30-zweiter-wert
+3 | Form „Klasse::kName = Wert“ (Klassenkonstante) | „…: Vergleichspegel::kMindestSekunden = 0.5 steht so im Code“ | :417 0.4 → 0.5 | ja, nur diese | m30-vergleichspegel
+3 | erster Wert desselben Eintrags (static constexpr in der Klasse) | „…: kEreignisPlaetze = 65 steht so im Code“ | :412 kEreignisPlaetze = 64 → 65 | ja, nur diese | m30-erster-wert
+3 | jeder Wert der LRA-Einträge | „…: kLraMindestSekunden = 61 / kLraAbsGateLufs = -71 / kLraRelGateLu = -21 / kLraHopZellen = 10 steht so im Code“ | :408 60 → 61, :409 -70 → -71, :410 -20 → -21, :411 1 → 10 | ja, alle vier | m30-lra-werte
+4 | ein Name ohne Codefund ist rot | „…: kLraRelGateLuX = -20 steht so im Code“ (kein Codefund) | :410 kLraRelGateLu → kLraRelGateLuX | ja, nur diese | m30-ohne-codefund
+4 | keine Nennung fällt still heraus | „…: jede kName-Nennung der aktuellen Fassung ist ein lesbares Paar“ (6 Paare aus 7 Nennungen) | :412 kVerteilungPlaetze = 64 → 0x40 | ja, nur diese | m30-unlesbar
+
+5. Je Mutation: Exitcode, mitgefallen mit Grund, grün geblieben
+m30-zweiter-wert: --nak380 M-30 Exitcode 2, 10/1; A5 Exitcode 2, 869/1 („Code 64 (FeatureEngine.h), Register 65“).
+Die Zusage fällt an der erwarteten Prüfung: JA. Mitgefallen: keine, auch nicht im vollen A5.
+m30-vergleichspegel: Exitcode 2 und 2, 10/1 und 869/1 („Code 0.4 (Vergleichspegel.h), Register 0.5“). JA. Mitgefallen: keine.
+m30-erster-wert: Exitcode 2 und 2, 10/1 und 869/1. JA. Mitgefallen: keine.
+m30-lra-werte: Exitcode 2 und 2, 6/5 und 865/5: die vier Paarprüfungen und „Register nennt §3.1 und Wert 1“ (Satz 2, dieselbe
+Zeile). JA. Mitgefallen: keine weitere.
+m30-ohne-codefund: Exitcode 2 und 2, 10/1 und 869/1 („kein Codefund“). JA.
+m30-unlesbar: Exitcode 2 und 2, 9/1 und 868/1: die Lesbarkeitsprüfung fällt; die Paarprüfung für kVerteilungPlaetze entsteht
+gar nicht (daher 10 statt 11 Prüfungen) — genau der stille Ausfall, den die Lesbarkeitsprüfung sichtbar macht. JA.
+Nach jeder Rücknahme: SHA-256 gleich, --nak380 M-30 11/0 und A5 870/0, Exitcode 0.
+Stand der Belege: die sechs Zyklen liefen nach dem Selbstauditfix an _cpp_zahl und _cpp_ohne_kommentare erneut
+(17:55:02 bis 17:55:54 Uhr) mit denselben Zählungen wie der erste Durchgang (17:38:48 bis 17:41:47 Uhr); die
+Kurzprotokolle tragen den zweiten Durchgang.
+
+6. Nicht Gegenstand
+Die nicht_gefuehrt-Einträge nennen außerdem Rust-Konstanten (GATE_SUCHRAUM_S = 2.0, GATE_MINDESTCAPTURE_S = 6.0,
+GATE_UEBERLAPPUNG = 0.8, GATE_AKTIVZEIT_DIFFERENZ = 0.1, FEATURE_HOP_MS = 100). Sie haben nicht die Form „kName = Wert“, die
+M-30 zusagt, und liegen außerhalb der Kernheader; M-30 prüft sie nicht (offener Punkt im Manifest §32.4).

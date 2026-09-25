@@ -119,9 +119,24 @@ struct Pruefer
     int fehler = 0, ok = 0;
     juce::String signal;
 
+    // NAK-380 Rotbeweise (§8.1): mit gesetzter Umgebungsvariable
+    // NAK380_ALLE_PRUEFUNGEN nennt der Lauf auch jede bestandene Prüfung.
+    static bool alleZeigen()
+    {
+        static const bool an = juce::SystemStats::getEnvironmentVariable (
+                                   "NAK380_ALLE_PRUEFUNGEN", {}).isNotEmpty();
+        return an;
+    }
+
     void melde (bool bestanden, const juce::String& was, const juce::String& detail)
     {
-        if (bestanden) { ++ok; return; }
+        if (bestanden)
+        {
+            ++ok;
+            if (alleZeigen())
+                std::printf ("  ok [%s] %s\n", signal.toRawUTF8(), was.toRawUTF8());
+            return;
+        }
         ++fehler;
         std::printf ("  FEHLER [%s] %s — %s\n", signal.toRawUTF8(), was.toRawUTF8(), detail.toRawUTF8());
     }
@@ -371,12 +386,10 @@ struct Nak380M1Lauf
 };
 
 template <typename Generator>
-std::uint64_t nak380M1Speisen (AnalyseEngine& engine, double dauerS,
-                              Generator&& naechstes)
+std::uint64_t nak380M1SpeisenSamples (AnalyseEngine& engine, std::uint64_t samplesSoll,
+                                      Generator&& naechstes)
 {
-    constexpr double fs = 48000.0;
     constexpr int block = 512;
-    const auto samplesSoll = (std::uint64_t) std::llround (dauerS * fs);
     std::vector<float> inter ((std::size_t) block * 2u);
     std::uint64_t sample = 0;
     while (sample < samplesSoll)
@@ -396,6 +409,15 @@ std::uint64_t nak380M1Speisen (AnalyseEngine& engine, double dauerS,
 }
 
 template <typename Generator>
+std::uint64_t nak380M1Speisen (AnalyseEngine& engine, double dauerS,
+                              Generator&& naechstes)
+{
+    constexpr double fs = 48000.0;
+    return nak380M1SpeisenSamples (engine, (std::uint64_t) std::llround (dauerS * fs),
+                                   std::forward<Generator> (naechstes));
+}
+
+template <typename Generator>
 Nak380M1Lauf nak380M1Fahren (double dauerS, Generator&& naechstes)
 {
     auto engine = std::make_unique<AnalyseEngine>();
@@ -406,13 +428,33 @@ Nak380M1Lauf nak380M1Fahren (double dauerS, Generator&& naechstes)
     return { engine->snapshot(), sample };
 }
 
+// Länge der Welch-Stufe, die ein Band führt (AnalyseEngine.cpp:195-196,
+// :214-217): Zentrum unter 200 Hz Bass 16384, unter 2000 Hz Mitten 4096,
+// sonst Höhen 2048.
+int nak380StufenPunkte (int band)
+{
+    const double lo = 30.0 * std::pow (2.0, (double) band / 24.0);
+    const double hi = 30.0 * std::pow (2.0, (double) (band + 1) / 24.0);
+    const double zentrum = std::sqrt (lo * hi);
+    return zentrum < 200.0 ? 16384 : (zentrum < 2000.0 ? 4096 : 2048);
+}
+
+// Segmente einer Welch-Stufe der Länge n, `samples` Samples nach Start oder
+// Reset: das erste schließt nach n Samples, jedes weitere einen Hop n/2
+// später (AnalyseEngine.cpp:70-71, :106-109, :157-159), also
+// S = floor((samples - n)/(n/2)) + 1 und vor n Samples 0.
+std::uint64_t nak380Segmente (std::uint64_t samples, int n)
+{
+    const auto laenge = (std::uint64_t) n;
+    return samples < laenge ? 0u : (samples - laenge) / (laenge / 2u) + 1u;
+}
+
 int nak380BinsImBand (int band)
 {
     constexpr double fs = 48000.0;
     const double lo = 30.0 * std::pow (2.0, (double) band / 24.0);
     const double hi = 30.0 * std::pow (2.0, (double) (band + 1) / 24.0);
-    const double zentrum = std::sqrt (lo * hi);
-    const int punkte = zentrum < 200.0 ? 16384 : (zentrum < 2000.0 ? 4096 : 2048);
+    const int punkte = nak380StufenPunkte (band);
     const int von = (int) std::ceil (lo * (double) punkte / fs);
     const int bis = std::min ((int) std::ceil (hi * (double) punkte / fs), punkte / 2 + 1);
     return std::max (0, bis - von);
@@ -509,6 +551,96 @@ void nak380Bewegung (Pruefer& p, int matrix, double breiteDb,
     std::printf ("380/M-%d Messung: Median %.2f dB\n", matrix, median);
 }
 
+// NAK-380 M-36 (Fassung §31): drei Modulationseingänge beiderseits der
+// Textschwellen 6 dB (Charakter, `Diagnose.cpp:212`) und 10 dB (Werkzeug,
+// `:224`). Herleitung der gelesenen Spanne (Signal `sig::M36Pegelrechteck`):
+//  · Band 135 wird von der Mittenstufe geführt (n 4096, Hop 2048). Der Ton
+//    auf Bin 128 füllt mit periodischem Hann genau die Bins 127 bis 129 mit
+//    |X|² = A²n²/64, A²n²/16, A²n²/64; mit dichteFaktor 2/(fs·3n/8), vier
+//    Bins im Band und der Skala 1,5·fs/8192 ist der Bandpegel
+//    10·log10(1,5·A²·n/65 536) = 10·log10(0,09375·0,1²) = −30,28 dB im
+//    Grundpegel und −30,28 dB + Tiefe im lauten Pegel. Das Rauschen
+//    (σ = 0,01, Banddichte 2σ²/fs) liegt 10·log10(A²n/(16σ²)) = 44,08 dB
+//    darunter und bewegt einen Teilblock um weniger als 0,01 dB; beide
+//    Stufen runden deshalb auf −30 und −30 + Tiefe (0,22 dB Abstand zur
+//    Rundungsgrenze).
+//  · Teilblock j der Mittenstufe deckt die Samples [16 384·j, 16 384·j
+//    + 18 432). Von den floor(1405/8) = 175 Teilblöcken in 60 s liegen 116
+//    ganz im Grundpegel, 47 ganz im lauten Pegel und 12 über einem Wechsel;
+//    ein Segment über einem Wechsel trägt eine Bandleistung zwischen beiden
+//    Stufen. P50 (Rang ceil(0,5·175) = 88 <= 116) fällt daher auf −30 dB,
+//    P95 (Rang ceil(0,95·175) = 167 > 175 − 47 = 128) auf −30 dB + Tiefe:
+//    die gelesene Spanne ist genau die Tiefe.
+//  · Tiefen: 5 dB steht ruhig (5 <= 6) und kippt, sobald die Schwelle unter
+//    5 liegt; 8 dB kommt in Wellen (8 > 6), behält den festen Absenker
+//    (8 <= 10) und kippt bei einer Werkzeugschwelle unter 8; 13 dB kommt in
+//    Wellen mit dem dynamischen Werkzeug (13 > 10). Die Eingänge halten die
+//    Schwellen damit in 5 <= T6 < 8 und 8 <= T10 < 13.
+//  · Karte: nur Band 135 trägt den Ton, rund 44 dB über der Rauschdichte
+//    (Breite 1/24 Okt <= 1/6 → „sehr schmal“; dbOver weit über 9,17 →
+//    cutBis 6), jedes Mittensegment zeigt ihn (Persistenz 1 → dauerhaft),
+//    das Bandzentrum 30·2^(135,5/24) = 1502,06 Hz schreibt sich „1,5 kHz“.
+void nak380M36Eingang (Pruefer& p, const char* kennung, double tiefeDb, std::uint64_t saat,
+                       const juce::String& charakterSoll, const char* charakterWort,
+                       const juce::String& werkzeugSoll, const char* werkzeugWort)
+{
+    namespace sig = nakama::test::nak380;
+    const juce::String fall = juce::String ("380/M-36 ") + kennung + " "
+                            + juce::String ((int) tiefeDb) + " dB: ";
+    sig::M36Pegelrechteck signal { tiefeDb, saat };
+    auto engine = std::make_unique<AnalyseEngine>();
+    engine->vorbereiten (48000.0);
+    const auto samples = nak380M1Speisen (*engine, 60.0, [&] (std::uint64_t n)
+    { return signal.naechstes (n); });
+    engine->auswerten();
+    const auto m = engine->snapshot();
+
+    constexpr int tonBand = 135;
+    const double p50 = m.perzentilP50[(std::size_t) tonBand];
+    const double p95 = m.perzentilP95[(std::size_t) tonBand];
+    p.wahr (samples == 2'880'000u && p50 == -30.0 && p95 == -30.0 + tiefeDb,
+            fall + "Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)",
+            juce::String ((juce::int64) samples) + " Samples, P50 " + juce::String (p50, 1)
+                + ", P95 " + juce::String (p95, 1));
+
+    std::vector<Befund> resonanz;
+    for (const auto& b : diagnose (m, "hub"))
+        if (b.klasse == BefundKlasse::resonanz)
+            resonanz.push_back (b);
+    const double zentrumHz = std::sqrt (30.0 * std::pow (2.0, (double) tonBand / 24.0)
+                                        * 30.0 * std::pow (2.0, (double) (tonBand + 1) / 24.0));
+    const bool karte = resonanz.size() == 1u && resonanz.front().dauerhaft
+                    && std::abs (resonanz.front().fSchwerpunkt - zentrumHz) < 1e-6;
+    p.wahr (karte, fall + "Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz",
+            juce::String ((int) resonanz.size()) + " Resonanzkarten");
+    if (! karte)
+        return;
+    const auto& b = resonanz.front();
+    p.wahr (b.gemessen.endsWith (charakterSoll),
+            fall + "Charaktertext " + charakterWort + " woertlich (Schwelle 6 dB)", b.gemessen);
+    p.wahr (b.tu == werkzeugSoll,
+            fall + "Werkzeugtext " + werkzeugWort + " woertlich (Schwelle 10 dB)", b.tu);
+}
+
+void nak380M36Eingaenge (Pruefer& p)
+{
+    namespace sig = nakama::test::nak380;
+    const auto u8 = [] (const char* text) { return juce::String (juce::CharPointer_UTF8 (text)); };
+    // Diagnose.cpp:227-230 und :236-237 mit schmalheit „sehr schmal“,
+    // f „1,5 kHz“ und cutBis 6 (Herleitung oben).
+    const auto fest = u8 ("Senk genau dort sehr schmal ab: im Fruity PEQ2 eine sehr schmale Glocke auf 1,5 kHz (erst −3 dB, bei Bedarf bis −6 dB; die Breite regelt dort Q — hoch heißt schmal).");
+    const auto dynamisch = u8 ("Der Ton ist fast immer da, aber sein Pegel wogt — nimm das Werkzeug, das nur die Spitzen abfängt: Smooth Operator Pro mit sehr schmalem Fokus um 1,5 kHz und sanfter Stärke.");
+    nak380M36Eingang (p, "M36a", 5.0, sig::kM36aSaat,
+                      u8 (" Der Pegel dort steht ruhig (Schwankung ~5 dB)."), "steht ruhig",
+                      fest, "fester Absenker");
+    nak380M36Eingang (p, "M36b", 8.0, sig::kM36bSaat,
+                      u8 (" Der Pegel dort kommt in Wellen (~8 dB Schwankung)."), "kommt in Wellen",
+                      fest, "fester Absenker");
+    nak380M36Eingang (p, "M36c", 13.0, sig::kM36cSaat,
+                      u8 (" Der Pegel dort kommt in Wellen (~13 dB Schwankung)."), "kommt in Wellen",
+                      dynamisch, "dynamisches Werkzeug");
+}
+
 void nak380M37 (Pruefer& p)
 {
     namespace sig = nakama::test::nak380;
@@ -518,19 +650,33 @@ void nak380M37 (Pruefer& p)
     const auto samples = nak380M1Speisen (*engine, 60.0, [&] (std::uint64_t)
     { return (float) (0.1 * rauschen.naechstes()); });
 
-    int abweichend = 0, belegt = 0;
+    int abweichend = 0, belegt = 0, segmentFalsch = 0;
     for (int b = 0; b < kLtasBaender; ++b)
     {
-        if (nak380BinsImBand (b) > 0)
+        const bool mitBin = nak380BinsImBand (b) > 0;
+        if (mitBin)
             ++belegt;
-        if (AnalyseEngineTestzugang::segmentHistogrammSumme (*engine, b)
-            != AnalyseEngineTestzugang::zustaendigeSegmente (*engine, b))
+        const auto segmente = AnalyseEngineTestzugang::zustaendigeSegmente (*engine, b);
+        const auto sollSegmente = mitBin ? nak380Segmente (samples, nak380StufenPunkte (b)) : 0u;
+        if (segmente != sollSegmente || (mitBin && segmente == 0u))
+            ++segmentFalsch;
+        if (AnalyseEngineTestzugang::segmentHistogrammSumme (*engine, b) != segmente)
             ++abweichend;
     }
     // 60*48000 Samples; §7.4 ergibt bei 48 kHz genau 196 belegte Bänder.
     // Die Gleichheit gilt trotzdem für alle 221 Bänder; unbelegte tragen 0=0.
     p.wahr (samples == 2'880'000u && belegt == 196,
             "380/M-37 Vorbedingung W4 und 196 belegte Baender");
+    // Z2 (Fassung §31): die Segmentzahl steht fest, bevor die Gleichheit
+    // gilt, sonst gälte sie auch bei null Segmenten. Jedes W4-Segment ist
+    // aktiv (σ = 0,1 liegt 40 dB über dem Gate −60 dBFS), also zählt jedes
+    // Band mit Bin S = floor((2 880 000 - n)/(n/2)) + 1 Segmente seiner Stufe:
+    // Bass (n 16384) 350, Mitten (4096) 1405, Höhen (2048) 2811; ohne Bin 0.
+    p.wahr (segmentFalsch == 0 && nak380Segmente (samples, 16384) == 350u
+                && nak380Segmente (samples, 4096) == 1405u
+                && nak380Segmente (samples, 2048) == 2811u,
+            "380/M-37 Segmentzahl je Band = Formel der Stufe (Bass 350, Mitten 1405, Hoehen 2811), jede > 0",
+            juce::String (segmentFalsch) + " von 221 abweichend");
     p.wahr (abweichend == 0,
             "380/M-37 abdeckung_zaehlt_segmente: jedes Band",
             juce::String (abweichend) + " von 221 abweichend");
@@ -550,6 +696,35 @@ void nak380M37 (Pruefer& p)
         return (float) ((hoch ? 0.01 : 0.0011) * kontrast.naechstes());
     });
     abdeckungEngine->auswerten();
+    // Auch der Nachbau braucht gezählte Segmente. Segmente ganz in den ersten
+    // 4 s bleiben inaktiv (σ = 0,0006: −64,4 dBFS), Segmente ganz im 60-s-Teil
+    // sind aktiv (schwächste Stufe σ = 0,0011: −59,2 dBFS, 0,83 dB über dem
+    // Gate, bei 2048 Samples über sechs Standardabweichungen der
+    // Leistungsschätzung); offen sind nur die zwei Segmente je Stufe über der
+    // 4-s-Grenze. Je Band mit Bin liegen die aktiven Segmente daher in
+    // [S(3 072 000) - ceil(192 000/(n/2)), S(3 072 000) - S(192 000)]:
+    // Bass [350, 352], Mitten [1405, 1407], Höhen [2811, 2813]; ohne Bin 0.
+    int kontrastFalsch = 0;
+    for (int b = 0; b < kLtasBaender; ++b)
+    {
+        const auto segmente = AnalyseEngineTestzugang::zustaendigeSegmente (*abdeckungEngine, b);
+        if (nak380BinsImBand (b) <= 0)
+        {
+            if (segmente != 0u)
+                ++kontrastFalsch;
+            continue;
+        }
+        const int n = nak380StufenPunkte (b);
+        const auto hop = (std::uint64_t) n / 2u;
+        const auto gesamt = nak380Segmente (3'072'000u, n);
+        const auto unten = gesamt - (192'000u + hop - 1u) / hop;
+        const auto oben = gesamt - nak380Segmente (192'000u, n);
+        if (segmente == 0u || segmente < unten || segmente > oben)
+            ++kontrastFalsch;
+    }
+    p.wahr (kontrastFalsch == 0,
+            "380/M-37 Kontrastlauf Segmentzahl je Band in [innen, gesamt - still] der Stufe, jede > 0",
+            juce::String (kontrastFalsch) + " von 221 ausserhalb");
     const auto ist = abdeckungEngine->snapshot().abdeckung;
     const auto soll = AnalyseEngineTestzugang::abdeckungAusSegmenthistogramm (*abdeckungEngine);
     int anteilAbweichend = 0;
@@ -562,69 +737,175 @@ void nak380M37 (Pruefer& p)
                 + " Dritteloktavgruppen abweichend");
 }
 
+// Soll-Zählgrößen eines Bandes unter W4, `samples` Samples nach Start oder
+// Reset. Jedes W4-Segment ist aktiv (σ = 0,1 liegt 40 dB über dem Gate
+// −60 dBFS, AnalyseEngine.cpp:13, :122-123); ein Band ohne Bin in seiner
+// Stufe zählt nichts. T-380-4: je 8 Segmente ein Teilblock, der Rest wartet.
+struct Nak380TeilblockSoll
+{
+    std::uint64_t segmente {}, bloecke {}, rest {};
+};
+
+Nak380TeilblockSoll nak380TeilblockSoll (int band, std::uint64_t samples)
+{
+    if (nak380BinsImBand (band) <= 0)
+        return {};
+    const auto segmente = nak380Segmente (samples, nak380StufenPunkte (band));
+    return { segmente, segmente / 8u, segmente % 8u };
+}
+
+// M-38 Satz 1 und 2 an einem Auswertepunkt: Segment-, Teilblock- und
+// Restzahl je Band gegen die Formel, dazu die Restsumme, die genau dann leer
+// ist, wenn kein Segment wartet.
+void nak380M38Zaehler (Pruefer& p, const AnalyseEngine& e, std::uint64_t samples,
+                       const juce::String& punkt)
+{
+    int segmentFalsch = 0, blockFalsch = 0, restFalsch = 0;
+    for (int b = 0; b < kLtasBaender; ++b)
+    {
+        const auto soll = nak380TeilblockSoll (b, samples);
+        if (AnalyseEngineTestzugang::segmentHistogrammSumme (e, b) != soll.segmente)
+            ++segmentFalsch;
+        if (AnalyseEngineTestzugang::teilblockHistogrammSumme (e, b) != soll.bloecke)
+            ++blockFalsch;
+        const bool summeLeer = AnalyseEngineTestzugang::teilblockRestsumme (e, b) == 0.0;
+        if (AnalyseEngineTestzugang::teilblockRest (e, b) != soll.rest
+            || summeLeer != (soll.rest == 0u))
+            ++restFalsch;
+    }
+    const juce::String stufen = juce::String ((juce::int64) nak380Segmente (samples, 16384)) + "/"
+                              + juce::String ((juce::int64) nak380Segmente (samples, 4096)) + "/"
+                              + juce::String ((juce::int64) nak380Segmente (samples, 2048));
+    p.wahr (segmentFalsch == 0,
+            "380/M-38 " + punkt + ": Segmente je Band = Formel der Stufe",
+            juce::String (segmentFalsch) + " von 221 abweichend, Soll Bass/Mitten/Hoehen " + stufen);
+    p.wahr (blockFalsch == 0,
+            "380/M-38 " + punkt + ": Teilbloecke je Band = floor(Segmente/8)",
+            juce::String (blockFalsch) + " von 221 abweichend");
+    p.wahr (restFalsch == 0,
+            "380/M-38 " + punkt + ": Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest",
+            juce::String (restFalsch) + " von 221 abweichend");
+}
+
+// M-38 Satz 3 und 4 an einem Auswertepunkt: je Feld NaN (nie 0) in jedem
+// Band ohne vollständigen Teilblock und endlich in jedem Band mit einem,
+// beides aus der Formel; dazu das Flag.
+void nak380M38Perzentile (Pruefer& p, const MessSnapshot& m, std::uint64_t samples,
+                          bool gueltigSoll, const juce::String& punkt)
+{
+    const std::array<const std::array<double, kLtasBaender>*, 3> felder {
+        &m.perzentilP10, &m.perzentilP50, &m.perzentilP95 };
+    const std::array<const char*, 3> namen { "P10", "P50", "P95" };
+    for (std::size_t f = 0; f < felder.size(); ++f)
+    {
+        int ohneBlockNichtNaN = 0, mitBlockNichtEndlich = 0;
+        for (int b = 0; b < kLtasBaender; ++b)
+        {
+            const double wert = (*felder[f])[(std::size_t) b];
+            if (nak380TeilblockSoll (b, samples).bloecke == 0u)
+            {
+                if (! std::isnan (wert))
+                    ++ohneBlockNichtNaN;
+            }
+            else if (! std::isfinite (wert))
+                ++mitBlockNichtEndlich;
+        }
+        p.wahr (ohneBlockNichtNaN == 0 && mitBlockNichtEndlich == 0,
+                "380/M-38 " + punkt + ": " + namen[f] + " je Band NaN ohne, endlich mit Teilblock",
+                juce::String (ohneBlockNichtNaN) + " ohne Teilblock nicht NaN, "
+                    + juce::String (mitBlockNichtEndlich) + " mit Teilblock nicht endlich");
+    }
+    p.wahr (m.perzentileGueltig == gueltigSoll,
+            "380/M-38 " + punkt + ": perzentileGueltig " + (gueltigSoll ? "wahr" : "falsch"),
+            juce::String ("Flag ") + (m.perzentileGueltig ? "wahr" : "falsch"));
+}
+
 void nak380M38 (Pruefer& p)
 {
     namespace sig = nakama::test::nak380;
-    sig::GaussRauschen rauschen { sig::kW4Saat };
-    auto engine = std::make_unique<AnalyseEngine>();
-    engine->vorbereiten (48000.0);
-    nak380M1Speisen (*engine, 30.0, [&] (std::uint64_t)
-    { return (float) (0.1 * rauschen.naechstes()); });
-
-    int falscheBloecke = 0;
+    // §7.4-Gitter bei 48 kHz: 196 Bänder mit Bin, 25 ohne; die 25 tragen nie
+    // einen Teilblock.
+    int belegt = 0;
     for (int b = 0; b < kLtasBaender; ++b)
+        if (nak380BinsImBand (b) > 0)
+            ++belegt;
+    p.wahr (belegt == 196, "380/M-38 Vorbedingung 196 Baender mit Bin, 25 ohne",
+            juce::String (belegt) + " mit Bin");
+
+    // Lauf 1 (Matrix M-38, Fassung §31): W4 über 60 s ohne Reset,
+    // N = 2 880 000. Segmente Bass 350, Mitten 1405, Höhen 2811; Teilblöcke
+    // 43/175/351, Rest 6/5/3; jedes Band mit Bin trägt Teilblöcke, das Flag
+    // ist wahr.
     {
-        const auto segmente = AnalyseEngineTestzugang::segmentHistogrammSumme (*engine, b);
-        const auto bloecke = AnalyseEngineTestzugang::teilblockHistogrammSumme (*engine, b);
-        const auto rest = AnalyseEngineTestzugang::teilblockRest (*engine, b);
-        // T-380-4: 8 Segmente je Teilblock, also floor(n/8) und n mod 8.
-        if (bloecke != segmente / 8u || rest != segmente % 8u)
-            ++falscheBloecke;
+        sig::GaussRauschen rauschen { sig::kW4Saat };
+        const auto w4 = [&] (std::uint64_t) { return (float) (0.1 * rauschen.naechstes()); };
+        auto engine = std::make_unique<AnalyseEngine>();
+        engine->vorbereiten (48000.0);
+        const auto samples = nak380M1Speisen (*engine, 60.0, w4);
+        engine->auswerten();
+        p.wahr (samples == 2'880'000u, "380/M-38 Lauf 1 Vorbedingung W4 60 s",
+                juce::String ((juce::int64) samples) + " Samples");
+        nak380M38Zaehler (p, *engine, samples, "Lauf 1 60 s");
+        nak380M38Perzentile (p, engine->snapshot(), samples, true, "Lauf 1 60 s");
     }
-    p.wahr (falscheBloecke == 0,
-            "380/M-38 teilblock_rand_vor_reset: floor(n/8), Rest n mod 8 je Band",
-            juce::String (falscheBloecke) + " von 221 abweichend");
 
-    engine->zuruecksetzen();
-    int resetReste = 0;
-    for (int b = 0; b < kLtasBaender; ++b)
-        if (AnalyseEngineTestzugang::segmentHistogrammSumme (*engine, b) != 0u
-            || AnalyseEngineTestzugang::teilblockHistogrammSumme (*engine, b) != 0u
-            || AnalyseEngineTestzugang::teilblockRest (*engine, b) != 0u
-            || AnalyseEngineTestzugang::teilblockRestsumme (*engine, b) != 0.0)
-            ++resetReste;
-    p.wahr (resetReste == 0,
-            "380/M-38 teilblock_rand_reset_verwirft_histogramm_summe_und_rest",
-            juce::String (resetReste) + " von 221 nicht leer");
-
-    nak380M1Speisen (*engine, 1.0, [&] (std::uint64_t)
-    { return (float) (0.1 * rauschen.naechstes()); });
-    engine->auswerten();
-    const auto snapshot = engine->snapshot();
-    int zuFrueh = 0, mitBlockOhneWert = 0;
-    bool irgendeinBlock = false;
-    for (int b = 0; b < kLtasBaender; ++b)
+    // Lauf 2: W4, zuruecksetzen() bei 30 s, Weiterfahrt bis 60 s. Nach dem
+    // Reset zählen die Auswertepunkte die Samples seit dem Reset:
+    //  · 30 s vor dem Reset (1 440 000): Segmente 174/702/1405, Teilblöcke
+    //    21/87/175, Rest 6/6/5 — der Stand, den der Reset leeren muss;
+    //  · unmittelbar nach dem Reset (0): alle Zähler und Restsummen 0, nach
+    //    auswerten() jedes Feld NaN und das Flag falsch. Der Snapshot, den
+    //    zuruecksetzen() selbst bis zum nächsten auswerten() stehen lässt,
+    //    trägt die Vorgabe 0,0 (Randbefund R1, Härtung NAK-403) und ist nicht
+    //    Gegenstand dieser Zeile;
+    //  · 9215 Samples: der erste Teilblock entsteht in der Stufe mit dem
+    //    kleinsten Hop (Höhen, n 2048, Hop 1024) nach 2048 + 7·1024 = 9216
+    //    Samples, in den Mitten nach 4096 + 7·2048 = 18 432, im Bass nach
+    //    16 384 + 7·8192 = 73 728. Bei 9215 trägt keine Stufe einen (Höhen 7,
+    //    Mitten 3, Bass 0 Segmente): jedes Feld NaN, Flag falsch;
+    //  · 9216 Samples: genau die Höhenbänder mit Bin tragen einen Teilblock,
+    //    nur sie sind endlich, das Flag ist wahr;
+    //  · 60 s (1 440 000 seit dem Reset): wieder 174/702/1405, 21/87/175,
+    //    Rest 6/6/5, Flag wahr.
     {
-        const auto bloecke = AnalyseEngineTestzugang::teilblockHistogrammSumme (*engine, b);
-        irgendeinBlock = irgendeinBlock || bloecke > 0u;
-        const bool endlich = std::isfinite (snapshot.perzentilP10[(std::size_t) b])
-                          && std::isfinite (snapshot.perzentilP50[(std::size_t) b])
-                          && std::isfinite (snapshot.perzentilP95[(std::size_t) b]);
-        if (bloecke == 0u && endlich) ++zuFrueh;
-        if (bloecke > 0u && ! endlich) ++mitBlockOhneWert;
+        sig::GaussRauschen rauschen { sig::kW4Saat };
+        const auto w4 = [&] (std::uint64_t) { return (float) (0.1 * rauschen.naechstes()); };
+        auto engine = std::make_unique<AnalyseEngine>();
+        engine->vorbereiten (48000.0);
+        const auto vorReset = nak380M1Speisen (*engine, 30.0, w4);
+        p.wahr (vorReset == 1'440'000u, "380/M-38 Lauf 2 Vorbedingung W4 30 s bis zum Reset",
+                juce::String ((juce::int64) vorReset) + " Samples");
+        nak380M38Zaehler (p, *engine, vorReset, "Lauf 2 30 s vor dem Reset");
+
+        engine->zuruecksetzen();
+        nak380M38Zaehler (p, *engine, 0u, "Lauf 2 unmittelbar nach dem Reset");
+        engine->auswerten();
+        nak380M38Perzentile (p, engine->snapshot(), 0u, false, "Lauf 2 unmittelbar nach dem Reset");
+
+        std::uint64_t seitReset = nak380M1SpeisenSamples (*engine, 9215u, w4);
+        engine->auswerten();
+        nak380M38Zaehler (p, *engine, seitReset, "Lauf 2 9215 Samples nach dem Reset");
+        nak380M38Perzentile (p, engine->snapshot(), seitReset, false,
+                             "Lauf 2 9215 Samples nach dem Reset");
+
+        seitReset += nak380M1SpeisenSamples (*engine, 1u, w4);
+        engine->auswerten();
+        nak380M38Zaehler (p, *engine, seitReset, "Lauf 2 9216 Samples nach dem Reset");
+        nak380M38Perzentile (p, engine->snapshot(), seitReset, true,
+                             "Lauf 2 9216 Samples nach dem Reset");
+
+        seitReset += nak380M1SpeisenSamples (*engine, 1'440'000u - seitReset, w4);
+        engine->auswerten();
+        p.wahr (seitReset == 1'440'000u, "380/M-38 Lauf 2 Vorbedingung Weiterfahrt bis 60 s",
+                juce::String ((juce::int64) seitReset) + " Samples seit dem Reset");
+        nak380M38Zaehler (p, *engine, seitReset, "Lauf 2 60 s");
+        nak380M38Perzentile (p, engine->snapshot(), seitReset, true, "Lauf 2 60 s");
+
+        p.wahr (AnalyseEngineTestzugang::zusaetzlicherSpeicherBytes (*engine) == 127'296u,
+                "380/M-38 Heap-Speicherzahl je AnalyseEngine",
+                juce::String ((juce::int64) AnalyseEngineTestzugang::zusaetzlicherSpeicherBytes (*engine))
+                    + " Bytes, Formel 221*(141*4+8+4)=127296");
     }
-    p.wahr (zuFrueh == 0 && mitBlockOhneWert == 0,
-            "380/M-38 perzentile_erst_ab_einem_vollen_teilblock: jedes Band",
-            "zu frueh " + juce::String (zuFrueh) + ", trotz Block ohne Wert "
-                + juce::String (mitBlockOhneWert));
-    p.wahr (snapshot.perzentileGueltig == irgendeinBlock,
-            "380/M-38 perzentileGueltig genau ab dem ersten vollen Teilblock",
-            "Flag " + juce::String (snapshot.perzentileGueltig ? "ja" : "nein")
-                + ", Teilblock " + juce::String (irgendeinBlock ? "ja" : "nein"));
-    p.wahr (AnalyseEngineTestzugang::zusaetzlicherSpeicherBytes (*engine) == 127'296u,
-            "380/M-38 Heap-Speicherzahl je AnalyseEngine",
-            juce::String ((juce::int64) AnalyseEngineTestzugang::zusaetzlicherSpeicherBytes (*engine))
-                + " Bytes, Formel 221*(141*4+8+4)=127296");
 }
 
 void nak380M1Faelle (const char* nur, int& ok, int& fehler)
@@ -653,6 +934,11 @@ void nak380M1Faelle (const char* nur, int& ok, int& fehler)
     {
         Pruefer p; p.signal = "380/M-35 M3";
         nak380Bewegung (p, 35, 12.0, sig::kM3RauschSaat, sig::kM3PegelSaat, 4.9, 7.4);
+        ok += p.ok; fehler += p.fehler;
+    }
+    if (waehlt ("M-36"))
+    {
+        Pruefer p; p.signal = "380/M-36 M36a bis M36c"; nak380M36Eingaenge (p);
         ok += p.ok; fehler += p.fehler;
     }
     if (waehlt ("M-37"))
@@ -696,8 +982,8 @@ int main (int argc, char* argv[])
     formate.registerBasicFormats();
 
     int fehlerGesamt = 0, okGesamt = 0;
-    if (argc == 4 && std::strcmp (argv[2], "--nak380") == 0
-        && std::strcmp (argv[3], "M-36") != 0)
+    const bool nurNak380 = argc == 4 && std::strcmp (argv[2], "--nak380") == 0;
+    if (nurNak380 && std::strcmp (argv[3], "M-36") != 0)
     {
         nak380M1Faelle (argv[3], okGesamt, fehlerGesamt);
         std::printf ("\n%s — %d Pruefungen ok, %d Fehler (metrics %s · diagnose %s)\n",
@@ -705,8 +991,9 @@ int main (int argc, char* argv[])
                      okGesamt, fehlerGesamt, kMetricsVersion, kDiagnoseVersion);
         return fehlerGesamt == 0 && okGesamt > 0 ? 0 : 1;
     }
-    if (! (argc == 4 && std::strcmp (argv[2], "--nak380") == 0))
-        nak380M1Faelle (nullptr, okGesamt, fehlerGesamt);
+    // Voller Lauf: alle NAK-380-Fälle. `--nak380 M-36`: die drei
+    // Modulationseingänge, danach nur die Fixture resonanz-116hz.
+    nak380M1Faelle (nurNak380 ? argv[3] : nullptr, okGesamt, fehlerGesamt);
     // Die vier Kern-Signale tragen die M1-Kreuzvalidierung (analyze-track-
     // Referenz); die diag-*-Signale tragen NUR SHA-Riegel + M3-Diagnose.
     // M3a: diag-mulm-halb + diag-wander-ton beweisen den ZEITVERLAUF
@@ -716,9 +1003,7 @@ int main (int argc, char* argv[])
                             "diag-mulm-halb", "diag-wander-ton" };
     for (const char* name : namen)
     {
-        if (argc == 4 && std::strcmp (argv[2], "--nak380") == 0
-            && std::strcmp (argv[3], "M-36") == 0
-            && juce::String (name) != "resonanz-116hz")
+        if (nurNak380 && juce::String (name) != "resonanz-116hz")
             continue;
         Pruefer p;
         p.signal = name;
@@ -1002,6 +1287,8 @@ int main (int argc, char* argv[])
     // Kanalenergie); jede Variante unten hat dazu eine mathematisch zwingende
     // Erwartung. Vor der Kanalenergie-Umstellung lieferte Antiphase „keine
     // Daten" — genau dieser Ausfall wird hier dauerhaft verriegelt.
+    // `--nak380 M-36` läuft ohne diesen Block (nur der betroffene Fall).
+    if (! nurNak380)
     {
         std::vector<float> pinkL;
         {

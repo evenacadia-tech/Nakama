@@ -1,6 +1,74 @@
-NAK-380 Etappe 3 Rotbeweis M-36, 25.09.2026
-Diagnose.cpp vorher SHA-256 0A5CF0FC990AC763187801569BE125668A31DE95D5F7D0CE5F5A645F981177CB.
-Vorgesehene Mutation `spanne > 10.0` -> `> 0.5` blieb grün: der neue Achtsegmentwert der 116-Hz-Fixture ist im 1-dB-Raster exakt 0 dB. Sie belegt die Zusage daher nicht.
-Formgültige Ersatzmutation derselben Schwellenzusage: `spanne > 10.0` -> `> -0.5`. Nur A2 M-36 gefahren; Exitcode 1; genau fester-Absenker-Text und neue M-36-Werkzeugprüfung fielen, 96 Prüfungen blieben grün.
-Die Zusage fällt an der erwarteten Prüfung: JA (mit begründeter Ersatzmutation).
-Bytegleiche Rücknahme per Sicherung, SHA identisch; danach 98/0, Exitcode 0.
+NAK-380 Etappe 3, Nacharbeit 1: Rotbeweis M-36 nach §8.1, 25.09.2026 (ersetzt den Beleg aus §27; Vorgänger: git show 8308a3d8:docs/beweise/roh/NAK-380-rot-M-36.txt)
+Bauer: Opus-5.5-Worker (Auftrag roh/NAK-380-nacharbeit-e3-1-auftrag.txt), Basis HEAD 3b888f56938cfff41bb12d905dedb210aff4759e, Arbeitsstand uncommittet.
+
+1. Kopf
+Matrixzeile: M-36 (DSP-21, Textschwellen 6 und 10 dB unverändert) in der Fassung §31 (§31.2); Befund Z1 (§31.1).
+Bein: A2 EqCopGoldenTest, Aufruf EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-36: die drei Modulationseingänge
+(Fall 380/M-36 M36a bis M36c, 12 Prüfungen) und danach nur die Fixture resonanz-116hz (43 Prüfungen, darunter die
+bestehenden 116-Hz-Prüfungen der M-36); zusammen 55.
+Prüfstellen (Arbeitsstand): eq-copilot/plugin/tests/GoldenTestMain.cpp nak380M36Eingang, nak380M36Eingaenge; Signal
+eq-copilot/plugin/tests/Nak380Pruefsignale.h M36Pegelrechteck, Saaten kM36aSaat 0x3800011, kM36bSaat 0x3800012,
+kM36cSaat 0x3800013. Schwellenzeilen: eq-copilot/plugin/src/Diagnose.cpp:212 (`sp <= 6`, Charakter) und :224
+(`spanne > 10.0`, Werkzeug).
+
+2. Eingänge und Herleitung der gelesenen Spanne (Kommentar in nak380M36Eingang, keine Zahl aus dem Lauf)
+Signal L = R: Sinus 1500 Hz (Periode genau 32 Samples, Bin 128 der 4096er-Mittenstufe), Amplitude 0,1, über Gauß-Weißrauschen
+sigma 0,01; beide je 10 s zuerst 7 s im Grundpegel, dann 3 s um die Tiefe lauter; 60 s bei 48 kHz. Tiefen: M36a 5 dB, M36b 8 dB,
+M36c 13 dB.
+Band 135 (1480,5 bis 1523,9 Hz, Bins 127 bis 130) trägt den ganzen Hauptlappen (Bins 127 bis 129, |X|² = A²n²/64, A²n²/16,
+A²n²/64): Bandpegel 10·log10(1,5·A²·n/65 536) = 10·log10(0,09375·0,1²) = -30,28 dB, laut -30,28 dB + Tiefe; das Rauschen liegt
+10·log10(A²n/(16 sigma²)) = 44,08 dB darunter. Von floor(1405/8) = 175 Teilblöcken liegen 116 ganz leise, 47 ganz laut, 12 über
+einem Wechsel (dazwischen). P50 (Rang 88 <= 116) = -30 dB, P95 (Rang 167 > 175 - 47) = -30 dB + Tiefe; gelesene Spanne = Tiefe.
+Karte: nur Band 135 trägt den Ton (1/24 Oktave, „sehr schmal“), dbOver >= 9,17 dB (cutBis 6), Persistenz 1 (dauerhaft),
+Bandzentrum 1502,06 Hz („1,5 kHz“). Die Kartentexte unter den Mutationen nennen 43,5 / 43,0 / 42,1 dB (M36a/b/c).
+Erwartet (Diagnose.cpp wörtlich, Bytevergleich gegen die Produktliterale vor dem Bau):
+ M36a Charakter: " Der Pegel dort steht ruhig (Schwankung ~5 dB)."        Werkzeug: fester Absenker
+ M36b Charakter: " Der Pegel dort kommt in Wellen (~8 dB Schwankung)."   Werkzeug: fester Absenker
+ M36c Charakter: " Der Pegel dort kommt in Wellen (~13 dB Schwankung)."  Werkzeug: dynamisches Werkzeug
+ fester Absenker: "Senk genau dort sehr schmal ab: im Fruity PEQ2 eine sehr schmale Glocke auf 1,5 kHz (erst −3 dB, bei Bedarf bis −6 dB; die Breite regelt dort Q — hoch heißt schmal)."
+ dynamisches Werkzeug: "Der Ton ist fast immer da, aber sein Pegel wogt — nimm das Werkzeug, das nur die Spitzen abfängt: Smooth Operator Pro mit sehr schmalem Fokus um 1,5 kHz und sanfter Stärke."
+Trennschärfe: M36a (5) und M36b (8) halten die Charakterschwelle T6 in 5 <= T6 < 8, M36b (8) und M36c (13) die Werkzeugschwelle
+T10 in 8 <= T10 < 13; jede Verschiebung aus diesem Band macht mindestens einen Eingang rot.
+Grünstand am Arbeitsstand: --nak380 M-36 55/0, Exitcode 0; A2 voll 310/0.
+
+3. Sicherung und Rücknahme
+Sicherung eq-copilot/build/nak380-sicherung/n1/<Datei>.<Kürzel>; SHA-256 vor der Mutation und nach der Rücknahme
+Diagnose.cpp A589F3FEEA348DF55E50571CE97A7D366D68E7141B2C535BB80514AF5A9B7490, AnalyseEngine.cpp
+F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; LastWriteTime auf jetzt, Bau nur EqCopGoldenTest, Binary jünger
+als die Quelle, nur --nak380 M-36 gefahren; Rücknahme durch Zurückkopieren (nie git), Neubau, danach 55/0. Einzelheiten und
+vollständige Listen: roh/NAK-380-e3-n1-mutation-<Kürzel>.txt.
+
+4. Zusagesatz → Prüfzeile → Mutation → rot
+Satz | Zusagesatz (Fassung §31) | Prüfzeile | Mutation | rot | Kürzel
+1 | Charakterschwelle 6 dB unverändert, von unten | „380/M-36 M36a 5 dB: Charaktertext steht ruhig woertlich (Schwelle 6 dB)“ | Diagnose.cpp:212 sp <= 6 → sp <= 4 | ja, nur diese | m36-schwelle6
+1 | Charakterschwelle 6 dB unverändert, von oben | „380/M-36 M36b 8 dB: Charaktertext kommt in Wellen woertlich (Schwelle 6 dB)“ | :212 sp <= 6 → sp <= 10 | ja, nur diese | m36-schwelle6-10
+1 | Charaktertext je Eingang wörtlich (M36c) | „380/M-36 M36c 13 dB: Charaktertext kommt in Wellen woertlich“ | :212 sp <= 6 → sp <= 13 | ja, mit M36b | m36-schwelle6-13
+2 | Werkzeugschwelle 10 dB unverändert, von unten | „380/M-36 M36b 8 dB: Werkzeugtext fester Absenker woertlich (Schwelle 10 dB)“ | :224 spanne > 10.0 → > 7.0 | ja, nur diese | m36-schwelle10
+2 | Werkzeugschwelle 10 dB unverändert, von oben | „380/M-36 M36c 13 dB: Werkzeugtext dynamisches Werkzeug woertlich (Schwelle 10 dB)“ | :224 spanne > 10.0 → > 14.0 | ja, nur diese | m36-schwelle10-14
+2 | Werkzeugtext je Eingang wörtlich (M36a) | „380/M-36 M36a 5 dB: Werkzeugtext fester Absenker woertlich“ | :224 spanne > 10.0 → > 4.0 | ja, mit M36b | m36-schwelle10-4
+3 | Vorbedingung: hergeleitete gelesene Spanne je Eingang | „380/M-36 M36a/M36b/M36c …: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)“ | AnalyseEngine.cpp:843 ziel95 mit 0.50 statt 0.95 (P95 = P50) | ja, alle drei | m36-p95-rang
+3 | Vorbedingung: genau eine dauerhafte Resonanzkarte je Eingang | „380/M-36 M36a/M36b/M36c …: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz“ | AnalyseEngine.cpp:19 kPersistenzDauerhaft 0.50 → 1.50 | ja, alle drei | m36-dauerhaft
+Bestehend | 116-Hz-Karte „steht ruhig“ und fester Absenker | „380/M-36 karte_116hz_steht_ruhig“, „380/M-36 116-Hz-Karte behaelt den festen Absenker“ | Etappe 3: spanne > 10.0 → > -0.5 (Vorgängerfassung dieser Datei); hier zusätzlich: m36-dauerhaft macht die Werkzeugprüfung rot | siehe dort | m36-dauerhaft
+
+5. Je Mutation: Exitcode, mitgefallen mit Grund, grün geblieben
+m36-schwelle6 (6 → 4): Exitcode 1, 54/1; das Produkt schreibt für M36a " Der Pegel dort kommt in Wellen (~5 dB Schwankung).".
+Die Zusage fällt an der erwarteten Prüfung: JA. Mitgefallen: keine; grün: M36b, M36c, beide Werkzeugtexte von M36a und alle
+116-Hz-Prüfungen (Spanne 0 dB).
+m36-schwelle6-10 (6 → 10): Exitcode 1, 54/1, nur M36b-Charakter. JA.
+m36-schwelle6-13 (6 → 13): Exitcode 1, 53/2, M36b- und M36c-Charakter (beide Spannen <= 13). JA.
+m36-schwelle10 (10 → 7): Exitcode 1, 54/1, nur M36b-Werkzeug; das Produkt nennt Smooth Operator. JA. M36a (5 <= 7) und M36c
+(13 > 10 ohnehin) bleiben grün, die 116-Hz-Karte ebenso.
+m36-schwelle10-14 (10 → 14): Exitcode 1, 54/1, nur M36c-Werkzeug (fester Absenker statt dynamisch). JA.
+m36-schwelle10-4 (10 → 4): Exitcode 1, 53/2, M36a- und M36b-Werkzeug. JA.
+m36-p95-rang: Exitcode 1, 48/7. JA (die drei Vorbedingungen, gelesen P50 = P95 = -30). Mitgefallen: die drei Charaktertexte
+(Spanne 0 → „steht ruhig (Schwankung ~0 dB)“) und das M36c-Werkzeug (0 <= 10 → fester Absenker). Grün: die drei
+Kartenvorbedingungen, die Werkzeugtexte M36a/M36b, alle 43 116-Hz-Prüfungen.
+m36-dauerhaft: Exitcode 1, 42/7. JA (die drei Kartenvorbedingungen; die Karten sind zeitweise, die Texte werden danach
+nicht geprüft). Mitgefallen an der Fixture resonanz-116hz: „dauerhaft + Persistenz >= 50 %“, „als dauerhaft erkannt“,
+„Tu nennt Frequenz + konkreten Absenk-Startwert“, „380/M-36 116-Hz-Karte behaelt den festen Absenker“ (eine zeitweise Karte
+bekommt das dynamische Werkzeug unabhängig von der Spanne).
+Nach jeder Rücknahme: SHA-256 gleich, Neubau Exitcode 0, Binary jünger als die Quelle, --nak380 M-36 55/0, Exitcode 0.
+
+6. Nie gefallen
+„380/M-36 karte_116hz_steht_ruhig“ (Etappe 3; die 116-Hz-Spanne ist 0 dB, sie fällt nur bei einer Charakterschwelle unter 0)
+und die übrigen Fixture-Prüfungen aus früheren Tickets; sie sind nicht Gegenstand dieser Nacharbeit.

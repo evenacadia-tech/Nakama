@@ -127,8 +127,8 @@ struct MessSnapshot
     std::vector<DrittelOktavAbdeckung> abdeckung;
     std::vector<ResonanzKandidat> resonanzen;   // nur Bänder mit Klasse belastbar
 
-    // M3a: Band-Perzentile aus dem 1-dB-Pegelhistogramm der zuständigen Stufe
-    // (nur aktive Segmente; 1-dB-Quantisierung; NaN = Band ohne Segmente).
+    // M3a/NAK-380: Band-Perzentile aus dem 1-dB-Teilblockhistogramm der zuständigen
+    // Stufe (Mittel aus je 8 aktiven Segmenten; NaN = weniger als 8 aktive Segmente).
     // P95−P50 trennt Moment-Probleme von Dauerzuständen (Werkzeugwahl).
     std::array<double, kLtasBaender> perzentilP10 {};
     std::array<double, kLtasBaender> perzentilP50 {};

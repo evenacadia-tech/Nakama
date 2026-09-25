@@ -1,0 +1,72 @@
+NAK-380 Etappe 3, Nacharbeit 1: Kurzprotokoll Mutation m37-segmentgate, 25.09.2026
+Ablauf nach §8.1; Treiber im Job-Verzeichnis (n1_mutation.py), Ruecknahme bytegleich aus der Sicherung, nie ueber git.
+Quelle: eq-copilot/plugin/src/AnalyseEngine.cpp:123; Fall M-37,M-38.
+Mutation woertlich:
+  vorher:  warAktiv = rmsDb > kAktivSchwelleDb;
+  nachher: warAktiv = rmsDb > 0.0;
+SHA-256 vorher:    F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C
+Sicherung:         eq-copilot/build/nak380-sicherung/n1/AnalyseEngine.cpp.m37-segmentgate (SHA-256 F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C)
+SHA-256 mutiert:   B1DDE7F6062C7F9FBB62D0A217BF34D87DB3659BFD23DD055B67B2FB9AB2B423 (mutiert 17:39:18 Uhr, LastWriteTime 17:39:18.303)
+Bau unter Mutation: VS-CMake --target EqCopGoldenTest 17:39:18 bis 17:39:21 Uhr, Exitcode 0; Binary 17:39:21.148 juenger als Quelle 17:39:18.303: ja; NAK-300: vctip 105356 beendet.
+Lauf unter Mutation 17:39:21 bis 17:39:28 Uhr:
+  Befehl: EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-37; Exitcode 1
+  GOLDEN FEHLGESCHLAGEN — 3 Pruefungen ok, 2 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)
+  gefallen (2):
+    FEHLER [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Segmentzahl je Band = Formel der Stufe (Bass 350, Mitten 1405, Hoehen 2811), jede > 0 — 196 von 221 abweichend
+    FEHLER [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Kontrastlauf Segmentzahl je Band in [innen, gesamt - still] der Stufe, jede > 0 — 196 von 221 ausserhalb
+  gruen geblieben (3):
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Vorbedingung W4 und 196 belegte Baender
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 abdeckung_zaehlt_segmente: jedes Band
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 berechneAbdeckung liest das Einzelsegmenthistogramm
+  Befehl: EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-38; Exitcode 1
+  GOLDEN FEHLGESCHLAGEN — 17 Pruefungen ok, 26 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)
+  gefallen (26):
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: Segmente je Band = Formel der Stufe — 196 von 221 abweichend, Soll Bass/Mitten/Hoehen 350/1405/2811
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: Teilbloecke je Band = floor(Segmente/8) — 196 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest — 196 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: P10 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 196 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: P50 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 196 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: P95 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 196 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: perzentileGueltig wahr — Flag falsch
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 30 s vor dem Reset: Segmente je Band = Formel der Stufe — 196 von 221 abweichend, Soll Bass/Mitten/Hoehen 174/702/1405
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 30 s vor dem Reset: Teilbloecke je Band = floor(Segmente/8) — 196 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 30 s vor dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest — 196 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: Segmente je Band = Formel der Stufe — 148 von 221 abweichend, Soll Bass/Mitten/Hoehen 0/3/7
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest — 148 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: Segmente je Band = Formel der Stufe — 148 von 221 abweichend, Soll Bass/Mitten/Hoehen 0/3/8
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: Teilbloecke je Band = floor(Segmente/8) — 76 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest — 72 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: P10 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 76 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: P50 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 76 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: P95 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 76 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: perzentileGueltig wahr — Flag falsch
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: Segmente je Band = Formel der Stufe — 196 von 221 abweichend, Soll Bass/Mitten/Hoehen 174/702/1405
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: Teilbloecke je Band = floor(Segmente/8) — 196 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest — 196 von 221 abweichend
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: P10 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 196 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: P50 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 196 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: P95 je Band NaN ohne, endlich mit Teilblock — 0 ohne Teilblock nicht NaN, 196 mit Teilblock nicht endlich
+    FEHLER [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: perzentileGueltig wahr — Flag falsch
+  gruen geblieben (17):
+    [380/M-38 teilblock_raender] 380/M-38 Vorbedingung 196 Baender mit Bin, 25 ohne
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 1 Vorbedingung W4 60 s
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 Vorbedingung W4 30 s bis zum Reset
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: Segmente je Band = Formel der Stufe
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: Teilbloecke je Band = floor(Segmente/8)
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: P10 je Band NaN ohne, endlich mit Teilblock
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: P50 je Band NaN ohne, endlich mit Teilblock
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: P95 je Band NaN ohne, endlich mit Teilblock
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: perzentileGueltig falsch
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: Teilbloecke je Band = floor(Segmente/8)
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: P10 je Band NaN ohne, endlich mit Teilblock
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: P50 je Band NaN ohne, endlich mit Teilblock
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: P95 je Band NaN ohne, endlich mit Teilblock
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: perzentileGueltig falsch
+    [380/M-38 teilblock_raender] 380/M-38 Lauf 2 Vorbedingung Weiterfahrt bis 60 s
+    [380/M-38 teilblock_raender] 380/M-38 Heap-Speicherzahl je AnalyseEngine
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 danach F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C = vorher: ja; LastWriteTime 17:39:28.188.
+Neubau nach der Ruecknahme 17:39:28 bis 17:39:31 Uhr, Exitcode 0; Binary 17:39:31.128 juenger als Quelle 17:39:28.188: ja; NAK-300: vctip 116212 beendet.
+Lauf nach der Ruecknahme 17:39:31 bis 17:39:38 Uhr:
+  EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-37: Exitcode 0; GOLDEN OK — 5 Pruefungen ok, 0 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)
+  EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-38: Exitcode 0; GOLDEN OK — 43 Pruefungen ok, 0 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)

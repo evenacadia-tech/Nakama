@@ -1,0 +1,24 @@
+NAK-380 Etappe 3, Nacharbeit 1: Kurzprotokoll Mutation m37-abdeckung, 25.09.2026
+Ablauf nach §8.1; Treiber im Job-Verzeichnis (n1_mutation.py), Ruecknahme bytegleich aus der Sicherung, nie ueber git.
+Quelle: eq-copilot/plugin/src/AnalyseEngine.cpp:975; Fall M-37.
+Mutation woertlich:
+  vorher:  const auto h = pegelHistogramm[(size_t) b * kHistStufen + (size_t) bin];
+  nachher: const auto h = teilblockHistogramm[(size_t) b * kHistStufen + (size_t) bin];
+SHA-256 vorher:    F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C
+Sicherung:         eq-copilot/build/nak380-sicherung/n1/AnalyseEngine.cpp.m37-abdeckung (SHA-256 F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C)
+SHA-256 mutiert:   AD8CCFDF4B83E1DB371EA3FE3A62DA06D1B5564A1AF1B5D492BCE864757AF50D (mutiert 17:37:58 Uhr, LastWriteTime 17:37:57.998)
+Bau unter Mutation: VS-CMake --target EqCopGoldenTest 17:37:58 bis 17:38:01 Uhr, Exitcode 0; Binary 17:38:01.603 juenger als Quelle 17:37:57.998: ja; NAK-300: vctip 67052 beendet.
+Lauf unter Mutation 17:38:01 bis 17:38:05 Uhr:
+  Befehl: EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-37; Exitcode 1
+  GOLDEN FEHLGESCHLAGEN — 4 Pruefungen ok, 1 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)
+  gefallen (1):
+    FEHLER [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 berechneAbdeckung liest das Einzelsegmenthistogramm — 28 von 28 Dritteloktavgruppen abweichend
+  gruen geblieben (4):
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Vorbedingung W4 und 196 belegte Baender
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Segmentzahl je Band = Formel der Stufe (Bass 350, Mitten 1405, Hoehen 2811), jede > 0
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 abdeckung_zaehlt_segmente: jedes Band
+    [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Kontrastlauf Segmentzahl je Band in [innen, gesamt - still] der Stufe, jede > 0
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 danach F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C = vorher: ja; LastWriteTime 17:38:05.293.
+Neubau nach der Ruecknahme 17:38:05 bis 17:38:08 Uhr, Exitcode 0; Binary 17:38:08.251 juenger als Quelle 17:38:05.293: ja; NAK-300: vctip 212884 beendet.
+Lauf nach der Ruecknahme 17:38:08 bis 17:38:12 Uhr:
+  EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-37: Exitcode 0; GOLDEN OK — 5 Pruefungen ok, 0 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)

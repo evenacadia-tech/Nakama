@@ -2176,6 +2176,107 @@ def _konstanten_aus_kern(dateien: list[pathlib.Path]) -> dict[str, tuple[str, st
     return aus
 
 
+def _cpp_ohne_kommentare(text: str) -> str:
+    """Leert Kommentare, Zeichenketten und Zeichenliterale einer C++-Quelle.
+
+    Laenge und Zeilenumbrueche bleiben, damit eine Klammer in einem Kommentar
+    oder Text keinen Klassenrahmen oeffnet. Ein Apostroph zwischen Ziffern
+    (`2'880'000`) ist ein Ziffertrenner und kein Zeichenliteral.
+    """
+    aus: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if text.startswith("//", i):
+            ende = text.find("\n", i)
+            ende = n if ende < 0 else ende
+            aus.append(" " * (ende - i))
+            i = ende
+        elif text.startswith("/*", i):
+            ende = text.find("*/", i + 2)
+            ende = n if ende < 0 else ende + 2
+            aus.append("".join(z if z == "\n" else " " for z in text[i:ende]))
+            i = ende
+        elif c == "'" and re.search(r"\b\d[\w']*$", text[max(0, i - 40):i]):
+            aus.append(c)
+            i += 1
+        elif c in "\"'":
+            ende = i + 1
+            while ende < n and text[ende] != c and text[ende] != "\n":
+                ende += 2 if text[ende] == "\\" else 1
+            ende = min(ende, n)
+            if ende < n and text[ende] == c:
+                ende += 1
+                aus.append(c + " " * (ende - i - 2) + c)
+            else:
+                # Unterminiert: nur bis vor den Zeilenumbruch leeren.
+                aus.append(c + " " * (ende - i - 1))
+            i = ende
+        else:
+            aus.append(c)
+            i += 1
+    return "".join(aus)
+
+
+def _kern_konstantenindex(dateien: list[pathlib.Path]) -> dict[str, list[tuple[str, str]]]:
+    """NAK-380 M-30 (Fassung §31): Index der Kernkonstanten fuer `nicht_gefuehrt`.
+
+    Erfasst jede `static constexpr`- und `inline constexpr`-Definition
+    `kName = Wert;` der genannten Kernheader, auf Namensraumebene wie in einer
+    Klasse. Schluessel sind der einfache Name (`kVerteilungPlaetze`), der Name
+    mit seiner innersten Klasse (`FeatureEngine::kEreignisPlaetze`,
+    `Vergleichspegel::kMindestSekunden`) und bei geschachtelten Klassen die
+    volle Kette. Wert: Liste aus (Rohwert, Dateiname); mehr als ein Eintrag
+    unter einem Schluessel heisst mehrdeutig.
+    """
+    kopf = re.compile(
+        r"\b(?:class|struct|union)\s+([A-Za-z_]\w*)\s*(?:final\s*)?(?::[^;{}()]*)?\{")
+    definition = re.compile(
+        r"\b(?:static|inline)\s+constexpr\s+(?:const\s+)?[\w:]+(?:\s*<[^;{}]*>)?\s+"
+        r"(k[A-Za-z0-9_]*)\s*=\s*([^;{}]+);")
+    index: dict[str, list[tuple[str, str]]] = {}
+    for datei in dateien:
+        text = _cpp_ohne_kommentare(datei.read_text(encoding="utf-8"))
+        klassenklammer: dict[int, str] = {}
+        for treffer in kopf.finditer(text):
+            if re.search(r"\benum\s*$", text[max(0, treffer.start() - 16):treffer.start()]):
+                continue
+            klassenklammer[treffer.end() - 1] = treffer.group(1)
+        definitionen = list(definition.finditer(text))
+        naechste = 0
+        stapel: list[str | None] = []
+        for pos, zeichen in enumerate(text):
+            while naechste < len(definitionen) and definitionen[naechste].start() <= pos:
+                name, roh = definitionen[naechste].group(1), definitionen[naechste].group(2)
+                wert = (roh.strip(), datei.name)
+                klassen = [k for k in stapel if k]
+                schluessel = [name]
+                if klassen:
+                    schluessel.append(f"{klassen[-1]}::{name}")
+                    if len(klassen) > 1:
+                        schluessel.append("::".join(klassen) + f"::{name}")
+                for s in schluessel:
+                    index.setdefault(s, []).append(wert)
+                naechste += 1
+            if zeichen == "{":
+                stapel.append(klassenklammer.get(pos))
+            elif zeichen == "}" and stapel:
+                stapel.pop()
+    return index
+
+
+def _cpp_zahl(roh: str) -> float | None:
+    """Liest ein C++-Zahlliteral (`64`, `0.4`, `-70.0`, `20260926u`, `0xFFu`); sonst None."""
+    text = roh.strip().replace("'", "")
+    hex_literal = re.fullmatch(r"-?0[xX][0-9a-fA-F]+[uUlL]*", text) is not None
+    text = text.rstrip("uUlL") if hex_literal else text.rstrip("uUlLfF")
+    try:
+        return float(int(text, 16 if hex_literal else 10)) \
+            if re.fullmatch(r"-?(?:0[xX][0-9a-fA-F]+|\d+)", text) else float(text)
+    except ValueError:
+        return None
+
+
 def pruefe_metrikregister(lauf: Lauf) -> None:
     """SONDE-013 M-06: die Schwellen haengen an einer `metrics_version`.
 
@@ -2378,35 +2479,45 @@ def pruefe_nak380_etappe_3(lauf: Lauf, nur: str | None = None) -> None:
             repr([x for x in nicht_gefuehrt if "kLraHopZellen" in str(x)]),
         )
 
-    code_werte = {
-        name: wert.rstrip("uf")
-        for name, wert in re.findall(
-            r"static\s+constexpr\s+(?:std::)?\w+\s+(k\w+)\s*=\s*([^;]+);",
-            feature,
-        )
-    }
-    abweichend = []
+    # Fassung §31 (D4): JEDES Paar „kName = Wert“ jedes Eintrags einzeln, auch
+    # mehrere Paare je Eintrag und die Form „Klasse::kName = Wert“, gegen einen
+    # Index aus `static constexpr`, `inline constexpr` und Klassenkonstanten
+    # der Kernheader unter eq-copilot/plugin/core/analysis/. Jede Nennung
+    # „kName =“ muss ein lesbares Paar sein, sonst fiele sie still heraus.
+    kern_header = sorted((WURZEL / "eq-copilot/plugin/core/analysis").rglob("*.h"))
+    index = _kern_konstantenindex(kern_header)
+    paar_muster = re.compile(
+        r"(?<![\w:])((?:[A-Za-z_]\w*::)*k[A-Z]\w*)\s*=\s*(-?(?:\d+(?:\.\d*)?|\.\d+))(?![\w.])")
+    nennung_muster = re.compile(r"(?<![\w:])((?:[A-Za-z_]\w*::)*k[A-Z]\w*)\s*=(?!=)")
+    paare: list[tuple[str, str]] = []
+    nennungen = 0
     for zeile in nicht_gefuehrt:
-        treffer = re.match(r"^(k\w+)\s*=\s*(-?(?:\d+(?:\.\d*)?|\.\d+))(?=\s|,|\()", str(zeile))
-        if treffer is None:
-            continue
-        name, soll = treffer.groups()
-        ist = code_werte.get(name)
-        if ist is None:
-            abweichend.append(f"{name}: fehlt")
-            continue
-        try:
-            gleich = float(ist) == float(soll)
-        except ValueError:
-            gleich = False
-        if not gleich:
-            abweichend.append(f"{name}: Code {ist}, Register {soll}")
+        paare.extend(paar_muster.findall(str(zeile)))
+        nennungen += len(nennung_muster.findall(str(zeile)))
     if nur in (None, "M-30"):
         lauf.wahr(
-            "nak380_m30_nicht_gefuehrte_werte_stimmen: jeder kName-Wert stimmt mit dem Code",
-            not abweichend,
-            "; ".join(abweichend),
+            "nak380_m30_nicht_gefuehrte_werte_stimmen: jede kName-Nennung der aktuellen "
+            "Fassung ist ein lesbares Paar",
+            bool(paare) and len(paare) == nennungen,
+            f"{len(paare)} Paare aus {nennungen} Nennungen",
         )
+        for name, soll in paare:
+            fundstellen = index.get(name, [])
+            if not fundstellen:
+                gleich, befund = False, "kein Codefund"
+            elif len(fundstellen) > 1:
+                gleich = False
+                befund = "mehrdeutig: " + ", ".join(f"{w} ({d})" for w, d in fundstellen)
+            else:
+                roh, datei = fundstellen[0]
+                ist = _cpp_zahl(roh)
+                gleich = ist is not None and ist == float(soll)
+                befund = f"Code {roh} ({datei}), Register {soll}"
+            lauf.wahr(
+                f"nak380_m30_nicht_gefuehrte_werte_stimmen: {name} = {soll} steht so im Code",
+                gleich,
+                befund,
+            )
 
     neu = fassungen.get("20260926", {})
     alt = fassungen.get("20260925", {})

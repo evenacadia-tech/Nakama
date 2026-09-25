@@ -1,0 +1,32 @@
+NAK-380 Etappe 3, Nacharbeit 1: Kurzprotokoll Mutation m30-unlesbar, 25.09.2026
+Ablauf nach §8.1; Treiber im Job-Verzeichnis (n1_mutation.py), Ruecknahme bytegleich aus der Sicherung, nie ueber git.
+Quelle: eq-copilot/schemas/v3/metriken-v1.json:412; Fall M-30.
+Mutation woertlich:
+  vorher:  kEreignisPlaetze = 64, kVerteilungPlaetze = 64 (
+  nachher: kEreignisPlaetze = 64, kVerteilungPlaetze = 0x40 (
+SHA-256 vorher:    84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE
+Sicherung:         eq-copilot/build/nak380-sicherung/n1/metriken-v1.json.m30-unlesbar (SHA-256 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE)
+SHA-256 mutiert:   D0CBCE02B0F51BF09D0221FDC22E875B36A78B8CE3C018E34FFCFDBD3D9C6D83 (mutiert 17:55:44 Uhr, LastWriteTime 17:55:44.529)
+Lauf unter Mutation 17:55:44 bis 17:55:49 Uhr:
+  Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30; Exitcode 2
+  Pruefungen: 9 bestanden, 1 gescheitert
+  gefallen (1):
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: jede kName-Nennung der aktuellen Fassung ist ein lesbares Paar — 6 Paare aus 7 Nennungen
+  gruen geblieben (9; Namen aus demselben Prueflauf ueber eine Kopie des mutierten Registers im Job-Verzeichnis, Zaehlung gleich dem Originallauf):
+    nak380_m30_nicht_gefuehrte_werte_stimmen: FeatureEngine-Kommentar nennt §3.1
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Lautheit-Kommentar nennt je Zelle und 10 Hz
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Register nennt §3.1 und Wert 1
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraMindestSekunden = 60 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraAbsGateLufs = -70 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraRelGateLu = -20 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraHopZellen = 1 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kEreignisPlaetze = 64 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Vergleichspegel::kMindestSekunden = 0.4 steht so im Code
+  Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung; Exitcode 2
+  Pruefungen: 868 bestanden, 1 gescheitert
+  gefallen (1):
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: jede kName-Nennung der aktuellen Fassung ist ein lesbares Paar — 6 Paare aus 7 Nennungen
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 danach 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE = vorher: ja; LastWriteTime 17:55:49.197.
+Lauf nach der Ruecknahme 17:55:49 bis 17:55:54 Uhr:
+  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30: Exitcode 0; Pruefungen: 11 bestanden, 0 gescheitert
+  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung: Exitcode 0; Pruefungen: 870 bestanden, 0 gescheitert

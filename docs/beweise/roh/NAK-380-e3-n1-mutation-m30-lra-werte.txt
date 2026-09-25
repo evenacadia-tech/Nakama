@@ -1,0 +1,43 @@
+NAK-380 Etappe 3, Nacharbeit 1: Kurzprotokoll Mutation m30-lra-werte, 25.09.2026
+Ablauf nach §8.1; Treiber im Job-Verzeichnis (n1_mutation.py), Ruecknahme bytegleich aus der Sicherung, nie ueber git.
+Quelle: eq-copilot/schemas/v3/metriken-v1.json:408,409,410,411; Fall M-30.
+Mutation woertlich:
+  vorher:  kLraMindestSekunden = 60 (
+  nachher: kLraMindestSekunden = 61 (
+  vorher:  kLraAbsGateLufs = -70 (
+  nachher: kLraAbsGateLufs = -71 (
+  vorher:  kLraRelGateLu = -20 (
+  nachher: kLraRelGateLu = -21 (
+  vorher:  kLraHopZellen = 1 (
+  nachher: kLraHopZellen = 10 (
+SHA-256 vorher:    84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE
+Sicherung:         eq-copilot/build/nak380-sicherung/n1/metriken-v1.json.m30-lra-werte (SHA-256 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE)
+SHA-256 mutiert:   D280AB101D2FB19B64B1945906ED4793113E3B3DB3D5BD73F8E5E454B09F2E69 (mutiert 17:55:27 Uhr, LastWriteTime 17:55:27.944)
+Lauf unter Mutation 17:55:27 bis 17:55:32 Uhr:
+  Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30; Exitcode 2
+  Pruefungen: 6 bestanden, 5 gescheitert
+  gefallen (5):
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: Register nennt §3.1 und Wert 1 — ['kLraHopZellen = 10 (EBU Tech 3342 §3.1: mindestens 10 Hz Abtastung der Kurzzeitlautheit)']
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraMindestSekunden = 61 steht so im Code — Code 60.0 (FeatureEngine.h), Register 61
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraAbsGateLufs = -71 steht so im Code — Code -70.0 (FeatureEngine.h), Register -71
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraRelGateLu = -21 steht so im Code — Code -20.0 (FeatureEngine.h), Register -21
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraHopZellen = 10 steht so im Code — Code 1 (FeatureEngine.h), Register 10
+  gruen geblieben (6; Namen aus demselben Prueflauf ueber eine Kopie des mutierten Registers im Job-Verzeichnis, Zaehlung gleich dem Originallauf):
+    nak380_m30_nicht_gefuehrte_werte_stimmen: FeatureEngine-Kommentar nennt §3.1
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Lautheit-Kommentar nennt je Zelle und 10 Hz
+    nak380_m30_nicht_gefuehrte_werte_stimmen: jede kName-Nennung der aktuellen Fassung ist ein lesbares Paar
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kEreignisPlaetze = 64 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kVerteilungPlaetze = 64 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Vergleichspegel::kMindestSekunden = 0.4 steht so im Code
+  Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung; Exitcode 2
+  Pruefungen: 865 bestanden, 5 gescheitert
+  gefallen (5):
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: Register nennt §3.1 und Wert 1 — ['kLraHopZellen = 10 (EBU Tech 3342 §3.1: mindestens 10 Hz Abtastung der Kurzzeitlautheit)']
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraMindestSekunden = 61 steht so im Code — Code 60.0 (FeatureEngine.h), Register 61
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraAbsGateLufs = -71 steht so im Code — Code -70.0 (FeatureEngine.h), Register -71
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraRelGateLu = -21 steht so im Code — Code -20.0 (FeatureEngine.h), Register -21
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kLraHopZellen = 10 steht so im Code — Code 1 (FeatureEngine.h), Register 10
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 danach 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE = vorher: ja; LastWriteTime 17:55:32.096.
+Lauf nach der Ruecknahme 17:55:32 bis 17:55:36 Uhr:
+  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30: Exitcode 0; Pruefungen: 11 bestanden, 0 gescheitert
+  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung: Exitcode 0; Pruefungen: 870 bestanden, 0 gescheitert

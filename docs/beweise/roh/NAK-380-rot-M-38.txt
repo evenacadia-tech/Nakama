@@ -1,7 +1,79 @@
-NAK-380 Etappe 3 Rotbeweis M-38, 25.09.2026
-AnalyseEngine.cpp vorher SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.
-Die Matrixmutation „Rest als eigener Teilblock“ besitzt am Fensterende keinen Produkt-Hook. Formgültige Ersatzmutation derselben Start/Stop-Zusage: Reset füllt `teilblockSegmente` mit `1u` statt `0u`.
-Nur A2 `380/M-38 teilblock_raender`; Exitcode 1. floor(n/8)/Rest und Reset-Leerheit fielen für 221/221 Bänder; NaN-Grenze und Speicherzahl blieben grün.
-Die Zusage fällt an der erwarteten Prüfung: JA.
-Bytegleiche Rücknahme, SHA identisch; danach 4/0, Exitcode 0.
-Wiederholung nach der zusätzlichen Presence-Bit-Prüfung: SHA-256 vor/nach der Mutation F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; nur M-38, 3/2, Exitcode 1; floor/Rest und Reset-Leerheit fielen je 221/221, Presence-Bit, NaN-Grenze und Speicherzahl blieben grün; Zusagezeile JA. Nach Rücknahme 5/0.
+NAK-380 Etappe 3, Nacharbeit 1: Rotbeweis M-38 nach §8.1, 25.09.2026 (ersetzt den Beleg aus §27; Vorgänger: git show 8308a3d8:docs/beweise/roh/NAK-380-rot-M-38.txt)
+Bauer: Opus-5.5-Worker (Auftrag roh/NAK-380-nacharbeit-e3-1-auftrag.txt), Basis HEAD 3b888f56938cfff41bb12d905dedb210aff4759e, Arbeitsstand uncommittet.
+
+1. Kopf
+Matrixzeile: M-38 (DSP-21, Teilblockränder starten↔stoppen) in der Fassung §31 (§31.2); Befunde D1, D2, D3 (§31.1).
+Bein: A2 EqCopGoldenTest, Fall 380/M-38 teilblock_raender (Aufruf: EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-38), 43 Prüfungen.
+Prüfstellen in eq-copilot/plugin/tests/GoldenTestMain.cpp (Arbeitsstand): nak380M38 (Läufe und Auswertepunkte),
+nak380M38Zaehler (Sätze 1, 2, 5), nak380M38Perzentile (Sätze 3, 4); Formeln nak380Segmente, nak380StufenPunkte,
+nak380TeilblockSoll; Speiser nak380M1SpeisenSamples.
+Mutationsdatei: eq-copilot/plugin/src/AnalyseEngine.cpp (Zeilen am HEAD; die Datei ist am Endstand bytegleich zum HEAD).
+
+2. Vorbedingung und hergeleitete Zählgrößen (Formel im Testkommentar, keine Zahl aus dem Lauf)
+Segmente einer Stufe der Länge n nach N Samples seit Start oder Reset: S(N) = floor((N - n)/(n/2)) + 1 für N >= n, sonst 0
+(erstes Segment nach n Samples, dann je Hop n/2; AnalyseEngine.cpp:70-71, :106-109, :157-159). Stufen: Bass n 16384
+(Bänder mit Zentrum unter 200 Hz), Mitten 4096 (unter 2000 Hz), Höhen 2048. Jedes W4-Segment ist aktiv (sigma 0,1 = -20 dBFS
+gegen das Gate -60 dBFS). Bänder mit Bin bei 48 kHz: 196 (Bass 48, Mitten 72, Höhen 76), ohne Bin 25; sie zählen nie.
+Teilblöcke = floor(S/8), Rest = S mod 8 (T-380-4); Restsumme leer genau bei Rest 0.
+
+Auswertepunkt                         | N seit Start/Reset | Segmente B/M/H | Teilblöcke B/M/H | Rest B/M/H | Flag
+Lauf 1, W4 60 s ohne Reset            | 2 880 000          | 350/1405/2811  | 43/175/351       | 6/5/3      | wahr
+Lauf 2, 30 s vor dem Reset            | 1 440 000          | 174/702/1405   | 21/87/175        | 6/6/5      | (kein auswerten)
+Lauf 2, unmittelbar nach dem Reset    | 0                  | 0/0/0          | 0/0/0            | 0/0/0      | falsch
+Lauf 2, 9215 Samples nach dem Reset   | 9 215              | 0/3/7          | 0/0/0            | 0/3/7      | falsch
+Lauf 2, 9216 Samples nach dem Reset   | 9 216              | 0/3/8          | 0/0/1            | 0/3/0      | wahr
+Lauf 2, 60 s (30 s nach dem Reset)    | 1 440 000          | 174/702/1405   | 21/87/175        | 6/6/5      | wahr
+9215/9216: der erste Teilblock entsteht in der Stufe mit dem kleinsten Hop (Höhen) nach 2048 + 7·1024 = 9216 Samples,
+in den Mitten nach 18 432, im Bass nach 73 728. Perzentile je Feld: NaN in jedem Band mit 0 Teilblöcken, endlich in jedem
+Band mit mindestens einem (beides aus der Formel). Der Snapshot, den zuruecksetzen() bis zum nächsten auswerten() stehen
+lässt (Vorgabe 0,0), ist Randbefund R1 / Härtung NAK-403 und nicht Gegenstand; der Auswertepunkt „unmittelbar nach dem
+Reset“ ruft auswerten() ohne neue Samples.
+Grünstand am Arbeitsstand: --nak380 M-38 43/0, Exitcode 0 (Einzelausgabe mit NAK380_ALLE_PRUEFUNGEN=1); A2 voll 310/0.
+
+3. Sicherung und Rücknahme
+Jede Mutation einzeln: Sicherung eq-copilot/build/nak380-sicherung/n1/AnalyseEngine.cpp.<Kürzel>, SHA-256 vor der Mutation
+und nach der Rücknahme F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; LastWriteTime auf jetzt, Bau nur
+EqCopGoldenTest (VS-CMake, absoluter Pfad), Binary jünger als die Quelle geprüft, nur der betroffene Fall gefahren;
+Rücknahme durch Zurückkopieren (nie git), Neubau, Fall grün (43/0). vctip.exe ohne Kindprozess nach jedem Bau beendet
+(NAK-300). Wortlaut, Hashes, Zeiten und die vollständigen Listen gefallener und grün gebliebener Prüfungen stehen in
+roh/NAK-380-e3-n1-mutation-<Kürzel>.txt.
+
+4. Zusagesatz → Prüfzeile → Mutation → rot
+Satz | Zusagesatz (Fassung §31) | Prüfzeile (fällt an der Zusage) | Mutation AnalyseEngine.cpp | rot | Kürzel
+1 | Summe des Teilblockhistogramms je Band = floor(segmente/8); ein unvollständiger Teilblock verfällt | „Lauf 1 60 s: Teilbloecke je Band = floor(Segmente/8)“ | :1094 auswerten() bucht vor berechnePerzentile den wartenden Rest je Band als eigenen Teilblock (Mittel seiner Segmente) | ja, 196 von 221 | m38-rest
+2 | nach zuruecksetzen beginnt der laufende Teilblock bei 0 Segmenten; floor/Rest nach dem Neustart | „Lauf 2 unmittelbar nach dem Reset: Rest je Band = …“, „Lauf 2 60 s: Rest je Band = …“ | :298 zuruecksetzen füllt teilblockSegmente mit 1u statt 0u | ja, je 221 von 221 | m38-reset
+3 | je Feld P10 NaN (nie 0) in jedem Band ohne vollständigen Teilblock | „… P10 je Band NaN ohne, endlich mit Teilblock“ an allen fünf ausgewerteten Punkten | :828 s.perzentilP10.fill (0.0) statt NaN | ja, nur P10 (25/221/221/145/25 Bänder) | m38-p10
+3 | je Feld P50 NaN | „… P50 je Band …“ | :829 s.perzentilP50.fill (0.0) | ja, nur P50 (25/221/221/145/25) | m38-p50
+3 | je Feld P95 NaN | „… P95 je Band …“ | :830 s.perzentilP95.fill (0.0) | ja, nur P95 (25/221/221/145/25) | m38-p95
+4 | perzentileGueltig false ohne Teilblock | „Lauf 2 unmittelbar nach dem Reset: perzentileGueltig falsch“, „Lauf 2 9215 Samples …: perzentileGueltig falsch“ | :860 s.perzentileGueltig = true | ja, genau diese zwei | m38-flag
+4 | perzentileGueltig true ab dem ersten Teilblock | „Lauf 1 60 s / Lauf 2 9216 Samples / Lauf 2 60 s: perzentileGueltig wahr“ | :123 Segmentgate rmsDb > 0.0 (kein W4-Segment aktiv, kein Teilblock) | ja, alle drei | m37-segmentgate
+5 | Segmentzahl je Stufe und Auswertepunkt mit Formel verriegelt | „… Segmente je Band = Formel der Stufe“ an allen Punkten mit N > 0 | :123 Segmentgate rmsDb > 0.0 | ja, 196 bzw. 148 Bänder | m37-segmentgate
+5 | Segmentzählung genau einmal je Segment | „… Segmente je Band = Formel der Stufe“ an allen Punkten mit N > 0 | :510 pegelHistogramm[…] += 2u | ja, nur diese fünf | m37-doppelzaehlung
+5 | Reset leert die Segmentzählung | „Lauf 2 unmittelbar nach dem Reset: Segmente je Band = Formel der Stufe“ | :295 std::fill (pegelHistogramm.begin(), pegelHistogramm.begin(), 0u) | ja, 196 von 221 | m38-reset-segmenthistogramm
+5 | Reset leert das Teilblockhistogramm | „Lauf 2 unmittelbar nach dem Reset: Teilbloecke je Band = floor(Segmente/8)“ | :296 std::fill (teilblockHistogramm.begin(), teilblockHistogramm.begin(), 0u) | ja, 196 von 221 | m38-reset-teilblockhistogramm
+
+5. Je Mutation: Exitcode, mitgefallen mit Grund, grün geblieben
+m38-rest: Exitcode 1, 28/15. Die Zusage fällt an der erwarteten Prüfung: JA. Mitgefallen, weil die Mutation bei jedem
+auswerten() bucht: „Lauf 1 60 s: Rest“ (der gebuchte Rest fehlt im Akku); bei 9215 Teilblöcke, Rest, P10/P50/P95 und Flag
+(die Reste der 72 Mitten- und 76 Höhenbänder werden Teilblöcke); bei 9216 Teilblöcke, Rest und P10/P50/P95; bei 60 s
+Teilblöcke und Rest. Grün: Vorbedingungen, alle Segmentzählungen, der Stand 30 s vor dem Reset (kein auswerten davor), der
+Stand unmittelbar nach dem Reset, die Perzentile und das Flag in Lauf 1 und bei 60 s, das Flag bei 9216, Speicherzahl.
+m38-reset: Exitcode 1, 32/11. JA. Mitgefallen: Rest in Lauf 1 und 30 s vor dem Reset (vorbereiten() ruft zuruecksetzen(),
+jede Zählung beginnt bei 1); bei 9215 Teilblöcke, P10/P50/P95 und Flag (Höhen 7 + 1 = 8 ergibt einen Teilblock); bei 9216 Rest.
+m38-p10, m38-p50, m38-p95: je Exitcode 1, 38/5. JA. Mitgefallen: keine; grün alle übrigen 38, insbesondere die zwei anderen Felder.
+m38-flag: Exitcode 1, 41/2. JA. Mitgefallen: keine.
+m37-segmentgate (auch M-37, siehe rot-M-37): M-38 Exitcode 1, 17/26. JA. Mitgefallen: Teilblöcke, Rest und Perzentile an den
+Punkten mit N > 0 (ohne aktives Segment kein Teilblock). Grün: Vorbedingungen, der Stand unmittelbar nach dem Reset, bei 9215
+Teilblöcke, Perzentile und Flag (dort erwartet die Formel ohnehin keinen Teilblock), Speicherzahl.
+m37-doppelzaehlung (auch M-37): M-38 Exitcode 1, 38/5, nur die fünf Segmentzählungen mit N > 0. JA.
+m38-reset-segmenthistogramm: Exitcode 1, 39/4: Segmentzählung unmittelbar nach dem Reset, bei 9215, 9216 und 60 s (der
+Altbestand von 30 s bleibt stehen). JA.
+m38-reset-teilblockhistogramm: Exitcode 1, 28/15: Teilblöcke an allen vier Punkten nach dem Reset, die Perzentile
+unmittelbar nach dem Reset, bei 9215 und 9216, das Flag unmittelbar nach dem Reset und bei 9215 (alte Teilblöcke tragen
+Werte). JA.
+Nach jeder Rücknahme: SHA-256 gleich, Neubau Exitcode 0, Binary jünger als die Quelle, --nak380 M-38 43/0, Exitcode 0.
+
+6. Nie gefallen und warum
+Die vier testseitigen Vorbedingungen (196 Bänder aus der Gitterformel, Samplezahlen 2 880 000, 1 440 000, 1 440 000 seit
+dem Reset) prüfen die Herleitung des Tests selbst; keine Produktmutation erreicht sie. Die Speicherzahl 127 296 Byte stammt
+aus Etappe 3 und ist nicht Gegenstand dieser Nacharbeit.

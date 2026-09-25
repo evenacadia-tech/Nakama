@@ -1,7 +1,48 @@
-NAK-380 Etappe 3 Rotbeweis M-37, 25.09.2026
-AnalyseEngine.cpp vorher SHA-256 519308C062E58A8A8A477AC4939D1F742E001F30208633A55367FDC021F0412F.
-Mutation wörtlich in `berechneAbdeckung`: `pegelHistogramm[...]` -> `teilblockHistogramm[...]`.
-Nur A2 `380/M-37 abdeckung_zaehlt_segmente`; Exitcode 1. Alle 28 Dritteloktavgruppen des Kontrastlaufs wichen von der aus Einzelsegmenten berechneten Referenz ab; die 196 Bandzählerprüfungen blieben grün.
-Die Zusage fällt an der erwarteten Prüfung: JA.
-Bytegleiche Rücknahme, SHA identisch; danach 3/0, Exitcode 0.
-Wiederholung nach der Je-Band-Härtung: dieselbe Mutation bei SHA-256 F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C; 221/221 Bandgleichheiten blieben grün, 28/28 Abdeckungsgruppen fielen, nur M-37 2/1 und Exitcode 1. Rücknahme hashgleich; danach nur M-37 3/0 und der volle A2-Lauf 258/0, jeweils Exitcode 0. Zusagezeile JA.
+NAK-380 Etappe 3, Nacharbeit 1: Rotbeweis M-37 nach §8.1, 25.09.2026 (ersetzt den Beleg aus §27; Vorgänger: git show 8308a3d8:docs/beweise/roh/NAK-380-rot-M-37.txt)
+Bauer: Opus-5.5-Worker (Auftrag roh/NAK-380-nacharbeit-e3-1-auftrag.txt), Basis HEAD 3b888f56938cfff41bb12d905dedb210aff4759e, Arbeitsstand uncommittet.
+
+1. Kopf
+Matrixzeile: M-37 (DSP-21, Abdeckung bleibt auf Einzelsegmenten) in der Fassung §31 (§31.2); Befund Z2 (§31.1).
+Bein: A2 EqCopGoldenTest, Fall 380/M-37 abdeckung_zaehlt_segmente (Aufruf: EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-37), 5 Prüfungen.
+Prüfstelle: eq-copilot/plugin/tests/GoldenTestMain.cpp nak380M37 (Arbeitsstand). Mutationsdatei: eq-copilot/plugin/src/AnalyseEngine.cpp
+(Zeilen am HEAD; am Endstand bytegleich zum HEAD, SHA-256 F1017C03F730A425D6AF60AF9E9B3A84D3E0F00CCD7E79671D0F719967A00F5C).
+
+2. Vorbedingung und hergeleitete Zählgrößen (Formel im Testkommentar)
+Hauptlauf W4 60 s (2 880 000 Samples, 48 kHz, Block 512, L = R): jedes Segment aktiv (sigma 0,1 = -20 dBFS gegen -60 dBFS);
+je Band mit Bin S = floor((2 880 000 - n)/(n/2)) + 1 Segmente seiner Stufe: Bass (n 16384) 350, Mitten (4096) 1405, Höhen
+(2048) 2811; ohne Bin 0. Erst mit dieser Verriegelung trägt die Gleichheit „Segmenthistogramm = segmente[b]“ (221/221), die
+sonst auch bei null Segmenten gälte (Z2).
+Kontrastlauf (4 s sigma 0,0006, danach 60 s abwechselnd sigma 0,0011 und 0,01 je 0,25 s; 3 072 000 Samples): Segmente ganz in
+den ersten 4 s sind inaktiv (-64,4 dBFS), Segmente ganz im 60-s-Teil aktiv (schwächste Stufe -59,2 dBFS, 0,83 dB über dem
+Gate, bei 2048 Samples über sechs Standardabweichungen der Leistungsschätzung); offen sind nur die zwei Segmente je Stufe über
+der 4-s-Grenze. Je Band mit Bin daher aktive Segmente in [S(3 072 000) - ceil(192 000/(n/2)), S(3 072 000) - S(192 000)]:
+Bass [350, 352], Mitten [1405, 1407], Höhen [2811, 2813]; jede > 0. Erst damit trägt der Abdeckungsnachbau.
+Grünstand am Arbeitsstand: --nak380 M-37 5/0, Exitcode 0; A2 voll 310/0.
+
+3. Sicherung und Rücknahme
+Wie roh/NAK-380-rot-M-38.txt Abschnitt 3 (Sicherung eq-copilot/build/nak380-sicherung/n1/AnalyseEngine.cpp.<Kürzel>,
+SHA-256 vorher = nachher F1017C03…0F5C, Neubau, Binary jünger als die Quelle, Fall danach 5/0). Einzelheiten und vollständige
+Listen: roh/NAK-380-e3-n1-mutation-<Kürzel>.txt.
+
+4. Zusagesatz → Prüfzeile → Mutation → rot
+Satz | Zusagesatz (Fassung §31) | Prüfzeile (fällt an der Zusage) | Mutation AnalyseEngine.cpp | rot | Kürzel
+1 | für jedes Band ist die Summe seines Segmenthistogramms gleich segmente[b] der zuständigen Stufe | „380/M-37 abdeckung_zaehlt_segmente: jedes Band“ | :510 pegelHistogramm[…] += 2u (jedes Segment doppelt im Histogramm) | ja, 196 von 221 | m37-doppelzaehlung
+2 | die Abdeckung liest das Einzelsegmenthistogramm (Abdeckungsnachbau) | „380/M-37 berechneAbdeckung liest das Einzelsegmenthistogramm“ | :975 berechneAbdeckung liest teilblockHistogramm statt pegelHistogramm | ja, 28 von 28 Gruppen | m37-abdeckung
+3 | die Segmentzahl je Stufe ist aus Samplezahl und Hop hergeleitet, verriegelt und größer null (Hauptlauf) | „380/M-37 Segmentzahl je Band = Formel der Stufe (Bass 350, Mitten 1405, Hoehen 2811), jede > 0“ | :123 Segmentgate rmsDb > 0.0 statt > kAktivSchwelleDb (kein Segment aktiv) | ja, 196 von 221 | m37-segmentgate
+3 | dieselbe Verriegelung im Kontrastlauf des Abdeckungsnachbaus | „380/M-37 Kontrastlauf Segmentzahl je Band in [innen, gesamt - still] der Stufe, jede > 0“ | :123 wie oben | ja, 196 von 221 | m37-segmentgate
+
+5. Je Mutation: Exitcode, mitgefallen mit Grund, grün geblieben
+m37-abdeckung: Exitcode 1, 4/1. Die Zusage fällt an der erwarteten Prüfung: JA. Mitgefallen: keine. Grün: Vorbedingung,
+Segmentzahl, 221/221, Kontrast-Segmentzahl.
+m37-segmentgate: Exitcode 1, 3/2. JA (beide Verriegelungen). Mitgefallen: keine. Grün blieben „abdeckung_zaehlt_segmente:
+jedes Band“ und der Abdeckungsnachbau: ohne aktives Segment sind beide Seiten 0 (0 = 0 in 221 Bändern, Anteil 0 = 0 in 28
+Gruppen) — genau die Leere, gegen die Z2 die Verriegelung verlangt; sie fällt jetzt an den zwei neuen Prüfungen. Unter
+derselben Mutation --nak380 M-38: Exitcode 1, 17/26 (roh/NAK-380-rot-M-38.txt).
+m37-doppelzaehlung: Exitcode 1, 4/1. JA. Mitgefallen: keine. Grün: Segmentzahl (liest segmente[b], unverändert), Kontrast-
+Segmentzahl (ebenso) und der Abdeckungsnachbau (Soll und Ist lesen dasselbe verdoppelte Histogramm, der Anteil bleibt). Unter
+derselben Mutation --nak380 M-38: Exitcode 1, 38/5, nur die fünf Segmentzählungen mit N > 0.
+Nach jeder Rücknahme: SHA-256 gleich, Neubau Exitcode 0, Binary jünger als die Quelle, --nak380 M-37 5/0, Exitcode 0.
+
+6. Nie gefallen und warum
+„380/M-37 Vorbedingung W4 und 196 belegte Baender“ prüft Samplezahl und Gitterformel des Tests selbst; keine Produktmutation
+erreicht sie.

@@ -1,0 +1,74 @@
+NAK-380 Etappe 3, Nacharbeit 1: Kurzprotokoll Mutation m36-schwelle6-13, 25.09.2026
+Ablauf nach §8.1; Treiber im Job-Verzeichnis (n1_mutation.py), Ruecknahme bytegleich aus der Sicherung, nie ueber git.
+Quelle: eq-copilot/plugin/src/Diagnose.cpp:212; Fall M-36.
+Mutation woertlich:
+  vorher:  b.gemessen += sp <= 6
+  nachher: b.gemessen += sp <= 13
+SHA-256 vorher:    A589F3FEEA348DF55E50571CE97A7D366D68E7141B2C535BB80514AF5A9B7490
+Sicherung:         eq-copilot/build/nak380-sicherung/n1/Diagnose.cpp.m36-schwelle6-13 (SHA-256 A589F3FEEA348DF55E50571CE97A7D366D68E7141B2C535BB80514AF5A9B7490)
+SHA-256 mutiert:   3ED0522074332336BAEF6EE5E2ED00A62560DE3141E247E9F07AB1E05CFF9620 (mutiert 17:40:23 Uhr, LastWriteTime 17:40:23.101)
+Bau unter Mutation: VS-CMake --target EqCopGoldenTest 17:40:23 bis 17:40:25 Uhr, Exitcode 0; Binary 17:40:25.925 juenger als Quelle 17:40:23.101: ja; NAK-300: vctip 256944 beendet.
+Lauf unter Mutation 17:40:26 bis 17:40:31 Uhr:
+  Befehl: EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-36; Exitcode 1
+  GOLDEN FEHLGESCHLAGEN — 53 Pruefungen ok, 2 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)
+  gefallen (2):
+    FEHLER [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Charaktertext kommt in Wellen woertlich (Schwelle 6 dB) — Bei 1,5 kHz ragt eine sehr schmale Spitze 43,0 dB über ihre Umgebung, in 100 % der Musikzeit. Als Note: F#7. Der Pegel dort steht ruhig (Schwankung ~8 dB).
+    FEHLER [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Charaktertext kommt in Wellen woertlich (Schwelle 6 dB) — Bei 1,5 kHz ragt eine sehr schmale Spitze 42,1 dB über ihre Umgebung, in 100 % der Musikzeit. Als Note: F#7. Der Pegel dort steht ruhig (Schwankung ~13 dB).
+  gruen geblieben (53):
+    [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)
+    [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz
+    [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Charaktertext steht ruhig woertlich (Schwelle 6 dB)
+    [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Werkzeugtext fester Absenker woertlich (Schwelle 10 dB)
+    [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)
+    [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz
+    [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Werkzeugtext fester Absenker woertlich (Schwelle 10 dB)
+    [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)
+    [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz
+    [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Werkzeugtext dynamisches Werkzeug woertlich (Schwelle 10 dB)
+    [resonanz-116hz] Zustand messbereit
+    [resonanz-116hz] aktive Sekunden
+    [resonanz-116hz] LUFS integriert
+    [resonanz-116hz] True Peak dBTP
+    [resonanz-116hz] Crest dB
+    [resonanz-116hz] Centroid (magnitude)
+    [resonanz-116hz] Rolloff
+    [resonanz-116hz] low_frac (<250 Hz)
+    [resonanz-116hz] Stereo-Width
+    [resonanz-116hz] Korrelation
+    [resonanz-116hz] Band-% sub 20-60
+    [resonanz-116hz] Band-% bass 60-120
+    [resonanz-116hz] Band-% lowbass 120-250
+    [resonanz-116hz] Band-% lomid 250-500
+    [resonanz-116hz] Band-% mid 500-2k
+    [resonanz-116hz] Band-% himid 2k-6k
+    [resonanz-116hz] Band-% hi 6k-12k
+    [resonanz-116hz] Band-% air 12k-20k
+    [resonanz-116hz] LTAS Referenzachse Abdeckung
+    [resonanz-116hz] LTAS Referenzachse mittl. Abw.
+    [resonanz-116hz] LTAS Referenzachse max. Abw.
+    [resonanz-116hz] LTAS Komposit Abdeckung
+    [resonanz-116hz] LTAS Komposit mittl. Abw.
+    [resonanz-116hz] LTAS Komposit max. Abw.
+    [resonanz-116hz] genau 1 Kandidat (116 Hz)
+    [resonanz-116hz] Kandidat bei 116 Hz (Bassfenster Â§5.10.1)
+    [resonanz-116hz] db_over plausibel
+    [resonanz-116hz] dauerhaft + Persistenz >= 50 %
+    [resonanz-116hz] Karte vollstaendig (Â§7.3)
+    [resonanz-116hz] Gemessen traegt Zahlen
+    [resonanz-116hz] Hoeren hat Stop-Bedingung (Â§7.4)
+    [resonanz-116hz] Konfidenz benannt
+    [resonanz-116hz] 116-Hz-Karte vorhanden
+    [resonanz-116hz] keine Fremdklassen am 116er
+    [resonanz-116hz] Karte am 116er (Bassfenster)
+    [resonanz-116hz] Titel nennt die Frequenz
+    [resonanz-116hz] Titel nennt die Note (FL-Zaehlung)
+    [resonanz-116hz] als dauerhaft erkannt
+    [resonanz-116hz] Tu nennt Frequenz + konkreten Absenk-Startwert
+    [resonanz-116hz] messfeste Dauer-Resonanz = Konfidenz hoch
+    [resonanz-116hz] Resonanz ist Top-Rang
+    [resonanz-116hz] 380/M-36 karte_116hz_steht_ruhig
+    [resonanz-116hz] 380/M-36 116-Hz-Karte behaelt den festen Absenker
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 danach A589F3FEEA348DF55E50571CE97A7D366D68E7141B2C535BB80514AF5A9B7490 = vorher: ja; LastWriteTime 17:40:31.826.
+Neubau nach der Ruecknahme 17:40:31 bis 17:40:35 Uhr, Exitcode 0; Binary 17:40:35.014 juenger als Quelle 17:40:31.826: ja; NAK-300: vctip 346668 beendet.
+Lauf nach der Ruecknahme 17:40:35 bis 17:40:40 Uhr:
+  EqCopGoldenTest.exe eq-copilot/fixtures --nak380 M-36: Exitcode 0; GOLDEN OK — 55 Pruefungen ok, 0 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)

@@ -17,6 +17,9 @@ inline constexpr std::uint64_t kM2RauschSaat = 0x0380000Bull;
 inline constexpr std::uint64_t kM2PegelSaat  = 0x0380000Cull;
 inline constexpr std::uint64_t kM3RauschSaat = 0x0380000Dull;
 inline constexpr std::uint64_t kM3PegelSaat  = 0x0380000Eull;
+inline constexpr std::uint64_t kM36aSaat     = 0x03800011ull;
+inline constexpr std::uint64_t kM36bSaat     = 0x03800012ull;
+inline constexpr std::uint64_t kM36cSaat     = 0x03800013ull;
 inline constexpr double kSamplerate = 48000.0;
 inline constexpr double kZweiPi = 6.283185307179586476925286766559;
 
@@ -195,5 +198,33 @@ inline std::vector<double> l2Zellenergie (int zellen)
     }
     return aus;
 }
+
+/** NAK-380 M-36 (Fassung §31): Modulationseingang nach dem Muster der
+    M-33 bis M-35, aber mit zwei festen Pegelstufen statt gleichverteilter,
+    damit die gelesene Spanne P95 - P50 eine hergeleitete ganze Zahl ist.
+
+    Signal L = R: stetiger Sinus 1500 Hz, Amplitude 0,1, ueber Gauss-
+    Weissrauschen sigma = 0,01; beide zusammen je 10 s zuerst 7 s im
+    Grundpegel, dann 3 s um `tiefeDb` lauter (laut ab 7 s), 60 s bei 48 kHz.
+    1500 Hz = 48 000/32: die Periode ist genau 32 Samples, der Ton sitzt auf
+    Bin 128 der 4096er-Mittenstufe (128 Perioden je Segment) und damit mit
+    Haupt- und beiden Nachbarbins (127 bis 129) ganz in Band 135
+    (30·2^(135/24) = 1480,5 Hz bis 30·2^(136/24) = 1523,9 Hz, Bins 127 bis
+    130). */
+struct M36Pegelrechteck
+{
+    M36Pegelrechteck (double tiefeDb, std::uint64_t saat) noexcept
+        : faktorLaut (std::pow (10.0, tiefeDb / 20.0)), rauschen (saat) {}
+
+    float naechstes (std::uint64_t sample) noexcept
+    {
+        const bool laut = (sample % 480000u) >= 336000u;
+        const double ton = 0.1 * std::sin (kZweiPi * (double) (sample % 32u) / 32.0);
+        return (float) ((laut ? faktorLaut : 1.0) * (ton + 0.01 * rauschen.naechstes()));
+    }
+
+    double faktorLaut;
+    GaussRauschen rauschen;
+};
 
 } // namespace nakama::test::nak380

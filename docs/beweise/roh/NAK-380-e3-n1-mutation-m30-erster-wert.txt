@@ -1,0 +1,33 @@
+NAK-380 Etappe 3, Nacharbeit 1: Kurzprotokoll Mutation m30-erster-wert, 25.09.2026
+Ablauf nach §8.1; Treiber im Job-Verzeichnis (n1_mutation.py), Ruecknahme bytegleich aus der Sicherung, nie ueber git.
+Quelle: eq-copilot/schemas/v3/metriken-v1.json:412; Fall M-30.
+Mutation woertlich:
+  vorher:  kEreignisPlaetze = 64, kVerteilungPlaetze = 64 (
+  nachher: kEreignisPlaetze = 65, kVerteilungPlaetze = 64 (
+SHA-256 vorher:    84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE
+Sicherung:         eq-copilot/build/nak380-sicherung/n1/metriken-v1.json.m30-erster-wert (SHA-256 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE)
+SHA-256 mutiert:   7C434A7D50A6A108699B99A686051A866B513FA2E5072102C2BA844D16D18A97 (mutiert 17:55:19 Uhr, LastWriteTime 17:55:19.595)
+Lauf unter Mutation 17:55:19 bis 17:55:23 Uhr:
+  Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30; Exitcode 2
+  Pruefungen: 10 bestanden, 1 gescheitert
+  gefallen (1):
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kEreignisPlaetze = 65 steht so im Code — Code 64 (FeatureEngine.h), Register 65
+  gruen geblieben (10; Namen aus demselben Prueflauf ueber eine Kopie des mutierten Registers im Job-Verzeichnis, Zaehlung gleich dem Originallauf):
+    nak380_m30_nicht_gefuehrte_werte_stimmen: FeatureEngine-Kommentar nennt §3.1
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Lautheit-Kommentar nennt je Zelle und 10 Hz
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Register nennt §3.1 und Wert 1
+    nak380_m30_nicht_gefuehrte_werte_stimmen: jede kName-Nennung der aktuellen Fassung ist ein lesbares Paar
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraMindestSekunden = 60 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraAbsGateLufs = -70 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraRelGateLu = -20 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kLraHopZellen = 1 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: kVerteilungPlaetze = 64 steht so im Code
+    nak380_m30_nicht_gefuehrte_werte_stimmen: Vergleichspegel::kMindestSekunden = 0.4 steht so im Code
+  Befehl: py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung; Exitcode 2
+  Pruefungen: 869 bestanden, 1 gescheitert
+  gefallen (1):
+    ROT: nak380_m30_nicht_gefuehrte_werte_stimmen: kEreignisPlaetze = 65 steht so im Code — Code 64 (FeatureEngine.h), Register 65
+Ruecknahme: Sicherung zurueckkopiert, SHA-256 danach 84C602962FCE01719D8CC8F7BAC4F4BA83C283922E6DAECCF521F68DDA5B8ECE = vorher: ja; LastWriteTime 17:55:23.836.
+Lauf nach der Ruecknahme 17:55:23 bis 17:55:27 Uhr:
+  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --nak380 M-30: Exitcode 0; Pruefungen: 11 bestanden, 0 gescheitert
+  py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung: Exitcode 0; Pruefungen: 870 bestanden, 0 gescheitert

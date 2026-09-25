@@ -336,11 +336,11 @@ Opus baut, Codex prüft (01.09.2026): Der Bauer ist ein frischer Opus-Worker
 und Kanon selbst (§3.5, abgekoppelt) und übergibt nie `NOT RUN`. Der Prüfer
 ist ein frischer Codex-Thread (§3.4). Codex an der Grenze → frischer
 Opus-Thread prüft;
-Opus-Prüfer und -Validierer immer `max`. Ab 90 % Claude-Woche (User
-21.09.2026) kein Opus-Lauf mehr: auf den Codex-Reset warten, dann baut Codex
-(`workspace-write`, `gpt-5.6-sol` xhigh) und prüft `gpt-6-astra` high, nie
-max; Claude nur Dirigent. Den Codex-Stand committet der Dirigent nach
-eigenem Kanonlauf als Zwischenstand (§3.1).
+Opus-Prüfer und -Validierer immer `max`. Ab 90 % Claude-Woche (User 21.09.,
+25.09.2026, NAK-396) kein Opus-Lauf mehr, kein Halt: bis zum Claude-Reset
+baut Codex (`workspace-write`, `gpt-5.6-sol` xhigh) und prüft `gpt-6-astra`
+high, nie max; Claude nur Dirigent. Den Codex-Stand committet der Dirigent
+nach eigenem Kanonlauf als Zwischenstand (§3.1).
 
 ### 3.7 Phasengate-Prüfung
 

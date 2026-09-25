@@ -230,10 +230,18 @@ speist Hinweis-Knopf (1×/s), Snapshot-Datei und GoldenTest. Fünf Befundklassen
 2–6 kHz). Geometrie EINMAL in `ZonenRegeln.h:30-35`, geteilt mit der Engine;
 eigenkurven-relativ, kein Zielkorridor.
 
-`schreibeSnapshotDatei()` (`PluginProcessor.cpp:697-857`): `snapshot_version
-3`, alle Messfelder, Befunde, `raw_audio: null`; NaN/±inf ⇒ `null`; Ablage
-`%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\`. Kein Befundarchiv im
-Plugin.
+`schreibeSnapshotDatei (const MessSnapshot&)` (`prozessor/Analyse.cpp`, seit NAK-313
+Etappe 7, 25.09.2026; Ergebnis `SnapshotExport` in `prozessor/SnapshotExport.h`):
+`snapshot_version 3`, alle Messfelder, Befunde, `raw_audio: null`; NaN/±inf ⇒
+`null`; Ablage `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\`. Der Aufrufer
+übergibt den Snapshot (ein Snapshot setzt Vergleichslinie und Datei); Uhr,
+Zielordner und Dateisystem kommen aus den Briefkasten-Fassaden; die
+Veröffentlichung läuft über eine exklusive Temp-Datei (`<Ziel>.tmp-<pid>`),
+Schreiben, Spülen, Größenprüfung und Umbenennen ohne Ersetzen; Ergebnis `neu`,
+`abgelehnt` (Kollision in derselben Sekunde, fail-closed bis Karte U65; der
+Vorgänger bleibt bytegleich) oder `fehler` mit dem tatsächlichen Pfad; `ersetzt`
+erzeugt heute kein Weg. Die Statusmeldung nennt die entstandene Datei. Kein
+Befundarchiv im Plugin.
 
 ### 1.4b Host-State — Schema 2 (SONDE-006, 22.08.)
 

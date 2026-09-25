@@ -1,0 +1,12 @@
+NAK-380 E2 N1 — Mutation M-11 Rust, 25.09.2026
+Mutation in bandbreite.rs: Kantendifferenz -> Kantendifferenz * 0.5.
+Nur betroffener A4-Filter: nak380_m11_bandbreiten_aus_gitter
+Exit: 101; 0 bestanden, 1 Fehler, 308 ausgefiltert.
+Der Längenriegel blieb grün. ROT an der Summenprüfung:
+links 8964,516199894459, rechts 17929,032399789.
+Alle drei Hexliteralvergleiche sind ebenfalls falsch: Ist
+3fdc77d2b45dde00/402c77d2b45dddc0/406ff44e07b18980 gegen Soll
+3fec77d2b45dde00/403c77d2b45dddc0/407ff44e07b18980; der sequenzielle Test
+bricht zuvor an der Summen-Assertion ab.
+Zusagezeile getroffen: JA.
+Rücknahmehash identisch; danach Filter Exit 0, 1/0, 308 ausgefiltert.

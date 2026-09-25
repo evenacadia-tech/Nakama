@@ -1,20 +1,45 @@
-NAK-380 Etappe 2 Rotbeweis M-11, 25.09.2026
-Rust-Hälfte, Datei vor der Mutation: broker/src/coordinator/hypothese/bandbreite.rs
-SHA-256 vor der Mutation: 53D04D8605D9D841B17E4A65B331AEDD5458A9A20EA4B251D387A601B32231C6
-Mutation wörtlich: `gitter["kanten_hz"]["hex64"]` -> `gitter["mitten_hz"]["hex64"]`.
-Gefahrener Rotlauf: nur A4-Filter `nak380_m11_bandbreiten_aus_gitter`.
-Exitcode: 101. Gefallene Prüfung: M-11 Rust mit Summe 620765,452223 statt 17929,032400.
-Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: keine weitere Prüfung im gefilterten Lauf; übrige Prüfungen waren ausgefiltert.
-Die Zusage fällt an der erwarteten Prüfung: JA.
-Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: 53D04D8605D9D841B17E4A65B331AEDD5458A9A20EA4B251D387A601B32231C6 (identisch).
-Fall grün: JA; gefilterter Rust-Fall danach Exitcode 0.
+NAK-380 Etappe 2 Nacharbeit 1 — Rotbeweis M-11, 25.09.2026
+HEAD: 22b414ab34ccc2a72290c22d06ac7df139cfec5d
 
-C++-Hälfte, Datei vor der Mutation: eq-copilot/plugin/core/analysis/BandGrid.h
+Rust-Hälfte
+Sicherung: eq-copilot/build/nak380-sicherung/NAK-380-e2-n1-bandbreite.rs
+Datei: broker/src/coordinator/hypothese/bandbreite.rs
+SHA-256 vor der Mutation: 9F95439625955D5DF9ACE57E6BB26909E1D4DC308C5A9F2EADE15E71BE6B4437
+Mutation wörtlich:
+`kanten[index + 1] - kanten[index]` ->
+`(kanten[index + 1] - kanten[index]) * 0.5`.
+Gefahrener Rotlauf: nur A4-Filter `nak380_m11_bandbreiten_aus_gitter`.
+Exit: 101; 0 bestanden, 1 Fehler, 308 ausgefiltert.
+Der Längenriegel blieb grün; der Test lief bis zur Zusageprüfung und fiel in
+bandbreite.rs an der Summenprüfung: 8964,516199894459 statt 17929,032399789.
+Die vom selben formgültigen Array gelieferten drei Literalwerte sind ebenfalls
+falsch: b0/b120/b220 =
+3fdc77d2b45dde00/402c77d2b45dddc0/406ff44e07b18980 statt
+3fec77d2b45dde00/403c77d2b45dddc0/407ff44e07b18980. Der sequenzielle Rust-Test
+bricht erwartungsgemäß schon an seiner davorstehenden Summen-Assertion ab.
+Mitgefallene Prüfungen: keine; alle anderen A4-Prüfungen waren ausgefiltert.
+Die Zusage fällt an der erwarteten Summen-/Hexprüfung: JA.
+Rücknahme: Sicherung zurückkopiert, Quellzeitstempel erneuert.
+SHA-256 nach der Rücknahme: 9F95439625955D5DF9ACE57E6BB26909E1D4DC308C5A9F2EADE15E71BE6B4437 (identisch).
+Grüner Filterlauf: Exit 0; 1 bestanden, 0 Fehler, 308 ausgefiltert.
+
+C++-Hälfte
+Sicherung: eq-copilot/build/nak380-sicherung/NAK-380-e2-n1-BandGrid.h
+Datei: eq-copilot/plugin/core/analysis/BandGrid.h
 SHA-256 vor der Mutation: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D
-Mutation wörtlich: `return std::bit_cast<double> (gitter::kEvidenzKantenBits[(std::size_t) i]);` -> `return evidenzMitte (i);` in `evidenzKante`.
-Gefahrener Rotlauf: betroffenes Bein B5, Fall `380/M-11 bandbreiten_aus_gitter`.
-Exitcode: 1. Gefallene Prüfung: M-11 C++ mit Summe 17671,110551 und Breite 220 gleich null.
-Mitgefallene Prüfungen: keine. Grün gebliebene Prüfungen: M-01 bis M-05 und M-08.
-Die Zusage fällt an der erwarteten Prüfung: JA.
-Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D (identisch).
-Fall grün: JA; B5 danach Exitcode 0.
+Mutation wörtlich:
+`return std::bit_cast<double> (gitter::kEvidenzKantenBits[(std::size_t) i]);`
+-> `return std::bit_cast<double> (gitter::kEvidenzKantenBits[(std::size_t) i]) * 0.5;`.
+Gefahrener Rotlauf: nur B5 (EqCopAnalysisGoldenTest).
+Exit: 1; Ergebnis: 248 bestanden, 13 Fehler.
+M-11 fiel an Summe und Hexwerten: 221 formgültige Breiten, Summe
+8964,516199894 Hz; b0/b120/b220 =
+3fdc77d2b45dde00/402c77d2b45dddc0/406ff44e07b18980.
+Mitgefallen: M-01 Binbelegung, Mittel und Systematik; M-02 Pflichtbeitrag und
+Bandleistung; M-03, M-05, M-08(a); Evidenzkanten-Fixture,
+Livekanten-Kopierprüfung sowie beide Nyquist-Kappenprüfungen. M-01 Bitmap und
+P50, M-04 sowie die übrigen Prüfungen blieben grün.
+Die Zusage fällt an der erwarteten Summen-/Hexprüfung: JA.
+Rücknahme: Sicherung zurückkopiert, Quellzeitstempel erneuert.
+SHA-256 nach der Rücknahme: F9B958C089B586B52EFFD573AADCD0C2DCBA9F2C160B8A0E1F7FEE610A318C0D (identisch).
+Neubau und grüner Fall: B5 Exit 0, 261 bestanden, 0 Fehler.

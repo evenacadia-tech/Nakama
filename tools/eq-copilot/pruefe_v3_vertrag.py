@@ -2270,6 +2270,13 @@ def pruefe_nak380_etappe_2(lauf: Lauf, schema: dict) -> None:
     fbs = fbs_pfad.read_text(encoding="utf-8")
     fb_readme = fb_readme_pfad.read_text(encoding="utf-8")
     v3_readme = v3_readme_pfad.read_text(encoding="utf-8")
+    bandwerte_kommentar_start = fbs.find("/// Ein Bandsatz")
+    bandwerte_table_start = fbs.find("table Bandwerte {", bandwerte_kommentar_start)
+    bandwerte_kommentar = (
+        fbs[bandwerte_kommentar_start:bandwerte_table_start]
+        if 0 <= bandwerte_kommentar_start < bandwerte_table_start
+        else ""
+    )
 
     lauf.wahr(
         "nak380_m17_groessen_je_feld_benannt: bandwerte_fein ist dBFS/Hz",
@@ -2285,6 +2292,12 @@ def pruefe_nak380_etappe_2(lauf: Lauf, schema: dict) -> None:
         "nak380_m17_groessen_je_feld_benannt: bandwerte trennt band_stereo",
         "Frame.band_stereo" in bandwerte and "dimensionslos" in bandwerte,
         bandwerte,
+    )
+    lauf.wahr(
+        "nak380_m17_groessen_je_feld_benannt: FlatBuffers Bandwerte",
+        "einseitige Leistungsdichte in dBFS/Hz" in bandwerte_kommentar
+        and "Bandleistung in dBFS" in bandwerte_kommentar,
+        bandwerte_kommentar,
     )
     lauf.wahr(
         "nak380_m17_groessen_je_feld_benannt: FlatBuffers Frame.baender",

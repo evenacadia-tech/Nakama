@@ -47,6 +47,33 @@ namespace rt = nakama::echtzeit;
 // `Biquad` und zwei `AnalyseEngine`-nahe Namen nebeneinander.
 using eqcop::EqCopilotProcessor;
 
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+namespace nakama::analyse
+{
+/** NAK-380 T-380-11: nur lesender Zugang zur vorbereiteten Binzuordnung.
+
+    Die Erwartung entsteht damit aus der Zuordnung der zuständigen Stufe und
+    nicht aus den Bits oder Werten des W0-Laufs. Das Produkt definiert und
+    ruft diese Struktur nie. */
+struct FeatureEngineTestzugang
+{
+    static int bandVon (const FeatureEngine& e, int band) noexcept
+    {
+        const auto& stufe = Gitter::evidenzMitte (band) < FeatureEngine::kTrennungHz
+                          ? e.bass : e.haupt;
+        return stufe.bandVon[(std::size_t) band];
+    }
+
+    static int bandBis (const FeatureEngine& e, int band) noexcept
+    {
+        const auto& stufe = Gitter::evidenzMitte (band) < FeatureEngine::kTrennungHz
+                          ? e.bass : e.haupt;
+        return stufe.bandBis[(std::size_t) band];
+    }
+};
+} // namespace nakama::analyse
+#endif
+
 namespace
 {
 int bestanden = 0;
@@ -760,23 +787,79 @@ struct Nak380Bandmittel
     std::array<double, Gitter::evidenzBaender> feinLinear {};
     std::array<double, Gitter::evidenzBaender> feinP50Db {};
     std::array<int, Gitter::evidenzBaender> feinAnzahl {};
+    std::array<int, Gitter::evidenzBaender> bandVon {};
+    std::array<int, Gitter::evidenzBaender> bandBis {};
     std::array<double, Gitter::liveBaender> liveLinear {};
     std::array<int, Gitter::liveBaender> liveAnzahl {};
     int evidenzframes {};
+    int bitmapVerstoesse {};
+    double evidenzIntervallS {};
 };
+
+/** R-380-10 (i): wirksame Zahl unkorrelierter Bins unter periodischem Hann.
+
+    n_eff(1)=1; n_eff(2)=1,385; n_eff(44)=22,9. Die Zahlen folgen aus
+    n/(1 + (8/9)(n-1)/n + (1/18)(n-2)/n), nicht aus dem W0-Lauf. */
+double nak380WirksameBins (int n) noexcept
+{
+    if (n <= 1)
+        return 1.0;
+    const double nd = (double) n;
+    return nd / (1.0 + (8.0 / 9.0) * (nd - 1.0) / nd
+                       + (1.0 / 18.0) * (nd - 2.0) / nd);
+}
+
+/** R-380-10 (i): 4 sigma des dB-Mittels eines belegten Feinbands.
+
+    K_b=2*M_s*n_eff/1,056 und sigma_b=4,343/sqrt(K_b). Mit den aus Dauer und
+    Hop hergeleiteten M_Bass=floor(57*48000/8192)=334 und
+    M_Haupt=floor(57*48000/2048)=1335 ergeben sich: n=1 Bass K=633,
+    sigma=0,173 dB, Toleranz=0,69 dB; n=1 Haupt K=2528, sigma=0,086 dB,
+    Toleranz=0,35 dB; n=44 Haupt K etwa 57900, sigma=0,018 dB,
+    Toleranz=0,072 dB. */
+double nak380MittelToleranzDb (int bins, bool bass) noexcept
+{
+    constexpr int bassFenster = 334;
+    constexpr int hauptFenster = 1335;
+    const double k = 2.0 * (double) (bass ? bassFenster : hauptFenster)
+                   * nak380WirksameBins (bins) / 1.056;
+    return 4.0 * 4.343 / std::sqrt (k);
+}
+
+/** R-380-10 (iii): Medianversatz der Gamma(k)-Verteilung gegen ihr Mittel.
+
+    Delta(n)=10log10(1-1/(3k)+8/(405k^2)), k=2*n_eff(n): n=1 -0,77 dB,
+    n=2 -0,55 dB und n=44 -0,03 dB. */
+double nak380P50VersatzDb (int bins) noexcept
+{
+    const double k = 2.0 * nak380WirksameBins (bins);
+    return 10.0 * std::log10 (1.0 - 1.0 / (3.0 * k) + 8.0 / (405.0 * k * k));
+}
 
 /** NAK-380 W0: eigener, nicht eingebetteter Lauf; Engine und Signalpuffer
     liegen auf dem Heap (NAK-175). */
-__declspec(noinline) Nak380Bandmittel nak380W0Lauf (double sigma, double sekunden)
+__declspec(noinline) std::unique_ptr<Nak380Bandmittel> nak380W0Lauf (double sigma,
+                                                                   double sekunden)
 {
     constexpr double fs = 48000.0;
     constexpr int block = 512;
     auto engine = std::make_unique<FeatureEngine>();
     engine->vorbereiten (fs);
+    engine->evidenzIntervallSetzen (1.0);
     nakama::test::nak380::W0 signal;
     signal.sigma = sigma;
     std::vector<float> audio ((std::size_t) block * 2u);
-    Nak380Bandmittel aus;
+    auto aus = std::make_unique<Nak380Bandmittel>();
+    aus->evidenzIntervallS = engine->evidenzIntervallJetzt();
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+    for (int band = 0; band < Gitter::evidenzBaender; ++band)
+    {
+        aus->bandVon[(std::size_t) band]
+            = nakama::analyse::FeatureEngineTestzugang::bandVon (*engine, band);
+        aus->bandBis[(std::size_t) band]
+            = nakama::analyse::FeatureEngineTestzugang::bandBis (*engine, band);
+    }
+#endif
     std::uint64_t strom = 0;
     std::int64_t projekt = 0;
     const auto samples = (std::uint64_t) std::llround (sekunden * fs);
@@ -807,22 +890,36 @@ __declspec(noinline) Nak380Bandmittel nak380W0Lauf (double sigma, double sekunde
             if (bitmapLies (f.live.bitmap, g))
             {
                 const double db = (double) f.live.werte[(std::size_t) g] * 0.1;
-                aus.liveLinear[(std::size_t) g] += std::pow (10.0, db / 10.0);
-                ++aus.liveAnzahl[(std::size_t) g];
+                aus->liveLinear[(std::size_t) g] += std::pow (10.0, db / 10.0);
+                ++aus->liveAnzahl[(std::size_t) g];
             }
         if (! f.evidenzFrisch)
             continue;
-        ++aus.evidenzframes;
+        ++aus->evidenzframes;
+        bool bitmapAbweichung = false;
         for (int band = 0; band < Gitter::evidenzBaender; ++band)
+        {
+            const bool erwartet = aus->bandBis[(std::size_t) band]
+                                > aus->bandVon[(std::size_t) band];
+            const bool evidenzBit = bitmapLies (f.evidenz.bitmap, band);
+            const bool p50Bit = bitmapLies (f.evidenzP50.bitmap, band);
+            // R-380-10 (iv): beide Bits genau fuer n_b>=1; bei 48 kHz sind
+            // 196 Baender belegt und 25 unbelegt. Ein FRAME ist ein Verstoss,
+            // auch wenn darin mehrere Bits abweichen.
+            bitmapAbweichung = bitmapAbweichung
+                            || evidenzBit != erwartet || p50Bit != erwartet;
             if (bitmapLies (f.evidenz.bitmap, band)
                 && bitmapLies (f.evidenzP50.bitmap, band))
             {
                 const double db = (double) f.evidenz.werte[(std::size_t) band] * 0.01;
-                aus.feinLinear[(std::size_t) band] += std::pow (10.0, db / 10.0);
-                aus.feinP50Db[(std::size_t) band]
+                aus->feinLinear[(std::size_t) band] += std::pow (10.0, db / 10.0);
+                aus->feinP50Db[(std::size_t) band]
                     += (double) f.evidenzP50.werte[(std::size_t) band] * 0.01;
-                ++aus.feinAnzahl[(std::size_t) band];
+                ++aus->feinAnzahl[(std::size_t) band];
             }
+        }
+        if (bitmapAbweichung)
+            ++aus->bitmapVerstoesse;
     }
     return aus;
 }
@@ -883,26 +980,129 @@ __declspec(noinline) void nak380DichteUndBandleistung()
     const double dichteDb = 10.0 * std::log10 (dichte); // R-380-8: 2 sigma^2 / fs = -63,80 dBFS/Hz.
     const auto w0 = nak380W0Lauf (sigma, 60.0);
 
-    int ohneBit = 0;
-    double groessterFehler = 0.0;
+    // Evidenzabschluss am Liveframe-Raster: ceil(0,1*48000/512)=10 Bloecke,
+    // also 0,106667 s je Liveframe; ceil(1/0,106667)=10 Liveframes ergeben
+    // 1,066667 s je Evidenzframe. Von 3 s bis 60 s sind das
+    // floor(60/1,066667)-ceil(3/1,066667)+1 = 56-3+1 = 54 Frames.
+    constexpr int evidenzframesSoll = 54;
+    pruefe (w0->evidenzIntervallS == 1.0 && w0->evidenzframes == evidenzframesSoll,
+            "380/M-01 evidenzintervall_und_framezahl",
+            "Intervall " + juce::String (w0->evidenzIntervallS, 1)
+                + " s; Evidenzframes Soll/Ist " + juce::String (evidenzframesSoll)
+                + "/" + juce::String (w0->evidenzframes));
+
+    int unbelegt = 0;
+    int belegt = 0;
     for (int b = 0; b < Gitter::evidenzBaender; ++b)
     {
-        const auto n = w0.feinAnzahl[(std::size_t) b];
-        if (n == 0) { ++ohneBit; continue; }
-        const double mittelDb = 10.0 * std::log10 (w0.feinLinear[(std::size_t) b] / (double) n);
-        groessterFehler = std::max (groessterFehler, std::abs (mittelDb - dichteDb));
+        const int bins = w0->bandBis[(std::size_t) b] - w0->bandVon[(std::size_t) b];
+        if (bins >= 1) ++belegt; else ++unbelegt;
     }
-    const int p50Band = 220;
-    const double p50 = w0.feinP50Db[(std::size_t) p50Band]
-                     / (double) w0.feinAnzahl[(std::size_t) p50Band];
-    pruefe (w0.evidenzframes > 0 && ohneBit == 25 && groessterFehler <= 0.5
-                && std::abs (p50 - dichteDb) <= 1.5,
+    // R-380-10 (iv), aus bandVon/bandBis: 221-25=196 belegte Baender.
+    pruefe (belegt == 196 && unbelegt == 25,
+            "380/M-01 binbelegung_aus_testzugang",
+            "belegt " + juce::String (belegt) + "; unbelegt " + juce::String (unbelegt));
+    pruefe (w0->bitmapVerstoesse == 0,
+            "380/M-01 evidenz_und_p50_bits_je_frame",
+            juce::String (w0->bitmapVerstoesse) + " abweichende Frames von "
+                + juce::String (w0->evidenzframes));
+
+    double groessterFehler = 0.0;
+    double groessteToleranz = 0.0;
+    int groessterFehlerBand = -1;
+    int groessterFehlerBins = 0;
+    int mittelVerstoesse = 0;
+    double systematikSumme = 0.0;
+    int systematikAnzahl = 0;
+    double groessterP50Fehler = 0.0;
+    int groessterP50Band = -1;
+    int groessterP50Bins = 0;
+    int p50Verstoesse = 0;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const int bins = w0->bandBis[(std::size_t) b] - w0->bandVon[(std::size_t) b];
+        if (bins < 1)
+            continue;
+        const auto n = w0->feinAnzahl[(std::size_t) b];
+        if (n != w0->evidenzframes)
+        {
+            ++mittelVerstoesse;
+            ++p50Verstoesse;
+            continue;
+        }
+        const double mittelDb = 10.0 * std::log10 (w0->feinLinear[(std::size_t) b] / (double) n);
+        const double mittelFehler = std::abs (mittelDb - dichteDb);
+        const double mittelBericht = std::isfinite (mittelFehler)
+                                   ? mittelFehler
+                                   : std::numeric_limits<double>::infinity();
+        const bool bass = Gitter::evidenzMitte (b) < FeatureEngine::kTrennungHz;
+        const double toleranz = nak380MittelToleranzDb (bins, bass);
+        if (mittelBericht > groessterFehler)
+        {
+            groessterFehler = mittelBericht;
+            groessteToleranz = toleranz;
+            groessterFehlerBand = b;
+            groessterFehlerBins = bins;
+        }
+        if (! std::isfinite (mittelDb) || mittelBericht > toleranz)
+            ++mittelVerstoesse;
+        systematikSumme += mittelDb - dichteDb;
+        ++systematikAnzahl;
+
+        const double p50 = w0->feinP50Db[(std::size_t) b] / (double) n;
+        const double p50Referenz = dichteDb + nak380P50VersatzDb (bins);
+        const double p50Fehler = std::abs (p50 - p50Referenz);
+        const double p50Bericht = std::isfinite (p50Fehler)
+                                ? p50Fehler
+                                : std::numeric_limits<double>::infinity();
+        if (p50Bericht > groessterP50Fehler)
+        {
+            groessterP50Fehler = p50Bericht;
+            groessterP50Band = b;
+            groessterP50Bins = bins;
+        }
+        // R-380-10 (iii): |P50_b-(D+Delta(n_b))| <= 1,5 dB je Band.
+        if (! std::isfinite (p50) || p50Bericht > 1.5)
+            ++p50Verstoesse;
+    }
+    // R-380-10 (i): je Band |mittel_b-D| <= 4*sigma_b.
+    pruefe (mittelVerstoesse == 0 && systematikAnzahl == 196,
             "380/M-01 evidenz_feinband_ist_dichte",
             "Referenz 10log10(2 sigma^2/fs)=" + juce::String (dichteDb, 4)
-                + " dBFS/Hz; groesster Mittelwertfehler " + juce::String (groessterFehler, 4)
-                + " dB; P50 Band 220 " + juce::String (p50, 4)
-                + "; ohne Bit " + juce::String (ohneBit)
-                + "; Evidenzframes " + juce::String (w0.evidenzframes));
+                + " dBFS/Hz; groesster Fehler Band " + juce::String (groessterFehlerBand)
+                + " mit n_b=" + juce::String (groessterFehlerBins) + ": "
+                + juce::String (groessterFehler, 4) + " dB bei Toleranz "
+                + juce::String (groessteToleranz, 4) + " dB; Verstoesse "
+                + juce::String (mittelVerstoesse));
+
+    const double systematik = systematikAnzahl > 0
+                            ? systematikSumme / (double) systematikAnzahl
+                            : std::numeric_limits<double>::infinity();
+    // R-380-10 (ii): |Mittel der 196 Bandabweichungen| <= 0,05 dB.
+    pruefe (systematikAnzahl == 196 && std::abs (systematik) <= 0.05,
+            "380/M-01 systematik_ueber_belegte_baender",
+            "Mittelabweichung " + juce::String (systematik, 5)
+                + " dB; Toleranz 0,05000 dB ueber " + juce::String (systematikAnzahl)
+                + " Baender");
+
+    pruefe (p50Verstoesse == 0,
+            "380/M-01 p50_je_belegtem_feinband",
+            "groesster Abstand Band " + juce::String (groessterP50Band)
+                + " mit n_b=" + juce::String (groessterP50Bins) + ": "
+                + juce::String (groessterP50Fehler, 4)
+                + " dB; Toleranz 1,5000 dB; Verstoesse "
+                + juce::String (p50Verstoesse));
+
+    bool alleLivegruppenMitBeitrag = true;
+    for (int g = 0; g < Gitter::liveBaender; ++g)
+        alleLivegruppenMitBeitrag = alleLivegruppenMitBeitrag
+                                  && w0->liveAnzahl[(std::size_t) g] > 0;
+    // M-02 sagt "je Gruppe g": alle 64 Gruppen muessen vor Fehlermaximum
+    // und Spannentest mindestens einen Messbeitrag tragen.
+    pruefe (alleLivegruppenMitBeitrag,
+            "380/M-02 jede_livegruppe_hat_messbeitrag",
+            alleLivegruppenMitBeitrag ? "64 von 64 Gruppen mit Beitrag"
+                                      : "mindestens eine der 64 Gruppen ohne Beitrag");
 
     double minDb = std::numeric_limits<double>::infinity();
     double maxDb = -std::numeric_limits<double>::infinity();
@@ -910,10 +1110,13 @@ __declspec(noinline) void nak380DichteUndBandleistung()
     double liveSumme = 0.0;
     for (int g = 0; g < Gitter::liveBaender; ++g)
     {
-        const int n = w0.liveAnzahl[(std::size_t) g];
+        const int n = w0->liveAnzahl[(std::size_t) g];
         if (n == 0)
+        {
+            groessterGruppenfehler = std::numeric_limits<double>::infinity();
             continue;
-        const double p = w0.liveLinear[(std::size_t) g] / (double) n;
+        }
+        const double p = w0->liveLinear[(std::size_t) g] / (double) n;
         const double breite = Gitter::evidenzKante (Gitter::liveBisExkl (g))
                              - Gitter::evidenzKante (Gitter::liveVon (g));
         const double istDb = 10.0 * std::log10 (p);
@@ -935,7 +1138,7 @@ __declspec(noinline) void nak380DichteUndBandleistung()
                 + juce::String (spanneSoll, 4) + " dB; groesster Gruppenfehler "
                 + juce::String (groessterGruppenfehler, 4) + " dB");
 
-    const double p0 = w0.liveLinear[0] / (double) w0.liveAnzahl[0];
+    const double p0 = w0->liveLinear[0] / (double) w0->liveAnzahl[0];
     const double p0SollDb = dichteDb
                           + 10.0 * std::log10 (Gitter::evidenzKante (3)
                                                - Gitter::evidenzKante (0));
@@ -961,7 +1164,7 @@ __declspec(noinline) void nak380DichteUndBandleistung()
 
     const auto w0h = nak380W0Lauf (1.0, 60.0);
     const double weiss63Db = 10.0 * std::log10 (
-        w0h.liveLinear[63] / (double) w0h.liveAnzahl[63]);
+        w0h->liveLinear[63] / (double) w0h->liveAnzahl[63]);
     const double weiss63SollDb = 10.0 * std::log10 (
         2.0 / fs * (Gitter::evidenzKante (221) - Gitter::evidenzKante (217)));
     const double sinusVollDb = nak380S3Gruppenleistung (1.0);

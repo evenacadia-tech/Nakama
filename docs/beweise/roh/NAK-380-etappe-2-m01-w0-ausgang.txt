@@ -1,12 +1,35 @@
-NAK-380 Etappe 2 — M-01 Ausgangserfassung am Basisstand
+NAK-380 Etappe 2 — M-01 Ausgangserfassung nach Nacharbeit 1
 Datum: 25.09.2026
-Basis-SHA: 39fbf1652cb4a9b60b5a61b104f9ffe0a6ae2cbb
-Etikett: heute nicht messbar; der neue Fall wurde vor dem ersten Produktedit gebaut und gefahren.
-Bein/Fall: B5 / 380/M-01 evidenz_feinband_ist_dichte
-Testdatei SHA-256: 707B4D7FFD116BAEE2158DEC989B787AA06DCABF0F17DDD2BFD43ED6855456EB
-Befehl: EqCopAnalysisGoldenTest.exe
-Exit des Beins: 1, ausschließlich wegen der gleichzeitig zuerst geschriebenen heute-roten M-02 bis M-05 und M-08(a).
-M-01: GRÜN.
-Ausgang: Referenz 10log10(2 sigma^2/fs) = -63,8021 dBFS/Hz; größter Mittelwertfehler 0,3822 dB; P50 Band 220 = -63,8312 dBFS/Hz; 25 Bänder ohne Bit; 178 Evidenzframes.
-Die Referenz stammt aus 2*0,1^2/48000, nicht aus dem Lauf. Die feste Saat ist 0x03800001.
+HEAD-Produktstand: 22b414ab34ccc2a72290c22d06ac7df139cfec5d
+Testdatei SHA-256: D2C6F268F4F24E6E5759A2F2B8581578DE41700CCE362B678C7AEA530C93C182
+Einordnung: Die Erfassung wurde mit dem unveränderten Produktcode am HEAD und dem
+korrigierten Testaufbau erneuert. Der alte Testaufbau mit Defaultintervall ist nach
+dem Umbau nicht mehr erreichbar; diese Datei benennt deshalb ausdrücklich den
+HEAD-Produktcode als Ausgang.
+Bein: B5 / EqCopAnalysisGoldenTest.exe
+Exit: 0; Ergebnis: 261 bestanden, 0 Fehler.
 
+Vorbedingung und Kadenz:
+- sigma = 0,1 je Kanal, fs = 48000 Hz, Block = 512, Dauer = 60 s.
+- evidenzIntervallSetzen(1.0); gemessenes Intervall 1,0 s.
+- Evidenzabschluss am Liveframe-Raster: ceil(0,1*48000/512)=10 Blöcke,
+  also 0,106667 s je Liveframe; ceil(1/0,106667)=10 Liveframes und
+  1,066667 s je Evidenzframe. Von 3 s bis 60 s:
+  floor(60/1,066667)-ceil(3/1,066667)+1 = 56-3+1 = 54.
+- Evidenzframes Soll/Ist: 54/54.
+
+R-380-10, gemessener Ausgang:
+- Binzuordnung aus dem nur lesenden FeatureEngineTestzugang: 196 belegte und
+  25 unbelegte Feinbänder.
+- Bits: 0 abweichende Frames von 54; Evidenz- und P50-Bitmap wurden je Frame
+  einzeln gegen n_b >= 1 geprüft.
+- (i) D = 10log10(2*0,1^2/48000) = -63,8021 dBFS/Hz. Größter
+  |mittel_b-D|: Band 30, n_b=1, 0,3651 dB; zulässig 0,6907 dB.
+- (ii) Mittel der 196 Bandabweichungen: -0,00417 dB; zulässig ±0,05000 dB.
+- (iii) Größter |p50_b-(D+Delta(n_b))|: Band 55, n_b=2, 0,6056 dB;
+  zulässig 1,5000 dB.
+- M-02 Vorbedingung: 64 von 64 Livegruppen mit Messbeitrag.
+- M-02: Spanne 28,4148 dB gegen 28,5313 dB; größter Gruppenfehler 0,2505 dB.
+
+Die Referenzen, Toleranzen, Binzahlen und Sollframezahl sind aus den Formeln und
+der vorbereiteten Stufenzuordnung hergeleitet, nicht aus diesem Lauf abgelesen.

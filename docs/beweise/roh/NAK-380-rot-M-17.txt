@@ -25,3 +25,18 @@ Exitcode: 2. Gefallene Prüfung: genau die `Frame.band_stereo`-Prüfung; mitgefa
 Die Zusage fällt an der erwarteten Prüfung: JA.
 Bytegleiche Rücknahme: SHA-256 nach der Rücknahme: 9B16B212D02C90FC1F4123F687695C9BC6820297F771818F9D28511B3AC52845 (identisch).
 Fall grün: JA; A5 danach 852/0, Exitcode 0.
+
+Nacharbeit 1 — vierter Größensatz FlatBuffers Bandwerte, 25.09.2026
+Sicherung: eq-copilot/build/nak380-sicherung/NAK-380-e2-n1-nakama_telemetry_v1.fbs
+Datei: eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs
+SHA-256 vor der Mutation: 9B16B212D02C90FC1F4123F687695C9BC6820297F771818F9D28511B3AC52845
+Mutation wörtlich in Zeile 205: `einseitige Leistungsdichte in dBFS/Hz` ->
+`einseitige Leistungsdichte in dBFS`. Generierte Dateien wurden nicht erneuert.
+Gefahrener Rotlauf: A5 `pruefe_v3_vertrag.py --abdeckung`.
+Exit: 2; 852 bestanden, 1 gescheitert.
+Gefallen ist nur `nak380_m17_groessen_je_feld_benannt: FlatBuffers Bandwerte`;
+die anderen 852 Prüfungen blieben grün.
+Die Zusage fällt an der erwarteten Prüfung: JA.
+Rücknahme: Sicherung zurückkopiert, Quellzeitstempel erneuert.
+SHA-256 nach der Rücknahme: 9B16B212D02C90FC1F4123F687695C9BC6820297F771818F9D28511B3AC52845 (identisch).
+Grüner A5-Lauf: Exit 0, 853 bestanden, 0 gescheitert.

@@ -1,0 +1,10 @@
+NAK-380 E2 N1 — Mutation M-01, 25.09.2026
+Mutation: Spektrum.h `energie /= (double) (bis - von);` -> `energie /= 1.0;`
+Nur betroffenes Bein: EqCopAnalysisGoldenTest (B5)
+Exit: 1; Ergebnis: 254 bestanden, 7 Fehler.
+ROT M-01 (i): Band 220, n_b=44, Fehler 16,4370 dB, Toleranz 0,0722 dB.
+ROT M-01 (ii): Mittelabweichung 5,63511 dB, Toleranz 0,05000 dB.
+ROT M-01 (iii): Band 220, n_b=44, P50-Abstand 16,4529 dB.
+Mitgefallen: M-02, M-04, M-05, M-08(a). M-03 und M-11 grün.
+Zusagezeile getroffen: JA.
+Rücknahmehash identisch; danach B5 Exit 0, 261/0.

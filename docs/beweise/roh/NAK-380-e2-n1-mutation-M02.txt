@@ -1,0 +1,9 @@
+NAK-380 E2 N1 — Mutation M-02, 25.09.2026
+Mutation: Frame.h `summe += dichte * bandbreite;` -> `summe += dichte * 1.0;`
+Nur betroffenes Bein: EqCopAnalysisGoldenTest (B5)
+Exit: 1; Ergebnis: 257 bestanden, 4 Fehler.
+ROT M-02: Spanne 7,1986 statt 28,5313 dB; größter Gruppenfehler 26,8965 dB.
+Mitgefallen: M-04, M-05, M-08(a).
+Alle M-01-Teilprüfungen, M-02 Pflichtbeitrag 64/64, M-03 und M-11 grün.
+Zusagezeile getroffen: JA.
+Rücknahmehash identisch; danach B5 Exit 0, 261/0.

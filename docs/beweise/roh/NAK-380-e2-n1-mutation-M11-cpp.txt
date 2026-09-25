@@ -1,0 +1,10 @@
+NAK-380 E2 N1 — Mutation M-11 C++, 25.09.2026
+Mutation in BandGrid.h: Rückgabewert von evidenzKante mit * 0.5 skaliert.
+Nur betroffenes Bein: EqCopAnalysisGoldenTest (B5)
+Exit: 1; Ergebnis: 248 bestanden, 13 Fehler.
+ROT M-11: 221 Breiten, Summe 8964,516199894 Hz; Hexwerte
+3fdc77d2b45dde00/402c77d2b45dddc0/406ff44e07b18980.
+Mitgefallen: M-01 Zuordnung/Mittel/Systematik, beide M-02-Prüfungen, M-03,
+M-05, M-08(a), zwei Gitterprüfungen und zwei Nyquist-Kappenprüfungen.
+Zusagezeile getroffen: JA; kein Arrayüberlauf, keine Panik, kein UB.
+Rücknahmehash identisch; danach B5 Exit 0, 261/0.

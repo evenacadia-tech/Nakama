@@ -1,0 +1,8 @@
+NAK-380 E2 N1 — Mutation M-17 FlatBuffers, 25.09.2026
+Mutation in nakama_telemetry_v1.fbs: `einseitige Leistungsdichte in dBFS/Hz`
+-> `einseitige Leistungsdichte in dBFS`; generierte Dateien nicht erneuert.
+Betroffenes Bein: pruefe_v3_vertrag.py --abdeckung (A5)
+Exit: 2; 852 bestanden, 1 gescheitert.
+Nur ROT: nak380_m17_groessen_je_feld_benannt: FlatBuffers Bandwerte.
+Zusagezeile getroffen: JA.
+Rücknahmehash identisch; danach A5 Exit 0, 853/0.

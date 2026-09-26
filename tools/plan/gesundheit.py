@@ -294,7 +294,14 @@ SKILL_PFAD = ".claude/skills/dirigent/SKILL.md"
 # `eq-copilot/plugin/src/SourcesModel.cpp` (Pflegeticket NAK-371). Beide
 # Zuordnungen nachgezogen am 23.09.2026; bis dahin meldete der Lauf sie als
 # „OHNE PFLEGETICKET", obwohl die Registerpunkte standen.
+#
+# NAK-380 Etappe 6 Nacharbeit 0 (26.09.2026) liess
+# `broker/src/coordinator/experiment_verdrahtung.rs` mit dem Testmodul zur
+# Messfassung im gespeicherten Fingerprint (R-380-14 (ii)) ueber die Grenze
+# wachsen (2 463 Zeilen; Pflegeticket NAK-413, Pflegeschritt S31c);
+# Zuordnung nachgezogen am 26.09.2026 im Abschlussfenster derselben Etappe.
 PFLEGETICKETS: dict[str, str] = {
+    "broker/src/coordinator/experiment_verdrahtung.rs": "NAK-413",
     "eq-copilot/plugin/state/NakamaState.cpp": "NAK-292",
     "broker/src/briefkasten.rs": "NAK-339",
     "eq-copilot/plugin/src/SourcesModel.cpp": "NAK-371",

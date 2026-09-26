@@ -434,8 +434,9 @@ inline double fingerprintAehnlichkeit (const Fingerprint& a,
     interpretiert". Das sind zwei Stufen, nicht eine:
 
     1. `kohaerenzGesetzt` faellt weg, wenn das Band weniger als
-       `kWelchMindestFrames` gueltige Welch-Frames hat oder eine der beiden
-       Autospektralsummen null ist.
+       `kWelchMindestFrames` gueltige Welch-Frames hat oder kein Bin mit
+       Sxx·Syy > 0 (seit NAK-380 Etappe 5 beides ueber den Ring der letzten
+       W Evidenzfenster; die Kohaerenz ist das Bandmittel der MSC je Bin).
     2. `phaseGesetzt` faellt zusaetzlich weg, wenn die Kohaerenz
        `kKohaerenzSchwellePhase` nicht ueberschreitet — eine Phase aus einem
        inkohaerenten Band ist der Winkel eines Zufallszeigers.
@@ -478,8 +479,18 @@ struct StereoBandwert
 
     /** Magnitude-Squared Coherence in [0, 1]. Stufe 1 des fail-closed. */
     bool  kohaerenzGesetzt { false };  float kohaerenz { 0.0f };
-    /** Interchannel-Phase in Radiant. Stufe 2 des fail-closed. */
+    /** Interchannel-Phase in Radiant. Stufe 2 des fail-closed. Seit NAK-380
+        Etappe 5 am Bin der geometrischen Bandmitte gelesen (R-380-3). */
     bool  phaseGesetzt { false };      float phaseRad { 0.0f };
+
+    /** NAK-380 Etappe 5 (R-380-3, A-3): Gruppenlaufzeit des Bandes in ms,
+        arg(Summe Sxy[k+1]·conj(Sxy[k]))/(2 pi Δf) ueber die Bins des Bandes;
+        positiv, wenn R hinter L liegt. Nur bei mindestens zwei Bins und ueber
+        `kKohaerenzSchwellePhase` (dieselbe Stufe 2 wie die Phase), sonst kein
+        Bit und nie 0 als Aussage. Ein ENGINE-Ergebnis: es geht nicht auf die
+        Leitung (`stereo_evidenz` fuehrt kein Feld dafuer, der Serialisierer
+        bleibt unveraendert). */
+    bool  laufzeitGesetzt { false };   float laufzeitMs { 0.0f };
 
     /** Anteil der abgeschlossenen Kurzfenster, in denen dieses Band kohaerent
         war — „wie stabil ist der Befund". 0 heisst nicht „keine Persistenz",
@@ -510,7 +521,11 @@ struct StereoBandwert
 
     /** §40.1 woertlich: "Fensterdauer und Freiheitsgrade werden Teil der
         Evidenz." Beide je Band, weil die Zahl gueltiger Frames je Band
-        verschieden sein kann — ein Band ueber der Nyquist-Kappe hat null. */
+        verschieden sein kann — ein Band ueber der Nyquist-Kappe hat null.
+        Seit NAK-380 Etappe 5 (R-380-3, T-380-6) zaehlen beide den Ring:
+        `freiheitsgrade` ist die Zahl der gueltigen Welch-Frames ueber die
+        letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7), aus denen die
+        Kohaerenz entsteht, `fensterDauerMs` die Summe ihrer Hopdauern. */
     float         fensterDauerMs { 0.0f };
     std::uint32_t freiheitsgrade { 0 };
 };

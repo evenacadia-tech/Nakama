@@ -1,0 +1,27 @@
+NAK-380 Etappe 5 — Mutationsprotokoll e5-verschiebung-b18
+Datei: eq-copilot/plugin/tests/Nak380Pruefsignale.h
+Zeile (Etappenstand): 656
+SHA-256 vor der Mutation: 31B7402849192C654A0E31C03866C3E4C9375ED43E1850B668E0C18520FC6776; Sicherung eq-copilot/build/nak380-sicherung/e5/e5-verschiebung-b18/Nak380Pruefsignale.h
+Begruendung: Vorbedingung rauschpaar_selbstpruefung in B18 (M-95): Wortlaut wie e5-verschiebung, R um d - 1 statt d Samples verschoben.
+Ruecknahme aus der Sicherung, SHA-256 31B7402849192C654A0E31C03866C3E4C9375ED43E1850B668E0C18520FC6776: gleich; Bau nach Ruecknahme 02:46:09 bis 02:46:13, Exit 0
+Wortlaut vorher:
+                                            * laufzeitRauschen ((std::int64_t) n - (std::int64_t) d, saat));
+Wortlaut nachher:
+                                            * laufzeitRauschen ((std::int64_t) n - (std::int64_t) d + 1, saat));
+  Bau EqCopSonde013DynamicsTest: 02:46:04 bis 02:46:09, Exit 0
+
+== Matrixzeile Vorbedingung; Zusagesatz: rauschpaar_selbstpruefung vor dem Nutzer (B18)
+  Binary 02:46:09.368 juenger als Quelle 02:46:04.265: ja
+Lauf mit Mutation: B18 --nak380 M-95 02:46:09 bis 02:46:09, Exit 1, 6 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-95 stereo_nan_riegel_je_bin: Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 48, Laenge)  [Kennwerte ja, Saat 58720271, d 48, 96000 Samples, Spitze 0.349998, RMS -0.0078 dB gegen 0,35/sqrt(3) (Toleranz 0.0631 dB), Verschiebungsfehler 96000]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-95 stereo_nan_riegel_je_bin: Vorbedingung rauschpaar_selbstpruefung)
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung gespeiste Samplezahl = 96 000 (2 s * 48 000), Laeufer und Engine  [96000 / 96000]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung Bin 1346 liegt in Band 216 (Bins 1327 bis 1365), der Ring traegt dort mindestens acht Frames  [Bins 1327 bis 1365, Frames 16]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: der Frame mit nicht endlichem Kreuzspektrum zaehlt fuer Band 216 nicht (Riegel je Band)  [16 -> 16]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: jedes andere Hauptstufenband mit Bins zaehlt ihn (+1), Bassbaender und Baender ohne Bin bleiben  [148 Baender, abweichend 0, Bass/ohne Bin abweichend 0]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: keine nicht endliche Kohaerenz, Phase oder Laufzeit; Band 216 behaelt seine Kohaerenz aus den gueltigen Frames  [149 Baender mit Kohaerenz, nicht endlich 0, Band 216 0.9982]
+Lauf nach Ruecknahme: B18 --nak380 M-95 02:46:13 bis 02:46:13, Exit 0, 7 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:46:13.870 juenger als Quelle 02:46:09.496: ja

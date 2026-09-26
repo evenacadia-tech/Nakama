@@ -388,6 +388,25 @@ struct FeatureEngineTestzugang
     /** NAK-380 Nacharbeit 1 (Befund D1): von der Engine verarbeitete
         Samples (je Sample einmal gezaehlt, nur `zuruecksetzen` setzt ihn auf 0). */
     static std::uint64_t verarbeitet (const FeatureEngine& e) noexcept { return e.verarbeiteteSamples; }
+
+    // ── NAK-380 Etappe 5 (T-380-11): der Stereoring nach T-380-6 ──────────
+    /** M-95, der Setzer: ein Hauptstufen-Frame mit dem Spektrum des zuletzt
+        gerechneten Fensters, dessen Kreuzspektrum am Bin `k` in genau diesem
+        Frame nicht endlich ist (`nanKreuzBin` in `stereoSchritt`). */
+    static void stereoSchrittMitNan (FeatureEngine& e, int k) noexcept
+    {
+        e.stereoSchritt (e.haupt, true, k);
+    }
+
+    /** Gueltige Frames des Bandes in den belegten Ringslots (`freiheitsgrade`
+        vor der Auswertung). */
+    static std::uint32_t ringFrames (const FeatureEngine& e, int b) noexcept
+    {
+        return e.stereoRingFrames (b, e.trennIndex());
+    }
+
+    /** Wertet die Stereoevidenz aus, wie `baueFrame` es am Evidenzsnapshot tut. */
+    static void stereoAuswerten (FeatureEngine& e) noexcept { e.stereoAuswerten(); }
 };
 } // namespace nakama::analyse
 #endif
@@ -825,6 +844,124 @@ __declspec(noinline) void nak380StaerkeWert()
                     + juce::String (staerkeToleranz (ref.staerke), 3, true));
     }
 }
+/** NAK-380 M-95 (Etappe 5, Regressionswache): der NaN-Riegel des
+    Stereorings je Band und Frame. 48 kHz, Block 512 (der letzte Block traegt
+    den Rest), Standardintervall 0,25 s; §7.2 D2 (Laufzeitpaar d = 48, Saat
+    0x380000F), 2 s = 96 000 Samples, der Ring der Hauptstufe traegt danach
+    drei Fenster. Dann ein weiterer Hauptstufen-Frame ueber den Testzugang,
+    dessen Kreuzspektrum am Bin 1346 (Band 216, Bins 1327 bis 1365) nicht
+    endlich ist: dieser Frame zaehlt fuer Band 216 nicht, jedes andere
+    Hauptstufenband mit Bins zaehlt ihn (+1), die Bassbaender bleiben, und
+    keine Kohaerenz, Phase oder Laufzeit wird nicht endlich. */
+__declspec(noinline) void nak380StereoNanRiegel()
+{
+    namespace sig = nakama::test::nak380;
+    using nakama::analyse::Gitter;
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+    constexpr std::uint64_t samples = 96000u;
+    const juce::String kopf ("380/M-95 stereo_nan_riegel_je_bin");
+    const auto paar = sig::rauschpaar (fs, samples, 48, sig::kD1D6Saat);
+    const auto selbst = sig::rauschpaarSelbstpruefung (paar, fs, 48, sig::kD1D6Saat, samples);
+    pruefe (selbst.ok, kopf + ": Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 48, Laenge)",
+            juce::String (selbst.meldung));
+
+    auto engine = std::make_unique<FeatureEngine>();
+    auto& e = *engine;
+    e.vorbereiten (fs);
+    e.evidenzIntervallSetzen (0.25);
+    std::vector<float> audio ((std::size_t) block * 2u);
+    std::uint64_t strom = 0;
+    while (strom < samples)
+    {
+        const auto anzahl = (std::uint32_t) std::min<std::uint64_t> ((std::uint64_t) block, samples - strom);
+        for (std::uint32_t i = 0; i < anzahl; ++i)
+        {
+            audio[(std::size_t) i * 2u]      = paar.l[(std::size_t) (strom + i)];
+            audio[(std::size_t) i * 2u + 1u] = paar.r[(std::size_t) (strom + i)];
+        }
+        rt::StampedBlock b;
+        b.stromVon = strom;
+        b.sampleCount = anzahl;
+        b.segment = 0;
+        b.startFolge = 0;
+        b.kanaele = 2;
+        b.tapMaske = 1;
+        b.projectSampleStart = (std::int64_t) strom;
+        b.sampleRate = fs;
+        b.flags = rt::kFlagKontextAnwesend | rt::kFlagSpieltGueltig
+                | rt::kFlagSampleRateGueltig | rt::kFlagSpielt | rt::kFlagZeitGueltig;
+        if (e.nimmBlock (b, audio.data()))
+            e.ereignisseEntnommen();
+        strom += anzahl;
+    }
+    pruefe (strom == samples && FeatureEngineTestzugang::verarbeitet (e) == samples,
+            kopf + ": Vorbedingung gespeiste Samplezahl = 96 000 (2 s * 48 000), Laeufer und Engine",
+            juce::String ((juce::int64) strom) + " / "
+                + juce::String ((juce::int64) FeatureEngineTestzugang::verarbeitet (e)));
+    pruefe (e.ereignisseVerworfen() == 0u, kopf + ": Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0");
+
+    // Band 216 und sein Bin 1346, unabhaengig aus dem Gitter (N = 4096).
+    const int b216 = 216;
+    const int von = (int) std::ceil (Gitter::evidenzKante (b216) * 4096.0 / fs);
+    const int bis = (int) std::ceil (Gitter::evidenzKante (b216 + 1) * 4096.0 / fs);
+    constexpr int kBin = 1346;
+    std::vector<std::uint32_t> vorher ((std::size_t) Gitter::evidenzBaender);
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        vorher[(std::size_t) b] = FeatureEngineTestzugang::ringFrames (e, b);
+    pruefe (von == 1327 && bis == 1366 && kBin >= von && kBin < bis && vorher[(std::size_t) b216] >= 8u,
+            kopf + ": Vorbedingung Bin 1346 liegt in Band 216 (Bins 1327 bis 1365), der Ring traegt dort "
+                "mindestens acht Frames",
+            "Bins " + juce::String (von) + " bis " + juce::String (bis - 1) + ", Frames "
+                + juce::String ((int) vorher[(std::size_t) b216]));
+
+    FeatureEngineTestzugang::stereoSchrittMitNan (e, kBin);
+
+    int andereZaehlen = 0, andereFalsch = 0, bassFalsch = 0;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        if (b == b216) continue;
+        const bool bassBand = Gitter::evidenzMitte (b) < 200.0;
+        const int n = bassBand ? 16384 : 4096;
+        const double kappe = std::min (18000.0, 0.95 * fs * 0.5);
+        const bool bins = Gitter::evidenzKante (b + 1) <= kappe
+            && std::ceil (Gitter::evidenzKante (b + 1) * n / fs) > std::ceil (Gitter::evidenzKante (b) * n / fs);
+        const auto jetzt = FeatureEngineTestzugang::ringFrames (e, b);
+        if (bassBand || ! bins)
+        {
+            if (jetzt != vorher[(std::size_t) b]) ++bassFalsch;
+            continue;
+        }
+        ++andereZaehlen;
+        if (jetzt != vorher[(std::size_t) b] + 1u) ++andereFalsch;
+    }
+    const auto nach216 = FeatureEngineTestzugang::ringFrames (e, b216);
+    pruefe (nach216 == vorher[(std::size_t) b216],
+            kopf + ": der Frame mit nicht endlichem Kreuzspektrum zaehlt fuer Band 216 nicht (Riegel je Band)",
+            juce::String ((int) vorher[(std::size_t) b216]) + " -> " + juce::String ((int) nach216));
+    pruefe (andereZaehlen > 0 && andereFalsch == 0 && bassFalsch == 0,
+            kopf + ": jedes andere Hauptstufenband mit Bins zaehlt ihn (+1), Bassbaender und Baender ohne Bin "
+                "bleiben",
+            juce::String (andereZaehlen) + " Baender, abweichend " + juce::String (andereFalsch)
+                + ", Bass/ohne Bin abweichend " + juce::String (bassFalsch));
+
+    FeatureEngineTestzugang::stereoAuswerten (e);
+    int nichtEndlich = 0, kohBits = 0;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const auto& w = e.stereoBand (b);
+        if (w.kohaerenzGesetzt) { ++kohBits; if (! std::isfinite (w.kohaerenz)) ++nichtEndlich; }
+        if (w.phaseGesetzt && ! std::isfinite (w.phaseRad)) ++nichtEndlich;
+        if (w.laufzeitGesetzt && ! std::isfinite (w.laufzeitMs)) ++nichtEndlich;
+    }
+    const auto& w216 = e.stereoBand (b216);
+    pruefe (nichtEndlich == 0 && kohBits > 0 && w216.kohaerenzGesetzt && std::isfinite (w216.kohaerenz),
+            kopf + ": keine nicht endliche Kohaerenz, Phase oder Laufzeit; Band 216 behaelt seine Kohaerenz aus "
+                "den gueltigen Frames",
+            juce::String (kohBits) + " Baender mit Kohaerenz, nicht endlich " + juce::String (nichtEndlich)
+                + ", Band 216 " + (w216.kohaerenzGesetzt ? juce::String (w216.kohaerenz, 4)
+                                                         : juce::String ("ohne Bit")));
+}
 } // namespace nak380e4
 
 __declspec(noinline) void nak380Detektoreinheit (const char* nur)
@@ -1135,6 +1272,12 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
     {
         abschnitt ("380/M-63 staerke_wert_med_positiv (Testzugang)");
         nak380StaerkeWert();
+    }
+
+    if (nak380Waehlt (nur, "M-95"))
+    {
+        abschnitt ("380/M-95 stereo_nan_riegel_je_bin (Testzugang)");
+        nak380StereoNanRiegel();
     }
 #else
     juce::ignoreUnused (nur);

@@ -1,0 +1,49 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-84 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Ringlänge
+Zusage (§6.4, woertlich): Freiheitsgrade eines Hauptstufenbands = Frames der letzten 3 Fenster (20), eines Bassbands = Frames der letzten 7 Fenster (11); ältere Fenster fallen heraus (Fenster 13 824 Samples, nachgerechnet)
+Test je Sprache (§6.4): C++: B19 NEU `380/M-84 ringlaenge`
+Rotbeweis-Spalte (§6.4, woertlich): heute nicht messbar; Mutation W_H = 10 → 66 Frames (alle seit dem Start) → rot
+Etikett: heute nicht messbar
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: rot, weil der Ring erst entsteht (B19, 2 Prüfungen): gemeldet 7 statt 20 (Hauptstufe) und 1 statt 11 (Bass)
+    == 380/M-84 ringlaenge ==
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 138240 Samples, Spitze 0.349998, RMS -0.0066 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung gespeiste Samplezahl = 138240, Laeufer und Engine  [gespeist 138240, von der Engine verarbeitet 138240]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [10 Snapshots, Modell 10]
+    [ROT]  380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Hauptstufenband traegt die Frames der letzten 3 Fenster (20), aeltere fallen heraus (66 seit dem Start)  [Modell 20 von 66, gemeldet 7, abweichend 150 von 150]
+    [ROT]  380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Bassband traegt die Frames der letzten 7 Fenster (11)  [Modell 11, gemeldet 1, abweichend 49 von 49]
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B19 --nak380 M-84 02:53:58 bis 02:53:58, EXIT=0, Binary 02:49:40.127
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 138240 Samples, Spitze 0.349998, RMS -0.0066 dB gegen 0,35/sqrt(3) (Toleranz 0.0526 dB), Verschiebungsfehler 0]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung gespeiste Samplezahl = 138240, Laeufer und Engine  [gespeist 138240, von der Engine verarbeitet 138240]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [10 Snapshots, Modell 10]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Hauptstufenband traegt die Frames der letzten 3 Fenster (20), aeltere fallen heraus (66 seit dem Start)  [Modell 20 von 66, gemeldet 20, abweichend 0 von 150]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Bassband traegt die Frames der letzten 7 Fenster (11)  [Modell 11, gemeldet 11, abweichend 0 von 49]
+    6 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Freiheitsgrade eines Hauptstufenbands = Frames der letzten 3 Fenster (20)
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:986, B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:271 W_H 3 → 10 (Matrixmutation) (m84-wh10)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m84-wh10.txt
+- Zusagesatz: eines Bassbands = Frames der letzten 7 Fenster (11)
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:992, B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:279 W_B 7 → 10 (m84-wb10)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m84-wb10.txt
+- Zusagesatz: ältere Fenster fallen heraus
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:986 und :992 (66 Frames seit dem Start), B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:271 W_H 3 → 10 (Matrixmutation) (m84-wh10); eq-copilot/plugin/core/analysis/FeatureEngine.h:279 W_B 7 → 10 (m84-wb10)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m84-wh10.txt, NAK-380-e5-mutation-m84-wb10.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m84-wh10 (eq-copilot/plugin/core/analysis/FeatureEngine.h:271): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-84: W_H = 10 -> am zehnten Snapshot alle 66 Frames seit dem Start.
+  m84-wb10 (eq-copilot/plugin/core/analysis/FeatureEngine.h:279): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-84 (Bassstufe): W_B = 10 -> am zehnten Snapshot alle 15 Bassframes seit dem Start statt der 11 der letzten sieben Fenster.

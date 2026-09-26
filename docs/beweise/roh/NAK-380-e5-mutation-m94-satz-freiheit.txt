@@ -1,0 +1,22 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m94-satz-freiheit
+Datei: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+Zeile (Etappenstand): 1406
+SHA-256 vor der Mutation: 5BCA726203C24992D54984EF85CD72C3D2AF66F243836E78DC0AE5B7D0FDCBAB; Sicherung eq-copilot/build/nak380-sicherung/e5/m94-satz-freiheit/eq-ipc-v3.schema.json
+Begruendung: Matrix M-94: Ringsatz im $comment von freiheitsgrade entfernt.
+Ruecknahme aus der Sicherung, SHA-256 5BCA726203C24992D54984EF85CD72C3D2AF66F243836E78DC0AE5B7D0FDCBAB: gleich
+Wortlaut vorher:
+    Zahl der gemittelten GUELTIGEN Welch-Frames je Band ueber die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7). Unter acht
+Wortlaut nachher:
+    Zahl der gemittelten GUELTIGEN Welch-Frames je Band. Unter acht
+  Kein Bau (das Python-Bein liest die Datei direkt)
+
+== Matrixzeile M-94; Zusagesatz: freiheitsgrade nennt den Ring
+Lauf mit Mutation: A5 --nak380 M-94 02:12:39 bis 02:12:39, Exit 2, Pruefungen: 5 bestanden, 2 gescheitert
+Gefallene Pruefungen:
+      ROT: nak380_m94_ring_benannt: freiheitsgrade nennt den Ring ueber die letzten W Evidenzfenster � Zahl der gemittelten GUELTIGEN Welch-Frames je Band. Unter acht ist die Kohaerenz `null` (kein Bit); der Empfaenger sieht hier, warum.
+      ROT: nak380_m94_ring_benannt: freiheitsgrade nennt die Ringlaengen des Codes � Text None, Code [('3', 'FeatureEngine.h')] / [('7', 'FeatureEngine.h')]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: nak380_m94_ring_benannt: freiheitsgrade nennt den Ring)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+      ROT: nak380_m94_ring_benannt: freiheitsgrade nennt die Ringlaengen des Codes � Text None, Code [('3', 'FeatureEngine.h')] / [('7', 'FeatureEngine.h')]
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: A5 --nak380 M-94 02:12:39 bis 02:12:39, Exit 0, Pruefungen: 7 bestanden, 0 gescheitert

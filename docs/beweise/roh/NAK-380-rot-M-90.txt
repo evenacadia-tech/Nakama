@@ -1,0 +1,47 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-90 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Polaritätsinvertierung
+Zusage (§6.4, woertlich): Korrelation −1, Kohärenz > 0,99, Monosumme an der Vertragsgrenze
+Test je Sprache (§6.4): C++: B19 bestehend
+Rotbeweis-Spalte (§6.4, woertlich): Regressionswache: Mutation wie M-89 → rot
+Etikett: Regressionswache
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: grün (wie M-89)
+    (keine 380/-Zeile im Basislauf)
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B19 --nak380 M-90 02:53:59 bis 02:54:00, EXIT=0, Binary 02:49:40.127
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   die Korrelation ist -1  [-1.000000]
+    [ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+    [ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+    [ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+    [ok]   sweep_polarity_inversion: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+    [ok]   sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-1.0000/1.0000/3.142/-400, 2:-1.0000/1.0000/3.142/-400, 3:-1.0000/1.0000/3.142/-400, 7:-1.0000/1.0000/3.142/-400, 15:-1.0000/1.0000/3.142/-400, 16:-1.0000/1.0000/3.142/-400, 31:-1.0000/1.0000/3.142/-400, 64:-1.0000/1.0000/3.142/-400, 127:-1.0000/1.0000/3.142/-400, 128:-1.0000/1.0000/3.142/-400, 333:-1.0000/1.0000/3.142/-400, 512:-1.0000/1.0000/3.142/-400, 1024:-1.0000/1.0000/3.142/-400, 2048:-1.0000/1.0000/3.142/-400, 4096:-1.0000/1.0000/3.142/-400, 8192:-1.0000/1.0000/3.142/-400, 12345:-1.0000/1.0000/3.142/-400, 16384:-1.0000/1.0000/3.142/-400]
+    [ok]   sweep_polarity_inversion: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+    8 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Korrelation −1
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1998, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:402 Korrelation mal 0,99 (m89-korrelation)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m89-korrelation.txt
+- Zusagesatz: Kohärenz > 0,99
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:2001 und Sweep :2410, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:442 Nenner der MSC je Bin mal 2 (Matrixmutation) (m89-nenner2)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m89-nenner2.txt
+- Zusagesatz: Monosumme an der Vertragsgrenze
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:2010, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:528 Restanteil 1e-12 der Stereoenergie in der Monosumme (m90-monosumme)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m90-monosumme.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m89-korrelation (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:402): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-89/M-90, Satz Korrelation (Regressionswache ueber den Etappenumbau hinweg; die Korrelation rechnet weiter aus den Fensterakkus): Korrelation mal 0,99.
+  m89-nenner2 (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:442): Exit mit Mutation 1, rote Pruefungen 3; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-89/M-90: Nenner der MSC je Bin mal 2 -> Kohaerenz 0,5.
+  m90-monosumme (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:528): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-90, Satz 'Monosumme an der Vertragsgrenze': ein Restanteil von 1e-12 der Stereoenergie in der Monosumme (-120 dB statt der Vertragsgrenze).

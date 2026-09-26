@@ -97,7 +97,8 @@ inline bool FeatureEngine::baueFrame() noexcept
         }
         // SONDE-013 M-11: die Stereoevidenz gehoert zu DIESEM
         // Evidenzfenster und wird mit ihm ausgewertet - vor
-        // `evidenzLeeren()`, das die Akkus raeumt.
+        // `evidenzLeeren()`, das die Fensterakkus raeumt und den Ring
+        // weiterschiebt (NAK-380 Etappe 5).
         stereoAuswerten();
         f.evidenzStromStartGesetzt = evidenzSupport.gesetzt;
         f.evidenzStromStart = evidenzSupport.stromStart;
@@ -159,7 +160,11 @@ inline void FeatureEngine::evidenzLeeren() noexcept
     // aus fremdem Material zu rechnen — dieselbe Regel wie fuer den
     // Bandakku daneben.
     for (auto& r : evidenzVerteilung) r.leeren();
-    stereoLeeren();                 // SONDE-013 M-11, dasselbe Fenster
+    // SONDE-013 M-11: die Stereoevidenz DIESES Fensters faellt mit ihm. Der
+    // Ring je Bin (NAK-380 R-380-3, T-380-6) faellt NICHT: er schiebt genau
+    // einen Slot weiter, damit die Kohaerenz ueber die letzten W Fenster
+    // entsteht; leeren darf ihn nur eine Grenze oder ein Neuanfang.
+    stereoRingVorschub();
     evidenzFensterGesamt = 0;
     evidenzFensterAktiv = 0;
     evidenzSamples = 0;

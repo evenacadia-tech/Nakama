@@ -1,0 +1,50 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-92 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · fail-closed ohne Frames oder Energie
+Zusage (§6.4, woertlich): (a) ein stiller Kanal: kein Kohärenzbit; (b) unter 8 Frames Kohärenz `null`, nicht 1
+Test je Sprache (§6.4): C++: B19 bestehend, (b) umgebaut
+Rotbeweis-Spalte (§6.4, woertlich): Regressionswache: Mutation Mindestframezahl 8 → 1 → (b) Bit mit 1,0 → rot
+Etikett: Regressionswache
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: grün ((b) am Basisstand 6 Frames im ersten Snapshot, 0 mit Bit)
+    [ok]   380/M-92 coherence_is_null_below_eight_frames: der erste Snapshot nach dem Start traegt je Hauptstufenband 6 Frames (Kadenzmodell)  [0 abweichend von 149]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 4096): Vorbedingung 24 000 Samples, kein Ringverlust, erster Snapshot nach Kadenzmodell mit 7 Hauptstufenframes  [gespeist 24000, Engine 24000, Modell 7]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 4096): 7 Frames - kein Hauptstufenband traegt ein Kohaerenzbit (null, nicht 1)  [0 mit Bit von 149, Freiheitsgrade falsch 0]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 9216): Vorbedingung 24 000 Samples, kein Ringverlust, erster Snapshot nach Kadenzmodell mit 8 Hauptstufenframes  [gespeist 24000, Engine 24000, Modell 8]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 9216): 8 Frames - jedes Hauptstufenband traegt einen Kohaerenzwert in [0, 1)  [149 mit Bit von 149, ausserhalb [0, 1) 0, Freiheitsgrade falsch 0]
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B19 --nak380 M-92 02:54:00 bis 02:54:00, EXIT=0, Binary 02:49:40.127
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   mit einem stillen Kanal faellt das Kohaerenzbit weg, statt 0 oder NaN zu senden
+    [ok]   und die Phase erst recht - sie ist eine Teilmenge der Kohaerenzbits
+    [ok]   die Basis steht trotzdem: ein stiller Kanal ist maximal breit (Mid und Side tragen dieselbe Energie)  [-3.01 dB]
+    [ok]   der Mono-Folddown ist rund -3 dB - die halbe Energie ist im stillen Kanal  [-3.010 dB]
+    [ok]   und die Balance kippt vollstaendig nach links - der Wert laeuft an die Vertragsgrenze, statt zu fehlen: 'ganz links' ist eine Aussage, kein Schweigen  [400.0 dB]
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   es gibt wirklich Baender mit weniger als acht Frames - der Fall ist hergestellt, nicht ausgerechnet  [149 von 149 Baendern mit Basis]
+    [ok]   und KEINES davon traegt ein Kohaerenzbit - unter acht Frames ist die Kohaerenz `null`, nicht 1  [0 mit Bit, 149 ohne]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames: der erste Snapshot nach dem Start traegt je Hauptstufenband 6 Frames (Kadenzmodell)  [0 abweichend von 149]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 4096): Vorbedingung 24 000 Samples, kein Ringverlust, erster Snapshot nach Kadenzmodell mit 7 Hauptstufenframes  [gespeist 24000, Engine 24000, Modell 7]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 4096): 7 Frames - kein Hauptstufenband traegt ein Kohaerenzbit (null, nicht 1)  [0 mit Bit von 149, Freiheitsgrade falsch 0]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 9216): Vorbedingung 24 000 Samples, kein Ringverlust, erster Snapshot nach Kadenzmodell mit 8 Hauptstufenframes  [gespeist 24000, Engine 24000, Modell 8]
+    [ok]   380/M-92 coherence_is_null_below_eight_frames (48,0 kHz, B 9216): 8 Frames - jedes Hauptstufenband traegt einen Kohaerenzwert in [0, 1)  [149 mit Bit von 149, ausserhalb [0, 1) 0, Freiheitsgrade falsch 0]
+    14 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: (a) ein stiller Kanal: kein Kohärenzbit
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1493, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:461 Bit ohne Energiebedingung (formgültige Fassung) (m92-energie)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m92-energie.txt
+- Zusagesatz: (b) unter 8 Frames Kohärenz `null`, nicht 1
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1700 (erster Snapshot) und :1341 (7 Frames), B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:414 Mindestframezahl 8 → 1 (Matrixmutation) (m92-min1)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m92-min1.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m92-energie (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:461): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-92 (a), formgueltige Mutation der Energiebedingung: das Bit haengt nicht mehr an einem Bin mit Energie; ein stiller Kanal bekaeme Kohaerenz 0 mit Bit.
+  m92-min1 (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:414): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-92 (b): Mindestframezahl 8 -> 1.

@@ -1,0 +1,22 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m96-wh2
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 271
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m96-wh2/FeatureEngine.h
+Begruendung: M-96 je Stelle: W_H im Code 3 -> 2 ohne Register.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich
+Wortlaut vorher:
+    inline constexpr int kStereoRingHaupt = 3;
+Wortlaut nachher:
+    inline constexpr int kStereoRingHaupt = 2;
+  Kein Bau (das Python-Bein liest die Datei direkt)
+
+== Matrixzeile M-96; Zusagesatz: A5 findet beide Ringlaengen im Code mit dem Registerwert
+Lauf mit Mutation: A5 --nak380 M-96 02:12:54 bis 02:12:54, Exit 2, Pruefungen: 34 bestanden, 2 gescheitert
+Gefallene Pruefungen:
+      ROT: nak380_m96_fassung_etappe_5: kStereoRingHaupt = 3 steht mit dem Registerwert in FeatureEngine.h � Code 2 (FeatureEngine.h), Register 3 ('eq-copilot/plugin/core/analysis/FeatureEngine.h'), geltend 3
+      ROT: nak380_m96_fassung_etappe_5: kStereoRingHaupt = 3 steht so in FeatureEngine.h � Code '2', Register 3 ('eq-copilot/plugin/core/analysis/FeatureEngine.h')
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: nak380_m96_fassung_etappe_5: kStereoRingHaupt = 3 steht mit dem Registerwert)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+      ROT: nak380_m96_fassung_etappe_5: kStereoRingHaupt = 3 steht so in FeatureEngine.h � Code '2', Register 3 ('eq-copilot/plugin/core/analysis/FeatureEngine.h')
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: A5 --nak380 M-96 02:12:55 bis 02:12:55, Exit 0, Pruefungen: 36 bestanden, 0 gescheitert

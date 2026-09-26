@@ -1,0 +1,56 @@
+NAK-380 Etappe 5 — Mutationsprotokoll e5-kadenz
+Datei: eq-copilot/plugin/core/analysis/featureengine/Frame.h
+Zeile (Etappenstand): 46
+SHA-256 vor der Mutation: FDF8AF5E8F7217E2E80299B998BEB309F32ED0ADDE8A8C573FBA14B8DF6B7AAE; Sicherung eq-copilot/build/nak380-sicherung/e5/e5-kadenz/Frame.h
+Begruendung: Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells: die Evidenz wird erst beim 1,5-fachen Intervall faellig; das Modell im Test muss die Abweichung melden.
+Ruecknahme aus der Sicherung, SHA-256 FDF8AF5E8F7217E2E80299B998BEB309F32ED0ADDE8A8C573FBA14B8DF6B7AAE: gleich; Bau nach Ruecknahme 02:42:07 bis 02:42:14, Exit 0
+Wortlaut vorher:
+        f.evidenzFrisch = evidenzS >= evidenzIntervallS;
+Wortlaut nachher:
+        f.evidenzFrisch = evidenzS >= 1.5 * evidenzIntervallS;
+  Bau EqCopSonde013StereoGoldenTest: 02:42:01 bis 02:42:07, Exit 0
+
+== Matrixzeile Vorbedingung; Zusagesatz: Evidenzsnapshots an den Samplezahlen des Kadenzmodells
+  Binary 02:42:07.821 juenger als Quelle 02:42:01.595: ja
+Lauf mit Mutation: B19 --nak380 M-82 02:42:07 bis 02:42:07, Exit 1, 12 bestanden, 12 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 11, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 12, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 150 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 12, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 150 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 12, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): Vorbedingung Evidenzsnapshots)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 11, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 12, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 3]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 150 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 12, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): erster Snapshot - 5 Hauptstufenframes je Band, Kohaerenz null  [Modell 5, Freiheitsgrade falsch 150, mit Bit 150 von 150]
+    [ROT]  380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): zweiter Snapshot - 11 bis 12 Frames im Ring, jedes Hauptstufenband mit Energie traegt ein Kohaerenzbit  [Modell 12, Freiheitsgrade falsch 150, ohne Bit 0 von 150]
+Unter derselben Mutation gruen gebliebene Pruefungen: 12
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 44100 Samples, Spitze 0.349992, RMS -0.0024 dB gegen 0,35/sqrt(3) (Toleranz 0.0935 dB), Verschiebungsfehler 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): Vorbedingung gespeiste Samplezahl = 44100, Laeufer und Engine  [gespeist 44100, von der Engine verarbeitet 44100]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 64): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 44100 Samples, Spitze 0.349992, RMS -0.0024 dB gegen 0,35/sqrt(3) (Toleranz 0.0935 dB), Verschiebungsfehler 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): Vorbedingung gespeiste Samplezahl = 44100, Laeufer und Engine  [gespeist 44100, von der Engine verarbeitet 44100]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 128): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 44100 Samples, Spitze 0.349992, RMS -0.0024 dB gegen 0,35/sqrt(3) (Toleranz 0.0935 dB), Verschiebungsfehler 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): Vorbedingung gespeiste Samplezahl = 44100, Laeufer und Engine  [gespeist 44100, von der Engine verarbeitet 44100]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 256): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 44100 Samples, Spitze 0.349992, RMS -0.0024 dB gegen 0,35/sqrt(3) (Toleranz 0.0935 dB), Verschiebungsfehler 0]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): Vorbedingung gespeiste Samplezahl = 44100, Laeufer und Engine  [gespeist 44100, von der Engine verarbeitet 44100]
+    [ok]   380/M-82 kohaerenz_44k1_kleine_bloecke (44.1 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+Lauf nach Ruecknahme: B19 --nak380 M-82 02:42:14 bis 02:42:14, Exit 0, 24 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:42:14.669 juenger als Quelle 02:42:07.986: ja

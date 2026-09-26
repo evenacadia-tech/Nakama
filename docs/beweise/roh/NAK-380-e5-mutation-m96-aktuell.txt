@@ -1,0 +1,19 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m96-aktuell
+Datei: eq-copilot/schemas/v3/metriken-v1.json
+Zeile (Etappenstand): 20
+SHA-256 vor der Mutation: C9BC074AC5C58A7F2C3B63E8144997D9D036226EFCA06BCBEA7871BBA2AB8287; Sicherung eq-copilot/build/nak380-sicherung/e5/m96-aktuell/metriken-v1.json
+Begruendung: M-96 je Stelle: `aktuell` im Register zurueck auf 20260927.
+Ruecknahme aus der Sicherung, SHA-256 C9BC074AC5C58A7F2C3B63E8144997D9D036226EFCA06BCBEA7871BBA2AB8287: gleich
+Wortlaut vorher:
+      "aktuell": 20260928,
+Wortlaut nachher:
+      "aktuell": 20260927,
+  Kein Bau (das Python-Bein liest die Datei direkt)
+
+== Matrixzeile M-96; Zusagesatz: aktuell ist 20260928
+Lauf mit Mutation: A5 --nak380 M-96 02:12:56 bis 02:12:56, Exit 2, Pruefungen: 35 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+      ROT: nak380_m96_fassung_etappe_5: aktuell ist 20260928 � aktuell=20260927
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: nak380_m96_fassung_etappe_5: aktuell ist 20260928)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: A5 --nak380 M-96 02:12:56 bis 02:12:56, Exit 0, Pruefungen: 36 bestanden, 0 gescheitert

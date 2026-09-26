@@ -1,0 +1,53 @@
+NAK-380 Etappe 5 - Pflichterfassung (2) M-91: Mittel und Maximum der Bandkohaerenz unkorrelierter Kanaele
+am unveraenderten Code (Bauer Opus 5.5 xhigh, 26.09.2026)
+Matrixzeile §6.4 M-91: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15 und kein Band ueber 0,7.
+HEAD: c43c16461142c9019868da1fe3ecc31d594856e6 (unveraenderter Produktcode; nur die Testdateien der Etappe 5 geaendert)
+Bein: B19 EqCopSonde013StereoGoldenTest, Release, MSVC x64; Bau 01:47:06 bis 01:47:20 Uhr, Exit 0
+(Log eq-copilot/build/nak380-e5-bau-basis2.log, Bauartefakt, nicht im Repo)
+Binary: eq-copilot/build/plugin/EqCopSonde013StereoGoldenTest_artefacts/Release/EqCopSonde013StereoGoldenTest.exe,
+LastWriteTime 01:47:10, juenger als die jüngste Testquelle; Produktquellen unveraendert (git diff leer auf eq-copilot/plugin/core).
+Lauf: START 01:47:26 HEAD c43c16461142c9019868da1fe3ecc31d594856e6 / ENDE EXIT=1 01:47:36; Summe: 499 bestanden, 120 gescheitert
+Fall: bestehender Sweep `sweep_uncorrelated_channels` (feste Saaten 0x1234ABCD5678EF01 / 0xC0FFEE1234567890,
+Amplitude 0,35, 48 kHz, Evidenzintervall 1 s, erster Snapshot) ueber die 18 Blockgroessen, erweitert um
+Mittel und Maximum ueber ALLE Baender mit Kohaerenzbit. Am Basisstand ist die Kohaerenz die Bandsumme
+|Sum Sxy|^2/(Sum Sxx * Sum Syy); nach dem Bau das Bandmittel der MSC je Bin.
+
+[ok]   380/M-91 sweep_uncorrelated_channels B=1: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=1: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=2: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=2: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=3: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=3: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=7: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=7: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=15: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=15: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=16: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=16: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=31: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=31: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=64: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=64: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=127: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=127: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=128: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=128: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 22 bis 22 (1/K bis 0.0455), Mittel 0.0195, Maximum 0.1564 (Band 105)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=333: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=333: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=512: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 24 bis 24 (1/K bis 0.0417), Mittel 0.0175, Maximum 0.1443 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=512: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 24 bis 24 (1/K bis 0.0417), Mittel 0.0175, Maximum 0.1443 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=1024: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 24 bis 24 (1/K bis 0.0417), Mittel 0.0175, Maximum 0.1443 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=1024: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 24 bis 24 (1/K bis 0.0417), Mittel 0.0175, Maximum 0.1443 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=2048: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=2048: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=4096: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=4096: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=8192: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=8192: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=12345: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=12345: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=16384: Mittel der Bandkohaerenz ueber alle Baender mit Kohaerenzbit <= 0,15  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+[ok]   380/M-91 sweep_uncorrelated_channels B=16384: kein Band mit Kohaerenzbit ueber 0,7  [149 Baender mit Bit, K 23 bis 23 (1/K bis 0.0435), Mittel 0.0181, Maximum 0.1514 (Band 96)]
+
+Zusammenfassung am Basisstand: Mittel 0,0175 bis 0,0195, Maximum 0,1443 bis 0,1564 (Band 96 bzw. 105),
+149 Baender mit Bit (nur Hauptstufe; die Bassstufe traegt im ersten 1-s-Snapshot 5 Frames), K = 22 bis 24.

@@ -1,0 +1,33 @@
+NAK-380 Etappe 5 - Pflichterfassung (1) M-86, Golden-Klasse (ii): Fensterdauer und Freiheitsgrade am unveraenderten Code
+(Bauer Opus 5.5 xhigh, 26.09.2026)
+Matrixzeile §6.4 M-86: Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (Klasse (i));
+Freiheitsgrade = Frames im Ring (neu: ueber W Fenster, nicht nur das letzte; Klasse (ii), E-380-18).
+HEAD: c43c16461142c9019868da1fe3ecc31d594856e6 (unveraenderter Produktcode; nur die Testdateien der Etappe 5 geaendert)
+Bein: B19 EqCopSonde013StereoGoldenTest, Release, MSVC x64; Bau 01:47:06 bis 01:47:20 Uhr, Exit 0
+(Log eq-copilot/build/nak380-e5-bau-basis2.log, Bauartefakt, nicht im Repo)
+Binary: eq-copilot/build/plugin/EqCopSonde013StereoGoldenTest_artefacts/Release/EqCopSonde013StereoGoldenTest.exe,
+LastWriteTime 01:47:10, juenger als die jüngste Testquelle; Produktquellen unveraendert (git diff leer auf eq-copilot/plugin/core).
+Lauf: START 01:47:26 HEAD c43c16461142c9019868da1fe3ecc31d594856e6 / ENDE EXIT=1 01:47:36; Summe: 499 bestanden, 120 gescheitert
+Signal: 1-kHz-Sinus L = R, Amplitude 0,4, 48 kHz, Block 512, Evidenzintervall 1 s.
+Bestehender Fall `coherence_carries_window_and_dof` (Speiser, erster Snapshot) und seine Erweiterung
+`380/M-86` (Blocklaeufer, drei Snapshots an 51 200, 102 400, 153 600 Samples):
+
+== M-11  coherence_carries_window_and_dof ==
+[ok]   ein Evidenzfenster entsteht
+[ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+[ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+[ok]   mit genug Frames traegt die Kohaerenz ein Bit
+[ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+[ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung gespeiste Samplezahl = 153 600 (3 s * 48 000), Laeufer und Engine  [153600 / 153600]
+[ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+[ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung drei Snapshots an 51 200, 102 400 und 153 600 Samples (Kadenzmodell)  [3 Snapshots]
+[ROT]  380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74), nicht nur das letzte (25)  [gemeldet 25, Modell 74, Golden 74]
+[ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (dritter Snapshot)  [1066.667 ms gegen 1066.667 ms]
+[ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): erster Snapshot unveraendert 24 Frames und 1024 ms (floor((51 200 - 4096)/2048) + 1)  [24 Frames, 1024.000 ms]
+
+Alte Werte am unveraenderten Code:
+- erster Snapshot (bestehender Fall und Erweiterung): 24 Frames, 1024,00 ms (1024 = 24 * 2048/48 000 s).
+- dritter Snapshot: 25 Frames (nur das letzte Fenster), Fensterdauer 1066,667 ms (25 * 42,667 ms).
+Neuer Golden nach dem Umbau (Formel, nicht aus dem Lauf): Frames der letzten drei Fenster =
+floor((153 600 - 4096)/2048) + 1 = 74, Fensterdauer 74 * 2048/48 000 s = 3157,33 ms.
+Der neue Wert laeuft nach dem Umbau zuerst gegen genau diesen alten Wert 25 rot (NAK-380-rot-M-86.txt).

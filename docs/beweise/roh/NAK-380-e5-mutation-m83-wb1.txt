@@ -1,0 +1,37 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m83-wb1
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 279
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m83-wb1/FeatureEngine.h
+Begruendung: Matrix M-83: W_B = 1 -> die Bassstufe traegt nur das eigene Fenster (1 bis 2 bzw. 5 bis 6 Frames), nie ein Bit.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich; Bau nach Ruecknahme 02:08:51 bis 02:08:58, Exit 0
+Wortlaut vorher:
+    inline constexpr int kStereoRingBass = 7;
+Wortlaut nachher:
+    inline constexpr int kStereoRingBass = 1;
+  Bau EqCopSonde013StereoGoldenTest: 02:08:44 bis 02:08:51, Exit 0
+
+== Matrixzeile M-83; Zusagesatz: ab dem fuenften (0,25 s) bzw. zweiten (1 s) Snapshot traegt jedes Bassband mit Energie ein Kohaerenzbit
+  Binary 02:08:51.331 juenger als Quelle 02:08:44.691: ja
+Lauf mit Mutation: B19 --nak380 M-83 02:08:51 bis 02:08:51, Exit 1, 10 bestanden, 4 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: Vorbedingung Bassframes im Ring nach Kadenzmodell (6 vor, 8 am Snapshot 5)  [47 Bassbaender mit Bins, Freiheitsgrade falsch 329]
+    [ROT]  380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: ab Snapshot 5 traegt jedes Bassband mit Energie ein Kohaerenzbit  [235 Bandbefunde ohne Bit]
+    [ROT]  380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: Vorbedingung Bassframes im Ring nach Kadenzmodell (5 vor, 11 am Snapshot 2)  [47 Bassbaender mit Bins, Freiheitsgrade falsch 47]
+    [ROT]  380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: ab Snapshot 2 traegt jedes Bassband mit Energie ein Kohaerenzbit  [47 Bandbefunde ohne Bit]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Intervall 0.25 s: ab Snapshot 5 traegt jedes Bassband | Intervall 1.00 s: ab Snapshot 2 traegt jedes Bassband)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: Vorbedingung Bassframes im Ring nach Kadenzmodell (6 vor, 8 am Snapshot 5)  [47 Bassbaender mit Bins, Freiheitsgrade falsch 329]
+    [ROT]  380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: Vorbedingung Bassframes im Ring nach Kadenzmodell (5 vor, 11 am Snapshot 2)  [47 Bassbaender mit Bins, Freiheitsgrade falsch 47]
+Unter derselben Mutation gruen gebliebene Pruefungen: 10
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 144000 Samples, Spitze 0.349998, RMS -0.0066 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: Vorbedingung gespeiste Samplezahl = 144000, Laeufer und Engine  [gespeist 144000, von der Engine verarbeitet 144000]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [9 Snapshots, Modell 9]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 0.25 s: vor Snapshot 5 traegt kein Bassband ein Kohaerenzbit (weniger als acht Frames)  [0 Bandbefunde mit Bit]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 144000 Samples, Spitze 0.349998, RMS -0.0066 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: Vorbedingung gespeiste Samplezahl = 144000, Laeufer und Engine  [gespeist 144000, von der Engine verarbeitet 144000]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [2 Snapshots, Modell 2]
+    [ok]   380/M-83 bass_kohaerenz_nak177 (48.0 kHz, B 512) Intervall 1.00 s: vor Snapshot 2 traegt kein Bassband ein Kohaerenzbit (weniger als acht Frames)  [0 Bandbefunde mit Bit]
+Lauf nach Ruecknahme: B19 --nak380 M-83 02:08:58 bis 02:08:58, Exit 0, 14 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:08:58.536 juenger als Quelle 02:08:51.528: ja

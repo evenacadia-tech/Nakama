@@ -1,0 +1,28 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m81-erstbin
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Etappenstand): 422
+SHA-256 vor der Mutation: 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687; Sicherung eq-copilot/build/nak380-sicherung/e5/m81-erstbin/Stereo.h
+Begruendung: Matrix M-81: Auswahl des Bandmitten-Bins -> erster Bin.
+Ruecknahme aus der Sicherung, SHA-256 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687: gleich; Bau nach Ruecknahme 02:08:23 bis 02:08:31, Exit 0
+Wortlaut vorher:
+                    const int kMitte = std::clamp ((int) std::llround (Gitter::evidenzMitte (b) / df),
+                                                   von, von + binsB - 1);
+Wortlaut nachher:
+                    const int kMitte = von;
+  Bau EqCopSonde013StereoGoldenTest: 02:08:16 bis 02:08:23, Exit 0
+
+== Matrixzeile M-81; Zusagesatz: Phase = gewickeltes +2 pi f_k 1 ms am Mittenbin +- 0,25 rad
+  Binary 02:08:23.263 juenger als Quelle 02:08:16.089: ja
+Lauf mit Mutation: B19 --nak380 M-81 02:08:23 bis 02:08:23, Exit 1, 6 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Phase = gewickeltes +2*pi*f_k*1 ms am Mittenbin 1346 +- 0,25 rad  [ist -2.81721 rad, Soll -1.42353 (f_k 15773.438 Hz), Abweichung 1.39368; Erstbin-Soll -2.82252, Abstand 1.39899 rad]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Phase = gewickeltes)
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+    [ok]   380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 48, Laenge)  [Kennwerte ja, Saat 58720272, d 48, 480000 Samples, Spitze 0.349999, RMS 0.0022 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
+    [ok]   380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Vorbedingung gespeiste Samplezahl = 480000, Laeufer und Engine  [gespeist 480000, von der Engine verarbeitet 480000]
+    [ok]   380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [31 Snapshots, Modell 31]
+    [ok]   380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Vorbedingung Band 216 mit Mitte 15 770,61 Hz, Bins 1327 bis 1365 (39), Mittenbin 1346, 19 Bins ueber dem ersten  [Band 216, Bins 1327 bis 1365, Mittenbin 1346]
+    [ok]   380/M-81 phase_am_bandmittenbin_D7 (48.0 kHz, B 512): Kohaerenz-Praesenzbit und Phasenbit gesetzt  [Kohaerenz 0.9982, Phase -2.8172]
+Lauf nach Ruecknahme: B19 --nak380 M-81 02:08:31 bis 02:08:31, Exit 0, 7 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:08:31.202 juenger als Quelle 02:08:23.502: ja

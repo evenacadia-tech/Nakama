@@ -1,0 +1,30 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m90-monosumme
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Etappenstand): 528
+SHA-256 vor der Mutation: 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687; Sicherung eq-copilot/build/nak380-sicherung/e5/m90-monosumme/Stereo.h
+Begruendung: Matrix M-90, Satz 'Monosumme an der Vertragsgrenze': ein Restanteil von 1e-12 der Stereoenergie in der Monosumme (-120 dB statt der Vertragsgrenze).
+Ruecknahme aus der Sicherung, SHA-256 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687: gleich; Bau nach Ruecknahme 02:22:13 bis 02:22:20, Exit 0
+Wortlaut vorher:
+                10.0 * std::log10 (std::max (stereoMonoEnergie, kEps) / stereoStereoEnergie),
+Wortlaut nachher:
+                10.0 * std::log10 (std::max (stereoMonoEnergie + 1e-12 * stereoStereoEnergie, kEps) / stereoStereoEnergie),
+  Bau EqCopSonde013StereoGoldenTest: 02:22:06 bis 02:22:13, Exit 0
+
+== Matrixzeile M-90; Zusagesatz: Monosumme an der Vertragsgrenze
+  Binary 02:22:13.199 juenger als Quelle 02:22:06.170: ja
+Lauf mit Mutation: B19 --nak380 M-90 02:22:13 bis 02:22:13, Exit 1, 6 bestanden, 2 gescheitert
+Gefallene Pruefungen:
+    [ROT]  die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-120.0 dB]
+    [ROT]  sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-1.0000/1.0000/3.142/-120, 2:-1.0000/1.0000/3.142/-120, 3:-1.0000/1.0000/3.142/-120, 7:-1.0000/1.0000/3.142/-120, 15:-1.0000/1.0000/3.142/-120, 16:-1.0000/1.0000/3.142/-120, 31:-1.0000/1.0000/3.142/-120, 64:-1.0000/1.0000/3.142/-120, 127:-1.0000/1.0000/3.142/-120, 128:-1.0000/1.0000/3.142/-120, 333:-1.0000/1.0000/3.142/-120, 512:-1.0000/1.0000/3.142/-120, 1024:-1.0000/1.0000/3.142/-120, 2048:-1.0000/1.0000/3.142/-120, 4096:-1.0000/1.0000/3.142/-120, 8192:-1.0000/1.0000/3.142/-120, 12345:-1.0000/1.0000/3.142/-120, 16384:-1.0000/1.0000/3.142/-120]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: die Monosumme loescht sich VOLLSTAENDIG)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-1.0000/1.0000/3.142/-120, 2:-1.0000/1.0000/3.142/-120, 3:-1.0000/1.0000/3.142/-120, 7:-1.0000/1.0000/3.142/-120, 15:-1.0000/1.0000/3.142/-120, 16:-1.0000/1.0000/3.142/-120, 31:-1.0000/1.0000/3.142/-120, 64:-1.0000/1.0000/3.142/-120, 127:-1.0000/1.0000/3.142/-120, 128:-1.0000/1.0000/3.142/-120, 333:-1.0000/1.0000/3.142/-120, 512:-1.0000/1.0000/3.142/-120, 1024:-1.0000/1.0000/3.142/-120, 2048:-1.0000/1.0000/3.142/-120, 4096:-1.0000/1.0000/3.142/-120, 8192:-1.0000/1.0000/3.142/-120, 12345:-1.0000/1.0000/3.142/-120, 16384:-1.0000/1.0000/3.142/-120]
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   die Korrelation ist -1  [-1.000000]
+    [ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+    [ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+    [ok]   sweep_polarity_inversion: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+    [ok]   sweep_polarity_inversion: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+Lauf nach Ruecknahme: B19 --nak380 M-90 02:22:20 bis 02:22:20, Exit 0, 8 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:22:19.959 juenger als Quelle 02:22:13.594: ja

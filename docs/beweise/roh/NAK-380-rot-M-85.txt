@@ -1,0 +1,34 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-85 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Speicher der Akkus je Bin
+Zusage (§6.4, woertlich): Schranke 240 KiB (245 760 B) je Engine; gerechnet 32 B je Bin und Slot: Hauptstufe (W_H + 1) Slots, Bassstufe (W_B + 1) Slots, dazu 8 B je Band und Slot: 44,1-kHz-Familie 1650·128 + 62·256 + 1144·8 = 236 224 B, 48-kHz-Familie 1516·128 + 57·256 + 1144·8 = 217 792 B (Binzahlen aus `Zeit.h:120-145`, nachgerechnet); vor Etappe 6 bei 96/192 kHz weniger
+Test je Sprache (§6.4): C++: B19 NEU `380/M-85 stereo_speicher`
+Rotbeweis-Spalte (§6.4, woertlich): heute nicht messbar; Mutation Ring über alle 221 Bänder mit allen Bins beider Stufen → > 245 760 B → rot
+Etikett: heute nicht messbar
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: nicht messbar: Ring und `stereoRingBytes()` entstehen erst mit dem Umbau
+    (keine 380/-Zeile im Basislauf)
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B19 --nak380 M-85 02:53:58 bis 02:53:58, EXIT=0, Binary 02:49:40.127
+    [ok]   380/M-85 stereo_speicher (44.1 kHz): Ringbytes = 236224 B (nachgerechnet, Matrix 236224) <= 245 760 B  [ist 236224 B, reserviert 236224 B]
+    [ok]   380/M-85 stereo_speicher (48.0 kHz): Ringbytes = 217792 B (nachgerechnet, Matrix 217792) <= 245 760 B  [ist 217792 B, reserviert 217792 B]
+    [ok]   380/M-85 stereo_speicher (96.0 kHz): Ringbytes = 113344 B (nachgerechnet) <= 245 760 B  [ist 113344 B, reserviert 113344 B]
+    [ok]   380/M-85 stereo_speicher (192.0 kHz): Ringbytes = 61248 B (nachgerechnet) <= 245 760 B  [ist 61248 B, reserviert 61248 B]
+    4 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Schranke 240 KiB (245 760 B) je Engine
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1053 je Rate 44,1, 48, 96, 192 kHz, B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:646 Ringelemente mal 4 (formgültige Fassung der Matrixmutation) (m85-alle-bins)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m85-alle-bins.txt
+- Zusagesatz: 44,1-kHz-Familie … = 236 224 B, 48-kHz-Familie … = 217 792 B (nachgerechnet); vor Etappe 6 bei 96/192 kHz weniger
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1053 (Istwert = gerechneter Wert, 113 344 B und 61 248 B), B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:646 Ringelemente mal 4 (formgültige Fassung der Matrixmutation) (m85-alle-bins)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m85-alle-bins.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m85-alle-bins (eq-copilot/plugin/core/analysis/FeatureEngine.h:646): Exit mit Mutation 1, rote Pruefungen 4; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-85: Ring ueber alle Baender mit allen Bins beider Stufen. Formgueltige Fassung: die Elementzahl mal 4 (die Bassstufe hat je Band viermal so viele Bins wie die Hauptstufe); groesserer Heapvektor, kein Zugriff ausserhalb.

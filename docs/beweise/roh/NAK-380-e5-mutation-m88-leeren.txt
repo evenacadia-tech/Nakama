@@ -1,0 +1,25 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m88-leeren
+Datei: eq-copilot/plugin/core/analysis/featureengine/Frame.h
+Zeile (Etappenstand): 167
+SHA-256 vor der Mutation: FDF8AF5E8F7217E2E80299B998BEB309F32ED0ADDE8A8C573FBA14B8DF6B7AAE; Sicherung eq-copilot/build/nak380-sicherung/e5/m88-leeren/Frame.h
+Begruendung: Matrix M-88: Leeren im evidenzLeeren statt Vorschub.
+Ruecknahme aus der Sicherung, SHA-256 FDF8AF5E8F7217E2E80299B998BEB309F32ED0ADDE8A8C573FBA14B8DF6B7AAE: gleich; Bau nach Ruecknahme 02:11:06 bis 02:11:13, Exit 0
+Wortlaut vorher:
+        stereoRingVorschub();
+Wortlaut nachher:
+        stereoLeeren();
+  Bau EqCopSonde013StereoGoldenTest: 02:11:00 bis 02:11:06, Exit 0
+
+== Matrixzeile M-88; Zusagesatz: Freiheitsgrade des zweiten Snapshots = Frames beider Fenster
+  Binary 02:11:06.583 juenger als Quelle 02:11:00.279: ja
+Lauf mit Mutation: B19 --nak380 M-88 02:11:06 bis 02:11:06, Exit 1, 4 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-88 ring_ueberlebt_evidenzfenster (44.1 kHz, B 512): zweiter Snapshot - Freiheitsgrade jedes Hauptstufenbands = Frames beider Fenster (5 + 7 = 12)  [Modell 12, gemeldet 7, abweichend 150 von 150; Bassstufe Modell 2 (ohne Pruefung)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-88 ring_ueberlebt_evidenzfenster (44.1 kHz, B 512): zweiter Snapshot)
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-88 ring_ueberlebt_evidenzfenster (44.1 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 138240 Samples, Spitze 0.349998, RMS -0.0066 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
+    [ok]   380/M-88 ring_ueberlebt_evidenzfenster (44.1 kHz, B 512): Vorbedingung gespeiste Samplezahl = 138240, Laeufer und Engine  [gespeist 138240, von der Engine verarbeitet 138240]
+    [ok]   380/M-88 ring_ueberlebt_evidenzfenster (44.1 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-88 ring_ueberlebt_evidenzfenster (44.1 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [10 Snapshots, Modell 10]
+Lauf nach Ruecknahme: B19 --nak380 M-88 02:11:13 bis 02:11:13, Exit 0, 5 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:11:13.166 juenger als Quelle 02:11:06.727: ja

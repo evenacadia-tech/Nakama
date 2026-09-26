@@ -1,0 +1,19 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m96-version-cpp
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 89
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m96-version-cpp/FeatureEngine.h
+Begruendung: M-96 je Stelle: kFeatureMetricsVersion zurueck auf 20260927.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich
+Wortlaut vorher:
+    inline constexpr std::uint32_t kFeatureMetricsVersion = 20260928u;
+Wortlaut nachher:
+    inline constexpr std::uint32_t kFeatureMetricsVersion = 20260927u;
+  Kein Bau (das Python-Bein liest die Datei direkt)
+
+== Matrixzeile M-96; Zusagesatz: FeatureEngine nennt 20260928
+Lauf mit Mutation: A5 --nak380 M-96 02:12:55 bis 02:12:55, Exit 2, Pruefungen: 35 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+      ROT: nak380_m96_fassung_etappe_5: FeatureEngine nennt 20260928 � 20260927
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: nak380_m96_fassung_etappe_5: FeatureEngine nennt 20260928)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: A5 --nak380 M-96 02:12:55 bis 02:12:56, Exit 0, Pruefungen: 36 bestanden, 0 gescheitert

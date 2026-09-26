@@ -1,0 +1,53 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m89-korrelation
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Etappenstand): 402
+SHA-256 vor der Mutation: 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687; Sicherung eq-copilot/build/nak380-sicherung/e5/m89-korrelation/Stereo.h
+Begruendung: Matrix M-89/M-90, Satz Korrelation (Regressionswache ueber den Etappenumbau hinweg; die Korrelation rechnet weiter aus den Fensterakkus): Korrelation mal 0,99.
+Ruecknahme aus der Sicherung, SHA-256 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687: gleich; Bau nach Ruecknahme 02:21:30 bis 02:21:37, Exit 0
+Wortlaut vorher:
+                        e.korrelationMittel = (float) std::clamp (rMittel, -1.0, 1.0);
+Wortlaut nachher:
+                        e.korrelationMittel = (float) std::clamp (0.99 * rMittel, -1.0, 1.0);
+  Bau EqCopSonde013StereoGoldenTest: 02:21:23 bis 02:21:30, Exit 0
+
+== Matrixzeile M-89; Zusagesatz: Korrelation > 0,999
+  Binary 02:21:29.980 juenger als Quelle 02:21:23.324: ja
+Lauf mit Mutation: B19 --nak380 M-89 02:21:30 bis 02:21:30, Exit 1, 10 bestanden, 2 gescheitert
+Gefallene Pruefungen:
+    [ROT]  bei echtem Mono ist die Korrelation exakt 1  [0.990000]
+    [ROT]  sweep_mono_identity: und jede traegt dieselbe analytisch bekannte Antwort  [1:0.9900/1.0000/0.0000/0.000, 2:0.9900/1.0000/0.0000/0.000, 3:0.9900/1.0000/0.0000/0.000, 7:0.9900/1.0000/0.0000/0.000, 15:0.9900/1.0000/0.0000/0.000, 16:0.9900/1.0000/0.0000/0.000, 31:0.9900/1.0000/0.0000/0.000, 64:0.9900/1.0000/0.0000/0.000, 127:0.9900/1.0000/0.0000/0.000, 128:0.9900/1.0000/0.0000/0.000, 333:0.9900/1.0000/0.0000/0.000, 512:0.9900/1.0000/0.0000/0.000, 1024:0.9900/1.0000/0.0000/0.000, 2048:0.9900/1.0000/0.0000/0.000, 4096:0.9900/1.0000/0.0000/0.000, 8192:0.9900/1.0000/0.0000/0.000, 12345:0.9900/1.0000/0.0000/0.000, 16384:0.9900/1.0000/0.0000/0.000]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: bei echtem Mono ist die Korrelation exakt 1)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  sweep_mono_identity: und jede traegt dieselbe analytisch bekannte Antwort  [1:0.9900/1.0000/0.0000/0.000, 2:0.9900/1.0000/0.0000/0.000, 3:0.9900/1.0000/0.0000/0.000, 7:0.9900/1.0000/0.0000/0.000, 15:0.9900/1.0000/0.0000/0.000, 16:0.9900/1.0000/0.0000/0.000, 31:0.9900/1.0000/0.0000/0.000, 64:0.9900/1.0000/0.0000/0.000, 127:0.9900/1.0000/0.0000/0.000, 128:0.9900/1.0000/0.0000/0.000, 333:0.9900/1.0000/0.0000/0.000, 512:0.9900/1.0000/0.0000/0.000, 1024:0.9900/1.0000/0.0000/0.000, 2048:0.9900/1.0000/0.0000/0.000, 4096:0.9900/1.0000/0.0000/0.000, 8192:0.9900/1.0000/0.0000/0.000, 12345:0.9900/1.0000/0.0000/0.000, 16384:0.9900/1.0000/0.0000/0.000]
+Unter derselben Mutation gruen gebliebene Pruefungen: 10
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+    [ok]   es traegt eine Basis
+    [ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+    [ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+    [ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+    [ok]   der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [0.0000 dB]
+    [ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+    [ok]   sweep_mono_identity: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+    [ok]   sweep_mono_identity: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+Lauf nach Ruecknahme: B19 --nak380 M-89 02:21:37 bis 02:21:38, Exit 0, 12 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:21:37.873 juenger als Quelle 02:21:30.658: ja
+
+== Matrixzeile M-90; Zusagesatz: Korrelation -1
+  Binary 02:21:29.980 juenger als Quelle 02:21:23.324: ja
+Lauf mit Mutation: B19 --nak380 M-90 02:21:30 bis 02:21:30, Exit 1, 6 bestanden, 2 gescheitert
+Gefallene Pruefungen:
+    [ROT]  die Korrelation ist -1  [-0.990000]
+    [ROT]  sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-0.9900/1.0000/3.142/-400, 2:-0.9900/1.0000/3.142/-400, 3:-0.9900/1.0000/3.142/-400, 7:-0.9900/1.0000/3.142/-400, 15:-0.9900/1.0000/3.142/-400, 16:-0.9900/1.0000/3.142/-400, 31:-0.9900/1.0000/3.142/-400, 64:-0.9900/1.0000/3.142/-400, 127:-0.9900/1.0000/3.142/-400, 128:-0.9900/1.0000/3.142/-400, 333:-0.9900/1.0000/3.142/-400, 512:-0.9900/1.0000/3.142/-400, 1024:-0.9900/1.0000/3.142/-400, 2048:-0.9900/1.0000/3.142/-400, 4096:-0.9900/1.0000/3.142/-400, 8192:-0.9900/1.0000/3.142/-400, 12345:-0.9900/1.0000/3.142/-400, 16384:-0.9900/1.0000/3.142/-400]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: die Korrelation ist -1)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  sweep_polarity_inversion: und jede traegt dieselbe analytisch bekannte Antwort  [1:-0.9900/1.0000/3.142/-400, 2:-0.9900/1.0000/3.142/-400, 3:-0.9900/1.0000/3.142/-400, 7:-0.9900/1.0000/3.142/-400, 15:-0.9900/1.0000/3.142/-400, 16:-0.9900/1.0000/3.142/-400, 31:-0.9900/1.0000/3.142/-400, 64:-0.9900/1.0000/3.142/-400, 127:-0.9900/1.0000/3.142/-400, 128:-0.9900/1.0000/3.142/-400, 333:-0.9900/1.0000/3.142/-400, 512:-0.9900/1.0000/3.142/-400, 1024:-0.9900/1.0000/3.142/-400, 2048:-0.9900/1.0000/3.142/-400, 4096:-0.9900/1.0000/3.142/-400, 8192:-0.9900/1.0000/3.142/-400, 12345:-0.9900/1.0000/3.142/-400, 16384:-0.9900/1.0000/3.142/-400]
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   die KOHAERENZ ist dabei 1 - sie misst den Zusammenhang, nicht das Vorzeichen. Wer beide verwechselt, meldet Antiphase als Rauschen  [1.000000]
+    [ok]   und die Phase ist +/-pi - genau die Aussage 'invertiert'  [3.1416 rad]
+    [ok]   die Monosumme loescht sich VOLLSTAENDIG aus - der Wert laeuft an die Vertragsgrenze, statt zu fehlen. Gemessen am wirklich gefalteten Puffer, nicht aus der Korrelation geschaetzt: das ist die schaerfste Stereoaussage, die es gibt, und sie darf nicht schweigen  [-400.0 dB]
+    [ok]   sweep_polarity_inversion: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+    [ok]   sweep_polarity_inversion: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+Lauf nach Ruecknahme: B19 --nak380 M-90 02:21:38 bis 02:21:38, Exit 0, 8 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:21:37.873 juenger als Quelle 02:21:30.658: ja

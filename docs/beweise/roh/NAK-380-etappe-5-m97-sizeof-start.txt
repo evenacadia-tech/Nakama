@@ -1,0 +1,20 @@
+NAK-380 Etappe 5 — Pflichterfassung (3) M-97: sizeof (FeatureEngine) am unveraenderten Code (Bauer Opus 5.5 xhigh, 26.09.2026)
+Matrixzeile §6.4 M-97: `sizeof (FeatureEngine)` <= Startwert + 40 B (T-380-6: ein std::vector-Kopf 24 B unter MSVC x64, vier std::uint32_t 16 B; E-380-14)
+HEAD: c43c16461142c9019868da1fe3ecc31d594856e6 (unveraenderter Produktcode; nur Testdateien der Etappe 5 geaendert)
+Bein: B5 EqCopAnalysisGoldenTest, Release, MSVC x64 (Build Tools 2022)
+Quelle der Ausgabe: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp, Funktion nak380Objektbudget (vor dem Eintrag des Startwerts: kNak380M97Startwert = 0u)
+Bau: 01:43:53 bis 01:44:08 Uhr, Exit 0 (Log eq-copilot/build/nak380-e5-bau-basis.log, Bauartefakt, nicht im Repo)
+Binary: eq-copilot/build/plugin/EqCopAnalysisGoldenTest_artefacts/Release/EqCopAnalysisGoldenTest.exe, LastWriteTime 01:44:08.485, juenger als die Quelle (01:43:39.972): ja
+Aufruf: EqCopAnalysisGoldenTest.exe --nak380 M-97
+
+Ausgabe (woertlich):
+== NAK-380 Etappe 4 - Ereignisdetektor nach §39.1 ==
+380/M-97 sizeof (FeatureEngine) = 16208 B
+[ROT]  380/M-97 featureengine_objektbudget: sizeof (FeatureEngine) <= Startwert 0 B + 40 B (ein Vektorkopf 24 B, vier std::uint32_t 16 B)  [16208 B, Delta 16208 B]
+
+-----------------------------------------
+0 bestanden, 1 gescheitert
+EXIT=1
+
+Startwert: sizeof (FeatureEngine) = 16 208 B. Das ROT oben ist der Platzhalter 0 vor dem Eintrag.
+Schranke nach dem Bau: 16 208 + 40 = 16 248 B. Der Wert steht im Test als kNak380M97Startwert = 16208u.

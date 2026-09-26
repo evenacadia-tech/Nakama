@@ -1,0 +1,22 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m97-bandstaende
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 1542
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m97-bandstaende/FeatureEngine.h
+Begruendung: Matrix M-97, formgueltiger Ersatz fuer die Matrixmutation (festes Array von 65 536 double, Protokoll NAK-380-e5-mutation-m97-array.txt): die endet in B5 mit 0xC00000FD vor jeder Pruefung, weil main rund 37 FeatureEngine-Objekte auf dem Stapel haelt (+524 288 B je Objekt). Dieselbe Aussage (band- oder binabhaengige Daten als festes Mitglied statt als Vektornutzdaten im Heap reissen Startwert + 40 B) traegt ein Ringstand je Band im Objekt: 221 std::uint32_t = +884 B, Groesse 17 132 B > 16 248 B; kein Stapelueberlauf.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich; Bau nach Ruecknahme 02:16:03 bis 02:16:19, Exit 0
+Wortlaut vorher:
+        std::vector<StereoBinAkku>   stereoRing;
+Wortlaut nachher:
+        std::vector<StereoBinAkku>   stereoRing;
+        std::uint32_t nak380Mutation[221] {};
+  Bau EqCopAnalysisGoldenTest: 02:15:46 bis 02:16:03, Exit 0
+
+== Matrixzeile M-97; Zusagesatz: sizeof (FeatureEngine) <= Startwert + 40 B
+  Binary 02:16:03.743 juenger als Quelle 02:15:46.952: ja
+Lauf mit Mutation: B5 --nak380 M-97 02:16:03 bis 02:16:03, Exit 3221225725, (keine Summenzeile)
+Gefallene Pruefungen:
+    (keine)
+Die Zusage faellt an der erwarteten Pruefung: NEIN (erwartet: 380/M-97 featureengine_objektbudget)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: B5 --nak380 M-97 02:16:19 bis 02:16:19, Exit 0, 1 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:16:19.656 juenger als Quelle 02:16:03.901: ja

@@ -602,4 +602,131 @@ inline void klicksEinsetzen (std::vector<float>& x, const std::vector<std::uint6
             x[(std::size_t) k] = (float) ((double) x[(std::size_t) k] + amplitude);
 }
 
+//==============================================================================
+// NAK-380 Etappe 5 (§7.2 D1 bis D7): Laufzeit- und Binphasenpaare. L ist
+// gleichverteiltes splitmix64-Rauschen mit Amplitude 0,35 (wie der Sweep in
+// B19), R(n) = L(n - d). d = 0 ist Mono (L = R) fuer M-82 bis M-84 und M-88.
+
+inline constexpr std::uint64_t kD1D6Saat = 0x0380000Full;
+inline constexpr std::uint64_t kD7Saat   = 0x03800010ull;
+inline constexpr double kLaufzeitAmplitude = 0.35;
+
+/** Der Rauschkern des B19-Sweeps (`Sonde013StereoGoldenTest.cpp`, Lambda
+    `rausch`, Muster §6.4) als reine Funktion des vorzeichenbehafteten
+    Sampleindex m und der Saat: splitmix64-Durchmischung von m*phi + saat,
+    gleichverteilt in [-1, 1). Die Saat geht VOR der Durchmischung in den
+    Zustand (Lehre des Sweeps). Negative m sind derselbe Strom (Umlauf auf
+    uint64 ist gewollt): so gilt R(n) = L(n - d) auch fuer n < d exakt. */
+inline double laufzeitRauschen (std::int64_t m, std::uint64_t saat) noexcept
+{
+    std::uint64_t x = (std::uint64_t) m * 0x9E3779B97F4A7C15ull + saat;
+    x ^= x >> 30; x *= 0xBF58476D1CE4E5B9ull;
+    x ^= x >> 27; x *= 0x94D049BB133111EBull;
+    x ^= x >> 31;
+    return (double) (x >> 11) / 4503599627370495.5 - 1.0;
+}
+
+/** d = round(0,001 * fs) Samples (§7.2): 44, 48, 88, 96, 176, 192. */
+inline int laufzeitSamples (double fs) noexcept
+{
+    return (int) std::llround (0.001 * fs);
+}
+
+/** Ein Stereopaar als float32: L(n) = 0,35 * u(n), R(n) = L(n - d). */
+struct Rauschpaar
+{
+    std::vector<float> l, r;
+    double fs { 0.0 };
+    int d { 0 };
+    std::uint64_t saat { 0 };
+};
+
+inline Rauschpaar rauschpaar (double fs, std::uint64_t samples, int d, std::uint64_t saat)
+{
+    Rauschpaar p;
+    p.fs = fs;
+    p.d = d;
+    p.saat = saat;
+    p.l.resize ((std::size_t) samples);
+    p.r.resize ((std::size_t) samples);
+    for (std::uint64_t n = 0; n < samples; ++n)
+    {
+        p.l[(std::size_t) n] = (float) (kLaufzeitAmplitude * laufzeitRauschen ((std::int64_t) n, saat));
+        p.r[(std::size_t) n] = (float) (kLaufzeitAmplitude
+                                        * laufzeitRauschen ((std::int64_t) n - (std::int64_t) d, saat));
+    }
+    return p;
+}
+
+/** Kopffunktion des Erzeugers (Lehre D4 aus §39.1: Selbstpruefung vor JEDEM
+    Nutzer), eigener Prueffall `380/<Fall> rauschpaar_selbstpruefung`:
+    - Saat: Kennwerte des Kerns fuer beide Saaten gegen Literale (am
+      26.09.2026 unabhaengig in Python mit uint64-Arithmetik nachgerechnet)
+      und die Saat des Paares ist die geforderte.
+    - Amplitude: max|L| <= 0,35 und RMS gegen 0,35/sqrt(3) innerhalb 5 sigma
+      der Stichprobenleistung. Herleitung: fuer u gleichverteilt ist
+      Var(u^2)/E[u^2]^2 = (1/5 - 1/9)/(1/9) = 0,8, die relative
+      Standardabweichung der Stichprobenleistung also sigma = sqrt(0,8/n);
+      Toleranz -10*log10(1 - 5 sigma) dB: beim kuerzesten Nutzer (M-82,
+      n = 44 100) 0,094 dB, bei M-95 (96 000) 0,063 dB, bei n = 1 920 000
+      0,014 dB. Ein falscher Amplitudenfaktor (etwa 2, 6 dB) faellt sicher.
+    - Verzoegerung: d = round(0,001*fs) wie gefordert, und R[n] ist bitgleich
+      L[n - d] fuer jedes n >= d (exakte Sampleverschiebung); fuer n < d ist R[n]
+      der Strom an n - d.
+    - Laenge: beide Kanaele tragen genau `samplesSoll` Werte.
+    Der Verlustzaehler des Ereignisrings ist eine eigene Pruefung jedes
+    Laeufers. Leere oder nicht endliche Eingaben sind nie gruen. */
+struct RauschpaarSelbstpruefung
+{
+    bool ok { false };
+    double rmsDb { 0.0 }, rmsToleranzDb { 0.0 }, spitze { 0.0 };
+    std::uint64_t verschiebungFehler { 0 };
+    std::string meldung;
+};
+
+inline RauschpaarSelbstpruefung rauschpaarSelbstpruefung (const Rauschpaar& p, double fsSoll, int dSoll,
+                                                          std::uint64_t saatSoll, std::uint64_t samplesSoll)
+{
+    RauschpaarSelbstpruefung e;
+    const bool kennwerte = laufzeitRauschen (0, kD1D6Saat) == -0.15400736421841
+                        && laufzeitRauschen (1, kD1D6Saat) == -0.16194761881861341
+                        && laufzeitRauschen (-48, kD1D6Saat) == 0.6346681360614221
+                        && laufzeitRauschen (0, kD7Saat) == 0.35656415952447196
+                        && laufzeitRauschen (-48, kD7Saat) == 0.2740274454877165;
+    const bool saat = p.saat == saatSoll && p.fs == fsSoll;
+    const bool dOk = p.d == dSoll && dSoll >= 0;
+    const bool laenge = p.l.size() == (std::size_t) samplesSoll && p.r.size() == (std::size_t) samplesSoll
+                     && samplesSoll > (std::uint64_t) dSoll;
+    double summe = 0.0;
+    for (std::size_t n = 0; n < p.l.size(); ++n)
+    {
+        const double v = (double) p.l[n];
+        summe += v * v;
+        e.spitze = std::max (e.spitze, std::abs (v));
+        if (! std::isfinite (v))
+            e.spitze = std::numeric_limits<double>::infinity();
+        const bool gleich = n >= (std::size_t) std::max (0, p.d)
+            ? p.r[n] == p.l[n - (std::size_t) p.d]
+            : p.r[n] == (float) (kLaufzeitAmplitude
+                                 * laufzeitRauschen ((std::int64_t) n - (std::int64_t) p.d, p.saat));
+        if (! gleich)
+            ++e.verschiebungFehler;
+    }
+    const double rms = p.l.empty() ? 0.0 : std::sqrt (summe / (double) p.l.size());
+    e.rmsDb = 20.0 * std::log10 (rms / (kLaufzeitAmplitude / std::sqrt (3.0)));
+    const double sigma = p.l.empty() ? 1.0 : std::sqrt (0.8 / (double) p.l.size());
+    e.rmsToleranzDb = 5.0 * sigma < 1.0 ? -10.0 * std::log10 (1.0 - 5.0 * sigma) : 0.0;
+    e.ok = kennwerte && saat && dOk && laenge && e.verschiebungFehler == 0
+        && e.spitze <= kLaufzeitAmplitude && std::abs (e.rmsDb) <= e.rmsToleranzDb;
+    e.meldung = std::string ("Kennwerte ") + (kennwerte ? "ja" : "NEIN") + ", Saat "
+              + std::to_string (p.saat) + (saat ? "" : " FALSCH")
+              + ", d " + std::to_string (p.d) + (dOk ? "" : " FALSCH") + ", "
+              + std::to_string (p.l.size()) + " Samples" + (laenge ? "" : " FALSCH")
+              + ", Spitze " + detail::festkomma (e.spitze, 6) + ", RMS "
+              + detail::festkomma (e.rmsDb, 4) + " dB gegen 0,35/sqrt(3) (Toleranz "
+              + detail::festkomma (e.rmsToleranzDb, 4) + " dB), Verschiebungsfehler "
+              + std::to_string (e.verschiebungFehler);
+    return e;
+}
+
 } // namespace nakama::test::nak380

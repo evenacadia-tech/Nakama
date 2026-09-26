@@ -1,0 +1,27 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m85-alle-bins
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 646
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m85-alle-bins/FeatureEngine.h
+Begruendung: Matrix M-85: Ring ueber alle Baender mit allen Bins beider Stufen. Formgueltige Fassung: die Elementzahl mal 4 (die Bassstufe hat je Band viermal so viele Bins wie die Hauptstufe); groesserer Heapvektor, kein Zugriff ausserhalb.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich; Bau nach Ruecknahme 02:09:32 bis 02:09:38, Exit 0
+Wortlaut vorher:
+                stereoRing.assign (elemente, StereoBinAkku {});
+Wortlaut nachher:
+                stereoRing.assign (elemente * 4u, StereoBinAkku {});
+  Bau EqCopSonde013StereoGoldenTest: 02:09:25 bis 02:09:31, Exit 0
+
+== Matrixzeile M-85; Zusagesatz: Ringbytes <= 245 760 B, exakt nach Nachrechnung
+  Binary 02:09:31.934 juenger als Quelle 02:09:25.565: ja
+Lauf mit Mutation: B19 --nak380 M-85 02:09:31 bis 02:09:32, Exit 1, 0 bestanden, 4 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-85 stereo_speicher (44.1 kHz): Ringbytes = 236224 B (nachgerechnet, Matrix 236224) <= 245 760 B  [ist 944896 B, reserviert 944896 B]
+    [ROT]  380/M-85 stereo_speicher (48.0 kHz): Ringbytes = 217792 B (nachgerechnet, Matrix 217792) <= 245 760 B  [ist 871168 B, reserviert 871168 B]
+    [ROT]  380/M-85 stereo_speicher (96.0 kHz): Ringbytes = 113344 B (nachgerechnet) <= 245 760 B  [ist 453376 B, reserviert 453376 B]
+    [ROT]  380/M-85 stereo_speicher (192.0 kHz): Ringbytes = 61248 B (nachgerechnet) <= 245 760 B  [ist 244992 B, reserviert 244992 B]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-85 stereo_speicher (44.1 kHz) | 380/M-85 stereo_speicher (48.0 kHz))
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  380/M-85 stereo_speicher (96.0 kHz): Ringbytes = 113344 B (nachgerechnet) <= 245 760 B  [ist 453376 B, reserviert 453376 B]
+    [ROT]  380/M-85 stereo_speicher (192.0 kHz): Ringbytes = 61248 B (nachgerechnet) <= 245 760 B  [ist 244992 B, reserviert 244992 B]
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: B19 --nak380 M-85 02:09:38 bis 02:09:39, Exit 0, 4 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:09:38.932 juenger als Quelle 02:09:32.219: ja

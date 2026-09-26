@@ -1,0 +1,26 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m84-wh10
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 271
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m84-wh10/FeatureEngine.h
+Begruendung: Matrix M-84: W_H = 10 -> am zehnten Snapshot alle 66 Frames seit dem Start.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich; Bau nach Ruecknahme 02:09:05 bis 02:09:12, Exit 0
+Wortlaut vorher:
+    inline constexpr int kStereoRingHaupt = 3;
+Wortlaut nachher:
+    inline constexpr int kStereoRingHaupt = 10;
+  Bau EqCopSonde013StereoGoldenTest: 02:08:58 bis 02:09:05, Exit 0
+
+== Matrixzeile M-84; Zusagesatz: Freiheitsgrade eines Hauptstufenbands = Frames der letzten 3 Fenster (20)
+  Binary 02:09:05.451 juenger als Quelle 02:08:58.852: ja
+Lauf mit Mutation: B19 --nak380 M-84 02:09:05 bis 02:09:05, Exit 1, 5 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Hauptstufenband traegt die Frames der letzten 3 Fenster (20), aeltere fallen heraus (66 seit dem Start)  [Modell 20 von 66, gemeldet 66, abweichend 150 von 150]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Hauptstufenband)
+Unter derselben Mutation gruen gebliebene Pruefungen: 5
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 0, Laenge)  [Kennwerte ja, Saat 58720271, d 0, 138240 Samples, Spitze 0.349998, RMS -0.0066 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung gespeiste Samplezahl = 138240, Laeufer und Engine  [gespeist 138240, von der Engine verarbeitet 138240]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [10 Snapshots, Modell 10]
+    [ok]   380/M-84 ringlaenge (44.1 kHz, B 512): zehnter Snapshot - jedes Bassband traegt die Frames der letzten 7 Fenster (11)  [Modell 11, gemeldet 11, abweichend 0 von 49]
+Lauf nach Ruecknahme: B19 --nak380 M-84 02:09:12 bis 02:09:12, Exit 0, 6 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:09:11.963 juenger als Quelle 02:09:05.591: ja

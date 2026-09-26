@@ -384,7 +384,8 @@ inline void FeatureEngine::grenzeZiehen (Grenzgrund grund) noexcept
     // SONDE-013 M-11: die Stereoevidenz ist ein Fenster wie jedes andere.
     // Ein Kreuzspektrum ueber eine Grenze hinweg mittelte zwei Stellen
     // der Musik zu einer Kohaerenz - und die saehe danach aus wie eine
-    // Messung.
+    // Messung. NAK-380 Etappe 5: das gilt auch fuer den Ring ueber die
+    // letzten W Evidenzfenster; `stereoLeeren` leert ihn ganz (M-87).
     stereoLeeren();
     liveSupport = {};
     evidenzSupport = {};

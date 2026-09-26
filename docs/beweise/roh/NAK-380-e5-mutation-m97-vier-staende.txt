@@ -1,0 +1,22 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m97-vier-staende
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 1542
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m97-vier-staende/FeatureEngine.h
+Begruendung: Matrix M-97, formgueltiger Ersatz: die Matrixmutation (65 536 double, +524 288 B, Protokoll NAK-380-e5-mutation-m97-array.txt) und schon 221 std::uint32_t (+884 B, Protokoll NAK-380-e5-mutation-m97-bandstaende.txt) enden in B5 mit 0xC00000FD vor jeder Pruefung: der Stapelrahmen von main ist 1 002 752 B (dumpbin /disasm, mov eax,0F4D00h vor __chkstk) bei 1 048 576 B Reserve und haelt rund 60 FeatureEngine-Objekte. Dieselbe Aussage (Daten als festes Mitglied statt als Vektornutzdaten reissen Startwert + 40 B) traegt ein festes Mitglied aus vier weiteren std::uint32_t-Staenden: +16 B, Groesse 16 264 B > 16 248 B.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich; Bau nach Ruecknahme 02:17:38 bis 02:17:53, Exit 0
+Wortlaut vorher:
+        std::vector<StereoBinAkku>   stereoRing;
+Wortlaut nachher:
+        std::vector<StereoBinAkku>   stereoRing;
+        std::uint32_t nak380Mutation[4] {};
+  Bau EqCopAnalysisGoldenTest: 02:17:22 bis 02:17:38, Exit 0
+
+== Matrixzeile M-97; Zusagesatz: sizeof (FeatureEngine) <= Startwert + 40 B
+  Binary 02:17:38.054 juenger als Quelle 02:17:22.714: ja
+Lauf mit Mutation: B5 --nak380 M-97 02:17:38 bis 02:17:38, Exit 1, 0 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-97 featureengine_objektbudget: sizeof (FeatureEngine) <= Startwert 16208 B + 40 B (ein Vektorkopf 24 B, vier std::uint32_t 16 B)  [16264 B, Delta 56 B]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-97 featureengine_objektbudget)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: B5 --nak380 M-97 02:17:53 bis 02:17:53, Exit 0, 1 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:17:53.307 juenger als Quelle 02:17:38.216: ja

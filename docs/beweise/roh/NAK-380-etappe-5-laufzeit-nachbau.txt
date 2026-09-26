@@ -1,0 +1,81 @@
+NAK-380 Etappe 5 - unabhaengiger Nachbau der Gruppenlaufzeit je Band (numpy, Bauer Opus 5.5 xhigh, 26.09.2026)
+Zweck: Bias und Streuung des Lag-1-Schaetzers tau = arg(Summe Sxy[k+1] conj Sxy[k])/(2 pi df) gegen die
+Steigung der Binphase arg Sxy[k] (kleinste Quadrate), 48 kHz, N 4096, Hop 2048, Hann, K = 22 Frames,
+L = R um d = 48 Samples verzoegert (gleichverteiltes Rauschen), 40 Laeufe, Hauptstufenbaender bis 18 kHz.
+Lauf: py -3.13 sim_bias.py, 02:32:48 bis 02:32:51 Uhr, Exit 0 (numpy; das Skript liegt nur als Text hier).
+Ausgabe (woertlich):
+    Mittel ueber Baender und Laeufe -0.01521 ms, SD der Bandmittel 0.01276
+    Bins  2: Bias 0.0042 ms, SD je Lauf 0.1519 ms (Baender 18)
+    Bins  3: Bias -0.0085 ms, SD je Lauf 0.0748 ms (Baender 12)
+    Bins  5: Bias -0.0178 ms, SD je Lauf 0.0342 ms (Baender 7)
+    Bins 10: Bias -0.0233 ms, SD je Lauf 0.0166 ms (Baender 3)
+    Bins 20: Bias -0.0210 ms, SD je Lauf 0.0104 ms (Baender 1)
+    Bins 39: Bias -0.0238 ms, SD je Lauf 0.0065 ms (Baender 1)
+    Phasensteigung: Mittel 0.00104 ms
+    Bins  2: Bias 0.0042 ms, SD je Lauf 0.1519 ms
+    Bins  3: Bias 0.0017 ms, SD je Lauf 0.0732 ms
+    Bins  5: Bias -0.0010 ms, SD je Lauf 0.0246 ms
+    Bins 10: Bias -0.0005 ms, SD je Lauf 0.0066 ms
+    Bins 20: Bias -0.0003 ms, SD je Lauf 0.0017 ms
+    Bins 39: Bias -0.0001 ms, SD je Lauf 0.0005 ms
+
+Skript (woertlich):
+    # Vorzeichenbehaftete Abweichung des Lag-1-Schaetzers ueber viele Laeufe (48 kHz, N 4096, d 48, K 22).
+    import json, struct, numpy as np
+    FIX = r"C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\v3\bandgitter\nakama_1_24_oct_30_18k_v1.json"
+    fein = json.load(open(FIX, encoding="utf-8"))
+    h2d = lambda s: struct.unpack(">d", bytes.fromhex(s))[0]
+    K = np.array([h2d(s) for s in fein["kanten_hz"]["hex64"]]); MIT = np.array([h2d(s) for s in fein["mitten_hz"]["hex64"]])
+    rng = np.random.default_rng(3)
+    N = 4096; hop = 2048; w = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(N) / N)
+    fs = 48000.0; d = 48; frames = 22
+    trenn = next(b for b in range(221) if MIT[b] >= 200.0)
+    baender = []
+    for b in range(trenn, 221):
+        if K[b + 1] > 18000.0: continue
+        v = int(np.ceil(K[b] * N / fs)); bi = min(int(np.ceil(K[b + 1] * N / fs)), N // 2 + 1)
+        if bi - v >= 2: baender.append((b, v, bi))
+    fehler = {b: [] for b, _, _ in baender}
+    for lauf in range(40):
+        n = N + (frames - 1) * hop
+        x = rng.uniform(-1, 1, n + d)
+        l = x[d:d + n]; r = x[0:n]
+        S = np.zeros(N // 2 + 1, complex)
+        for f in range(frames):
+            s = f * hop
+            S += np.fft.rfft(l[s:s + N] * w) * np.conj(np.fft.rfft(r[s:s + N] * w))
+        df = fs / N
+        for b, v, bi in baender:
+            lag = np.sum(S[v + 1:bi] * np.conj(S[v:bi - 1]))
+            fehler[b].append(np.angle(lag) / (2 * np.pi * df) * 1000.0 - 1000.0 * d / fs)
+    alle = np.array([np.mean(v) for v in fehler.values()])
+    sd = np.array([np.std(v) for v in fehler.values()])
+    bins = np.array([bi - v for _, v, bi in baender])
+    print("Mittel ueber Baender und Laeufe %.5f ms, SD der Bandmittel %.5f" % (alle.mean(), alle.std()))
+    for nb in (2, 3, 5, 10, 20, 39):
+        sel = bins == nb
+        if sel.any():
+            print("Bins %2d: Bias %.4f ms, SD je Lauf %.4f ms (Baender %d)" % (nb, alle[sel].mean(), sd[sel].mean(), sel.sum()))
+    
+    # Gegenprobe: Steigung der Binphase arg S[k] (kleinste Quadrate) statt Lag-Produkt.
+    rng = np.random.default_rng(3)
+    fehler2 = {b: [] for b, _, _ in baender}
+    for lauf in range(40):
+        n = N + (frames - 1) * hop
+        x = rng.uniform(-1, 1, n + d)
+        l = x[d:d + n]; r = x[0:n]
+        S = np.zeros(N // 2 + 1, complex)
+        for f in range(frames):
+            s = f * hop
+            S += np.fft.rfft(l[s:s + N] * w) * np.conj(np.fft.rfft(r[s:s + N] * w))
+        df = fs / N
+        for b, v, bi in baender:
+            k = np.arange(v, bi); phi = np.unwrap(np.angle(S[v:bi]))
+            steig = np.polyfit(k, phi, 1)[0]
+            fehler2[b].append(steig / (2 * np.pi * df) * 1000.0 - 1000.0 * d / fs)
+    alle2 = np.array([np.mean(v) for v in fehler2.values()]); sd2 = np.array([np.std(v) for v in fehler2.values()])
+    print("Phasensteigung: Mittel %.5f ms" % alle2.mean())
+    for nb in (2, 3, 5, 10, 20, 39):
+        sel = bins == nb
+        if sel.any():
+            print("Bins %2d: Bias %.4f ms, SD je Lauf %.4f ms" % (nb, alle2[sel].mean(), sd2[sel].mean()))

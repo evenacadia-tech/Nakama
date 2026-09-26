@@ -2616,26 +2616,13 @@ def pruefe_nak380_etappe_4(lauf: Lauf, schema: dict, nur: str | None = None) -> 
         fassungen = register.get("fassungen", {})
         neu = fassungen.get(NAK380_E4_FASSUNG, {})
         alt = fassungen.get("20260926", {})
-        feature = (WURZEL / "eq-copilot/plugin/core/analysis/FeatureEngine.h").read_text(
-            encoding="utf-8")
-        # Die vier Versionsstellen einzeln (R-380-7, T-380-10).
-        versions_treffer = re.search(r"kFeatureMetricsVersion\s*=\s*(\d+)u", feature)
+        # Seit NAK-380 Etappe 5 ist 20260927 nicht mehr `aktuell`: die vier
+        # Versionsstellen (FeatureEngine, beide METRICS_VERSION, `aktuell`)
+        # prueft nak380_m96_fassung_etappe_5; hier bleibt der Fassungsinhalt
+        # 20260927 geprueft (Muster Etappe 4 fuer nak380_m40).
         lauf.wahr(
-            f"nak380_m70_fassung_etappe_4: FeatureEngine nennt {NAK380_E4_FASSUNG}",
-            versions_treffer is not None and versions_treffer.group(1) == NAK380_E4_FASSUNG,
-            versions_treffer.group(1) if versions_treffer else "fehlt",
-        )
-        for rust_datei in ("vergleichbarkeit.rs", "prepost.rs"):
-            rust = _konstanten_aus_kern([WURZEL / "broker/src/coordinator" / rust_datei])
-            rust_version = rust.get("METRICS_VERSION", ("", ""))[0]
-            lauf.wahr(
-                f"nak380_m70_fassung_etappe_4: {rust_datei} nennt {NAK380_E4_FASSUNG}",
-                rust_version == NAK380_E4_FASSUNG,
-                repr(rust_version),
-            )
-        lauf.wahr(
-            f"nak380_m70_fassung_etappe_4: aktuell ist {NAK380_E4_FASSUNG}",
-            str(register.get("aktuell")) == NAK380_E4_FASSUNG,
+            f"nak380_m70_fassung_etappe_4: Fassung {NAK380_E4_FASSUNG} bleibt registriert",
+            bool(neu),
             f"aktuell={register.get('aktuell')!r}",
         )
         lauf.wahr(
@@ -2683,6 +2670,178 @@ def pruefe_nak380_etappe_4(lauf: Lauf, schema: dict, nur: str | None = None) -> 
                 gleich,
                 befund,
             )
+
+
+NAK380_E5_FASSUNG = "20260928"
+# Die zwei Ringlaengen der Fassung 20260928 (T-380-6, R-380-3, M-96): Name ->
+# geltender Wert. Beide sind `inline constexpr`-Konstanten in FeatureEngine.h
+# und tragen im Register den Codebezug `kName = Wert`. Die Mindestframezahl
+# kWelchMindestFrames = 8 ist seit SONDE-013 gefuehrt und wird unveraendert
+# uebernommen; sie prueft die Schleife ueber jede gefuehrte Schwelle unten.
+NAK380_E5_RINGSCHWELLEN = {
+    "kStereoRingHaupt": 3,
+    "kStereoRingBass": 7,
+}
+# M-94: die zwei Vertragsstellen der Stereoevidenz, je mit dem Satz aus §8.5.
+NAK380_E5_VERTRAGSSAETZE = {
+    "fenster_dauer_ms": (
+        "Je Band die Summe der Hopdauern der gemittelten Frames ueber die letzten W "
+        "Evidenzfenster (Hauptstufe 3, Bassstufe 7; NAK-380 R-380-3)."
+    ),
+    "freiheitsgrade": (
+        "Zahl der gemittelten GUELTIGEN Welch-Frames je Band ueber die letzten W "
+        "Evidenzfenster (Hauptstufe 3, Bassstufe 7). Unter acht ist die Kohaerenz `null` "
+        "(kein Bit); der Empfaenger sieht hier, warum."
+    ),
+}
+
+
+def pruefe_nak380_etappe_5(lauf: Lauf, schema: dict, nur: str | None = None) -> None:
+    """NAK-380 M-94/M-96: Vertragstext des Stereorings und Fassung Etappe 5."""
+    kern_header = sorted((WURZEL / "eq-copilot/plugin/core/analysis").rglob("*.h"))
+    index = _kern_konstantenindex(kern_header)
+    if nur in (None, "M-94"):
+        felder = schema.get("$defs", {}).get("stereo_evidenz", {}).get("properties", {})
+        # Jede Vertragsstelle einzeln (Lehre D5 aus §24): der Satz, dazu
+        # unveraenderte Feldform (keine Feldaenderung, keine Version).
+        form = {
+            "fenster_dauer_ms": {"type": "array", "minItems": 221, "maxItems": 221,
+                                 "items": {"type": "number", "minimum": 0, "maximum": 3600000}},
+            "freiheitsgrade": {"type": "array", "minItems": 221, "maxItems": 221,
+                               "items": {"type": "integer", "minimum": 0, "maximum": 1048576}},
+        }
+        for feld, satz in NAK380_E5_VERTRAGSSAETZE.items():
+            eintrag = felder.get(feld, {})
+            text = str(eintrag.get("$comment", ""))
+            lauf.wahr(
+                f"nak380_m94_ring_benannt: {feld} nennt den Ring ueber die letzten W Evidenzfenster",
+                satz in text,
+                text,
+            )
+            ohne_kommentar = {k: v for k, v in eintrag.items() if k != "$comment"}
+            lauf.wahr(
+                f"nak380_m94_ring_benannt: {feld} behaelt seine Feldform",
+                ohne_kommentar == form[feld],
+                repr(ohne_kommentar),
+            )
+            # rechnen <-> vertragen: die Zahlen im Satz sind die des Codes.
+            zahlen = re.search(r"Hauptstufe (\d+), Bassstufe (\d+)", text)
+            haupt = index.get("kStereoRingHaupt", [])
+            bass = index.get("kStereoRingBass", [])
+            lauf.wahr(
+                f"nak380_m94_ring_benannt: {feld} nennt die Ringlaengen des Codes",
+                zahlen is not None and len(haupt) == 1 and len(bass) == 1
+                and _cpp_zahl(haupt[0][0]) == float(zahlen.group(1))
+                and _cpp_zahl(bass[0][0]) == float(zahlen.group(2)),
+                f"Text {zahlen.groups() if zahlen else None}, Code {haupt} / {bass}",
+            )
+        lauf.wahr(
+            "nak380_m94_ring_benannt: keine Version - $id bleibt evenacadia.nakama.ipc.v3",
+            schema.get("$id") == "evenacadia.nakama.ipc.v3",
+            repr(schema.get("$id")),
+        )
+
+    if nur in (None, "M-96"):
+        register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+        fassungen = register.get("fassungen", {})
+        neu = fassungen.get(NAK380_E5_FASSUNG, {})
+        alt = fassungen.get(NAK380_E4_FASSUNG, {})
+        feature = (WURZEL / "eq-copilot/plugin/core/analysis/FeatureEngine.h").read_text(
+            encoding="utf-8")
+        # Die vier Versionsstellen einzeln (R-380-7, T-380-10).
+        versions_treffer = re.search(r"kFeatureMetricsVersion\s*=\s*(\d+)u", feature)
+        lauf.wahr(
+            f"nak380_m96_fassung_etappe_5: FeatureEngine nennt {NAK380_E5_FASSUNG}",
+            versions_treffer is not None and versions_treffer.group(1) == NAK380_E5_FASSUNG,
+            versions_treffer.group(1) if versions_treffer else "fehlt",
+        )
+        for rust_datei in ("vergleichbarkeit.rs", "prepost.rs"):
+            rust = _konstanten_aus_kern([WURZEL / "broker/src/coordinator" / rust_datei])
+            rust_version = rust.get("METRICS_VERSION", ("", ""))[0]
+            lauf.wahr(
+                f"nak380_m96_fassung_etappe_5: {rust_datei} nennt {NAK380_E5_FASSUNG}",
+                rust_version == NAK380_E5_FASSUNG,
+                repr(rust_version),
+            )
+        lauf.wahr(
+            f"nak380_m96_fassung_etappe_5: aktuell ist {NAK380_E5_FASSUNG}",
+            str(register.get("aktuell")) == NAK380_E5_FASSUNG,
+            f"aktuell={register.get('aktuell')!r}",
+        )
+        lauf.wahr(
+            "nak380_m96_fassung_etappe_5: seit nennt NAK-380 Etappe 5, der Hinweis den 26.09.2026",
+            neu.get("seit") == "NAK-380 Etappe 5" and "26.09.2026" in str(neu.get("hinweis", "")),
+            repr(neu.get("seit")),
+        )
+        # Die Eintraege der Fassung 20260927 sind unveraendert uebernommen.
+        abweichend = []
+        for block in ("schwellen", "ganzzahlige_schwellen"):
+            for name, feld in alt.get(block, {}).items():
+                if neu.get(block, {}).get(name) != feld:
+                    abweichend.append(f"{block}/{name}")
+        if neu.get("nicht_gefuehrt") != alt.get("nicht_gefuehrt"):
+            abweichend.append("nicht_gefuehrt")
+        lauf.wahr(
+            f"nak380_m96_fassung_etappe_5: Eintraege der Fassung {NAK380_E4_FASSUNG} unveraendert "
+            "uebernommen",
+            bool(neu) and bool(alt) and not abweichend,
+            ", ".join(abweichend),
+        )
+        # Die Ringlaengen und die Mindestframezahl einzeln, mit Codebezug im
+        # Zweck, an ihrer Codestelle und mit dem geltenden Wert.
+        for name, geltend in NAK380_E5_RINGSCHWELLEN.items():
+            feld = neu.get("ganzzahlige_schwellen", {}).get(name, {})
+            fundstellen = index.get(name, [])
+            if not feld:
+                gleich, befund = False, "nicht unter ganzzahlige_schwellen der Fassung"
+            elif len(fundstellen) != 1:
+                gleich, befund = False, f"{len(fundstellen)} Codefunde"
+            else:
+                roh, datei = fundstellen[0]
+                soll = feld.get("wert")
+                gleich = (_cpp_zahl(roh) is not None and isinstance(soll, int)
+                          and _cpp_zahl(roh) == float(soll) == float(geltend)
+                          and datei == "FeatureEngine.h"
+                          and str(feld.get("datei", "")).endswith("core/analysis/FeatureEngine.h")
+                          and f"{name} = {geltend}" in str(feld.get("zweck", "")))
+                befund = (f"Code {roh} ({datei}), Register {soll!r} ({feld.get('datei')!r}), "
+                          f"geltend {geltend!r}")
+            lauf.wahr(
+                f"nak380_m96_fassung_etappe_5: {name} = {geltend} steht mit dem Registerwert in "
+                "FeatureEngine.h",
+                gleich,
+                befund,
+            )
+        # Jede gefuehrte Schwelle der Fassung einzeln an ihrer Codestelle.
+        konstanten = _konstanten_aus_kern([
+            WURZEL / "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+            WURZEL / "eq-copilot/plugin/core/analysis/Konfidenz.h",
+            WURZEL / "broker/src/coordinator/vergleichbarkeit.rs",
+            WURZEL / "broker/src/coordinator/prepost.rs",
+            WURZEL / "broker/src/coordinator/invalidierung.rs",
+        ])
+        gefuehrt = 0
+        for block, ganzzahlig in (("schwellen", False), ("ganzzahlige_schwellen", True)):
+            for name, feld in neu.get(block, {}).items():
+                gefuehrt += 1
+                roh, datei = konstanten.get(name, ("", ""))
+                soll = feld.get("wert")
+                try:
+                    passt = bool(roh) and ((int(roh) == int(soll)) if ganzzahlig
+                                           else (float(roh) == float(soll)))
+                except (TypeError, ValueError):
+                    passt = False
+                passt = passt and str(feld.get("datei", "")).endswith(datei)
+                lauf.wahr(
+                    f"nak380_m96_fassung_etappe_5: {name} = {soll!r} steht so in {datei or '?'}",
+                    passt,
+                    f"Code {roh!r}, Register {soll!r} ({feld.get('datei')!r})",
+                )
+        lauf.wahr(
+            "nak380_m96_fassung_etappe_5: die Fassung fuehrt Schwellen",
+            gefuehrt >= 8,
+            f"{gefuehrt} Eintraege",
+        )
 
 
 def pruefe_comparability_schwellen(lauf: Lauf) -> None:
@@ -2799,6 +2958,7 @@ def main(argv: list[str]) -> int:
     if len(argv) == 2 and argv[0] == "--nak380":
         pruefe_nak380_etappe_3(lauf, argv[1])
         pruefe_nak380_etappe_4(lauf, schema, argv[1])
+        pruefe_nak380_etappe_5(lauf, schema, argv[1])
         print(f"Pruefungen: {lauf.ok} bestanden, {len(lauf.fehler)} gescheitert")
         for f in lauf.fehler:
             print(f"  ROT: {f}")
@@ -2823,6 +2983,7 @@ def main(argv: list[str]) -> int:
     pruefe_nak380_etappe_2(lauf, schema)
     pruefe_nak380_etappe_3(lauf)
     pruefe_nak380_etappe_4(lauf, schema)
+    pruefe_nak380_etappe_5(lauf, schema)
     pruefe_comparability_schwellen(lauf)
     pruefe_experiment_belegung(lauf, schema, reserviert)
 

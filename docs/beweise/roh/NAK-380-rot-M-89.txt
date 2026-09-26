@@ -1,0 +1,58 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-89 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Mono und identisches Stereo
+Zusage (§6.4, woertlich): Korrelation > 0,999, Kohärenz > 0,99, Phase ± 0,01 rad, Folddown ± 0,25 dB
+Test je Sprache (§6.4): C++: B19 bestehend
+Rotbeweis-Spalte (§6.4, woertlich): Regressionswache: Mutation Nenner der MSC je Bin mal 2 → 0,5 → rot
+Etikett: Regressionswache
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: grün (die 120 roten Prüfungen des Basislaufs sind alle 380/-Fälle; `mono_identity` und Sweep grün)
+    (keine 380/-Zeile im Basislauf)
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B19 --nak380 M-89 02:53:59 bis 02:53:59, EXIT=0, Binary 02:49:40.127
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   das 1-kHz-Band ist im Gitter auffindbar  [Band 121]
+    [ok]   es traegt eine Basis
+    [ok]   bei echtem Mono ist die Korrelation exakt 1  [1.000000]
+    [ok]   und der Seitenanteil liegt am Boden - es gibt keine Seitenenergie  [-120.00 dB]
+    [ok]   die Kohaerenz ist 1 - zwei identische Kanaele sind vollstaendig kohaerent  [1.000000]
+    [ok]   und die Phase ist 0 - kein Laufzeitunterschied  [0.000000 rad]
+    [ok]   der Mono-Folddown ist 0 dB innerhalb 0,25 dB (Â§40.3) - eine Monosumme aus zwei gleichen Kanaelen verliert nichts  [0.0000 dB]
+    [ok]   und die L/R-Balance ist 0 dB  [0.0000 dB]
+    [ok]   sweep_mono_identity: bei jeder Blockgroesse aus {1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345, 16384} entsteht ein Evidenzfenster  [18 von 18]
+    [ok]   sweep_mono_identity: und jede traegt dieselbe analytisch bekannte Antwort  [1:1.0000/1.0000/0.0000/0.000, 2:1.0000/1.0000/0.0000/0.000, 3:1.0000/1.0000/0.0000/0.000, 7:1.0000/1.0000/0.0000/0.000, 15:1.0000/1.0000/0.0000/0.000, 16:1.0000/1.0000/0.0000/0.000, 31:1.0000/1.0000/0.0000/0.000, 64:1.0000/1.0000/0.0000/0.000, 127:1.0000/1.0000/0.0000/0.000, 128:1.0000/1.0000/0.0000/0.000, 333:1.0000/1.0000/0.0000/0.000, 512:1.0000/1.0000/0.0000/0.000, 1024:1.0000/1.0000/0.0000/0.000, 2048:1.0000/1.0000/0.0000/0.000, 4096:1.0000/1.0000/0.0000/0.000, 8192:1.0000/1.0000/0.0000/0.000, 12345:1.0000/1.0000/0.0000/0.000, 16384:1.0000/1.0000/0.0000/0.000]
+    [ok]   sweep_mono_identity: je Blockgroesse wurden vergleichbar viele Fenster gemittelt (Freiheitsgrade innerhalb 20 % des Medians)  [22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 23, 24, 24, 23, 23, 23, 23, 23 (Median 22)]
+    12 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Korrelation > 0,999
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1450 und Sweep :2410, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:402 Korrelation mal 0,99 (m89-korrelation)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m89-korrelation.txt
+- Zusagesatz: Kohärenz > 0,99
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1456 und Sweep :2410, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:442 Nenner der MSC je Bin mal 2 (Matrixmutation) (m89-nenner2)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m89-nenner2.txt
+- Zusagesatz: Phase ± 0,01 rad
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1459, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:468 Phase gegen die gespiegelte Realachse, `atan2 (mitteIm, -mitteRe)` (m89-phase)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m89-phase.txt
+- Zusagesatz: Folddown ± 0,25 dB
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1464, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:528 Monoenergie doppelt gezählt (+3,01 dB) (m89-folddown)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m89-folddown.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m89-korrelation (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:402): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-89/M-90, Satz Korrelation (Regressionswache ueber den Etappenumbau hinweg; die Korrelation rechnet weiter aus den Fensterakkus): Korrelation mal 0,99.
+  m89-nenner2 (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:442): Exit mit Mutation 1, rote Pruefungen 3; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-89/M-90: Nenner der MSC je Bin mal 2 -> Kohaerenz 0,5.
+  m89-phase (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:468): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-89, Satz 'Phase +- 0,01 rad': die Phase am Mittenbin gegen die gespiegelte Realachse (atan2 (Im, -Re)) - bei Mono pi statt 0.
+  m89-folddown (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:528): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-89, Satz 'Folddown +- 0,25 dB': Monoenergie doppelt gezaehlt (+3,01 dB).

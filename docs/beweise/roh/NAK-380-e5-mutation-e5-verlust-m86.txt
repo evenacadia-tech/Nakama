@@ -1,0 +1,38 @@
+NAK-380 Etappe 5 — Mutationsprotokoll e5-verlust-m86
+Datei: eq-copilot/plugin/core/analysis/featureengine/Spektrum.h
+Zeile (Etappenstand): 935
+SHA-256 vor der Mutation: 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774; Sicherung eq-copilot/build/nak380-sicherung/e5/e5-verlust-m86/Spektrum.h
+Begruendung: Zaehlregel 7.3 in B19 M-86 (Lehre D5), Doppelmutation nach dem Muster m47-verlust der Etappe 4: am 1-kHz-Sinus des Falls entsteht kein Flussereignis (e5-verlust allein bleibt dort gruen, Protokoll NAK-380-e5-mutation-e5-verlust.txt); die zweite Stelle setzt T_eff = med + 1e-9, sodass Ereignisse entstehen, und der Ring verliert jedes und zaehlt es. Die Zusagepruefungen von M-86 muessen dabei gruen bleiben (Trennschaerfe).
+Ruecknahme aus der Sicherung, SHA-256 8E863CA3147F882ABC3FBE56C5E7B79EF78E1C98DCA5E3315C3EE09FC0DB0774: gleich; Bau nach Ruecknahme 02:44:52 bis 02:44:58, Exit 0
+Wortlaut vorher:
+        if (ereignisAnzahl == kEreignisPlaetze)
+            ++zEreignisseVerworfen;               // das aelteste faellt
+Wortlaut nachher:
+        ++zEreignisseVerworfen;               // Mutation e5-verlust: der Ring nimmt kein Ereignis mehr an
+        if (zEreignisseVerworfen > 0u)
+            return;
+Zweite Stelle derselben Datei (Doppelmutation), Zeile 801, vorher:
+            const double tEff = std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med), tMin);
+nachher:
+            const double tEff = med + 1e-9;   // Mutation e5-verlust-m95: Ereignisse entstehen
+  Bau EqCopSonde013StereoGoldenTest: 02:44:46 bis 02:44:52, Exit 0
+
+== Matrixzeile Vorbedingung; Zusagesatz: Zaehlregel 7.3 (B19 M-86, Sinuslaeufer), Zusagepruefungen gruen
+  Binary 02:44:52.328 juenger als Quelle 02:44:46.073: ja
+Lauf mit Mutation: B19 --nak380 M-86 02:44:52 bis 02:44:52, Exit 1, 10 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Zaehlregel 7.3)
+Unter derselben Mutation gruen gebliebene Pruefungen: 10
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+    [ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+    [ok]   mit genug Frames traegt die Kohaerenz ein Bit
+    [ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung gespeiste Samplezahl = 153 600 (3 s * 48 000), Laeufer und Engine  [153600 / 153600]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung drei Snapshots an 51 200, 102 400 und 153 600 Samples (Kadenzmodell)  [3 Snapshots]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74), nicht nur das letzte (25)  [gemeldet 74, Modell 74, Golden 74]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (dritter Snapshot)  [3157.333 ms gegen 3157.333 ms]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): erster Snapshot unveraendert 24 Frames und 1024 ms (floor((51 200 - 4096)/2048) + 1)  [24 Frames, 1024.000 ms]
+Lauf nach Ruecknahme: B19 --nak380 M-86 02:44:58 bis 02:44:59, Exit 0, 11 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:44:58.854 juenger als Quelle 02:44:52.493: ja

@@ -1396,14 +1396,14 @@
       "additionalProperties": false,
       "properties": {
         "fenster_dauer_ms": {
-          "$comment": "§40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'. Je Band, weil die Fensterlaenge ueber die Baender nicht gleich sein muss. Kein Gueltigkeitsbitmap: eine Fensterdauer 0 IST die ehrliche Aussage 'in diesem Band wurde nichts integriert'.",
+          "$comment": "§40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'. Je Band die Summe der Hopdauern der gemittelten Frames ueber die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7; NAK-380 R-380-3). Je Band, weil die Fensterlaenge ueber die Baender nicht gleich sein muss. Kein Gueltigkeitsbitmap: eine Fensterdauer 0 IST die ehrliche Aussage 'in diesem Band wurde nichts integriert'.",
           "type": "array",
           "minItems": 221,
           "maxItems": 221,
           "items": { "type": "number", "minimum": 0, "maximum": 3600000 }
         },
         "freiheitsgrade": {
-          "$comment": "Zahl der gemittelten GUELTIGEN Welch-Frames je Band. Unter acht ist die Kohaerenz `null` (kein Bit); der Empfaenger sieht hier, warum.",
+          "$comment": "Zahl der gemittelten GUELTIGEN Welch-Frames je Band ueber die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7). Unter acht ist die Kohaerenz `null` (kein Bit); der Empfaenger sieht hier, warum.",
           "type": "array",
           "minItems": 221,
           "maxItems": 221,

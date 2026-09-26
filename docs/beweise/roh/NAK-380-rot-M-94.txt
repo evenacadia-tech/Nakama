@@ -1,0 +1,42 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-94 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Vertragszeile von Fensterdauer und Freiheitsgraden (rechnen↔vertragen)
+Zusage (§6.4, woertlich): die `$comment`-Texte nennen den Ring: „Summe der Hopdauern bzw. Zahl der gültigen Welch-Frames über die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7)“; keine Feldänderung
+Test je Sprache (§6.4): Python: A5 NEU `nak380_m94_ring_benannt`
+Rotbeweis-Spalte (§6.4, woertlich): heute rot (der Ring existiert nicht); Mutation Satz entfernt → A5 rot
+Etikett: heute rot
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: rot (A5, 4 Prüfungen): beide Kommentare ohne Ringsatz und ohne Ringlängen
+      ROT: nak380_m94_ring_benannt: fenster_dauer_ms nennt den Ring ueber die letzten W Evidenzfenster � �40.1 woertlich: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz'. Je Band, weil die Fensterlaenge ueber die Baender nicht gleich sein muss. Kein Gueltigkeitsbitmap: eine Fensterdauer 0 IST die ehrliche Aussage 'in diesem Band wurde nichts integriert'.
+      ROT: nak380_m94_ring_benannt: fenster_dauer_ms nennt die Ringlaengen des Codes � Text None, Code [] / []
+      ROT: nak380_m94_ring_benannt: freiheitsgrade nennt den Ring ueber die letzten W Evidenzfenster � Zahl der gemittelten GUELTIGEN Welch-Frames je Band. Unter acht ist die Kohaerenz `null` (kein Bit); der Empfaenger sieht hier, warum.
+      ROT: nak380_m94_ring_benannt: freiheitsgrade nennt die Ringlaengen des Codes � Text None, Code [] / []
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF A5 --nak380 M-94 02:54:00 bis 02:54:01, EXIT=0
+    Pruefungen: 7 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: die `$comment`-Texte nennen den Ring: „Summe der Hopdauern … über die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7)“ (`fenster_dauer_ms`)
+  Pruefzeile: pruefe_v3_vertrag.py:2717 und :2732 (fenster_dauer_ms), A5
+  Mutation: eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1399 Satz in `fenster_dauer_ms` entfernt (Matrixmutation) (m94-satz-fenster)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m94-satz-fenster.txt
+- Zusagesatz: … „Zahl der gültigen Welch-Frames über die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7)“ (`freiheitsgrade`)
+  Pruefzeile: pruefe_v3_vertrag.py:2717 und :2732 (freiheitsgrade), A5
+  Mutation: eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1406 Satz in `freiheitsgrade` entfernt (Matrixmutation) (m94-satz-freiheit)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m94-satz-freiheit.txt
+- Zusagesatz: keine Feldänderung
+  Pruefzeile: pruefe_v3_vertrag.py:2723 (Feldform) und :2739 ($id), A5
+  Mutation: eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1410 Obergrenze der Freiheitsgrade 1 048 576 → 4096 (m94-feldform)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m94-feldform.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m94-satz-fenster (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1399): Exit mit Mutation 2, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-94: Satz im $comment von fenster_dauer_ms entfernt.
+  m94-satz-freiheit (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1406): Exit mit Mutation 2, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-94: Ringsatz im $comment von freiheitsgrade entfernt.
+  m94-feldform (eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1410): Exit mit Mutation 2, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-94, Satz 'keine Feldaenderung': die Obergrenze der Freiheitsgrade im Schema 1 048 576 -> 4096 (Feldform geaendert, Kommentar unveraendert).

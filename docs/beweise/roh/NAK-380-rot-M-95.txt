@@ -1,0 +1,44 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-95 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Zahlenrand: nicht-endliche Kreuzspektren
+Zusage (§6.4, woertlich): der Frame zählt für dieses Band nicht (Riegel je Band wie `Stereo.h:81-84`), die übrigen Bänder zählen; keine NaN in Kohärenz, Phase oder Laufzeit
+Test je Sprache (§6.4): C++: B18 NEU `380/M-95 stereo_nan_riegel_je_bin` (Testzugang)
+Rotbeweis-Spalte (§6.4, woertlich): Regressionswache: Mutation Riegel weg → NaN in der Kohärenz → rot
+Etikett: Regressionswache
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: nicht gefahren: der Testzugang (`nanKreuzBin`) entsteht erst mit dem Umbau; der Riegel je Band bestand am Basisstand (`Stereo.h:81-84` alt)
+    (keine 380/-Zeile im Basislauf)
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B18 --nak380 M-95 02:54:01 bis 02:54:01, EXIT=0, Binary 02:50:31.494
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 48, Laenge)  [Kennwerte ja, Saat 58720271, d 48, 96000 Samples, Spitze 0.349998, RMS -0.0078 dB gegen 0,35/sqrt(3) (Toleranz 0.0631 dB), Verschiebungsfehler 0]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung gespeiste Samplezahl = 96 000 (2 s * 48 000), Laeufer und Engine  [96000 / 96000]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung Bin 1346 liegt in Band 216 (Bins 1327 bis 1365), der Ring traegt dort mindestens acht Frames  [Bins 1327 bis 1365, Frames 16]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: der Frame mit nicht endlichem Kreuzspektrum zaehlt fuer Band 216 nicht (Riegel je Band)  [16 -> 16]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: jedes andere Hauptstufenband mit Bins zaehlt ihn (+1), Bassbaender und Baender ohne Bin bleiben  [148 Baender, abweichend 0, Bass/ohne Bin abweichend 0]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: keine nicht endliche Kohaerenz, Phase oder Laufzeit; Band 216 behaelt seine Kohaerenz aus den gueltigen Frames  [149 Baender mit Kohaerenz, nicht endlich 0, Band 216 0.9982]
+    7 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: der Frame zählt für dieses Band nicht (Riegel je Band)
+  Pruefzeile: Sonde013DynamicsTest.cpp:939, B18
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:200 NaN-Riegel weg, `(void) 0;` (Matrixmutation) (m95-riegel)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m95-riegel.txt
+- Zusagesatz: die übrigen Bänder zählen
+  Pruefzeile: Sonde013DynamicsTest.cpp:942, B18
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:200 NaN-Riegel verwirft den Frame für alle Bänder, `return;` (m95-global)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m95-global.txt
+- Zusagesatz: keine NaN in Kohärenz, Phase oder Laufzeit
+  Pruefzeile: Sonde013DynamicsTest.cpp:958, B18
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:200 NaN-Riegel weg, `(void) 0;` (Matrixmutation) (m95-riegel)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m95-riegel.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m95-riegel (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:200): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-95: NaN-Riegel je Band und Frame weg (die Bedingung bleibt stehen, ihre Folge ist leer).
+  m95-global (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:200): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-95, Satz 'die uebrigen Baender zaehlen': der NaN-Riegel verwirft den ganzen Frame fuer alle Baender (return statt continue) statt nur fuer das betroffene Band.

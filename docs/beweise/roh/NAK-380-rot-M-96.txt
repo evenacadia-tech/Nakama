@@ -1,0 +1,59 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-96 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · R-380-7 · Versionsschritt Etappe 5
+Zusage (§6.4, woertlich): A5 findet beide Werte im Code; M-73 und M-82 fallen am alten Wert; alte `stereo_evidenz` bleibt lesbar (A4, B3c)
+Test je Sprache (§6.4): Python: A5 bestehend, NEU `nak380_m96_fassung_etappe_5`
+Rotbeweis-Spalte (§6.4, woertlich): heute nicht messbar; Mutation W_B im Code 7 → 6 ohne Register → A5 rot
+Etikett: heute nicht messbar
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: rot (A5, 10 Prüfungen): Code, Rust und Register nennen 20260927; die Fassung fehlt
+      ROT: nak380_m96_fassung_etappe_5: FeatureEngine nennt 20260928 � 20260927
+      ROT: nak380_m96_fassung_etappe_5: vergleichbarkeit.rs nennt 20260928 � '20260927'
+      ROT: nak380_m96_fassung_etappe_5: prepost.rs nennt 20260928 � '20260927'
+      ROT: nak380_m96_fassung_etappe_5: aktuell ist 20260928 � aktuell=20260927
+      ROT: nak380_m96_fassung_etappe_5: seit nennt NAK-380 Etappe 5, der Hinweis den 26.09.2026 � None
+      ROT: nak380_m96_fassung_etappe_5: Eintraege der Fassung 20260927 unveraendert uebernommen � schwellen/kFlussP0Db, schwellen/kFlussFilterCent, schwellen/kFlussKappa, schwellen/kFlussRho, schwellen/kFlussTminDbJeBin, schwellen/kSperrzeitMs, schwellen/kPeakSteigungSchwelleDb, schwellen/kPeakCrestSchwelleDb, schwellen/kKohaerenzSchwellePhase, schwellen/kKonvergenzSpanneDb, schwellen/kKonfidenzAbdeckungStark, schwellen/kKonfidenzAbdeckungMittel, schwellen/GATE_ZEITUEBERDECKUNG, schwellen/GATE_QUELLEN_JACCARD, schwellen/GATE_MATERIAL_COSINE, schwellen/GATE_ABDECKUNG, schwellen/GATE_KORRELATIONSSPITZE, schwellen/GATE_PEAK_TO_SIDELOBE, schwellen/GATE_MATERIAL_GLEICH, schwellen/GATE_RELATIONSSCHWANKUNG_DB, ganzzahlige_schwellen/kFlussHistorie, ganzzahlige_schwellen/kWelchMindestFrames, ganzzahlige_schwellen/kKorrelationKurzFrames, ganzzahlige_schwellen/GATE_KONSISTENTE_SPUREN, ganzzahlige_schwellen/kKonfidenzFensterStark, nicht_gefuehrt
+      ROT: nak380_m96_fassung_etappe_5: kStereoRingHaupt = 3 steht mit dem Registerwert in FeatureEngine.h � nicht unter ganzzahlige_schwellen der Fassung
+      ROT: nak380_m96_fassung_etappe_5: kStereoRingBass = 7 steht mit dem Registerwert in FeatureEngine.h � nicht unter ganzzahlige_schwellen der Fassung
+      ROT: nak380_m96_fassung_etappe_5: kWelchMindestFrames = 8 steht mit dem Registerwert in FeatureEngine.h � nicht unter ganzzahlige_schwellen der Fassung
+      ROT: nak380_m96_fassung_etappe_5: die Fassung fuehrt Schwellen � 0 Eintraege
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF A5 --nak380 M-96 02:54:01 bis 02:54:01, EXIT=0
+    Pruefungen: 36 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: A5 findet beide Werte im Code
+  Pruefzeile: pruefe_v3_vertrag.py:2810, A5
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:279 W_B im Code 7 → 6 ohne Register (Matrixmutation) (m96-wb6); eq-copilot/plugin/core/analysis/FeatureEngine.h:271 W_H im Code 3 → 2 ohne Register (m96-wh2)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m96-wb6.txt, NAK-380-e5-mutation-m96-wh2.txt
+- Zusagesatz: `kFeatureMetricsVersion`, `METRICS_VERSION` gehoben
+  Pruefzeile: pruefe_v3_vertrag.py:2754, :2762, :2767, :2772, A5
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:89 `kFeatureMetricsVersion` 20260928 → 20260927 (m96-version-cpp); eq-copilot/schemas/v3/metriken-v1.json:20 `aktuell` 20260928 → 20260927 (m96-aktuell)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m96-version-cpp.txt, NAK-380-e5-mutation-m96-aktuell.txt
+- Zusagesatz: M-73 und M-82 fallen am alten Wert
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:748 und :895, B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:271-279 W_H und W_B → 1 (alter Wert) (m96-alt-w1)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m96-alt-w1.txt
+- Zusagesatz: alte `stereo_evidenz` bleibt lesbar (A4, B3c)
+  Pruefzeile: A4 (cargo test), B3c
+  Mutation: —
+  rot: — (keine Rust-Mutation laut Auftrag; A4 und B3c grün)
+  Protokoll: —
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m96-wb6 (eq-copilot/plugin/core/analysis/FeatureEngine.h:279): Exit mit Mutation 2, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-96: W_B im Code 7 -> 6 ohne Register.
+  m96-wh2 (eq-copilot/plugin/core/analysis/FeatureEngine.h:271): Exit mit Mutation 2, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: M-96 je Stelle: W_H im Code 3 -> 2 ohne Register.
+  m96-version-cpp (eq-copilot/plugin/core/analysis/FeatureEngine.h:89): Exit mit Mutation 2, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: M-96 je Stelle: kFeatureMetricsVersion zurueck auf 20260927.
+  m96-aktuell (eq-copilot/schemas/v3/metriken-v1.json:20): Exit mit Mutation 2, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: M-96 je Stelle: `aktuell` im Register zurueck auf 20260927.
+  m96-alt-w1 (eq-copilot/plugin/core/analysis/FeatureEngine.h:271-279): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-96, Haelfte 'M-73 und M-82 fallen am alten Wert': beide Ringlaengen auf den alten Wert 1 (ein Evidenzfenster, Stand vor Etappe 5) zurueckgesetzt; M-73 und M-82 muessen am alten Wert fallen.
+  m96-alt-w1 (eq-copilot/plugin/core/analysis/FeatureEngine.h:271-279): Exit mit Mutation 1, rote Pruefungen 4; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-96, Haelfte 'M-73 und M-82 fallen am alten Wert': beide Ringlaengen auf den alten Wert 1 (ein Evidenzfenster, Stand vor Etappe 5) zurueckgesetzt; M-73 und M-82 muessen am alten Wert fallen.

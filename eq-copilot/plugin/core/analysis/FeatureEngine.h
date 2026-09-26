@@ -86,7 +86,7 @@ namespace nakama::analyse
 /** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
     dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
     weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260927u;
+inline constexpr std::uint32_t kFeatureMetricsVersion = 20260928u;
 
 /*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
 
@@ -111,6 +111,15 @@ inline constexpr std::uint32_t kFeatureMetricsVersion = 20260927u;
     Mindestschwelle und Spitzenwahl mit Sperrzeit (T-380-5). Dieselben Felder
     `dynamics_ereignis` tragen damit andere Ereignisse und eine andere
     `staerke`; die sieben Detektorschwellen sind gefuehrt.
+
+    Warum die Zahl mit NAK-380 Etappe 5 steigt (20260928): die Kohaerenz
+    entsteht seit dieser Fassung je Bin aus Auto- und Kreuzspektren, die
+    ueber einen Ring aus den letzten W Evidenzfenstern summiert sind, und
+    wird erst danach im Band gemittelt; Phase und Laufzeit werden je Bin
+    gelesen, Freiheitsgrade und Fensterdauer zaehlen den Ring (R-380-3,
+    T-380-6). Dieselben Felder `kohaerenz`, `phase_rad`, `persistenz`,
+    `freiheitsgrade` und `fenster_dauer_ms` tragen damit andere Werte; die
+    zwei Ringlaengen sind gefuehrt.
 
     Die Schwellen dieser Fassung stehen in
     `eq-copilot/schemas/v3/metriken-v1.json`; **A5**
@@ -245,20 +254,29 @@ inline constexpr double kFlussStaerkeMax = 1000.0;
     `kFeatureMetricsVersion` und nicht als Literal im Rechenpfad. */
 inline constexpr int kWelchMindestFrames = 8;
 
-/*  ⚠️ WAS DIESE ZAHL FUER DIE BASSSTUFE BEDEUTET, gemessen beim Bau.
+/*  Die Bassstufe erreicht acht Frames über ihren Ring aus sieben
+    Evidenzfenstern (NAK-177, NAK-380 R-380-3): bei 48 kHz und 0,25 s nach
+    spätestens sechs Snapshots, bei 1 s nach zwei. */
 
-    Die Bassstufe hat bei 48 kHz einen Hop von 8192 Samples, also 170,7 ms je
-    Frame. Acht davon sind 1,37 s — laenger als das laengste Evidenzfenster
-    (`kEvidenzIntervallMaxS` = 1 s). Baender unter `kTrennungHz` tragen damit
-    im heutigen Kadenzrahmen NIE eine Kohaerenz und nie eine Phase.
+/** Laenge des Stereorings der HAUPTstufe in Evidenzfenstern (W_H, NAK-380
+    R-380-3, T-380-6): Auto- und Kreuzspektren je Bin laufen ueber die
+    letzten drei Evidenzfenster, bevor aus ihnen die Kohaerenz entsteht.
 
-    Das ist fail-closed und kein Fehler: die Kohaerenz aus fuenf Frames waere
-    unbrauchbar, und §40.1 verlangt genau dieses Schweigen. Der Empfaenger
-    sieht den Grund an den `freiheitsgrade` des Bandes. Aber es ist auch keine
-    gute Produkteigenschaft — Phasenprobleme im Bass sind musikalisch die
-    wichtigsten. Der Punkt steht als Nebenbefund im Manifest §10.4; ihn zu
-    beheben hiesse, der Bassstufe fuer die Stereoanalyse ein eigenes,
-    kuerzeres Fenster zu geben, und das ist mehr als eine Zeile. */
+    Herleitung: die Evidenz wird nur an 0,1-s-Rahmen faellig, ein
+    0,25-s-Fenster ist deshalb 0,30 bis 0,32 s lang und traegt bei 44,1 kHz
+    und Bloecken bis 512 Samples 6 bis 7 Hauptstufenframes - nie acht (§40.1:
+    "mindestens acht"). Zwei Fenster hielten 12 bis 14, drei halten 19 bis 21
+    Frames; der Bias der MSC unkorrelierter Anteile (rund 1/K) bleibt damit
+    unter 0,1. Gefuehrt in `metriken-v1.json` (Fassung 20260928). */
+inline constexpr int kStereoRingHaupt = 3;
+
+/** Laenge des Stereorings der BASSstufe in Evidenzfenstern (W_B, NAK-177,
+    NAK-380 R-380-3, T-380-6). Der Bass-Hop betraegt 8192 Samples (170,7 ms
+    bei 48 kHz); ein 0,25-s-Fenster traegt 1 bis 2 Bassframes, sieben halten
+    bei 44,1 kHz mindestens 11, im 1-s-Takt bei 48 kHz 11 ab dem zweiten
+    Snapshot. Fuenf Fenster hielten gerade acht. Gefuehrt in
+    `metriken-v1.json`. */
+inline constexpr int kStereoRingBass = 7;
 
 /** Ab welcher Kohaerenz die Interchannel-Phase eines Bandes ueberhaupt
     ausgewertet wird (M-11, §40.1: "Interchannel-Phase wird nur in ausreichend
@@ -603,8 +621,10 @@ public:
         // angelegt - danach waechst keiner von beiden.
         headroomRing.assign (1u, HeadroomVerteilung {});
         headroomRing[0].vorbereiten();
-        // SONDE-013 M-11: alle Stereotraeger im Heap, angelegt auf dem
-        // Nachrichtenthread. Der Audiothread alloziert weiterhin nie.
+        // SONDE-013 M-11: alle Stereotraeger im Heap, angelegt im
+        // Analyseworker unter der Steuersperre (`SondeProcessor.cpp`
+        // `workerLauf`, `Analyse.cpp` `workerLauf`; NAK-380 B-5). Der
+        // Audiothread alloziert weiterhin nie.
         stereoAkku.assign ((std::size_t) Gitter::evidenzBaender, StereoAkku {});
         stereoKurz.assign ((std::size_t) Gitter::evidenzBaender, StereoAkku {});
         stereoVerlauf.assign ((std::size_t) Gitter::evidenzBaender, VerteilungsRing {});
@@ -613,6 +633,18 @@ public:
         stereoKorrKurzGesetzt.assign ((std::size_t) Gitter::evidenzBaender, 0u);
         stereoKurzfensterBand.assign ((std::size_t) Gitter::evidenzBaender, 0u);
         stereoPersistenzZaehler.assign ((std::size_t) Gitter::evidenzBaender, 0u);
+        // NAK-380 Etappe 5 (T-380-6, M-85, M-97): der Stereoring je Bin, EIN
+        // flacher Vektor im Heap, fuer genau die Bins, die die Zuordnung eben
+        // dieser Abtastrate vergibt (Aufbau in `featureengine/Stereo.h`).
+        // Ein Ratenwechsel legt ihn mit der neuen Binzuordnung neu an;
+        // `zuruecksetzen` unten leert ihn.
+        {
+            const int trenn = trennIndex();
+            std::size_t elemente = stereoZaehlerElemente (trenn);
+            for (int b = 0; b < Gitter::evidenzBaender; ++b)
+                elemente += (std::size_t) stereoBins (b) * (std::size_t) stereoRingSlots (b, trenn);
+            stereoRing.assign (elemente, StereoBinAkku {});
+        }
         fpBandSumme.assign ((std::size_t) Fingerprint::kBaender, 0.0);
         fpBandAnzahl.assign ((std::size_t) Fingerprint::kBaender, 0u);
         fpChromaSumme.assign ((std::size_t) Fingerprint::kChroma, 0.0);
@@ -1108,12 +1140,23 @@ public:
         Loch wie T2-1, nur eine Etappe spaeter.
 
         Rein lesend, kein Verhalten: `fpFenster` zaehlt die Welch-Frames im
-        Fingerprintakkumulator, `stereoAkku[b].frames` die Frames je Band. */
+        Fingerprintakkumulator, `stereoAkku[b].frames` die Frames je Band.
+        Seit NAK-380 Etappe 5 zaehlt ein Band auch, wenn sein Stereoring
+        (irgendein Slot oder das Kurzfenster) Frames traegt: der Ring ist ein
+        eigener Traeger derselben Evidenz und faellt an derselben Grenze. */
     std::uint32_t fingerprintFenster() const noexcept { return fpFenster; }
     int stereoAkkuBelegteBaender() const noexcept
     {
+        const int trenn = stereoRing.empty() ? 0 : trennIndex();
         int n = 0;
-        for (const auto& a : stereoAkku) if (a.frames > 0) ++n;
+        for (int b = 0; b < (int) stereoAkku.size(); ++b)
+        {
+            bool ring = false;
+            if (! stereoRing.empty())
+                for (int j = 0; j < stereoRingSlots (b, trenn) && ! ring; ++j)
+                    ring = stereoZaehlerWert (stereoZaehlerBasis (b, trenn) + (std::size_t) j) != 0.0;
+            if (stereoAkku[(std::size_t) b].frames > 0 || ring) ++n;
+        }
         return n;
     }
 
@@ -1367,13 +1410,28 @@ private:
 
     void ereignisAblegen (const Ereignis& e) noexcept;
 
-    void stereoSchritt (const Stufe& s, bool zaehlKurzfenster) noexcept;
+    /// `nanKreuzBin` setzt nur der Testzugang (NAK-380 M-95); das Produkt
+    /// ruft mit -1.
+    void stereoSchritt (const Stufe& s, bool zaehlKurzfenster, int nanKreuzBin = -1) noexcept;
 
     void stereoSample (double l, double r) noexcept;
 
     void stereoAuswerten() noexcept;
 
+    void stereoFensterLeeren() noexcept;
+
+    void stereoRingVorschub() noexcept;
+
     void stereoLeeren() noexcept;
+
+    // NAK-380 Etappe 5 (T-380-6): Aufbau des Stereorings, `featureengine/Stereo.h`.
+    static int stereoRingSlots (int b, int trenn) noexcept;
+    int stereoBins (int b) const noexcept;
+    static std::size_t stereoZaehlerElemente (int trenn) noexcept;
+    static std::size_t stereoZaehlerBasis (int b, int trenn) noexcept;
+    double& stereoZaehler (std::size_t i) noexcept;
+    double stereoZaehlerWert (std::size_t i) const noexcept;
+    std::uint32_t stereoRingFrames (int b, int trenn) const noexcept;
 
     void fingerprintSchritt (const Stufe& s, double fluss) noexcept;
 
@@ -1449,15 +1507,15 @@ private:
     /// SONDE-013 M-11: die bandweisen Kreuzspektralsummen eines Fensters.
     /// `smm`/`sss` tragen Mid- und Side-Energie, `sll`/`srr` die
     /// L/R-Autospektren, `sxyRe`/`sxyIm` das komplexe Kreuzspektrum.
-    /// `frames` ist die Zahl der GUELTIGEN Welch-Frames - also genau das
-    /// Feld `freiheitsgrade`, das §40.1 als Teil der Evidenz verlangt.
+    /// `frames` ist die Zahl der GUELTIGEN Welch-Frames DIESES
+    /// Evidenzfensters; sie traegt Basis, Mid/Side und Korrelation. Das Feld
+    /// `freiheitsgrade` zaehlt seit NAK-380 Etappe 5 den Ring (unten).
     struct StereoAkku
     {
         double smm { 0.0 }, sss { 0.0 };
         double sll { 0.0 }, srr { 0.0 };
         double sxyRe { 0.0 }, sxyIm { 0.0 };
         std::uint32_t frames { 0 };
-        double dauerMs { 0.0 };
     };
     /// Alle Stereotraeger liegen im HEAP: elf Bandsaetze zu 221 Werten sind
     /// rund 11 KiB, und der Stack dieses Beins ist in Etappe C schon dreimal
@@ -1471,6 +1529,22 @@ private:
     /// gueltigem Nenner. Nur das Praesenzbit haengt daran, nie der Wert.
     std::vector<std::uint32_t>   stereoKurzfensterBand;
     std::vector<std::uint32_t>   stereoPersistenzZaehler;
+    /// NAK-380 Etappe 5 (T-380-6, R-380-3): Auto- und Kreuzspektrum EINES
+    /// Bins in einem Ringslot - Sxx = |L|^2, Syy = |R|^2, Sxy = L·conj(R).
+    struct StereoBinAkku
+    {
+        double sxx { 0.0 }, syy { 0.0 }, sxyRe { 0.0 }, sxyIm { 0.0 };
+    };
+    /// Der Stereoring je Bin, EIN flacher Vektor im Heap (Aufbau in
+    /// `featureengine/Stereo.h`): je Bin W Ringslots und das Kurzfenster, im
+    /// Kopf die Frames je Band und Slot. Angelegt in `vorbereiten`, geleert
+    /// von `stereoLeeren`, geschoben von `stereoRingVorschub`.
+    std::vector<StereoBinAkku>   stereoRing;
+    /// Laufender Slot (modulo W) und belegte Fenster (1 bis W, saettigend)
+    /// je Stufe. Genau diese vier Staende und der Vektorkopf sind die 40 B,
+    /// um die `sizeof (FeatureEngine)` mit Etappe 5 waechst (M-97).
+    std::uint32_t stereoRingStandHaupt { 0 }, stereoRingStandBass { 0 };
+    std::uint32_t stereoRingBelegtHaupt { 1 }, stereoRingBelegtBass { 1 };
     int           stereoKurzFrames { 0 };
     std::uint32_t stereoKurzfenster { 0 };
     double stereoMonoEnergie { 0.0 }, stereoStereoEnergie { 0.0 };
@@ -1486,8 +1560,9 @@ private:
     /// im Objekt — genau wie `kurzZellen`, `ereignisse` und der Flussdetektor
     /// (`detektor`) daneben. Der Grund ist gemessen: als Feld sprengten zwei Engines
     /// nebeneinander (die Zwillingsprobe G13 in B5) den 1-MiB-Stack mit
-    /// STATUS_STACK_OVERFLOW. Angelegt wird er in `vorbereiten()`, also auf
-    /// dem Nachrichtenthread; der Audiothread alloziert weiterhin nie.
+    /// STATUS_STACK_OVERFLOW. Angelegt wird er in `vorbereiten()`, also im
+    /// Analyseworker unter der Steuersperre (NAK-380 B-5); der Audiothread
+    /// alloziert weiterhin nie.
     std::vector<VerteilungsRing> evidenzVerteilung;
     std::uint64_t   evidenzFensterGesamt { 0 };
     std::uint64_t   evidenzFensterAktiv  { 0 };

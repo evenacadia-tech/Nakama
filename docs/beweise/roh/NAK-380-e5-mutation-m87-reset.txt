@@ -1,0 +1,47 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m87-reset
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Etappenstand): 698
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5/m87-reset/FeatureEngine.h
+Begruendung: Matrix M-87 (b): zuruecksetzen leert nur das Fenster, der Ring ueberlebt.
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich; Bau nach Ruecknahme 02:10:39 bis 02:10:45, Exit 0
+Wortlaut vorher:
+            stereoLeeren();                                // SONDE-013 M-11
+Wortlaut nachher:
+            stereoFensterLeeren();                         // SONDE-013 M-11
+  Bau EqCopSonde013StereoGoldenTest: 02:10:31 bis 02:10:38, Exit 0
+
+== Matrixzeile M-87; Zusagesatz: (b) nach zuruecksetzen() hoechstens die Frames seit dem Ruecksetzen
+  Binary 02:10:38.441 juenger als Quelle 02:10:31.645: ja
+Lauf mit Mutation: B19 --nak380 M-87 02:10:38 bis 02:10:39, Exit 1, 19 bestanden, 4 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-87 ring_leert reset: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame, und sein Aufbau folgt der geltenden Binzuordnung (236224 B)  [Ringframes 3539, Ringbytes 236224]
+    [ROT]  380/M-87 ring_leert reset: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (5, Kadenzmodell)  [gemeldet 25 nach 13824 Samples]
+    [ROT]  380/M-87 ring_leert reset: und der zweite die Frames beider Fenster seit dem Ereignis (12, Kadenzmodell)  [gemeldet 25 nach 27648 Samples]
+    [ROT]  380/M-87 ring_leert reset: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [1.0000]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-87 ring_leert reset: direkt nach dem Ereignis)
+Mitgefallene Pruefungen (Grund: dieselbe Mutation traegt auch diese Zusage):
+    [ROT]  380/M-87 ring_leert reset: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (5, Kadenzmodell)  [gemeldet 25 nach 13824 Samples]
+    [ROT]  380/M-87 ring_leert reset: und der zweite die Frames beider Fenster seit dem Ereignis (12, Kadenzmodell)  [gemeldet 25 nach 27648 Samples]
+    [ROT]  380/M-87 ring_leert reset: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [1.0000]
+Unter derselben Mutation gruen gebliebene Pruefungen: 19
+    [ok]   vor der Grenze steht ein Evidenzfenster
+    [ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+    [ok]   nach der Grenze entsteht ein neues Evidenzfenster
+    [ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+    [ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+    [ok]   380/M-87 ring_leert (Â§32.3): der erste Snapshot nach der Grenze traegt nur die 24 Frames seit der Grenze  [24 Frames]
+    [ok]   380/M-87 ring_leert (Â§32.3): und seine Kohaerenz ist die des neuen, unkorrelierten Materials  [0.0413]
+    [ok]   380/M-87 ring_leert seek: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame, und sein Aufbau folgt der geltenden Binzuordnung (236224 B)  [Ringframes 0, Ringbytes 236224]
+    [ok]   380/M-87 ring_leert seek: Vorbedingung gespeiste Samplezahl 220500 + 44100 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 44100, Engine 264600, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert seek: Vorbedingung genau eine Grenze mit Grund zeitSprung
+    [ok]   380/M-87 ring_leert seek: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (0, Kadenzmodell)  [gemeldet 0 nach 512 Samples]
+    [ok]   380/M-87 ring_leert seek: und der zweite die Frames beider Fenster seit dem Ereignis (6, Kadenzmodell)  [gemeldet 6 nach 14336 Samples]
+    [ok]   380/M-87 ring_leert seek: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [ohne Bit]
+    [ok]   380/M-87 ring_leert reset: Vorbedingung gespeiste Samplezahl 220500 + 44100 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 44100, Engine 44100, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert rate_change: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame, und sein Aufbau folgt der geltenden Binzuordnung (113344 B)  [Ringframes 0, Ringbytes 113344]
+    [ok]   380/M-87 ring_leert rate_change: Vorbedingung gespeiste Samplezahl 220500 + 96000 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 96000, Engine 96000, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert rate_change: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (13, Kadenzmodell)  [gemeldet 13 nach 29184 Samples]
+    [ok]   380/M-87 ring_leert rate_change: und der zweite die Frames beider Fenster seit dem Ereignis (27, Kadenzmodell)  [gemeldet 27 nach 58368 Samples]
+    [ok]   380/M-87 ring_leert rate_change: bei 96 kHz traegt das 1-kHz-Band aus 13 Frames der neuen Rate ein Kohaerenzbit (Mono)  [1.0000]
+Lauf nach Ruecknahme: B19 --nak380 M-87 02:10:45 bis 02:10:46, Exit 0, 23 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:10:45.886 juenger als Quelle 02:10:39.014: ja

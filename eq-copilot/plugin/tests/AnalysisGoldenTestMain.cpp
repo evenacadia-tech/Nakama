@@ -1894,6 +1894,29 @@ __declspec(noinline) void nak380Detektor (const char* nur)
     if (nak380Waehlt (nur, "M-62"))
         nak380GrenzeLeertDetektor();
 }
+
+/** NAK-380 M-97 (Etappe 5, Regressionswache; E-380-14, T-380-6): die Groesse
+    des Engine-OBJEKTS. Der Stereoring fuegt genau einen `std::vector`-Kopf
+    (24 B unter MSVC x64) und vier `std::uint32_t` (Ringstand und belegte
+    Fenster beider Stufen, 16 B) hinzu, Delta_5 = 40 B; alle bin- und
+    fensterzahlabhaengigen Daten liegen als Vektornutzdaten im Heap. Der
+    Startwert ist am unveraenderten Code (Basis `c43c1646`) aus diesem Bein
+    ausgegeben worden: 16 208 B (Rohdatei
+    `docs/beweise/roh/NAK-380-etappe-5-m97-sizeof-start.txt`), Schranke also
+    16 248 B. */
+constexpr std::size_t kNak380M97Startwert = 16208u;
+
+__declspec(noinline) void nak380Objektbudget()
+{
+    const std::size_t ist = sizeof (FeatureEngine);
+    std::cout << "380/M-97 sizeof (FeatureEngine) = " << ist << " B" << std::endl;
+    pruefe (kNak380M97Startwert > 0u && ist <= kNak380M97Startwert + 40u,
+            "380/M-97 featureengine_objektbudget: sizeof (FeatureEngine) <= Startwert "
+                + juce::String ((juce::int64) kNak380M97Startwert)
+                + " B + 40 B (ein Vektorkopf 24 B, vier std::uint32_t 16 B)",
+            juce::String ((juce::int64) ist) + " B, Delta "
+                + juce::String ((juce::int64) ist - (juce::int64) kNak380M97Startwert) + " B");
+}
 } // namespace
 
 //==============================================================================
@@ -1905,6 +1928,8 @@ int main (int argc, char* argv[])
     if (argc == 3 && std::strcmp (argv[1], "--nak380") == 0)
     {
         nak380Detektor (argv[2]);
+        if (nak380Waehlt (argv[2], "M-97"))
+            nak380Objektbudget();
         std::cout << "\n-----------------------------------------" << std::endl;
         std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
         return fehler == 0 ? 0 : 1;
@@ -1938,6 +1963,7 @@ int main (int argc, char* argv[])
 
     nak380DichteUndBandleistung();
     nak380Detektor (nullptr);
+    nak380Objektbudget();
 
     //==========================================================================
     std::cout << "== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==" << std::endl;

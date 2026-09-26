@@ -287,18 +287,16 @@ Verlauf. Wiederaufnahme nur durch neues User-Wort.
   dessen Text den Namen des PowerShell-Lösch-Cmdlets enthält, auch in einem
   Worker-Prompt. `claude rm <id>` nur als eigenen Befehl absetzen; in einer
   Befehlskette blockt der Filter die ganze Kette (12.09.2026).
-- Ein frisch gebauter Kanon kann einmalig mit zwei `flatc`-Beinen
-  „Voraussetzung fehlt" enden; vor einem Befund gegen den Runner einmal
-  wiederholen. Fehlt es zweimal, fehlt `flatc.exe` (Zeiger in
-  `eq-copilot/build/nakama-flatc-pfad-Release.txt`, Bauartefakt,
-  nicht ins Repo, verschwindet nach manchem Worker-Bau): `cmake --build eq-copilot/build --config Release --target
-  flatc` nachbauen (NAK-280).
+- Endet ein frischer Kanon mit zwei `flatc`-Beinen „Voraussetzung fehlt",
+  einmal wiederholen; zweimal heißt `flatc.exe` fehlt (Zeiger
+  `eq-copilot/build/nakama-flatc-pfad-Release.txt`, Bauartefakt): `cmake
+  --build eq-copilot/build --config Release --target flatc` (NAK-280).
 - Ein Pipe-Zeichen in einer Markdown-Tabellenzelle reißt `dokuriegel.py`;
   als `\|` schreiben, Zeilenbereiche mit ASCII-Bindestrich.
-- `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelle kann
-  älter sein als ihr Objektfile, MSBuild baut dann nicht neu und meldet Exit 0
-  (`docs/beweise/NAK-230.md` NB-2). Vor dem Neubau `(Get-Item <datei>).LastWriteTime = Get-Date`
-  setzen und den Binary-Zeitstempel prüfen.
+- `Copy-Item` überträgt `LastWriteTime`: eine zurückgespielte Quelle ist älter
+  als ihr Objektfile, MSBuild baut nicht neu und meldet Exit 0 (NAK-230 NB-2).
+  Vor dem Neubau `(Get-Item <datei>).LastWriteTime = Get-Date` setzen und den
+  Binary-Zeitstempel prüfen.
 - Ein laufender Dirigenten-Starterprozess lädt sein Skript beim
   Marker-Neustart nicht neu (NAK-257); Skriptänderungen greifen erst nach
   Fensterneustart.
@@ -313,3 +311,6 @@ Verlauf. Wiederaufnahme nur durch neues User-Wort.
   stehen (Runner 0 % CPU, kein Kindprozess), wartet der Runner auf den
   MSVC-Telemetrieprozess `vctip.exe` als Nachkommen des Bauschritts (NAK-300):
   Prozess beenden, der Lauf geht weiter.
+- Workerauftrag als Positionsargument ab ~32 000 Zeichen: „Der Dateiname oder
+  die Erweiterung ist zu lang" (NAK-380 §47). Langen Auftrag als Repo-Datei
+  ablegen, dem Worker einen kurzen Zeigerauftrag übergeben.

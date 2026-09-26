@@ -1,0 +1,25 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m94-feldform
+Datei: eq-copilot/schemas/v3/eq-ipc-v3.schema.json
+Zeile (Etappenstand): 1409
+SHA-256 vor der Mutation: 5BCA726203C24992D54984EF85CD72C3D2AF66F243836E78DC0AE5B7D0FDCBAB; Sicherung eq-copilot/build/nak380-sicherung/e5/m94-feldform/eq-ipc-v3.schema.json
+Begruendung: Matrix M-94, Satz 'keine Feldaenderung': die Obergrenze der Freiheitsgrade im Schema 1 048 576 -> 4096 (Feldform geaendert, Kommentar unveraendert).
+Ruecknahme aus der Sicherung, SHA-256 5BCA726203C24992D54984EF85CD72C3D2AF66F243836E78DC0AE5B7D0FDCBAB: gleich
+Wortlaut vorher:
+              "maxItems": 221,
+              "items": { "type": "integer", "minimum": 0, "maximum": 1048576 }
+            },
+            "mid_db"
+Wortlaut nachher:
+              "maxItems": 221,
+              "items": { "type": "integer", "minimum": 0, "maximum": 4096 }
+            },
+            "mid_db"
+  Kein Bau (das Python-Bein liest die Datei direkt)
+
+== Matrixzeile M-94; Zusagesatz: keine Feldaenderung
+Lauf mit Mutation: A5 --nak380 M-94 02:23:39 bis 02:23:39, Exit 2, Pruefungen: 6 bestanden, 1 gescheitert
+Gefallene Pruefungen:
+      ROT: nak380_m94_ring_benannt: freiheitsgrade behaelt seine Feldform � {'type': 'array', 'minItems': 221, 'maxItems': 221, 'items': {'type': 'integer', 'minimum': 0, 'maximum': 4096}}
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: nak380_m94_ring_benannt: freiheitsgrade behaelt seine Feldform)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+Lauf nach Ruecknahme: A5 --nak380 M-94 02:23:39 bis 02:23:39, Exit 0, Pruefungen: 7 bestanden, 0 gescheitert

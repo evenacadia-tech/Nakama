@@ -3,16 +3,25 @@
 // NAK-225/S25d (09.09.2026), Definitionen herausgeloest aus der Klasse in
 // core/analysis/FeatureEngine.h. Inhalt:
 //
-//   stereoSchritt        Ein Welch-Frame der Hauptstufe in die bandweisen
-//                        Kreuzspektren. Ohne zweite FFT: die Engine
-//                        transformiert MID und SIDE, und L/R folgen daraus
-//                        linear.
+//   stereoSchritt        Ein Welch-Frame einer Stufe in die bandweisen
+//                        Kreuzspektren und in den Ring je Bin. Ohne zweite
+//                        FFT: die Engine transformiert MID und SIDE, und L/R
+//                        folgen daraus linear.
 //   stereoSample         Die Energien, die kein Frame braucht (Korrelation).
 //   stereoAuswerten      Aus den Akkumulatoren werden Bandwerte und Skalare.
-//   stereoLeeren         Der Rueckweg: jeder Akkumulator hat einen.
+//   stereoFensterLeeren, stereoRingVorschub, stereoLeeren
+//                        Die Rueckwege: jeder Akkumulator hat einen.
 //
 // aktivieren und abklingen gehoeren zusammen (CLAUDE.md): stereoSchritt und
-// stereoLeeren stehen deshalb in derselben Datei.
+// die drei Rueckwege stehen deshalb in derselben Datei.
+//
+// NAK-380 Etappe 5 (R-380-3, T-380-6, DSP-23): die Magnitude-Squared
+// Coherence entsteht je BIN aus Auto- und Kreuzspektren, die ueber die Frames
+// der letzten W Evidenzfenster summiert sind (Ring, W_H = kStereoRingHaupt,
+// W_B = kStereoRingBass), und wird erst danach im Band gemittelt; die Phase
+// wird am Bin der geometrischen Bandmitte gelesen, die Laufzeit aus dem
+// Lag-1-Produkt benachbarter Bins. Korrelation, Mid/Side, Seitenanteil,
+// Zeitperzentile und Folddown bleiben je Evidenzfenster.
 
 #ifndef NAKAMA_FEATUREENGINE_TEIL
 #error "Teilkopf von FeatureEngine.h - nur ueber FeatureEngine.h einbinden."
@@ -23,9 +32,98 @@
 namespace nakama::analyse
 {
 
+//== Der Ring je Bin: Aufbau (T-380-6) ====================================
+//
+// EIN flacher Vektor `stereoRing` aus `StereoBinAkku` (vier double: Sxx,
+// Syy, Re Sxy, Im Sxy), angelegt in `vorbereiten`:
+//
+//   [Zaehlerkopf][Band 0][Band 1] ... [Band 220]
+//
+// Band b traegt je Bin seiner Stufe W + 1 Elemente hintereinander: die W
+// Ringslots (einer je Evidenzfenster, W = kStereoRingBass unter der
+// Trennung, sonst kStereoRingHaupt) und am Index W das Kurzfenster der
+// Persistenz (A-4). Der Zaehlerkopf haelt je Band und Slot die Zahl der
+// gueltigen Frames (Freiheitsgrade) als double, vier Zaehler je Element in
+// der Reihenfolge sxx, syy, sxyRe, sxyIm; er faengt jedes Band, auch eines
+// ohne Bin, damit sein Aufbau nicht an der Abtastrate haengt. Bytes je
+// Engine: 32 je Bin und Slot plus 8 je Band und Slot (M-85; bei 44,1 kHz
+// 236 224 B, bei 48 kHz 217 792 B).
+
+inline int FeatureEngine::stereoRingSlots (int b, int trenn) noexcept
+{
+    return (b < trenn ? kStereoRingBass : kStereoRingHaupt) + 1;
+}
+
+inline int FeatureEngine::stereoBins (int b) const noexcept
+{
+    const auto i = (std::size_t) b;
+    return std::max (0, bass.bandBis[i] - bass.bandVon[i])
+         + std::max (0, haupt.bandBis[i] - haupt.bandVon[i]);
+}
+
+inline std::size_t FeatureEngine::stereoZaehlerElemente (int trenn) noexcept
+{
+    const std::size_t zaehler = (std::size_t) trenn * ((std::size_t) kStereoRingBass + 1u)
+        + ((std::size_t) Gitter::evidenzBaender - (std::size_t) trenn) * ((std::size_t) kStereoRingHaupt + 1u);
+    return (zaehler + 3u) / 4u;
+}
+
+inline std::size_t FeatureEngine::stereoZaehlerBasis (int b, int trenn) noexcept
+{
+    return b < trenn
+        ? (std::size_t) b * ((std::size_t) kStereoRingBass + 1u)
+        : (std::size_t) trenn * ((std::size_t) kStereoRingBass + 1u)
+              + ((std::size_t) b - (std::size_t) trenn) * ((std::size_t) kStereoRingHaupt + 1u);
+}
+
+inline double& FeatureEngine::stereoZaehler (std::size_t i) noexcept
+{
+    auto& e = stereoRing[i / 4u];
+    switch (i % 4u)
+    {
+        case 0:  return e.sxx;
+        case 1:  return e.syy;
+        case 2:  return e.sxyRe;
+        default: return e.sxyIm;
+    }
+}
+
+inline double FeatureEngine::stereoZaehlerWert (std::size_t i) const noexcept
+{
+    const auto& e = stereoRing[i / 4u];
+    switch (i % 4u)
+    {
+        case 0:  return e.sxx;
+        case 1:  return e.syy;
+        case 2:  return e.sxyRe;
+        default: return e.sxyIm;
+    }
+}
+
+/** Gueltige Frames des Bandes in den belegten Ringslots seiner Stufe - das
+    Feld `freiheitsgrade`. Nie aelter als W Fenster: der Ring hat W Slots,
+    und der Vorschub leert den Slot, den er neu belegt. */
+inline std::uint32_t FeatureEngine::stereoRingFrames (int b, int trenn) const noexcept
+{
+    if (stereoRing.empty())
+        return 0u;
+    const bool bassBand = b < trenn;
+    const auto w = (std::uint32_t) (bassBand ? kStereoRingBass : kStereoRingHaupt);
+    const auto stand = bassBand ? stereoRingStandBass : stereoRingStandHaupt;
+    const auto belegt = std::min (bassBand ? stereoRingBelegtBass : stereoRingBelegtHaupt, w);
+    const std::size_t z0 = stereoZaehlerBasis (b, trenn);
+    double frames = 0.0;
+    for (std::uint32_t j = 0; j < belegt; ++j)
+    {
+        const std::uint32_t s = (stand + w - j) % w;     // j Fenster zurueck
+        frames += stereoZaehlerWert (z0 + (std::size_t) s);
+    }
+    return (std::uint32_t) frames;
+}
+
 //== Stereoevidenz (SONDE-013 M-08, M-10 bis M-12) ========================
 
-/** Ein Welch-Frame der Hauptstufe in die bandweisen Kreuzspektren.
+/** Ein Welch-Frame einer Stufe in die bandweisen Kreuzspektren und den Ring.
 
     🔑 WARUM KEINE ZWEITE FFT. Die Engine transformiert MID und SIDE, nicht
     L und R. Die Fouriertransformation ist linear, und M = (L+R)/2,
@@ -48,15 +146,33 @@ namespace nakama::analyse
     Die Nyquist-Kappe aus M-10 wirkt hier ueber die Bandzuordnung: ein
     Band ueber `kappeBand` hat `bandBis <= bandVon`, bekommt also keinen
     einzigen Bin und bleibt bei null Freiheitsgraden. Es entsteht keine
-    zweite Kappenregel. */
-inline void FeatureEngine::stereoSchritt (const Stufe& s, bool zaehlKurzfenster) noexcept
+    zweite Kappenregel.
+
+    NAK-380 Etappe 5: je Bin gehen Sxx = |L|^2, Syy = |R|^2 und Sxy =
+    L·conj(R) in den laufenden Ringslot der Stufe und in das Kurzfenster, und
+    der Zaehler des Bandes steigt je Slot um eins - vier Additionen je Bin
+    und Ziel, keine Allokation. Der NaN-Riegel bleibt je Band und Frame: ist
+    eine Bandsumme nicht endlich, zaehlt der Frame fuer DIESES Band nirgends
+    (M-95), die uebrigen Baender zaehlen weiter. `nanKreuzBin` setzt nur der
+    Testzugang (M-95): er macht das Kreuzspektrum genau eines Bins in genau
+    diesem Frame nicht endlich; das Produkt ruft mit -1. */
+inline void FeatureEngine::stereoSchritt (const Stufe& s, bool zaehlKurzfenster,
+                                          int nanKreuzBin) noexcept
 {
-    if ((int) stereoAkku.size() < Gitter::evidenzBaender)
+    if ((int) stereoAkku.size() < Gitter::evidenzBaender || stereoRing.empty())
         return;
 
-    const double hopMs = 1000.0 * (double) s.hop / s.fs;
+    const int trenn = trennIndex();
+    const bool bassStufe = &s == &bass;
+    const auto w = (std::size_t) (bassStufe ? kStereoRingBass : kStereoRingHaupt);
+    const auto slot = (std::size_t) (bassStufe ? stereoRingStandBass : stereoRingStandHaupt);
+    const std::size_t slots = w + 1u;               // W Ringslots und das Kurzfenster
+    constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+    std::size_t basis = stereoZaehlerElemente (trenn);
     for (int b = 0; b < Gitter::evidenzBaender; ++b)
     {
+        const std::size_t bandBasis = basis;
+        basis += (std::size_t) stereoBins (b) * (std::size_t) stereoRingSlots (b, trenn);
         const int von = s.bandVon[(std::size_t) b];
         const int bis = s.bandBis[(std::size_t) b];
         if (bis <= von)
@@ -75,25 +191,48 @@ inline void FeatureEngine::stereoSchritt (const Stufe& s, bool zaehlKurzfenster)
             sll += lr * lr + li * li;
             srr += rr * rr + ri * ri;
             // L · conj(R)
-            sxyRe += lr * rr + li * ri;
-            sxyIm += li * rr - lr * ri;
+            sxyRe += k == nanKreuzBin ? kNaN : lr * rr + li * ri;
+            sxyIm += k == nanKreuzBin ? kNaN : li * rr - lr * ri;
         }
         if (! (std::isfinite (smm) && std::isfinite (sss)
                && std::isfinite (sll) && std::isfinite (srr)
                && std::isfinite (sxyRe) && std::isfinite (sxyIm)))
-            continue;                       // NaN-Riegel beim ERZEUGEN
+            continue;                       // NaN-Riegel beim ERZEUGEN, je Band und Frame
 
         auto& a = stereoAkku[(std::size_t) b];
         a.smm += smm; a.sss += sss;
         a.sll += sll; a.srr += srr;
         a.sxyRe += sxyRe; a.sxyIm += sxyIm;
         ++a.frames;
-        a.dauerMs += hopMs;
 
         auto& kz = stereoKurz[(std::size_t) b];
         kz.sll += sll; kz.srr += srr;
         kz.sxyRe += sxyRe; kz.sxyIm += sxyIm;
         ++kz.frames;
+
+        // Der Ring je Bin (T-380-6): die Bandsummen oben sind endlich, also
+        // ist es jeder ihrer Summanden - dieselben Werte je Bin noch einmal
+        // (samt dem Setzer des Testzugangs, damit ein fehlender Riegel das
+        // Nichtendliche auch hier truege), in den laufenden Slot und das
+        // Kurzfenster (A-4).
+        for (int k = von; k < bis; ++k)
+        {
+            const double mr = s.fftM.realTeil (k), mi = s.fftM.imagTeil (k);
+            const double sre = s.fftS.realTeil (k), sim = s.fftS.imagTeil (k);
+            const double lr = mr + sre, li = mi + sim;
+            const double rr = mr - sre, ri = mi - sim;
+            const double xx = lr * lr + li * li, yy = rr * rr + ri * ri;
+            const double re = k == nanKreuzBin ? kNaN : lr * rr + li * ri;
+            const double im = k == nanKreuzBin ? kNaN : li * rr - lr * ri;
+            auto* bin = &stereoRing[bandBasis + ((std::size_t) k - (std::size_t) von) * slots];
+            bin[slot].sxx += xx; bin[slot].syy += yy;
+            bin[slot].sxyRe += re; bin[slot].sxyIm += im;
+            bin[w].sxx += xx; bin[w].syy += yy;
+            bin[w].sxyRe += re; bin[w].sxyIm += im;
+        }
+        const std::size_t z0 = stereoZaehlerBasis (b, trenn);
+        stereoZaehler (z0 + slot) += 1.0;
+        stereoZaehler (z0 + w) += 1.0;
 
         // Der Zeitverlauf des SEITENANTEILS, ein Wert je Frame. Er ist
         // die Grundlage der Zeitperzentile aus §40.1 - und die einzige
@@ -122,8 +261,15 @@ inline void FeatureEngine::stereoSchritt (const Stufe& s, bool zaehlKurzfenster)
     {
         stereoKurzFrames = 0;
         ++stereoKurzfenster;
+        std::size_t basisKurz = stereoZaehlerElemente (trenn);
         for (int b = 0; b < Gitter::evidenzBaender; ++b)
         {
+            const auto slotsB = (std::size_t) stereoRingSlots (b, trenn);
+            const auto binsB = (std::size_t) stereoBins (b);
+            const std::size_t bandBasis = basisKurz;
+            basisKurz += binsB * slotsB;
+            const std::size_t kurz = slotsB - 1u;          // Index des Kurzfensters
+            const std::size_t zKurz = stereoZaehlerBasis (b, trenn) + kurz;
             auto& kz = stereoKurz[(std::size_t) b];
             if (kz.frames > 0)
             {
@@ -141,14 +287,31 @@ inline void FeatureEngine::stereoSchritt (const Stufe& s, bool zaehlKurzfenster)
                             (float) std::clamp (r, -1.0, 1.0);
                         stereoKorrKurzGesetzt[(std::size_t) b] = 1u;
                     }
-                    const double koh = (kz.sxyRe * kz.sxyRe + kz.sxyIm * kz.sxyIm)
-                                     / (kz.sll * kz.srr);
-                    if (std::isfinite (koh) && koh >= kKohaerenzSchwellePhase
-                        && kz.frames >= kWelchMindestFrames)
+                    // NAK-380 A-4: die Kohaerenz des Kurzfensters ist dieselbe
+                    // Groesse wie die des Evidenzfensters - Bandmittel der MSC
+                    // je Bin ueber die Bins mit Energie, nicht die Bandsumme.
+                    double summe = 0.0;
+                    int mitEnergie = 0;
+                    for (std::size_t i = 0; i < binsB; ++i)
+                    {
+                        const auto& x = stereoRing[bandBasis + i * slotsB + kurz];
+                        const double n2 = x.sxx * x.syy;
+                        if (n2 > 0.0)
+                        {
+                            summe += (x.sxyRe * x.sxyRe + x.sxyIm * x.sxyIm) / n2;
+                            ++mitEnergie;
+                        }
+                    }
+                    const double koh = mitEnergie > 0 ? summe / (double) mitEnergie : 0.0;
+                    if (mitEnergie > 0 && std::isfinite (koh) && koh >= kKohaerenzSchwellePhase
+                        && stereoZaehlerWert (zKurz) >= (double) kWelchMindestFrames)
                         ++stereoPersistenzZaehler[(std::size_t) b];
                 }
             }
             kz = StereoAkku {};
+            for (std::size_t i = 0; i < binsB; ++i)
+                stereoRing[bandBasis + i * slotsB + kurz] = StereoBinAkku {};
+            stereoZaehler (zKurz) = 0.0;
         }
     }
 }
@@ -170,21 +333,45 @@ inline void FeatureEngine::stereoSample (double l, double r) noexcept
 }
 
 /** Wertet die Akkumulatoren zu `StereoBandwert`n aus. Am Ende eines
-    Evidenzfensters, zusammen mit den Baendern und der Verteilung. */
+    Evidenzfensters, zusammen mit den Baendern und der Verteilung.
+
+    NAK-380 Etappe 5 (T-380-6): Freiheitsgrade und Fensterdauer kommen aus
+    dem Ring - die gueltigen Frames der letzten W Evidenzfenster und die
+    Summe ihrer Hopdauern. Die Kohaerenz (Stufe 1) ist das Mittel der MSC je
+    Bin |Sxy|^2/(Sxx·Syy) ueber die Bins mit Sxx·Syy > 0, jeder Bin ueber die
+    belegten Slots summiert; ohne Bin mit Energie oder unter
+    `kWelchMindestFrames` gibt es kein Bit. Die Phase (Stufe 2) steht am Bin
+    der geometrischen Bandmitte, die Laufzeit aus arg(Summe Sxy[k+1]·
+    conj(Sxy[k]))/(2 pi Δf) ueber Baender mit mindestens zwei Bins - beide
+    nur ueber `kKohaerenzSchwellePhase`, weil die Laufzeit eine Deutung der
+    Interchannel-Phase ist (§40.1). Kohaerenz, Phase und Laufzeit gibt es nur
+    fuer ein Band, das in DIESEM Evidenzfenster gemessen wurde (wie bisher
+    unter `basisGesetzt`). */
 inline void FeatureEngine::stereoAuswerten() noexcept
 {
     if ((int) stereoAkku.size() < Gitter::evidenzBaender
         || (int) stereoErgebnis.size() < Gitter::evidenzBaender)
         return;
 
+    const int trenn = trennIndex();
+    std::size_t basis = stereoZaehlerElemente (trenn);
     float folge[kVerteilungPlaetze];
     for (int b = 0; b < Gitter::evidenzBaender; ++b)
     {
+        const auto slotsB = (std::size_t) stereoRingSlots (b, trenn);
+        const int binsB = stereoBins (b);
+        const std::size_t bandBasis = basis;
+        basis += (std::size_t) binsB * slotsB;
+        const bool bassBand = b < trenn;
+        const Stufe& st = bassBand ? bass : haupt;
+
         const auto& a = stereoAkku[(std::size_t) b];
         auto& e = stereoErgebnis[(std::size_t) b];
         e = StereoBandwert {};
-        e.freiheitsgrade = a.frames;
-        e.fensterDauerMs = (float) a.dauerMs;
+        const std::uint32_t ringFrames = stereoRingFrames (b, trenn);
+        e.freiheitsgrade = ringFrames;
+        e.fensterDauerMs = st.fs > 0.0
+            ? (float) ((double) ringFrames * 1000.0 * (double) st.hop / st.fs) : 0.0f;
         if (a.frames == 0u)
             continue;                       // kein Bit, kein Wert
 
@@ -222,24 +409,78 @@ inline void FeatureEngine::stereoAuswerten() noexcept
                 e.korrelationKurzGesetzt = true;         // NAK-181 R5
             }
 
-            // Stufe 1: Kohaerenz nur mit genug Frames UND Energie.
-            if (a.frames >= (std::uint32_t) kWelchMindestFrames
-                && a.sll > 0.0 && a.srr > 0.0)
+            // Stufe 1: Kohaerenz nur mit genug Frames UND Energie, je Bin
+            // aus dem Ring, danach im Band gemittelt (R-380-3).
+            if (ringFrames >= (std::uint32_t) kWelchMindestFrames && binsB > 0)
             {
-                const double koh = (a.sxyRe * a.sxyRe + a.sxyIm * a.sxyIm)
-                                 / (a.sll * a.srr);
-                if (std::isfinite (koh))
+                const auto w = (std::uint32_t) (bassBand ? kStereoRingBass : kStereoRingHaupt);
+                const auto stand = bassBand ? stereoRingStandBass : stereoRingStandHaupt;
+                const auto belegt = std::min (bassBand ? stereoRingBelegtBass : stereoRingBelegtHaupt, w);
+                const int von = st.bandVon[(std::size_t) b];
+                const double df = st.fs / (double) st.punkte;
+                // Der Bin, der der geometrischen Bandmitte am naechsten liegt.
+                const int kMitte = std::clamp ((int) std::llround (Gitter::evidenzMitte (b) / df),
+                                               von, von + binsB - 1);
+                double summe = 0.0, mitteRe = 0.0, mitteIm = 0.0;
+                double lagRe = 0.0, lagIm = 0.0, vorRe = 0.0, vorIm = 0.0;
+                int mitEnergie = 0;
+                bool mitteEnergie = false;
+                for (int i = 0; i < binsB; ++i)
+                {
+                    const std::size_t binBasis = bandBasis + (std::size_t) i * slotsB;
+                    double xx = 0.0, yy = 0.0, re = 0.0, im = 0.0;
+                    for (std::uint32_t j = 0; j < belegt; ++j)
+                    {
+                        const std::uint32_t s = (stand + w - j) % w;     // j Fenster zurueck
+                        const auto& x = stereoRing[binBasis + (std::size_t) s];
+                        xx += x.sxx; yy += x.syy;
+                        re += x.sxyRe; im += x.sxyIm;
+                    }
+                    const double n2 = xx * yy;
+                    if (n2 > 0.0)
+                    {
+                        summe += (re * re + im * im) / n2;
+                        ++mitEnergie;
+                    }
+                    if (von + i == kMitte)
+                    {
+                        mitteRe = re;
+                        mitteIm = im;
+                        mitteEnergie = n2 > 0.0;
+                    }
+                    // Lag-1-Produkt Sxy[k]·conj(Sxy[k-1]).
+                    if (i > 0)
+                    {
+                        lagRe += re * vorRe + im * vorIm;
+                        lagIm += im * vorRe - re * vorIm;
+                    }
+                    vorRe = re;
+                    vorIm = im;
+                }
+                const double koh = mitEnergie > 0 ? summe / (double) mitEnergie : 0.0;
+                if (mitEnergie > 0 && std::isfinite (koh))
                 {
                     e.kohaerenzGesetzt = true;
                     e.kohaerenz = (float) std::clamp (koh, 0.0, 1.0);
-                    // Stufe 2: Phase nur ueber der benannten Schwelle.
+                    // Stufe 2: Phase und Laufzeit nur ueber der benannten Schwelle.
                     if (koh > kKohaerenzSchwellePhase)
                     {
-                        const double phi = std::atan2 (a.sxyIm, a.sxyRe);
-                        if (std::isfinite (phi))
+                        const double phi = std::atan2 (mitteIm, mitteRe);
+                        if (mitteEnergie && std::isfinite (phi))
                         {
                             e.phaseGesetzt = true;
                             e.phaseRad = (float) phi;
+                        }
+                        // R verzoegert: Sxy[k] ~ exp(+i 2 pi k d/N), das
+                        // Lag-Produkt dreht um +2 pi Δf tau, tau > 0.
+                        if (binsB >= 2 && (lagRe != 0.0 || lagIm != 0.0))
+                        {
+                            const double tauMs = 1000.0 * std::atan2 (lagIm, lagRe) / (2.0 * kPi * df);
+                            if (std::isfinite (tauMs))
+                            {
+                                e.laufzeitGesetzt = true;
+                                e.laufzeitMs = (float) tauMs;
+                            }
                         }
                     }
                 }
@@ -297,10 +538,11 @@ inline void FeatureEngine::stereoAuswerten() noexcept
     }
 }
 
-/** Leert alles, was zu GENAU DIESEM Evidenzfenster gehoert. Wird von
-    `evidenzLeeren()` und von `grenzeZiehen()` gerufen — die
-    Stereoevidenz ist ein Fenster wie jedes andere (§32.3). */
-inline void FeatureEngine::stereoLeeren() noexcept
+/** Leert alles, was zu GENAU DIESEM Evidenzfenster gehoert: die
+    Bandsummen, das Kurzfenster (Bandsumme und je Bin), Verlauf,
+    Persistenz und die Skalare. Der Ring bleibt - ihn schiebt
+    `stereoRingVorschub`, ihn leert `stereoLeeren`. */
+inline void FeatureEngine::stereoFensterLeeren() noexcept
 {
     for (auto& a : stereoAkku)  a = StereoAkku {};
     for (auto& a : stereoKurz)  a = StereoAkku {};
@@ -313,6 +555,58 @@ inline void FeatureEngine::stereoLeeren() noexcept
     stereoKurzfenster = 0;
     stereoMonoEnergie = stereoStereoEnergie = 0.0;
     stereoLEnergie = stereoREnergie = 0.0;
+    if (stereoRing.empty())
+        return;
+    // Das Kurzfenster je Bin (A-4) teilt den Lebenszyklus von `stereoKurz`.
+    const int trenn = trennIndex();
+    std::size_t basis = stereoZaehlerElemente (trenn);
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const auto slotsB = (std::size_t) stereoRingSlots (b, trenn);
+        const auto binsB = (std::size_t) stereoBins (b);
+        for (std::size_t i = 0; i < binsB; ++i)
+            stereoRing[basis + i * slotsB + slotsB - 1u] = StereoBinAkku {};
+        stereoZaehler (stereoZaehlerBasis (b, trenn) + slotsB - 1u) = 0.0;
+        basis += binsB * slotsB;
+    }
+}
+
+/** Der Rueckweg eines Evidenzfensters (`evidenzLeeren`): das Fenster
+    faellt, der Ring schiebt je Stufe genau einen Slot weiter und leert
+    den Slot, den das naechste Fenster belegt - er traegt sonst das Fenster
+    von vor W Fenstern. Die belegten Fenster saettigen bei W. */
+inline void FeatureEngine::stereoRingVorschub() noexcept
+{
+    stereoFensterLeeren();
+    if (stereoRing.empty())
+        return;
+    stereoRingStandHaupt = (stereoRingStandHaupt + 1u) % (std::uint32_t) kStereoRingHaupt;
+    stereoRingStandBass  = (stereoRingStandBass  + 1u) % (std::uint32_t) kStereoRingBass;
+    if (stereoRingBelegtHaupt < (std::uint32_t) kStereoRingHaupt) ++stereoRingBelegtHaupt;
+    if (stereoRingBelegtBass  < (std::uint32_t) kStereoRingBass)  ++stereoRingBelegtBass;
+    const int trenn = trennIndex();
+    std::size_t basis = stereoZaehlerElemente (trenn);
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const auto slotsB = (std::size_t) stereoRingSlots (b, trenn);
+        const auto binsB = (std::size_t) stereoBins (b);
+        const auto slot = (std::size_t) (b < trenn ? stereoRingStandBass : stereoRingStandHaupt);
+        for (std::size_t i = 0; i < binsB; ++i)
+            stereoRing[basis + i * slotsB + slot] = StereoBinAkku {};
+        stereoZaehler (stereoZaehlerBasis (b, trenn) + slot) = 0.0;
+        basis += binsB * slotsB;
+    }
+}
+
+/** Leert die GANZE Stereoevidenz einschliesslich des Rings. Wird von
+    `grenzeZiehen()` und `zuruecksetzen()` (also auch von `vorbereiten()`)
+    gerufen — kein Kreuzspektrum ueberbrueckt eine Grenze (§32.3). */
+inline void FeatureEngine::stereoLeeren() noexcept
+{
+    stereoFensterLeeren();
+    for (auto& r : stereoRing) r = StereoBinAkku {};
+    stereoRingStandHaupt = stereoRingStandBass = 0u;
+    stereoRingBelegtHaupt = stereoRingBelegtBass = 1u;
 }
 
 } // namespace nakama::analyse

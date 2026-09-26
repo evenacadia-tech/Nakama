@@ -1,0 +1,50 @@
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-86 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-23 · Fensterdauer und Freiheitsgrade in der Evidenz
+Zusage (§6.4, woertlich): zwei Hälften: Fensterdauer = Summe der Hopdauern genau der gezählten Frames ± 1 ms (bleibt); Freiheitsgrade = Frames im Ring (neu: über W Fenster, nicht nur das letzte)
+Test je Sprache (§6.4): C++: B19 bestehend, erweitert
+Rotbeweis-Spalte (§6.4, woertlich): Dauer Golden-Klasse (i), Regressionswache: Mutation Dauer nur des letzten Fensters → rot; Freiheitsgrade Golden-Klasse (ii), heute nicht messbar: neuer Wert über W Fenster, Mutation Freiheitsgrade nur des letzten Fensters → rot
+Etikett: Dauer Klasse (i) Regressionswache; Freiheitsgrade Klasse (ii) heute nicht messbar
+
+== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
+Ergebnis: Dauer grün (1066,667 ms gegen 1066,667 ms); Freiheitsgrade rot: gemeldet 25, Modell und Golden 74 (Pflichterfassung `NAK-380-etappe-5-m86-dof-alt.txt`)
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung gespeiste Samplezahl = 153 600 (3 s * 48 000), Laeufer und Engine  [153600 / 153600]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung drei Snapshots an 51 200, 102 400 und 153 600 Samples (Kadenzmodell)  [3 Snapshots]
+    [ROT]  380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74), nicht nur das letzte (25)  [gemeldet 25, Modell 74, Golden 74]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (dritter Snapshot)  [1066.667 ms gegen 1066.667 ms]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): erster Snapshot unveraendert 24 Frames und 1024 ms (floor((51 200 - 4096)/2048) + 1)  [24 Frames, 1024.000 ms]
+
+== Endstand (Etappenstand, Binaries des Endbaus)
+LAUF B19 --nak380 M-86 02:53:58 bis 02:53:58, EXIT=0, Binary 02:49:40.127
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+    [ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+    [ok]   mit genug Frames traegt die Kohaerenz ein Bit
+    [ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung gespeiste Samplezahl = 153 600 (3 s * 48 000), Laeufer und Engine  [153600 / 153600]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung drei Snapshots an 51 200, 102 400 und 153 600 Samples (Kadenzmodell)  [3 Snapshots]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74), nicht nur das letzte (25)  [gemeldet 74, Modell 74, Golden 74]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (dritter Snapshot)  [3157.333 ms gegen 3157.333 ms]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): erster Snapshot unveraendert 24 Frames und 1024 ms (floor((51 200 - 4096)/2048) + 1)  [24 Frames, 1024.000 ms]
+    11 bestanden, 0 gescheitert
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Fensterdauer = Summe der Hopdauern genau der gezählten Frames ± 1 ms (bleibt)
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1118 (3157,333 ms), B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:374 Fensterdauer nur des letzten Fensters (Matrixmutation) (m86-dauer-letztes)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m86-dauer-letztes.txt
+- Zusagesatz: Freiheitsgrade = Frames im Ring (neu: über W Fenster, nicht nur das letzte)
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:1113 (74), B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:372 Freiheitsgrade nur des letzten Fensters (Matrixmutation) (m86-dof-letztes); eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp:1082 Golden 74 → alter Wert 25 (Klasse (ii)) (m86-golden-alt)
+  rot: JA
+  Protokoll: NAK-380-e5-mutation-m86-dof-letztes.txt, NAK-380-e5-mutation-m86-golden-alt.txt
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m86-dauer-letztes (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:374): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-86 (i): Fensterdauer nur des letzten Fensters (Zaehler des laufenden Slots).
+  m86-dof-letztes (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:372): Exit mit Mutation 1, rote Pruefungen 2; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Matrix M-86 (ii): Freiheitsgrade nur des letzten Fensters (Zaehler des laufenden Slots).
+  m86-golden-alt (eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp:1082): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
+    Begruendung: Golden-Klasse (ii), E-380-18: der neue Freiheitsgradwert laeuft zuerst gegen genau den alten Wert 25 (dritter Snapshot am unveraenderten Code, NAK-380-etappe-5-m86-dof-alt.txt) rot; erst danach steht 74 als Golden.

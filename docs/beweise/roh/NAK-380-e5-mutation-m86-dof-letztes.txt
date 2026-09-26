@@ -1,0 +1,33 @@
+NAK-380 Etappe 5 — Mutationsprotokoll m86-dof-letztes
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Etappenstand): 372
+SHA-256 vor der Mutation: 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687; Sicherung eq-copilot/build/nak380-sicherung/e5/m86-dof-letztes/Stereo.h
+Begruendung: Matrix M-86 (ii): Freiheitsgrade nur des letzten Fensters (Zaehler des laufenden Slots).
+Ruecknahme aus der Sicherung, SHA-256 36EBE758467DBC82582DAF4D24F2407C7F67E2D6101FDAD2E8321BF8E2423687: gleich; Bau nach Ruecknahme 02:10:01 bis 02:10:07, Exit 0
+Wortlaut vorher:
+            e.freiheitsgrade = ringFrames;
+Wortlaut nachher:
+            e.freiheitsgrade = (std::uint32_t) stereoZaehlerWert (stereoZaehlerBasis (b, trenn) + (std::size_t) (bassBand ? stereoRingStandBass : stereoRingStandHaupt));
+  Bau EqCopSonde013StereoGoldenTest: 02:09:54 bis 02:10:01, Exit 0
+
+== Matrixzeile M-86; Zusagesatz: Freiheitsgrade = Frames im Ring ueber W Fenster (74)
+  Binary 02:10:01.138 juenger als Quelle 02:09:54.413: ja
+Lauf mit Mutation: B19 --nak380 M-86 02:10:01 bis 02:10:01, Exit 1, 9 bestanden, 2 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74), nicht nur das letzte (25)  [gemeldet 25, Modell 74, Golden 74]
+    [ROT]  380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (dritter Snapshot)  [3157.333 ms gegen 1066.667 ms]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74))
+Mitgefallene Pruefungen (Grund: die Fensterdauer rechnet aus denselben Freiheitsgraden (Dauer = Frames * Hop) - sie bleibt konsistent, faellt also nicht):
+    [ROT]  380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Fensterdauer = Summe der Hopdauern genau der gezaehlten Frames +- 1 ms (dritter Snapshot)  [3157.333 ms gegen 1066.667 ms]
+Unter derselben Mutation gruen gebliebene Pruefungen: 9
+    [ok]   ein Evidenzfenster entsteht
+    [ok]   das Band traegt seine Freiheitsgrade - die Zahl der gemittelten gueltigen Welch-Frames (Â§40.1: 'Fensterdauer und Freiheitsgrade werden Teil der Evidenz')  [24 Frames]
+    [ok]   und seine Fensterdauer in Millisekunden  [1024.0 ms]
+    [ok]   mit genug Frames traegt die Kohaerenz ein Bit
+    [ok]   und die Dauer ist die Summe der Hops ueber genau diese Frames  [1024.00 ms gegen 1024.00 ms]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung gespeiste Samplezahl = 153 600 (3 s * 48 000), Laeufer und Engine  [153600 / 153600]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): Vorbedingung drei Snapshots an 51 200, 102 400 und 153 600 Samples (Kadenzmodell)  [3 Snapshots]
+    [ok]   380/M-86 fensterdauer_und_freiheitsgrade_ueber_den_ring (48,0 kHz, B 512, 1 s): erster Snapshot unveraendert 24 Frames und 1024 ms (floor((51 200 - 4096)/2048) + 1)  [24 Frames, 1024.000 ms]
+Lauf nach Ruecknahme: B19 --nak380 M-86 02:10:07 bis 02:10:07, Exit 0, 11 bestanden, 0 gescheitert
+  Binary nach Ruecknahme 02:10:07.813 juenger als Quelle 02:10:01.295: ja

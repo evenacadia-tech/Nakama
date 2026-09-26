@@ -724,7 +724,8 @@ public:
         // ceil(k_max*(2^(kFlussFilterCent/1200) - 1)), also aus der Konstante
         // hergeleitet und nicht als Zahl gefuehrt. Bei 125 Cent: 44,1 kHz
         // k_max 1668, w_max 125, 252 Plaetze; 48 kHz 1532, 115, 232; 96 kHz
-        // 766, 58, 118 (NAK-380 M-43, R-380-12 (i)).
+        // seit Etappe 6 (Hauptstufe 8 192 Punkte, dasselbe df wie bei 48 kHz)
+        // ebenso 1532, 115, 232 (NAK-380 M-43, R-380-12 (i), R-380-14 (i)).
         detektor.assign (1u, FlussDetektor {});
         detektorBinsBestimmen();      // Bins der Hauptstufe im Gitterbereich
         {

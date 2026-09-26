@@ -1257,7 +1257,8 @@ mod tests {
     fn nak380_m122_fingerprint_nur_gleiche_metrics_version() {
         use crate::coordinator::invalidierung::{material_urteil, Grund, Materialurteil, Umfang};
         use crate::coordinator::vergleichbarkeit::{
-            beurteile_versioniert, Herabstufungsgrund, Passagenbeleg, Vergleichbarkeit,
+            beurteile_mit_messfassung, beurteile_versioniert, Herabstufungsgrund, Passagenbeleg,
+            Vergleichbarkeit,
         };
 
         const ALT: u32 = 20_260_928;
@@ -1349,6 +1350,32 @@ mod tests {
         pruefe(ungleich.material_cosine.is_nan(),
                "Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)",
                format!("{}", ungleich.material_cosine));
+
+        // (5) Unbekannte Fassung (R-380-14 (ii), Nacharbeit 1 der Etappe 6,
+        // D5): `beurteile_mit_messfassung` direkt, `None` auf der einen, der
+        // anderen und beiden Seiten. Der Riegel ist der `None`-Zweig in
+        // `beurteile_mit_messfassung` (vergleichbarkeit.rs, vor jeder
+        // Cosinusrechnung); er traegt zwei Saetze der Zusage getrennt: den
+        // Ergebniszustand (Klasse `Unvergleichbar`, Grund
+        // `MessfassungUnbekannt`, nie `MaterialVerschieden`) und „kein
+        // Zahlenwert“ (`material_cosine` NaN). Jeder Satz ist je Seite eine
+        // eigene Pruefung: ein Zahlenwert bei unveraendertem Grund faellt nur
+        // an der NaN-Pruefung.
+        for (fa, fb, seite) in [
+            (None, Some(NEU), "Seite a unbekannt"),
+            (Some(NEU), None, "Seite b unbekannt"),
+            (None, None, "beide Seiten unbekannt"),
+        ] {
+            let u = beurteile_mit_messfassung(&beleg(&a), fa, &beleg(&b), fb);
+            pruefe(u.klasse == Vergleichbarkeit::Unvergleichbar
+                       && u.gruende.contains(&Herabstufungsgrund::MessfassungUnbekannt)
+                       && !u.gruende.contains(&Herabstufungsgrund::MaterialVerschieden),
+                   &format!("Vergleichbarkeit, unbekannte Fassung ({seite}): unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden"),
+                   format!("{:?} {:?}", u.klasse, u.gruende));
+            pruefe(u.material_cosine.is_nan(),
+                   &format!("Vergleichbarkeit, unbekannte Fassung ({seite}): kein Zahlenwert (material_cosine NaN)"),
+                   format!("{}", u.material_cosine));
+        }
         assert!(rot.is_empty(), "M-122 rot: {rot:?}");
     }
 }

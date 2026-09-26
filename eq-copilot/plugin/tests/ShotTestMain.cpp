@@ -2507,12 +2507,28 @@ bool alle()
 // NAK-380 Etappe 6 (380/M-106, R-380-5, T-380-8): der Leertext der
 // Befundliste am echten Editor nennt, wo nicht gesucht wurde. Gemessen wird
 // nur der Text, den die Liste in ihre Zeile gibt (Beobachter im Testbau,
-// `PluginEditor.cpp`); keine Zeichnung, kein Layout. Das Material ist P2
-// (rosa -20 dBFS, Saat 0x3800008, 20 s, E-380-13 vor dem Nutzer): kein Ton
-// sticht heraus, die Liste ist leer (derselbe Falsch-Positiv-Riegel wie A2
-// `pink-minus20`). Soll: der bisherige Leertext mit dem Satz aus §8.6 als
-// zweitem Satz, die Zahl das gerundete `resonanzSucheAbHz` (48 kHz 51 Hz,
-// 44,1 kHz 47 Hz; 17,30*fs/16 384).
+// `PluginEditor.cpp`); keine Zeichnung, kein Layout. Soll: der bisherige
+// Leertext mit dem Satz aus §8.6 als zweitem Satz, die Zahl das gerundete
+// `resonanzSucheAbHz` (48 kHz 51 Hz, 44,1 kHz 47 Hz; 17,30*fs/16 384).
+//
+// Nacharbeit 1 der Etappe 6 (D2, D3; R-380-15 (i), (iii)): das Material ist
+// K4 nach §7.2 - P2 (rosa -20 dBFS, Saat 0x3800008) plus Sinus 45 Hz, dessen
+// 1/24-Oktavband 15 dB ueber der Rosa-Banddichte liegt, 30 s -, erzeugt mit
+// `kSignal` und vor dem Nutzer mit `kSelbstpruefung` geprueft, bei 48 kHz
+// (1 440 000 Samples) und nach R-380-15 (i) bei 44,1 kHz (1 323 000
+// Samples; 45 Hz liegt auch dort unter der Suchgrenze 46,57 Hz). Der Ton
+// liegt unter der Suchgrenze: am echten Gen-Pfad entsteht keine Karte, und
+// genau dann liest der Nutzer den Leertext mit "nicht gesucht" (messen <->
+// melden).
+// Der Speiser zerlegt das Signal in Bloecke zu 512 und speist den Rest als
+// kurzen letzten Block: 1 440 000 = 2 812*512 + 256, 1 323 000 = 2 583*512
+// + 504. Zaehlpruefungen je Rate als eigene Pruefungen: gespeist =
+// Signallaenge; Drops 0 (Queue-Ueberlauf, Oversize, Quarantaeneverwurf);
+// von der AnalyseEngine verarbeitet = gespeist - letzter Block, denn der
+// Gen-Pfad haelt den juengsten Block in der Ein-Block-Quarantaene
+// (`StampedAudioQueue.h`, `Blockquarantaene`: ein Block geht erst an die
+// Analyse, wenn sein Nachfolger ihn fortsetzt; der letzte hat keinen) -
+// 1 440 000 - 256 = 1 439 744 und 1 323 000 - 504 = 1 322 496.
 namespace nak380e6
 {
 int fehler = 0, geprueft = 0;
@@ -2528,35 +2544,86 @@ bool leertextNenntSuchgrenze()
 {
     namespace sig = nakama::test::nak380;
     std::printf ("== NAK-380 Etappe 6 - Leertext der Befundliste (380/M-106) ==\n");
+    constexpr double kTon = 45.0;   // K4 (§7.2, R-380-15 (i)): unter der Suchgrenze bei beiden Raten
     for (const double fs : { 48000.0, 44100.0 })
     {
-        const auto x = sig::rosaMono (sig::kP2Saat, 0.1, (std::uint64_t) std::llround (20.0 * fs));
-        const auto r = sig::rosaSelbstpruefung (x, 0.1, fs);
+        const auto samples = (std::uint64_t) std::llround (30.0 * fs);   // 1 440 000 bzw. 1 323 000
+        const auto k4 = sig::kSignal (kTon, fs, samples);
+        const auto selbst = sig::kSelbstpruefung (k4, kTon, fs, samples);
+        const auto& x = k4.x;
         const std::string kopf = std::string ("380/M-106 leertext_nennt_suchgrenze (")
                                + (fs == 48000.0 ? "48,0" : "44,1") + " kHz)";
-        pruefe (r.ok, kopf + ": Vorbedingung rosa_selbstpruefung_E-380-13", r.meldung);
+        pruefe (selbst.ok, kopf + ": Vorbedingung k_selbstpruefung K4 (P2 -20 dBFS, Saat 0x3800008, Sinus 45 Hz "
+                                  "+15 dB, 30 s; E-380-13 Rosa, Tonfrequenz und -pegel gemessen)",
+                selbst.meldung);
         auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
         proz->setPlayConfigDetails (2, 2, fs, 512);
         proz->prepareToPlay (fs, 512);
         juce::AudioBuffer<float> block (2, 512);
         juce::MidiBuffer midi;
-        for (std::size_t i = 0, n = 0; i + 512u <= x.size(); i += 512u, ++n)
+        std::uint64_t gespeist = 0, bloecke = 0, letzterBlock = 0;
+        for (std::size_t i = 0, n = 0; i < x.size(); ++n)
         {
-            for (int k = 0; k < 512; ++k)
+            // Der Rest als kurzer letzter Block: dieselben Kanalpuffer, nur
+            // `anzahl` Samples lang (keine Allokation).
+            const int anzahl = (int) std::min<std::size_t> (512u, x.size() - i);
+            for (int k = 0; k < anzahl; ++k)
             {
                 block.setSample (0, k, x[i + (std::size_t) k]);
                 block.setSample (1, k, x[i + (std::size_t) k]);
             }
-            proz->processBlock (block, midi);
+            juce::AudioBuffer<float> sicht (block.getArrayOfWritePointers(), 2, anzahl);
+            proz->processBlock (sicht, midi);
+            i += (std::size_t) anzahl;
+            gespeist += (std::uint64_t) anzahl;
+            letzterBlock = (std::uint64_t) anzahl;
+            ++bloecke;
             if ((n + 1) % 48 == 0)
-                juce::Thread::sleep (60);   // Worker-Takt 50 ms: FIFO leeren lassen (Muster Shot)
+            {
+                // Worker-Takt 50 ms (Muster Shot), dann warten, bis der Worker
+                // alles bis auf den gehaltenen Block verbraucht hat: der
+                // Rueckstau bleibt unter 48 Bloecken, weit unter dem Budget der
+                // Queue (131 072 Frames = 256 Bloecke zu 512) - ein Drop ist
+                // dann ein Befund, kein Lastzufall.
+                juce::Thread::sleep (60);
+                const auto fristZug = juce::Time::getMillisecondCounter() + 10000u;
+                while (proz->merkmaleBloecke() + 1u < bloecke && juce::Time::getMillisecondCounter() < fristZug)
+                    juce::Thread::sleep (1);
+            }
         }
+        // Der Worker hat alles bis auf den gehaltenen Block verbraucht
+        // (`merkmaleBloecke` zaehlt die Bloecke, die er an die FeatureEngine gab).
+        const auto fristVerbrauch = juce::Time::getMillisecondCounter() + 10000u;
+        while (proz->merkmaleBloecke() + 1u < bloecke && juce::Time::getMillisecondCounter() < fristVerbrauch)
+            juce::Thread::sleep (1);
         const auto frist = juce::Time::getMillisecondCounter() + 5000u;
         while (juce::Time::getMillisecondCounter() < frist
                && ! (proz->messSnapshot().zustand == eqcop::MessZustand::messbereit && proz->messSnapshot().ltasGueltig))
             juce::Thread::sleep (20);
         juce::Thread::sleep (400);          // eine weitere schwere Auswertung (250 ms)
         const auto m = proz->messSnapshot();
+        // Zaehlpruefungen (D3, R-380-15 (iii)); Soll aus der Signallaenge.
+        const std::uint64_t sollRest = samples % 512u;                     // 256 bzw. 504
+        const std::uint64_t sollBloecke = samples / 512u + (sollRest > 0u ? 1u : 0u);   // 2 813 bzw. 2 584
+        const std::uint64_t sollVerarbeitet = samples - (sollRest > 0u ? sollRest : 512u);   // letzter Block in Quarantaene
+        pruefe (x.size() == samples && gespeist == samples && bloecke == sollBloecke && letzterBlock == sollRest,
+                kopf + ": Vorbedingung gespeiste Samplezahl = Signallaenge " + std::to_string (samples)
+                       + " (30 s * fs, " + std::to_string (samples / 512u) + " Bloecke zu 512 und der Rest "
+                       + std::to_string (sollRest) + " als letzter Block)",
+                "Puffer " + std::to_string (x.size()) + ", gespeist " + std::to_string (gespeist) + " in "
+                    + std::to_string (bloecke) + " Bloecken, letzter Block " + std::to_string (letzterBlock));
+        const auto dropsUeberlauf = proz->analyseDropsUeberlauf();
+        const auto dropsOversize = proz->analyseDropsOversize();
+        const auto quarantaeneVerworfen = proz->analyseQuarantaeneVerworfen();
+        pruefe (dropsUeberlauf == 0u && dropsOversize == 0u && quarantaeneVerworfen == 0u,
+                kopf + ": Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0",
+                "Ueberlauf " + std::to_string (dropsUeberlauf) + ", Oversize " + std::to_string (dropsOversize)
+                    + ", Quarantaene verworfen " + std::to_string (quarantaeneVerworfen));
+        pruefe ((std::uint64_t) m.verarbeiteteSamples == sollVerarbeitet,
+                kopf + ": Vorbedingung von der AnalyseEngine verarbeitet = gespeist - letzter Block = "
+                       + std::to_string (sollVerarbeitet) + " (Ein-Block-Quarantaene)",
+                "verarbeitet " + std::to_string ((std::uint64_t) m.verarbeiteteSamples) + " (Soll "
+                    + std::to_string (sollVerarbeitet) + ")");
         auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
         editor->setSize (1200, 832);
         auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get());
@@ -2583,9 +2650,12 @@ bool leertextNenntSuchgrenze()
             + juce::String (juce::CharPointer_UTF8 (" Hz wurde nicht nach T\xc3\xb6nen gesucht \xe2\x80\x93 das Messfenster "
                 "ist dort zu grob. Das hei\xc3\x9ft nicht \xe2\x80\x9eperfekt\xe2\x80\x9c \xe2\x80\x94 nur: die Kurve gibt "
                 "gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort."));
+        // M-106 "keine Karte": K4 (Ton 45 Hz unter der Suchgrenze) ergibt am
+        // echten Gen-Pfad keine Karte irgendeiner Klasse - nur dann traegt der
+        // Knopf "keine Auffaelligkeit" und die Liste gibt ihren Leertext.
         pruefe (m.zustand == eqcop::MessZustand::messbereit && knopf != nullptr && meldungen == 1,
-                kopf + ": Vorbedingung messbereit, keine Karte (Knopf 'keine Auffaelligkeit'), die Liste gibt genau "
-                       "einen Leertext",
+                kopf + ": K4 (45 Hz unter der Suchgrenze) - keine Karte: messbereit, Knopf 'keine Auffaelligkeit', "
+                       "die Liste gibt genau einen Leertext",
                 std::string ("messbereit ") + (m.zustand == eqcop::MessZustand::messbereit ? "ja" : "NEIN")
                     + ", Knopf " + (knopf != nullptr ? "ja" : "NEIN") + ", Meldungen " + std::to_string (meldungen));
         pruefe (gesehen == soll,
@@ -2596,7 +2666,7 @@ bool leertextNenntSuchgrenze()
         pumpe (200, [] { return false; });
     }
     std::printf ("NAK-380 LEERTEXT %d geprueft, %d Fehler\n", geprueft, fehler);
-    return fehler == 0 && geprueft == 6;
+    return fehler == 0 && geprueft == 12;   // je Rate 6: K4-Selbstpruefung, gespeist, Drops, verarbeitet, keine Karte, Leertext
 }
 } // namespace nak380e6
 } // namespace

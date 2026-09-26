@@ -1,0 +1,34 @@
+NAK-380 Etappe 6, Nacharbeit 1 (26.09.2026) - Mutationsprotokoll m106-ton60
+Matrixzeile: M-106 (Fassung §58.2, D2, R-380-15 (i)); Zusagesatz: K4 (Ton 45 Hz unter der Suchgrenze) ergibt am echten Gen-Pfad keine Karte - messbereit, Knopf keine Auffaelligkeit, genau ein Leertext
+Begruendung der Mutation: Vorbedingungsmutation des Auftrags (Test): Ton 60 Hz statt 45 Hz (derselbe Erzeuger, Selbstpruefung mit 60 Hz); 60 Hz liegt bei beiden Raten ueber der Suchgrenze (50,69 bzw. 46,57 Hz) und ergibt eine Karte (A2 M-107-Gegenprobe) - die Pruefung keine Karte muss fallen. Mitfallen muss der Leertext (ohne Leertext kein Satz).
+Datei: eq-copilot/plugin/tests/ShotTestMain.cpp
+Zeile (Nacharbeitsstand, vor dieser Mutation): 2547
+SHA-256 vor der Mutation: 9C8590CD5ACFB74F71D7309ACA18586CEDC75648DECA6B359DC0D862F123BE0B; Sicherung eq-copilot/build/nak380-sicherung/e6n1/m106-ton60/0-ShotTestMain.cpp
+Wortlaut vorher:
+    constexpr double kTon = 45.0;
+Wortlaut nachher:
+    constexpr double kTon = 60.0;   // Mutation m106-ton60: Ton ueber der Suchgrenze
+  Bau (mutation) EqCopShot: 12:00:17 bis 12:00:24, Exit 0
+  Binary EqCopShot 12:00:24.477 juenger als Quelle 12:00:17.214: ja
+Lauf mit Mutation: B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:00:24 bis 12:00:45, Exit 1, 8 gruen, 4 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-106 leertext_nennt_suchgrenze (48,0 kHz): K4 (45 Hz unter der Suchgrenze) - keine Karte: messbereit, Knopf 'keine Auffaelligkeit', die Liste gibt genau einen Leertext  [messbereit ja, Knopf NEIN, Meldungen 0]
+    [ROT]  380/M-106 leertext_nennt_suchgrenze (44,1 kHz): K4 (45 Hz unter der Suchgrenze) - keine Karte: messbereit, Knopf 'keine Auffaelligkeit', die Liste gibt genau einen Leertext  [messbereit ja, Knopf NEIN, Meldungen 0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-106 leertext_nennt_suchgrenze (48,0 und 44,1 kHz): K4 - keine Karte)
+Mitgefallene Pruefungen (2):
+    [ROT]  380/M-106 leertext_nennt_suchgrenze (48,0 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 51 Hz  []
+    [ROT]  380/M-106 leertext_nennt_suchgrenze (44,1 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 47 Hz  []
+Pflicht-Gruen unter der Mutation (k_selbstpruefung|gespeiste Samplezahl|kein Verlust|verarbeitet =): JA (8 gruen, 0 rot)
+Unter derselben Mutation gruen gebliebene Pruefungen: 8
+    [ok]   380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung k_selbstpruefung K4 (P2 -20 dBFS, Saat 0x3800008, Sinus 45 Hz +15 dB, 30 s; E-380-13 Rosa, Tonfrequenz und -pegel gemessen)  [Rosa ja (groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples); Ton 60.0000 Hz gemessen (Soll 60.0), Banddichte 15.0000 dB ueber Rosa (Soll 15,0), Band 60.00-61.76 Hz, S -47.452 dB/Hz, A 0.044001, 1440000 Samples bei 48000 Hz]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung gespeiste Samplezahl = Signallaenge 1440000 (30 s * fs, 2812 Bloecke zu 512 und der Rest 256 als letzter Block)  [Puffer 1440000, gespeist 1440000 in 2813 Bloecken, letzter Block 256]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0  [Ueberlauf 0, Oversize 0, Quarantaene verworfen 0]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung von der AnalyseEngine verarbeitet = gespeist - letzter Block = 1439744 (Ein-Block-Quarantaene)  [verarbeitet 1439744 (Soll 1439744)]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung k_selbstpruefung K4 (P2 -20 dBFS, Saat 0x3800008, Sinus 45 Hz +15 dB, 30 s; E-380-13 Rosa, Tonfrequenz und -pegel gemessen)  [Rosa ja (groesste Nachbardifferenz 0.150 dB (Soll <= 1,0), Oktaven 57.72/57.68/57.77/57.77/57.73/57.77/57.80/57.75/57.75/57.60 dB; RMS 0.09901 gegen 0.10000 (-0.086 dB), 1323000 Samples); Ton 60.0000 Hz gemessen (Soll 60.0), Banddichte 15.0000 dB ueber Rosa (Soll 15,0), Band 60.00-61.76 Hz, S -47.459 dB/Hz, A 0.043967, 1323000 Samples bei 44100 Hz]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung gespeiste Samplezahl = Signallaenge 1323000 (30 s * fs, 2583 Bloecke zu 512 und der Rest 504 als letzter Block)  [Puffer 1323000, gespeist 1323000 in 2584 Bloecken, letzter Block 504]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0  [Ueberlauf 0, Oversize 0, Quarantaene verworfen 0]
+    [ok]   380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung von der AnalyseEngine verarbeitet = gespeist - letzter Block = 1322496 (Ein-Block-Quarantaene)  [verarbeitet 1322496 (Soll 1322496)]
+Ruecknahme aus der Sicherung, eq-copilot/plugin/tests/ShotTestMain.cpp, SHA-256 9C8590CD5ACFB74F71D7309ACA18586CEDC75648DECA6B359DC0D862F123BE0B: gleich
+  Bau (ruecknahme) EqCopShot: 12:00:45 bis 12:00:52, Exit 0
+  Binary EqCopShot 12:00:52.678 juenger als Quelle 12:00:45.838: ja
+Lauf nach Ruecknahme: B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:00:52 bis 12:01:09, Exit 0, 12 gruen, 0 rot

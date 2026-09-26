@@ -140,3 +140,32 @@ Zwei Riegel je Zusage, in Reihe (Lehre §50.1): „die Fassung reist mit“ trag
 
 == Mutationen e6n0 (Wortlaut in den Protokollen docs/beweise/roh/NAK-380-e6n0-mutation-<Kuerzel>.txt; SHA-256 vor der Mutation und nach der Ruecknahme gleich; Fall danach gruen, 5 bestanden)
   m122-leser-rueckfall, m122-aufrufer-fassung, m122-aufrufer-fassung-kandidat, m122-aufrufer-fassung-inv, m122-schreiber-ohne-feld, m122-riegel-unbekannt-verg, m122-riegel-unbekannt-inv, m122-schreiber-leser-doppel, m122-leser-aufrufer-doppel, m122-wache-gleich, m122-element-schreiber, m122-element-leser: je Exit 101 mit Mutation, faellt an der erwarteten Pruefung: JA; nach Ruecknahme Exit 0 (09:03:35 bis 09:04:59, Lauf eq-copilot/build/nak380-e6n0/mut-m122-alle.log; Endhashes der drei Dateien gleich den Vorher-Hashes)
+
+== Nacharbeit 1 der Etappe 6 (e6n1), 26.09.2026 (Bauer Opus 5.5 xhigh, Befund D5 der Erstpruefung 6 mit Validierung, Matrixfassung §58.2; Stand uncommittet auf e744f40a)
+Zusage in der Fassung §58.2: „kein Zahlenwert“ auch bei unbekannter Fassung als eigene Pruefzeile (material_cosine NaN, None einseitig und beidseitig); Rotbeweis vergleichbarkeit.rs:381 NaN -> 0,0 bei unveraendertem Grund
+Ort (Technikentscheid): broker/src/telemetrie.rs, Modultest nak380_m122_fingerprint_nur_gleiche_metrics_version, neuer Teil (5) (telemetrie.rs:1354-1378): direkter Aufruf von vergleichbarkeit::beurteile_mit_messfassung mit denselben Passagenbelegen wie Teil (4) (die uebrigen vier Belege perfekt, damit nur der Materialbeleg zaehlt), fuer None auf Seite a, auf Seite b und auf beiden Seiten je zwei eigene Pruefungen: Klasse Unvergleichbar mit Grund MessfassungUnbekannt und nie MaterialVerschieden; kein Zahlenwert (material_cosine NaN). Gruende: (1) dort steht schon die einzige NaN-Pruefung (bekannte ungleiche Fassung) mit demselben Beleg; der unbekannte Fall ergaenzt sie am selben Urteil; (2) Fall (b) in experiment_verdrahtung.rs laeuft ueber resultatmessung, deren Resultatmessung kein material_cosine traegt; ein direkter Aufruf dort waere nur ein zweiter Weg zum selben Urteil; (3) experiment_verdrahtung.rs traegt 2 463 Zeilen (A32-Hinweis, Pflegepunkt NAK-413), telemetrie.rs 1 354 -> 1 381.
+Endstand (eq-copilot/build/nak380-e6n1/d5-cargo-filter.log, cargo test nak380_m122 -- --nocapture ab 10:58:36, EXIT=0; die sechs neuen Pruefungen):
+    OK  M-122 Vergleichbarkeit, unbekannte Fassung (Seite a unbekannt): unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden  [Unvergleichbar [MessfassungUnbekannt]]
+    OK  M-122 Vergleichbarkeit, unbekannte Fassung (Seite a unbekannt): kein Zahlenwert (material_cosine NaN)  [NaN]
+    OK  M-122 Vergleichbarkeit, unbekannte Fassung (Seite b unbekannt): unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden  [Unvergleichbar [MessfassungUnbekannt]]
+    OK  M-122 Vergleichbarkeit, unbekannte Fassung (Seite b unbekannt): kein Zahlenwert (material_cosine NaN)  [NaN]
+    OK  M-122 Vergleichbarkeit, unbekannte Fassung (beide Seiten unbekannt): unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden  [Unvergleichbar [MessfassungUnbekannt]]
+    OK  M-122 Vergleichbarkeit, unbekannte Fassung (beide Seiten unbekannt): kein Zahlenwert (material_cosine NaN)  [NaN]
+    Voller A4 am Endstand: siehe Manifest §59.5.
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll (e6n1)
+- Zusagesatz: unbekannte Fassung -> kein Zahlenwert (material_cosine NaN), je Seite (a, b, beide)
+  Pruefzeile: A4 nak380_m122_fingerprint_nur_gleiche_metrics_version: „Vergleichbarkeit, unbekannte Fassung (<Seite>): kein Zahlenwert (material_cosine NaN)“
+  Mutation: m122-unbekannt-nan (Mutation des Pruefers): vergleichbarkeit.rs:381 f64::NAN -> 0.0, Grund MessfassungUnbekannt unveraendert
+  rot: JA (alle drei Seitenfaelle; die drei Klasse/Grund-Pruefungen bleiben gruen, Klasse Unvergleichbar mit 0,0)
+  Protokoll: NAK-380-e6n1-mutation-m122-unbekannt-nan.txt
+- Zusagesatz: unbekannte Fassung -> Ergebniszustand nicht vergleichbar (Klasse, Grund MessfassungUnbekannt, nie MaterialVerschieden), direkt am Urteil je Seite
+  Pruefzeile: A4 ...: „Vergleichbarkeit, unbekannte Fassung (<Seite>): unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden“
+  Mutation: m122-unbekannt-klasse (Wortlaut wie m122-riegel-unbekannt-verg der Nacharbeit 0: None gilt als METRICS_VERSION)
+  rot: JA (alle drei Seitenfaelle: Schwach [MaterialVerschieden]; dazu (b) Vergleichbarkeit der Nacharbeit 0); mitgefallen die drei NaN-Pruefungen (dieselbe Ursache: der Riegel rechnet wieder einen Cosinus)
+  Protokoll: NAK-380-e6n1-mutation-m122-unbekannt-klasse.txt
+
+== Mutationen e6n1 (Wortlaut in den Protokollen docs/beweise/roh/NAK-380-e6n1-mutation-<Kuerzel>.txt; SHA-256 vor der Mutation und nach der Ruecknahme gleich 6EA8AE27FD0CF50FC8AB8066FC1B798A9A229A4B1D8CCD79C029C4360CD3D07B, Fall danach gruen)
+  m122-unbekannt-nan: faellt an der erwarteten Pruefung: JA; mit Mutation cargo test --lib nak380_m122 11:00:50 bis 11:00:53, Exit 101, 3 rot, 36 gruen; nach Ruecknahme 11:00:53 bis 11:00:56 Exit 0, 5 bestanden
+  m122-unbekannt-klasse: faellt an der erwarteten Pruefung: JA; mit Mutation 11:35:10 bis 11:35:14, Exit 101, 7 rot (4 tragend, 3 mitgefallen), 32 gruen; nach Ruecknahme 11:35:14 bis 11:35:17 Exit 0, 5 bestanden
+  Hinweis: der erste Lauf von m122-unbekannt-nan (11:00:02 bis 11:00:05, dasselbe Ergebnis: Exit 101, genau die drei NaN-Pruefungen rot) schrieb eine Gruenliste ohne die fuenf Zeilen, vor denen cargo den Testnamen druckt; das Protokoll traegt den Wiederholungslauf mit vollstaendiger Liste.

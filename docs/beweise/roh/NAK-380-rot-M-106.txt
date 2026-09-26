@@ -46,3 +46,75 @@ Etikett: heute rot
   m106-k4: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-106 08:06:35 bis 08:06:37, Exit 1, 7 gruen, 1 rot
       FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot — 0 von 61 ohne Karte
       mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-106 08:06:41 bis 08:06:43, Exit 0, 8 gruen, 0 rot
+
+== Nacharbeit 1 der Etappe 6 (e6n1), 26.09.2026 (Bauer Opus 5.5 xhigh, Befunde D2, D3, Z1 (D6) und Z2 (D7) der Erstpruefung 6 mit Validierung, Regel R-380-15 (i) und (iii), Matrixfassung §58.2; Stand uncommittet auf e744f40a)
+Zustand in der Fassung §58.2: K4 bei 48 kHz und nach R-380-15 (i) bei 44,1 kHz (P2 -20 dBFS plus Sinus 45 Hz, +15 dB ueber der Rosa-Banddichte, Saat 0x3800008, 30 s; kSignal mit kSelbstpruefung vor dem Nutzer; 45 Hz liegt unter der Suchgrenze 50,69 bzw. 46,57 Hz).
+B15-Zusage in der Fassung §58.2: am echten Editor je Rate „keine Karte“ (messbereit, Knopf „keine Auffaelligkeit“, genau ein Leertext) und der Satz mit 51 bzw. 47 Hz; Laeufer mit Restblock (1 440 000 = 2 812*512 + 256, 1 323 000 = 2 583*512 + 504), gespeist = Signallaenge, Drops 0, verarbeitet = gespeist - Quarantaeneblock (1 439 744 bzw. 1 322 496; Herleitung im Kommentar ShotTestMain.cpp:2507-2531 aus `Blockquarantaene::schiebe`: ein Block geht erst an die Analyse, wenn sein Nachfolger ihn fortsetzt, der letzte hat keinen). A2: K4-Vorbedingung gespeist = verarbeitet = 1 440 000 (D6), der 60-Hz-Lauf mit demselben Vorbedingungssatz wie die M-107-Gegenprobe (D7).
+Messung: K4 erzeugt am echten Gen-Pfad bei beiden Raten KEINE Karte irgendeiner Klasse (Knopf „keine Auffaelligkeit“, genau ein Leertext) - kein offener Befund. K4-Erzeuger gemessen: 48 kHz Ton 45,0000 Hz, Banddichte 15,0000 dB ueber Rosa, Band 44,95-46,27 Hz, S -46,203 dB/Hz, A 0,043974; 44,1 kHz Ton 45,0000 Hz, 15,0000 dB, Band 44,95-46,27 Hz, S -46,199 dB/Hz, A 0,043995.
+Der Speiser wartet nach jedem Takt von 48 Bloecken (60 ms) und am Ende, bis der Worker alles bis auf den gehaltenen Block verbraucht hat (ShotTestMain.cpp:2581-2598): der Rueckstau bleibt unter 48 Bloecken, weit unter dem Queue-Budget von 131 072 Frames = 256 Bloecken; ein Drop ist damit ein Befund, kein Lastzufall.
+Endstand B15 (eq-copilot/build/nak380-e6n1/final-B15.log, --sonde012-suite 12:05:54 bis 12:06:11, Exit 0; NAK-380 LEERTEXT 12 geprueft, 0 Fehler, vorher 6):
+    ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung k_selbstpruefung K4 (P2 -20 dBFS, Saat 0x3800008, Sinus 45 Hz +15 dB, 30 s; E-380-13 Rosa, Tonfrequenz und -pegel gemessen)  [Rosa ja (groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples); Ton 45.0000 Hz gemessen (Soll 45.0), Banddichte 15.0000 dB ueber Rosa (Soll 15,0), Band 44.95-46.27 Hz, S -46.203 dB/Hz, A 0.043974, 1440000 Samples bei 48000 Hz]
+    ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung gespeiste Samplezahl = Signallaenge 1440000 (30 s * fs, 2812 Bloecke zu 512 und der Rest 256 als letzter Block)  [Puffer 1440000, gespeist 1440000 in 2813 Bloecken, letzter Block 256]
+    ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0  [Ueberlauf 0, Oversize 0, Quarantaene verworfen 0]
+    ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung von der AnalyseEngine verarbeitet = gespeist - letzter Block = 1439744 (Ein-Block-Quarantaene)  [verarbeitet 1439744 (Soll 1439744)]
+    ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): K4 (45 Hz unter der Suchgrenze) - keine Karte: messbereit, Knopf 'keine Auffaelligkeit', die Liste gibt genau einen Leertext  [messbereit ja, Knopf ja, Meldungen 1]
+    ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 51 Hz  [Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegen├╝ber ihren Nachbarn. Unter 51 Hz wurde nicht nach T├Ânen gesucht ÔÇô das Messfenster ist dort zu grob. Das hei├ƒt nicht ÔÇ×perfektÔÇ£ ÔÇö nur: die Kurve gibt gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort.]
+    ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung k_selbstpruefung K4 (P2 -20 dBFS, Saat 0x3800008, Sinus 45 Hz +15 dB, 30 s; E-380-13 Rosa, Tonfrequenz und -pegel gemessen)  [Rosa ja (groesste Nachbardifferenz 0.150 dB (Soll <= 1,0), Oktaven 57.72/57.68/57.77/57.77/57.73/57.77/57.80/57.75/57.75/57.60 dB; RMS 0.09901 gegen 0.10000 (-0.086 dB), 1323000 Samples); Ton 45.0000 Hz gemessen (Soll 45.0), Banddichte 15.0000 dB ueber Rosa (Soll 15,0), Band 44.95-46.27 Hz, S -46.199 dB/Hz, A 0.043995, 1323000 Samples bei 44100 Hz]
+    ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung gespeiste Samplezahl = Signallaenge 1323000 (30 s * fs, 2583 Bloecke zu 512 und der Rest 504 als letzter Block)  [Puffer 1323000, gespeist 1323000 in 2584 Bloecken, letzter Block 504]
+    ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0  [Ueberlauf 0, Oversize 0, Quarantaene verworfen 0]
+    ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung von der AnalyseEngine verarbeitet = gespeist - letzter Block = 1322496 (Ein-Block-Quarantaene)  [verarbeitet 1322496 (Soll 1322496)]
+    ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): K4 (45 Hz unter der Suchgrenze) - keine Karte: messbereit, Knopf 'keine Auffaelligkeit', die Liste gibt genau einen Leertext  [messbereit ja, Knopf ja, Meldungen 1]
+    ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 47 Hz  [Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegen├╝ber ihren Nachbarn. Unter 47 Hz wurde nicht nach T├Ânen gesucht ÔÇô das Messfenster ist dort zu grob. Das hei├ƒt nicht ÔÇ×perfektÔÇ£ ÔÇö nur: die Kurve gibt gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort.]
+Endstand A2 (final-A2.log, 12:04:52 bis 12:05:54, Exit 0, GOLDEN OK 405 Pruefungen, 0 Fehler, vorher 404): 380/M-106 nicht_gesucht_satz 9 ok, 0 Fehler (vorher 8; neu die Vorbedingung des 60-Hz-Laufs, die K4-Vorbedingung misst jetzt auch „verarbeitet“).
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll (e6n1)
+- Vorbedingung B15: K4 nach §7.2 und R-380-15 (i), vor dem Nutzer selbstgeprueft
+  Pruefzeile: B15 380/M-106 leertext_nennt_suchgrenze (<Rate>): Vorbedingung k_selbstpruefung K4 (...)
+  Mutation: keine eigene (Kopffunktion des Erzeugers wie in A2 M-103 bis M-107); die Trennschaerfe der Signalwahl belegt m106-ton60
+  rot: -
+  Protokoll: -
+- Zusagesatz B15: keine Karte bei K4 (45 Hz unter der Suchgrenze), je Rate
+  Pruefzeile: B15 380/M-106 leertext_nennt_suchgrenze (<Rate>): K4 (45 Hz unter der Suchgrenze) - keine Karte: messbereit, Knopf 'keine Auffaelligkeit', die Liste gibt genau einen Leertext
+  Mutation: m106-ton60 (Vorbedingungsmutation des Auftrags, Test): Ton 60 Hz statt 45 Hz, derselbe Erzeuger, Selbstpruefung mit 60 Hz
+  rot: JA (beide Raten: Knopf NEIN, 0 Meldungen); mitgefallen der Leertext (ohne Leertext kein Satz) - dieselbe Ursache
+  Protokoll: NAK-380-e6n1-mutation-m106-ton60.txt
+- Zusagesatz B15: der Leertext nennt als zweiten Satz die Suchgrenze (51 Hz bzw. 47 Hz), jetzt unter K4
+  Pruefzeile: B15 380/M-106 leertext_nennt_suchgrenze (<Rate>): der Leertext nennt als zweiten Satz die Suchgrenze <Hz> Hz
+  Mutation: m106-satz (Matrixmutation, neu gefahren): suchgrenzeSatz liefert leer
+  rot: JA (beide Raten)
+  Protokoll: NAK-380-e6n1-mutation-m106-satz.txt
+- Vorbedingung B15: gespeist = Signallaenge, Rest als kurzer letzter Block
+  Pruefzeile: B15 ...: Vorbedingung gespeiste Samplezahl = Signallaenge <n> (30 s * fs, ... Bloecke zu 512 und der Rest ... als letzter Block)
+  Mutation: m106-rest (Test, Muster des Auftrags): die Schleife wieder mit i + 512u <= x.size()
+  rot: JA (1 439 744 bzw. 1 322 496, letzter Block 512)
+  Protokoll: NAK-380-e6n1-mutation-m106-rest.txt
+- Vorbedingung B15: von der AnalyseEngine verarbeitet = gespeist - letzter Block (Ein-Block-Quarantaene)
+  Pruefzeile: B15 ...: Vorbedingung von der AnalyseEngine verarbeitet = gespeist - letzter Block = <n> (Ein-Block-Quarantaene)
+  Mutation: m106-rest
+  rot: JA (1 439 232 bzw. 1 321 984 - ohne den Rest haelt die Quarantaene einen vollen Block)
+  Protokoll: NAK-380-e6n1-mutation-m106-rest.txt
+- Vorbedingung B15: Drops 0 (Queue-Ueberlauf, Oversize, Quarantaeneverwurf)
+  Pruefzeile: B15 ...: Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0
+  Mutation: m106-drops (Test): der Speiser laesst dem Worker keinen Takt und wartet nicht auf ihn
+  rot: JA (Ueberlauf 2 544 bzw. 2 316, Quarantaene verworfen 12 bzw. 11); mitgefallen verarbeitet (0: jeder Bruch setzt die AnalyseEngine zurueck), keine Karte (nicht messbereit) und der Leertext - dieselbe Ursache
+  Protokoll: NAK-380-e6n1-mutation-m106-drops.txt
+- Vorbedingung A2 (D6): K4 gespeist = verarbeitet = 1 440 000, 61 Snapshots ab messbereit
+  Pruefzeile: A2 380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+  Mutation: a2-kfahren-verarbeitet (Test: der Laeufer zaehlt den letzten Block, gibt ihn aber nicht an die Engine) fuer die Enginehaelfte; a2-kfahren-rest (Test: ohne den Rest 256) fuer die Speisehaelfte
+  rot: JA (verarbeitet 1 439 744) und JA (gespeist 1 439 744)
+  Protokoll: NAK-380-e6n1-mutation-a2-kfahren-verarbeitet.txt, -a2-kfahren-rest.txt
+- Vorbedingung A2 (D7): der 60-Hz-Lauf gespeist = verarbeitet = 1 440 000, 61 Snapshots ab messbereit
+  Pruefzeile: A2 380/M-106 Karte 60 Hz: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+  Mutation: a2-kfahren-verarbeitet; a2-kfahren-rest
+  rot: JA; JA
+  Protokoll: wie oben
+- Die Rotbeweise der Etappe 6 fuer A2 (m106-k4, m106-satz) bleiben gueltig: ihre Pruefzeilen stehen unveraendert.
+
+== Mutationen e6n1 (Wortlaut in den Protokollen docs/beweise/roh/NAK-380-e6n1-mutation-<Kuerzel>.txt; SHA-256 vor der Mutation und nach der Ruecknahme gleich, Bau jeweils mit Binaryzeitstempel juenger als die Quelle, Fall danach gruen)
+  m106-ton60: faellt an der erwarteten Pruefung: JA; mit Mutation B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:00:24 bis 12:00:45, Exit 1, 8 gruen, 4 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:00:52 bis 12:01:09, Exit 0, 12 gruen, 0 rot
+  m106-satz: faellt an der erwarteten Pruefung: JA; mit Mutation B15 --sonde012-suite eq-copilot/build/sonde012-shots 11:59:38 bis 11:59:56, Exit 1, 10 gruen, 2 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B15 --sonde012-suite eq-copilot/build/sonde012-shots 11:59:59 bis 12:00:17, Exit 0, 12 gruen, 0 rot
+  m106-rest: faellt an der erwarteten Pruefung: JA; mit Mutation B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:01:17 bis 12:01:35, Exit 1, 8 gruen, 4 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:01:41 bis 12:01:59, Exit 0, 12 gruen, 0 rot
+  m106-drops: faellt an der erwarteten Pruefung: JA; mit Mutation B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:02:06 bis 12:02:45, Exit 1, 4 gruen, 8 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B15 --sonde012-suite eq-copilot/build/sonde012-shots 12:02:52 bis 12:03:09, Exit 0, 12 gruen, 0 rot
+  a2-kfahren-verarbeitet: faellt an der erwarteten Pruefung: JA; mit Mutation A2 eq-copilot\fixtures --nak380 M-106 11:31:05 bis 11:31:06, Exit 1, 7 gruen, 2 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 eq-copilot\fixtures --nak380 M-106 11:31:10 bis 11:31:12, Exit 0, 9 gruen, 0 rot
+  a2-kfahren-rest: faellt an der erwarteten Pruefung: JA; mit Mutation A2 eq-copilot\fixtures --nak380 M-106 11:31:17 bis 11:31:18, Exit 1, 7 gruen, 2 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 eq-copilot\fixtures --nak380 M-106 11:31:22 bis 11:31:24, Exit 0, 9 gruen, 0 rot
+  Hinweis: die vier B15-Mutationen liefen zuerst 11:31:24 bis 11:34:57 am Speiser mit festem 60-ms-Takt (dasselbe Ergebnis: jede faellt an ihrer Pruefung, Ruecknahme SHA-gleich; Zusammenfassung eq-copilot/build/nak380-e6n1/batch-2.log) und wurden nach dem Warten auf den Worker im Speiser 11:59:31 bis 12:03:09 neu gefahren; die Protokolle tragen diesen zweiten Lauf.

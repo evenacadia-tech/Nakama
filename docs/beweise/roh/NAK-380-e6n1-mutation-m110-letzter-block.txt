@@ -1,0 +1,32 @@
+NAK-380 Etappe 6, Nacharbeit 1 (26.09.2026) - Mutationsprotokoll m110-letzter-block
+Matrixzeile: M-110 (Fassung §58.2, D4, R-380-15 (iii)); Vorbedingung: gespeist 960 000 (1 875 Bloecke), von der AnalyseEngine verarbeitet 959 488 (Ein-Block-Quarantaene), als eigene Pruefungen
+Begruendung der Mutation: Testmutation des Auftrags: die Speisung laesst den letzten Block aus (beide Schleifenbedingungen verlangen Platz fuer zwei Bloecke); gespeist 959 488 in 1 874 Bloecken, verarbeitet 958 976. Die NaN-Zusage haengt nicht an diesem Block und bleibt gruen - genau der Nebeneffekt, den der Pruefer nannte.
+Datei: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp
+Zeile (Nacharbeitsstand, vor dieser Mutation): 2715
+SHA-256 vor der Mutation: 53903F79F48E583C976BA07CDAABDA736D8518DAA9B71900541581D02DA3FB20; Sicherung eq-copilot/build/nak380-sicherung/e6n1/m110-letzter-block/0-AnalysisGoldenTestMain.cpp
+Wortlaut vorher:
+    while (pos + (std::size_t) block <= x.size() && verbraucht)
+    {
+        for (int b = 0; b < 40 && pos + (std::size_t) block <= x.size(); ++b)
+Wortlaut nachher:
+    while (pos + 2u * (std::size_t) block <= x.size() && verbraucht)   // Mutation m110-letzter-block
+    {
+        for (int b = 0; b < 40 && pos + 2u * (std::size_t) block <= x.size(); ++b)
+  Bau (mutation) EqCopAnalysisGoldenTest: 11:29:23 bis 11:29:36, Exit 0
+  Binary EqCopAnalysisGoldenTest 11:29:36.662 juenger als Quelle 11:29:23.569: ja
+Lauf mit Mutation: B5 --nak380 M-110 11:29:36 bis 11:29:50, Exit 1, 4 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-110 heartbeat_null_interpoliert: Vorbedingung gespeiste Samplezahl = 960 000 (20 s * 48 000, 1 875 Bloecke zu 512)  [Puffer 960000, gespeist 959488 in 1874 Bloecken]
+    [ROT]  380/M-110 heartbeat_null_interpoliert: Vorbedingung von der AnalyseEngine verarbeitet = 960 000 - 512 = 959 488 (der letzte Block bleibt in der Ein-Block-Quarantaene)  [verarbeitet 958976 (Soll 959488)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-110: gespeiste Samplezahl = 960 000 und verarbeitet = 959 488)
+Mitgefallene Pruefungen (0):
+Pflicht-Gruen unter der Mutation (ltasKompositDb ist NaN): JA (1 gruen, 0 rot)
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-110 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.065 dB (Soll <= 1,0), Oktaven 57.82/57.76/57.74/57.69/57.71/57.76/57.78/57.75/57.75/57.76 dB; RMS 0.09917 gegen 0.10000 (-0.072 dB), 960000 Samples]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0  [Ueberlauf 0, Oversize 0, Quarantaene verworfen 0]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung 20 s verbraucht, Heartbeat traegt 221 Baender, Maske der Referenz nicht leer  [1874 Bloecke, 221 Baender, Maske 29]
+    [ok]   380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [29 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 0 Zahl trotz Maske]
+Ruecknahme aus der Sicherung, eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp, SHA-256 53903F79F48E583C976BA07CDAABDA736D8518DAA9B71900541581D02DA3FB20: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 11:29:50 bis 11:30:01, Exit 0
+  Binary EqCopAnalysisGoldenTest 11:30:01.194 juenger als Quelle 11:29:50.139: ja
+Lauf nach Ruecknahme: B5 --nak380 M-110 11:30:01 bis 11:30:14, Exit 0, 6 gruen, 0 rot

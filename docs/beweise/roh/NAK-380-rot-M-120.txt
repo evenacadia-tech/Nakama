@@ -86,3 +86,98 @@ Etikett: Laengenhaelfte heute rot; Leeren Regressionswache
   m120-g7: faellt an der erwarteten Pruefung: JA; mit Mutation B5 voll 07:48:20 bis 07:48:54, Exit 1, 366 gruen, 5 rot
       [ROT]  G7 Sampleratewechsel, Laengenhaelfte: ein Block mit 96 kHz zieht die Grenze, allokiert nicht und laesst die Laengen 16 384/4 096 - der Audiopfad baut nichts um  [Grenzen +0, Anforderungen 38, Bass/Haupt 32768/8192]
       mitgefallen 4; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 voll 07:49:11 bis 07:49:44, Exit 0, 371 gruen, 0 rot
+
+== Nacharbeit 1 der Etappe 6 (e6n1), 26.09.2026 (Bauer Opus 5.5 xhigh, Befunde D1 und D8 (Z3, Z4) der Erstpruefung 6 mit Validierung, Regel R-380-15 (ii) und (iii), Matrixfassung §58.2; Stand uncommittet auf e744f40a)
+Zustand in der Fassung §58.2 (woertlich umgesetzt): 30 s P2 bei 48 kHz, dann vorbereiten (96000), dann 30 s P2 bei 96 kHz in BEIDE Engines. P2 = rosaMono (kP2Saat 0x3800008, RMS 0,1 = -20 dBFS); 30*48 000 = 1 440 000 = 2 812*512 + 256 und 30*96 000 = 2 880 000 = 5 625*512 Samples; beide vor dem Nutzer mit rosaSelbstpruefung bei ihrer Rate selbstgeprueft (Kopffunktion, Mindestlaenge 240 000 erfuellt).
+Zusage in der Fassung §58.2 (ergaenzt): danach nur Frames der neuen Laenge (M1 Band 64 174 Segmente; FeatureEngine aus Hop hergeleitet), Vorframe auf P0, LRA-Histogramm leer (R-380-15 (ii); fuer die M1 ihre Histogramme als eigenes Element); Zaehlpruefungen je Lauf (R-380-15 (iii)).
+Herleitung der Weiterbetriebszahlen (Kommentar AnalysisGoldenTestMain.cpp:2415-2460, im Test aus Laenge und Hop gerechnet, nie abgelesen): bei S = 2 880 000 lueckenlos gespeisten Samples, Laenge N, Hop N/2 rechnet eine Stufe W = floor((S - N)/Hop) + 1 Fenster und haelt S - W*Hop Samples im Ring. FeatureEngine Haupt (8 192/4 096): W = 702, Rest 4 608; Bass (32 768/16 384): W = 174, Rest 29 184; mit der alten Laenge 1 405 und 350. M1 Bassband 64 (ein Bin bei 32 768 und 16 384, je Fenster ein Segment): 174, mit der alten Laenge 350. Die FeatureEngine-Fensterzahl liest der Testzugang `stufenStand` aus Fensteranfang (jedes Fenster schiebt ihn um einen Hop, nach `leeren` Strom 0) und Hop; geprueft wird Fensterzahl, Rest und Fensteranfang + Rest = S.
+Docstring berichtigt: er nannte „nach 1 s bei 96 kHz 96 000 verarbeitete“ und 4 Segmente; die FeatureEngine erhielt am Etappenstand nach dem Wechsel 0 Samples.
+Endstand (eq-copilot/build/nak380-e6n1/final-B5.log, B5 voll 12:04:17 bis 12:04:52, Exit 0, 384 bestanden, 0 Fehler; die 18 Pruefzeilen der Zeile, vorher 8, und die Ereignisausgabe):
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (96 kHz)  [groesste Nachbardifferenz 0.271 dB (Soll <= 1,0), Oktaven 57.46/57.73/57.68/57.70/57.85/57.80/57.78/57.79/57.76/57.76 dB; RMS 0.09980 gegen 0.10000 (-0.017 dB), 2880000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 32768/16384, Haupt 8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Vorframe der alten Rate ueberlebt - 1 530 Werte, jeder auf P0 (zwei Riegel: Neuanlage des Detektors in vorbereiten, detektorLeeren in zuruecksetzen)  [vorher max -30.86 dB, nachher 1530 Werte, max -100.00, min -100.00 dB (P0 -100.0)]
+    [ok]   380/M-120 ratenwechsel_laengen: kein LRA-Histogramm der alten Rate ueberlebt - kein Bin belegt, Zaehler 0 (Bins zwei Riegel: Neuanlage in vorbereiten, Leeren in zuruecksetzen)  [vorher 271 Werte (Zaehler 271), nachher 0 (Zaehler 0)]
+    [ok]   380/M-120 ratenwechsel_laengen 96 kHz nach dem Wechsel: Vorbedingung gespeiste Samplezahl = 2880000 (30 s * 96 000), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der Engine verarbeitet 2880000]
+    [ok]   380/M-120 ratenwechsel_laengen 96 kHz nach dem Wechsel: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    mess [380/M-120] Ereignisse: 48 kHz 0, 96 kHz nach dem Wechsel 0
+    [ok]   380/M-120 ratenwechsel_laengen: FeatureEngine traegt nach 30 s bei 96 kHz nur Fenster der neuen Laenge (Haupt floor((2 880 000 - 8 192)/4 096) + 1 = 702, Bass floor((2 880 000 - 32 768)/16 384) + 1 = 174)  [Haupt 8192/Hop 4096: 702 Fenster (Soll 702), Rest 4608 (Soll 4608), Bass 32768/Hop 16384: 174 Fenster (Soll 174), Rest 29184 (Soll 29184), verarbeitet 2880000]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: M1 - Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der M1 verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [32768/16384/8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku der alten Rate ueberlebt  [vorher belegt ja, Segmente 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - kein Histogramm der alten Rate ueberlebt (Pegel- und Teilblockhistogramm leer, Riegel zuruecksetzen)  [vorher belegt ja, Histogramme 0]
+    [ok]   380/M-120 ratenwechsel_laengen 96 kHz nach dem Wechsel: M1 - Vorbedingung gespeiste Samplezahl = 2880000 (30 s * 96 000), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der M1 verarbeitet 2880000]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 traegt nach 30 s bei 96 kHz nur Segmente der neuen Laenge (floor((2 880 000 - 32 768)/16 384) + 1 = 174)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 174 Segmente (Soll 174)]
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll (e6n1)
+- Vorbedingung: P2 bei 96 kHz vor dem Nutzer selbstgeprueft (E-380-13)
+  Pruefzeile: B5 380/M-120 rosa_selbstpruefung_E-380-13 (96 kHz)
+  Mutation: keine eigene (Kopffunktion des Erzeugers; wie die 48-kHz-Zeile der Etappe 6)
+  rot: -
+  Protokoll: -
+- Vorbedingung: gespeist = Signallaenge = von der Engine verarbeitet, je Lauf und Engine (FeatureEngine 48 kHz, FeatureEngine 96 kHz nach dem Wechsel, M1 48 kHz, M1 96 kHz nach dem Wechsel)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen <Lauf>: [M1 -] Vorbedingung gespeiste Samplezahl = <Soll> (...), Laeufer und Engine (vier Zeilen)
+  Mutation: m120-speisung (Test): beide Laeufer lassen den letzten Block aus
+  rot: JA (alle vier: 1 439 744 bzw. 2 879 488); mitgefallen die FeatureEngine-Fensterpruefung (Fensteranfang + Rest 2 879 488 statt 2 880 000, dieselbe Ursache)
+  Protokoll: NAK-380-e6n1-mutation-m120-speisung.txt
+- Vorbedingung: Zaehlregel 7.3, Ringverlust 0 (FeatureEngine 48 kHz und 96 kHz nach dem Wechsel)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen <Lauf>: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0 (zwei Zeilen)
+  Mutation: Doppelmutation m120-verlust (rho = 0 und T_min = 0 wie m115-schwelle erzeugen Ereignisse, n1-verlust verliert und zaehlt jedes); Gegenprobe m120-verlust-allein (nur n1-verlust) bleibt gruen, weil P2 in beiden Laeufen 0 Ereignisse erzeugt
+  rot: JA (verworfen 37 bzw. 42); Gegenprobe gruen wie erwartet
+  Protokoll: NAK-380-e6n1-mutation-m120-verlust.txt, -m120-verlust-allein.txt
+- Zusagesatz: kein Vorframe der alten Rate ueberlebt (zwei Riegel: Neuanlage des Detektors in vorbereiten, detektorLeeren in zuruecksetzen)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: kein Vorframe der alten Rate ueberlebt - 1 530 Werte, jeder auf P0 (Vorbedingung: vorher max -30,86 dB > P0)
+  Mutation: Doppelmutation m120-vorframe-doppel (Neuanlage behaelt Detektor und Vorframe UND detektorLeeren entfaellt); Gegenproben m120-vorframe-neuanlage und m120-vorframe-leeren
+  rot: JA (1 530 Werte, max -30,86 dB); mitgefallen die Historie der Akkupruefung (32, derselbe ueberlebende Detektor); Gegenproben gruen (Pflicht-Gruen JA)
+  Protokoll: NAK-380-e6n1-mutation-m120-vorframe-doppel.txt, -neuanlage.txt, -leeren.txt
+- Zusagesatz: kein LRA-Histogramm der alten Rate ueberlebt, Bins (zwei Riegel: Neuanlage lraHistogramm.assign in vorbereiten, Leeren in zuruecksetzen)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: kein LRA-Histogramm der alten Rate ueberlebt - kein Bin belegt, Zaehler 0 (Vorbedingung: vorher 271 Werte)
+  Mutation: Doppelmutation m120-lra-doppel (Neuanlage behaelt die Bins UND das Leeren der Bins entfaellt); Gegenproben m120-lra-neuanlage und m120-lra-leeren
+  rot: JA (nachher 271 Werte); Gegenproben gruen
+  Protokoll: NAK-380-e6n1-mutation-m120-lra-doppel.txt, -neuanlage.txt, -leeren.txt
+- Zusagesatz: dieselbe Pruefzeile, Zaehler der LRA-Werte (ein Riegel: lraGezaehlt = 0 in zuruecksetzen)
+  Pruefzeile: wie oben
+  Mutation: m120-lra-zaehler (lraGezaehlt = 0 entfaellt)
+  rot: JA (Zaehler 271, Bins 0)
+  Protokoll: NAK-380-e6n1-mutation-m120-lra-zaehler.txt
+- Zusagesatz: M1 - kein Histogramm der alten Rate (Pegel- und Teilblockhistogramm; ein Riegel: das Leeren in AnalyseEngine::zuruecksetzen, der Konstruktor legt sie einmal an)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: M1 - kein Histogramm der alten Rate ueberlebt (aus der kombinierten M1-Zeile geteilt, R-380-15 (ii))
+  Mutation: m120-m1-hist (das Leeren beider Histogramme entfaellt)
+  rot: JA (Histogramme 186 248); M1 Stufe/Akku gruen
+  Protokoll: NAK-380-e6n1-mutation-m120-m1-hist.txt
+- Zusagesatz: M1 - keine Stufe, kein Akku der alten Rate (Riegel zuruecksetzen am Ende von AnalyseEngine::vorbereiten; Pruefzeile nach der Teilung)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku der alten Rate ueberlebt
+  Mutation: m120-m1 (Wortlaut der Etappe 6, neu gefahren): zuruecksetzen aus AnalyseEngine::vorbereiten entfernt
+  rot: JA (Segmente 249 553); mitgefallen aus demselben Riegel das M1-Histogramm (186 248), die Zaehlpruefung des 96-kHz-Laufs (verarbeitet 4 320 000 = 1 440 000 + 2 880 000) und Band 64 (348 = 174 alte + 174 neue Segmente)
+  Protokoll: NAK-380-e6n1-mutation-m120-m1.txt
+- Zusagesatz: nach dem Wechsel traegt die FeatureEngine nur Fenster der neuen Laenge und hat alle Samples verarbeitet (D1, Weiterbetrieb)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: FeatureEngine traegt nach 30 s bei 96 kHz nur Fenster der neuen Laenge (Haupt ... = 702, Bass ... = 174)
+  Mutation: m120-fe-weiter (Produkt, formgueltig): FeatureEngine::vorbereiten legt die Stufen bei einem Ratenwechsel nicht neu an, zuruecksetzen leert sie weiter
+  rot: JA (Haupt 4 096/Hop 2 048: 1 405 Fenster, Rest 2 560; Bass 16 384/Hop 8 192: 350 Fenster, Rest 12 800); mitgefallen die Laengenpruefung nach vorbereiten und der Vorframe (765 statt 1 530 Werte: K folgt der Hauptstufe) - dieselbe Ursache
+  Protokoll: NAK-380-e6n1-mutation-m120-fe-weiter.txt
+- Zusagesatz: nach dem Wechsel traegt die M1 nur Segmente der neuen Laenge (D1, Weiterbetrieb)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: M1 traegt nach 30 s bei 96 kHz nur Segmente der neuen Laenge (... = 174)
+  Mutation: m120-m1-weiter (Produkt, Beispiel des Auftrags): AnalyseEngine::vorbereiten legt die vier Stufen bei einem Ratenwechsel nicht neu an, zuruecksetzen leert sie weiter
+  rot: JA (Band 64: 350 Segmente statt 174); mitgefallen die M1-Laengenpruefung nach vorbereiten (dieselbe Ursache)
+  Protokoll: NAK-380-e6n1-mutation-m120-m1-weiter.txt
+- Die Rotbeweise der Etappe 6 (m98-regel, m120-m1laengen, m120-akku, m120-doppel, m120-g7) bleiben gueltig: ihre Pruefzeilen stehen unveraendert (Laengen, Stufenring, Akku, G7); m120-m1 ist wegen der Teilung neu gefahren (oben).
+
+== Mutationen e6n1 (Wortlaut in den Protokollen docs/beweise/roh/NAK-380-e6n1-mutation-<Kuerzel>.txt; SHA-256 vor der Mutation und nach der Ruecknahme gleich, Bau jeweils mit Binaryzeitstempel juenger als die Quelle, Fall danach 18 gruen, 0 rot)
+  m120-speisung: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:22:23 bis 11:22:27, Exit 1, 13 gruen, 5 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:22:38 bis 11:22:43, Exit 0, 18 gruen, 0 rot
+  m120-verlust-allein: faellt an der erwarteten Pruefung: NEIN (Gegenprobe, gruen wie erwartet); mit Mutation B5 --nak380 M-120 11:22:59 bis 11:23:03, Exit 0, 18 gruen, 0 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:23:19 bis 11:23:23, Exit 0, 18 gruen, 0 rot
+  m120-verlust: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:23:40 bis 11:23:44, Exit 1, 16 gruen, 2 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:24:00 bis 11:24:04, Exit 0, 18 gruen, 0 rot
+  m120-vorframe-neuanlage: faellt an der erwarteten Pruefung: NEIN (Gegenprobe, gruen wie erwartet); mit Mutation B5 --nak380 M-120 11:24:20 bis 11:24:24, Exit 0, 18 gruen, 0 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:24:40 bis 11:24:44, Exit 0, 18 gruen, 0 rot
+  m120-vorframe-leeren: faellt an der erwarteten Pruefung: NEIN (Gegenprobe, gruen wie erwartet); mit Mutation B5 --nak380 M-120 11:25:01 bis 11:25:04, Exit 0, 18 gruen, 0 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:25:21 bis 11:25:25, Exit 0, 18 gruen, 0 rot
+  m120-vorframe-doppel: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:25:42 bis 11:25:46, Exit 1, 16 gruen, 2 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:26:02 bis 11:26:06, Exit 0, 18 gruen, 0 rot
+  m120-lra-neuanlage: faellt an der erwarteten Pruefung: NEIN (Gegenprobe, gruen wie erwartet); mit Mutation B5 --nak380 M-120 11:26:22 bis 11:26:26, Exit 0, 18 gruen, 0 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:26:42 bis 11:26:46, Exit 0, 18 gruen, 0 rot
+  m120-lra-leeren: faellt an der erwarteten Pruefung: NEIN (Gegenprobe, gruen wie erwartet); mit Mutation B5 --nak380 M-120 11:27:02 bis 11:27:06, Exit 0, 18 gruen, 0 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:27:23 bis 11:27:27, Exit 0, 18 gruen, 0 rot
+  m120-lra-doppel: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:27:44 bis 11:27:48, Exit 1, 17 gruen, 1 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:28:05 bis 11:28:09, Exit 0, 18 gruen, 0 rot
+  m120-lra-zaehler: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:28:25 bis 11:28:29, Exit 1, 17 gruen, 1 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:28:46 bis 11:28:50, Exit 0, 18 gruen, 0 rot
+  m120-m1-hist: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:28:54 bis 11:28:58, Exit 1, 17 gruen, 1 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:29:02 bis 11:29:06, Exit 0, 18 gruen, 0 rot
+  m120-m1: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:59:19 bis 11:59:23, Exit 1, 14 gruen, 4 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:59:27 bis 11:59:31, Exit 0, 18 gruen, 0 rot
+  m120-fe-weiter: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:20:44 bis 11:20:48, Exit 1, 15 gruen, 3 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:21:04 bis 11:21:08, Exit 0, 18 gruen, 0 rot
+  m120-m1-weiter: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 11:21:12 bis 11:21:16, Exit 1, 16 gruen, 2 rot; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 11:21:19 bis 11:21:23, Exit 0, 18 gruen, 0 rot

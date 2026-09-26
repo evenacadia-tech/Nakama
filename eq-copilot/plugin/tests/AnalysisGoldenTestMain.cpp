@@ -302,6 +302,32 @@ struct FeatureEngineTestzugang
     {
         return e.detektor.empty() ? -1 : e.detektor[0].gefuellt;
     }
+
+    // M-120, Nacharbeit 1 der Etappe 6 (D1, D8; R-380-15 (ii)), nur lesend.
+    // Stand einer Stufe: jedes gerechnete Fenster schiebt den Fensteranfang
+    // um einen Hop (`schiebeStufe`); nach `leeren` beginnt er beim ersten
+    // Sample (im Laeufer Strom 0). Aus Fensteranfang, Hop und Rest im Ring
+    // liest der Fall die Fensterzahl und prueft sie gegen die Herleitung.
+    struct StufenStand { std::uint64_t fensterStart { 0 }; int hop { 0 }, gefuellt { 0 }; };
+    static StufenStand stufenStand (const FeatureEngine& e, bool bass) noexcept
+    {
+        const auto& s = bass ? e.bass : e.haupt;
+        return { s.fensterStromStart, s.hop, s.gefuellt };
+    }
+    static std::size_t vorframeGroesse (const FeatureEngine& e) noexcept
+    {
+        return e.detektor.empty() ? 0u : e.detektor[0].vorframe.size();
+    }
+    // Das LRA-Histogramm: Summe ueber alle Bins und der Zaehler der
+    // gegateten Kurzzeitwerte (die 60-s-Regel, `Lautheit.h`).
+    static std::uint64_t lraHistogrammSumme (const FeatureEngine& e) noexcept
+    {
+        std::uint64_t n = 0;
+        for (const auto v : e.lraHistogramm)
+            n += v;
+        return n;
+    }
+    static std::uint64_t lraGezaehlt (const FeatureEngine& e) noexcept { return e.lraGezaehlt; }
 };
 } // namespace nakama::analyse
 #endif
@@ -1525,13 +1551,18 @@ using Nak380Beobachter = std::function<void (FeatureEngine&, std::uint64_t block
     entnommen (§7.3), am Ende noch einmal. */
 __declspec(noinline) std::unique_ptr<Nak380Korpus> nak380Korpuslauf (
     const std::vector<float>& mono, std::uint64_t seekBei = 0, std::int64_t seekSprung = 0,
-    const Nak380Beobachter& beobachter = {}, double fs = 48000.0)
+    const Nak380Beobachter& beobachter = {}, double fs = 48000.0,
+    std::unique_ptr<FeatureEngine> weiter = nullptr)
 {
     // NAK-380 Etappe 6 (M-115): die Rate ist ein Parameter; ohne Angabe 48 kHz
     // wie bisher (alle Faelle der Etappen 4 und 5 laufen unveraendert).
+    // Nacharbeit 1 der Etappe 6 (M-120, D1): `weiter` uebergibt eine schon
+    // bei `fs` vorbereitete Engine, die der Laeufer weiter speist (Strom und
+    // Projektzeit ab 0 wie nach jedem `zuruecksetzen`); `vorbereiten (fs)`
+    // ist bei gleicher Rate ohne Wirkung.
     constexpr int block = 512;
     auto aus = std::make_unique<Nak380Korpus>();
-    aus->engine = std::make_unique<FeatureEngine>();
+    aus->engine = weiter ? std::move (weiter) : std::make_unique<FeatureEngine>();
     auto& engine = *aus->engine;
     engine.vorbereiten (fs);
     std::vector<float> audio ((std::size_t) block * 2u);
@@ -2381,19 +2412,48 @@ __declspec(noinline) void nak380M119()
                 + " B, Delta " + juce::String ((juce::int64) ae - (juce::int64) kNak380M119StartAnalyse) + " B");
 }
 
-/** M-120: Ratenwechsel im Lauf (starten <-> stoppen, §32.3). 30 s P2 bei
-    48 kHz, dann `vorbereiten (96000)`, dann 1 s bei 96 kHz.
+/** M-120: Ratenwechsel im Lauf (starten <-> stoppen, §32.3). Zustand nach
+    der Matrix: 30 s P2 bei 48 kHz, dann `vorbereiten (96000)`, dann 30 s P2
+    bei 96 kHz in BEIDE Engines (Nacharbeit 1 der Etappe 6, D1). Beide
+    Signale sind P2 (rosa, RMS 0,1 = -20 dBFS, Saat 0x3800008), vor dem
+    Nutzer nach E-380-13 selbstgeprueft, das zweite bei 96 kHz; Laengen
+    30*48 000 = 1 440 000 = 2 812*512 + 256 (der Rest als kurzer letzter
+    Block ueber `std::min`) und 30*96 000 = 2 880 000 = 5 625*512 Samples.
+    Zaehlpruefungen je Lauf als eigene Pruefungen (R-380-15 (iii)): gespeist
+    = Signallaenge = von der Engine verarbeitet, die FeatureEngine dazu mit
+    Ringverlust 0 (Zaehlregel 7.3).
+    Unmittelbar nach `vorbereiten (96000)`:
     - Laengen: FeatureEngine 32 768/8 192, M1 32 768/16 384/8 192/4 096
       (`referenzPunkte`).
     - Stufenringe leer (gefuellt 0, jeder Ringwert 0): diese Zusage tragen
       ZWEI Riegel - die Neuanlage `Stufe::vorbereiten` mit der neuen Laenge
       (legt die Ringe neu an und setzt gefuellt 0) und `zuruecksetzen` am Ende
       von `vorbereiten` (`Stufe::leeren`).
-    - Akkus leer (keine Band-Akkus belegt, verarbeitete Samples 0, Historie 0;
-      M1: Segmente 0, Histogramme 0, Stufen leer): Riegel `zuruecksetzen`.
-    - Danach traegt die Engine nur neue Samples: nach 1 s bei 96 kHz 96 000
-      verarbeitete; die M1-Bassstufe hat floor((96 000 - 32 768)/16 384) + 1
-      = 4 Segmente je Bassband (P2 ist durchgehend aktiv).
+    - Akkus leer (keine Band-Akkus belegt, verarbeitete Samples 0, Historie
+      0): Riegel `zuruecksetzen`.
+    - Vorframe des Detektors (R-380-15 (ii)): 1 530 Werte (K wie bei 48 kHz),
+      jeder auf P0 = -100 dB. ZWEI Riegel: die Neuanlage des Detektors in
+      `vorbereiten` (`detektor.assign`, `vorframe.assign (binAnzahl,
+      kFlussP0Db)`) und `detektorLeeren` in `zuruecksetzen`.
+    - LRA-Histogramm (R-380-15 (ii)): kein Bin belegt, Zaehler 0. Die Bins
+      tragen ZWEI Riegel (Neuanlage `lraHistogramm.assign` in `vorbereiten`,
+      das Leeren in `zuruecksetzen`), den Zaehler einer (`lraGezaehlt = 0` in
+      `zuruecksetzen`).
+    - M1: keine Stufe, kein Akku (Riegel `zuruecksetzen`); kein Pegel- und
+      kein Teilblockhistogramm (Riegel: das Leeren in `zuruecksetzen`; beide
+      Histogramme legt der Konstruktor einmal an, `vorbereiten` nicht neu).
+    Nach den 30 s bei 96 kHz traegt jede Engine nur Fenster der NEUEN Laenge
+    (Weiterbetrieb, D1). Bei S = 2 880 000 lueckenlos gespeisten Samples,
+    Laenge N und Hop N/2 rechnet eine Stufe W = floor((S - N)/Hop) + 1
+    Fenster und haelt S - W*Hop Samples im Ring:
+    - FeatureEngine Hauptstufe (8 192, Hop 4 096): W = floor(2 871 808/4 096)
+      + 1 = 702, Rest 2 880 000 - 2 875 392 = 4 608; Bassstufe (32 768, Hop
+      16 384): W = floor(2 847 232/16 384) + 1 = 174, Rest 2 880 000 -
+      2 850 816 = 29 184. Mit der alten Laenge (4 096/2 048 und
+      16 384/8 192) waeren es 1 405 und 350 Fenster.
+    - M1 Bassband 64 (ein Bin bei 32 768 und bei 16 384 Punkten, P2 ist
+      durchgehend aktiv, je Fenster ein Segment): 174 Segmente; mit der alten
+      Laenge floor((2 880 000 - 16 384)/8 192) + 1 = 350.
     Die Allokation liegt in `vorbereiten` (Worker unter der Steuersperre; das
     belegen A16 und B4 mit dem Allokationszaehler des Audiothreads). */
 void nak380M120M1 (const std::vector<float>& p48, const std::vector<float>& p96);
@@ -2404,14 +2464,22 @@ __declspec(noinline) void nak380M120()
     const auto p48 = sig::rosaMono (sig::kP2Saat, 0.1, 1440000u);
     const auto r48 = sig::rosaSelbstpruefung (p48, 0.1, 48000.0);
     pruefe (r48.ok, "380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)", juce::String (r48.meldung));
-    const auto p96 = sig::rosaMono (sig::kP2Saat, 0.1, 96000u);
+    const auto p96 = sig::rosaMono (sig::kP2Saat, 0.1, 2880000u);   // 30 s * 96 000, im Heap (NAK-175)
+    const auto r96 = sig::rosaSelbstpruefung (p96, 0.1, 96000.0);
+    pruefe (r96.ok, "380/M-120 rosa_selbstpruefung_E-380-13 (96 kHz)", juce::String (r96.meldung));
 
     // FeatureEngine: 30 s bei 48 kHz ueber den gemeinsamen Laeufer, dann Wechsel.
     auto lauf = nak380Korpuslauf (p48);
     nak380SamplesGeprueft ("M-120", "ratenwechsel_laengen 48 kHz", *lauf, p48.size(), 1440000u, "30 s * 48 000");
+    nak380VerlustGeprueft ("M-120", "ratenwechsel_laengen 48 kHz", lauf->verworfen);
     auto& e = *lauf->engine;
     const bool vorherBelegt = FeatureEngineTestzugang::akkuBaenderBelegt (e) > 0
                            || FeatureEngineTestzugang::stufeGefuellt (e, true) > 0;
+    // Vorbedingung der zwei neuen Pruefzeilen (Trennschaerfe): vor dem
+    // Wechsel traegt der Vorframe Werte ueber P0 und das LRA-Histogramm Werte.
+    const double vorframeVorher = FeatureEngineTestzugang::vorframeMaxDb (e);
+    const std::uint64_t lraVorher = FeatureEngineTestzugang::lraHistogrammSumme (e);
+    const std::uint64_t lraZaehlerVorher = FeatureEngineTestzugang::lraGezaehlt (e);
     e.vorbereiten (96000.0);
     const auto lb = FeatureEngineTestzugang::laenge (e, true);
     const auto lh = FeatureEngineTestzugang::laenge (e, false);
@@ -2439,6 +2507,61 @@ __declspec(noinline) void nak380M120()
             "Akkubaender " + juce::String (FeatureEngineTestzugang::akkuBaenderBelegt (e)) + ", verarbeitet "
                 + juce::String ((juce::int64) FeatureEngineTestzugang::verarbeitet (e)) + ", Historie "
                 + juce::String (FeatureEngineTestzugang::historieGefuelltWert (e)));
+    // R-380-15 (ii): der Vorframe (zwei Riegel: Neuanlage des Detektors in
+    // `vorbereiten`, `detektorLeeren` in `zuruecksetzen`).
+    const std::size_t vfGroesse = FeatureEngineTestzugang::vorframeGroesse (e);
+    const double vfMax = FeatureEngineTestzugang::vorframeMaxDb (e);
+    const double vfMin = FeatureEngineTestzugang::vorframeMinDb (e);
+    pruefe (vorframeVorher > kFlussP0Db && vfGroesse == 1530u && vfMax == kFlussP0Db && vfMin == kFlussP0Db,
+            "380/M-120 ratenwechsel_laengen: kein Vorframe der alten Rate ueberlebt - 1 530 Werte, jeder auf P0 "
+                "(zwei Riegel: Neuanlage des Detektors in vorbereiten, detektorLeeren in zuruecksetzen)",
+            "vorher max " + juce::String (vorframeVorher, 2) + " dB, nachher " + juce::String ((juce::int64) vfGroesse)
+                + " Werte, max " + juce::String (vfMax, 2) + ", min " + juce::String (vfMin, 2) + " dB (P0 "
+                + juce::String (kFlussP0Db, 1) + ")");
+    // R-380-15 (ii): das LRA-Histogramm (Bins: Neuanlage in `vorbereiten` und
+    // Leeren in `zuruecksetzen`; Zaehler: `zuruecksetzen`).
+    const std::uint64_t lraNachher = FeatureEngineTestzugang::lraHistogrammSumme (e);
+    const std::uint64_t lraZaehlerNachher = FeatureEngineTestzugang::lraGezaehlt (e);
+    pruefe (lraVorher > 0u && lraZaehlerVorher > 0u && lraNachher == 0u && lraZaehlerNachher == 0u,
+            "380/M-120 ratenwechsel_laengen: kein LRA-Histogramm der alten Rate ueberlebt - kein Bin belegt, "
+                "Zaehler 0 (Bins zwei Riegel: Neuanlage in vorbereiten, Leeren in zuruecksetzen)",
+            "vorher " + juce::String ((juce::int64) lraVorher) + " Werte (Zaehler "
+                + juce::String ((juce::int64) lraZaehlerVorher) + "), nachher " + juce::String ((juce::int64) lraNachher)
+                + " (Zaehler " + juce::String ((juce::int64) lraZaehlerNachher) + ")");
+
+    // Weiterbetrieb (D1): 30 s bei 96 kHz in DIESELBE Engine.
+    auto lauf96 = nak380Korpuslauf (p96, 0, 0, {}, 96000.0, std::move (lauf->engine));
+    nak380SamplesGeprueft ("M-120", "ratenwechsel_laengen 96 kHz nach dem Wechsel", *lauf96, p96.size(), 2880000u,
+                           "30 s * 96 000");
+    nak380VerlustGeprueft ("M-120", "ratenwechsel_laengen 96 kHz nach dem Wechsel", lauf96->verworfen);
+    std::cout << "  mess [380/M-120] Ereignisse: 48 kHz " << lauf->ereignisse.size() << ", 96 kHz nach dem Wechsel "
+              << lauf96->ereignisse.size() << std::endl;
+    {
+        const auto& e96 = *lauf96->engine;
+        constexpr std::uint64_t s = 2880000u;
+        juce::String text;
+        bool ok = true;
+        // { Bass?, N, Soll-Fenster, Soll-Rest } aus der Herleitung oben.
+        struct Soll { bool bass; int n; std::uint64_t fenster, rest; };
+        for (const Soll soll : { Soll { false, 8192, (s - 8192u) / 4096u + 1u, s - ((s - 8192u) / 4096u + 1u) * 4096u },
+                                 Soll { true, 32768, (s - 32768u) / 16384u + 1u, s - ((s - 32768u) / 16384u + 1u) * 16384u } })
+        {
+            const auto st = FeatureEngineTestzugang::stufenStand (e96, soll.bass);
+            const auto l = FeatureEngineTestzugang::laenge (e96, soll.bass);
+            const std::uint64_t hop = st.hop > 0 ? (std::uint64_t) st.hop : 1u;
+            const std::uint64_t fenster = st.fensterStart / hop;
+            ok = ok && l.punkte == soll.n && st.hop == soll.n / 2 && st.fensterStart % hop == 0u
+                 && fenster == soll.fenster && st.fensterStart + (std::uint64_t) st.gefuellt == s
+                 && (std::uint64_t) st.gefuellt == soll.rest;
+            text << (soll.bass ? ", Bass " : "Haupt ") << l.punkte << "/Hop " << st.hop << ": "
+                 << (juce::int64) fenster << " Fenster (Soll " << (juce::int64) soll.fenster << "), Rest "
+                 << st.gefuellt << " (Soll " << (juce::int64) soll.rest << ")";
+        }
+        pruefe (ok && FeatureEngineTestzugang::verarbeitet (e96) == s,
+                "380/M-120 ratenwechsel_laengen: FeatureEngine traegt nach 30 s bei 96 kHz nur Fenster der neuen Laenge "
+                    "(Haupt floor((2 880 000 - 8 192)/4 096) + 1 = 702, Bass floor((2 880 000 - 32 768)/16 384) + 1 = 174)",
+                text + ", verarbeitet " + juce::String ((juce::int64) FeatureEngineTestzugang::verarbeitet (e96)));
+    }
 
     // AnalyseEngine (M1): dieselbe Folge, auf einem EIGENEN Thread. Der
     // Stapelrahmen von `main` belegt 1 002 752 von 1 048 576 B (NAK-175,
@@ -2456,8 +2579,11 @@ __declspec(noinline) void nak380M120M1 (const std::vector<float>& p48, const std
     auto m1 = std::make_unique<eqcop::AnalyseEngine>();
     m1->vorbereiten (48000.0);
     std::vector<float> inter (1024u);
-    const auto speise = [&] (eqcop::AnalyseEngine& a, const std::vector<float>& x)
+    // Der M1-Speiser (R-380-15 (iii)): Block 512, der Rest ueber `std::min`;
+    // er liefert die Zahl der gespeisten Samples zurueck.
+    const auto speise = [&] (eqcop::AnalyseEngine& a, const std::vector<float>& x) -> std::uint64_t
     {
+        std::uint64_t gespeist = 0;
         std::size_t i = 0;
         while (i < x.size())
         {
@@ -2466,10 +2592,31 @@ __declspec(noinline) void nak380M120M1 (const std::vector<float>& p48, const std
                 inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
             a.verarbeite (inter.data(), n, 2);
             i += (std::size_t) n;
+            gespeist += (std::uint64_t) n;
         }
+        return gespeist;
     };
-    speise (*m1, p48);
+    // Die von der M1 verarbeitete Zahl: `auswertenLeicht` veroeffentlicht den
+    // Samplezaehler der Engine im Snapshot (`verarbeiteteSamples`), ohne einen
+    // Akku zu beruehren.
+    const auto verarbeitet = [] (eqcop::AnalyseEngine& a) -> std::uint64_t
+    {
+        a.auswertenLeicht();
+        return (std::uint64_t) a.snapshot().verarbeiteteSamples;
+    };
+    const auto zaehlung = [] (const char* lauf, std::size_t puffer, std::uint64_t soll, std::uint64_t gespeist,
+                              std::uint64_t engine, const char* herleitung)
+    {
+        pruefe (puffer == soll && gespeist == soll && engine == soll,
+                juce::String ("380/M-120 ratenwechsel_laengen ") + lauf + ": M1 - Vorbedingung gespeiste Samplezahl = "
+                    + juce::String ((juce::int64) soll) + " (" + herleitung + "), Laeufer und Engine",
+                "Puffer " + juce::String ((juce::int64) puffer) + ", gespeist " + juce::String ((juce::int64) gespeist)
+                    + ", von der M1 verarbeitet " + juce::String ((juce::int64) engine));
+    };
+    const auto gespeist48 = speise (*m1, p48);
+    zaehlung ("48 kHz", p48.size(), 1440000u, gespeist48, verarbeitet (*m1), "30 s * 48 000");
     const bool m1Vorher = eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1) > 0u;
+    const bool m1HistVorher = eqcop::AnalyseEngineTestzugang::histogrammSumme (*m1) > 0u;
     m1->vorbereiten (96000.0);
     const int m1Soll[4] = { sig::referenzPunkte (16384, 96000.0), sig::referenzPunkte (8192, 96000.0),
                             sig::referenzPunkte (4096, 96000.0), sig::referenzPunkte (2048, 96000.0) };
@@ -2485,27 +2632,34 @@ __declspec(noinline) void nak380M120M1 (const std::vector<float>& p48, const std
             "380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096",
             m1Text);
     const bool m1Leer = eqcop::AnalyseEngineTestzugang::stufenLeer (*m1)
-                     && eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1) == 0u
-                     && eqcop::AnalyseEngineTestzugang::histogrammSumme (*m1) == 0u;
+                     && eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1) == 0u;
     pruefe (m1Vorher && m1Leer,
-            "380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt",
+            "380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku der alten Rate ueberlebt",
             "vorher belegt " + juce::String (m1Vorher ? "ja" : "NEIN") + ", Segmente "
-                + juce::String ((juce::int64) eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1)) + ", Histogramme "
+                + juce::String ((juce::int64) eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1)));
+    // R-380-15 (ii): die M1-Histogramme (Pegel und Teilblock) als eigenes
+    // Element; Riegel: das Leeren in `AnalyseEngine::zuruecksetzen`.
+    pruefe (m1HistVorher && eqcop::AnalyseEngineTestzugang::histogrammSumme (*m1) == 0u,
+            "380/M-120 ratenwechsel_laengen: M1 - kein Histogramm der alten Rate ueberlebt (Pegel- und "
+                "Teilblockhistogramm leer, Riegel zuruecksetzen)",
+            "vorher belegt " + juce::String (m1HistVorher ? "ja" : "NEIN") + ", Histogramme "
                 + juce::String ((juce::int64) eqcop::AnalyseEngineTestzugang::histogrammSumme (*m1)));
-    // Nach dem Wechsel nur neue Samples: 1 s bei 96 kHz. Band 64 (Zentrum
-    // 193,3 Hz, Bassstufe, Akkubereich bis Naht 250 Hz) hat bei 96 kHz mit
-    // 32 768 wie mit 16 384 Punkten genau einen Bin (Vorbedingung, aus dem
-    // Gitter gezaehlt); am Basisstand zaehlte es floor((96 000 - 16 384)/8 192)
-    // + 1 = 10 Segmente der alten Laenge.
-    speise (*m1, p96);
+    // Weiterbetrieb (D1): 30 s bei 96 kHz. Band 64 (Zentrum 193,3 Hz,
+    // Bassstufe, Akkubereich bis Naht 250 Hz) hat bei 96 kHz mit 32 768 wie
+    // mit 16 384 Punkten genau einen Bin (Vorbedingung, aus dem Gitter
+    // gezaehlt); je Fenster der Bassstufe ein Segment, also
+    // floor((2 880 000 - 32 768)/16 384) + 1 = 174 mit der neuen Laenge und
+    // floor((2 880 000 - 16 384)/8 192) + 1 = 350 mit der alten.
+    const auto gespeist96 = speise (*m1, p96);
+    zaehlung ("96 kHz nach dem Wechsel", p96.size(), 2880000u, gespeist96, verarbeitet (*m1), "30 s * 96 000");
     const int bassBand = 64;
     const auto seg = eqcop::AnalyseEngineTestzugang::bassSegmente (*m1, bassBand);
-    const std::uint64_t segSoll = (96000u - 32768u) / 16384u + 1u;
+    const std::uint64_t segSoll = (2880000u - 32768u) / 16384u + 1u;
     const bool einBin = sig::m1Binfenster (bassBand, 32768, 96000.0).bins() == 1
                      && sig::m1Binfenster (bassBand, 16384, 96000.0).bins() == 1;
     pruefe (einBin && seg == segSoll,
-            "380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge "
-                "(floor((96 000 - 32 768)/16 384) + 1 = 4)",
+            "380/M-120 ratenwechsel_laengen: M1 traegt nach 30 s bei 96 kHz nur Segmente der neuen Laenge "
+                "(floor((2 880 000 - 32 768)/16 384) + 1 = 174)",
             "Band 64 (ein Bin bei 32 768 und 16 384: " + juce::String (einBin ? "ja" : "NEIN") + "): "
                 + juce::String ((juce::int64) seg) + " Segmente (Soll " + juce::String ((juce::int64) segSoll) + ")");
 }
@@ -2516,7 +2670,31 @@ __declspec(noinline) void nak380M120M1 (const std::vector<float>& p48, const std
     Maskenbaender aus M-109 (`m1MaskenReferenz`, im Test aus Bin-Zuordnung und
     Naehten gezaehlt), jedes andere Band ist eine Zahl. Der Speiser folgt der
     Referenzbuehne von B30 (Zuege zu 40 Bloecken, Worker verbraucht, dann die
-    naechste schwere Auswertung). */
+    naechste schwere Auswertung).
+    Zaehlpruefungen (Nacharbeit 1 der Etappe 6, D4; R-380-15 (iii)), je eine
+    eigene Pruefung, hergeleitet, nie abgelesen:
+    - gespeist: 20 s * 48 000 = 960 000 Samples = 1 875 Bloecke zu 512 (kein
+      Rest), gleich der Signallaenge;
+    - Drops 0: Queue-Ueberlauf, Oversize und Quarantaeneverwurf
+      (`analyseDropsUeberlauf`, `analyseDropsOversize`,
+      `analyseQuarantaeneVerworfen`);
+    - von der AnalyseEngine verarbeitet (`messSnapshot().verarbeiteteSamples`)
+      = 960 000 - 512 = 959 488: der Gen-Pfad haelt den juengsten Block in
+      der Ein-Block-Quarantaene (`StampedAudioQueue.h`, `Blockquarantaene`:
+      ein Block geht erst an die Analyse, wenn sein Nachfolger beweist, dass
+      er ihn fortsetzt); der letzte Block des Signals hat keinen Nachfolger
+      und bleibt dort. Aus demselben Grund laesst `verbraucht` genau einen
+      Block Abstand: `merkmaleBloecke()` zaehlt die Bloecke, die der Worker an
+      die FeatureEngine gab, und das sind hoechstens alle bis auf den
+      gehaltenen. */
+// Die Kopie des `MessSnapshot` liegt in einem eigenen Rahmen, der vor
+// `messKompakt` (das selbst eine Kopie anlegt) wieder frei ist: der
+// Stapelrahmen von `main` belegt 1 002 752 von 1 048 576 B (NAK-175, NAK-406).
+__declspec(noinline) std::uint64_t nak380VerarbeitetGen (const EqCopilotProcessor& p)
+{
+    return (std::uint64_t) p.messSnapshot().verarbeiteteSamples;
+}
+
 __declspec(noinline) void nak380M110()
 {
     namespace sig = nakama::test::nak380;
@@ -2531,7 +2709,7 @@ __declspec(noinline) void nak380M110()
     juce::AudioBuffer<float> puffer (2, block);
     juce::MidiBuffer midi;
     std::int64_t zeit = 0;
-    std::uint64_t gefuettert = 0;
+    std::uint64_t gefuettert = 0, gespeist = 0;
     std::size_t pos = 0;
     bool verbraucht = true;
     while (pos + (std::size_t) block <= x.size() && verbraucht)
@@ -2555,7 +2733,9 @@ __declspec(noinline) void nak380M110()
             pos += (std::size_t) block;
             zeit += block;
             ++gefuettert;
+            gespeist += (std::uint64_t) block;
         }
+        // Ein Block Abstand: die Ein-Block-Quarantaene (Herleitung oben).
         const auto frist = juce::Time::getMillisecondCounter() + 10000u;
         while (p->merkmaleBloecke() + 1u < gefuettert && juce::Time::getMillisecondCounter() < frist)
             juce::Thread::sleep (1);
@@ -2565,6 +2745,30 @@ __declspec(noinline) void nak380M110()
     const auto frist = juce::Time::getMillisecondCounter() + 10000u;
     while (p->analyseSchwereAuswertungen() < schwer + 2u && juce::Time::getMillisecondCounter() < frist)
         juce::Thread::sleep (5);
+    // Zaehlpruefungen (D4): Soll aus der Signallaenge, nicht aus dem Lauf.
+    const std::uint64_t sollGespeist = 960000u;                      // 20 s * 48 000
+    const std::uint64_t sollBloecke = sollGespeist / (std::uint64_t) block;   // 1 875, kein Rest
+    const std::uint64_t sollVerarbeitet = sollGespeist - (std::uint64_t) block;   // 959 488: letzter Block in Quarantaene
+    pruefe (x.size() == sollGespeist && gespeist == sollGespeist && gefuettert == sollBloecke,
+            "380/M-110 heartbeat_null_interpoliert: Vorbedingung gespeiste Samplezahl = 960 000 (20 s * 48 000, "
+                "1 875 Bloecke zu 512)",
+            "Puffer " + juce::String ((juce::int64) x.size()) + ", gespeist " + juce::String ((juce::int64) gespeist)
+                + " in " + juce::String ((juce::int64) gefuettert) + " Bloecken");
+    const auto dropsUeberlauf = p->analyseDropsUeberlauf();
+    const auto dropsOversize = p->analyseDropsOversize();
+    const auto quarantaeneVerworfen = p->analyseQuarantaeneVerworfen();
+    pruefe (dropsUeberlauf == 0u && dropsOversize == 0u && quarantaeneVerworfen == 0u,
+            "380/M-110 heartbeat_null_interpoliert: Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und "
+                "Quarantaeneverwurf 0",
+            "Ueberlauf " + juce::String ((juce::int64) dropsUeberlauf) + ", Oversize "
+                + juce::String ((juce::int64) dropsOversize) + ", Quarantaene verworfen "
+                + juce::String ((juce::int64) quarantaeneVerworfen));
+    const auto verarbeitetM1 = nak380VerarbeitetGen (*p);
+    pruefe (verarbeitetM1 == sollVerarbeitet,
+            "380/M-110 heartbeat_null_interpoliert: Vorbedingung von der AnalyseEngine verarbeitet = 960 000 - 512 "
+                "= 959 488 (der letzte Block bleibt in der Ein-Block-Quarantaene)",
+            "verarbeitet " + juce::String ((juce::int64) verarbeitetM1) + " (Soll "
+                + juce::String ((juce::int64) sollVerarbeitet) + ")");
     const auto k = p->messKompakt();
     const auto maske = sig::m1MaskenReferenz (fs);
     int nanGenau = 0, falschNull = 0, falschZahl = 0;

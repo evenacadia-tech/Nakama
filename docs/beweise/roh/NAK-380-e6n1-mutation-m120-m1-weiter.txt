@@ -1,0 +1,50 @@
+NAK-380 Etappe 6, Nacharbeit 1 (26.09.2026) - Mutationsprotokoll m120-m1-weiter
+Matrixzeile: M-120 (Fassung §58.2, D1); Zusagesatz: nach dem Wechsel (30 s P2 bei 96 kHz) traegt die M1 nur Segmente der neuen Laenge (Band 64: 174 Segmente)
+Begruendung der Mutation: formgueltige Produktmutation (Beispiel des Auftrags): AnalyseEngine::vorbereiten legt die vier Stufen bei einem Ratenwechsel nicht neu an, zuruecksetzen leert sie weiter; die Bassstufe rechnet mit 16 384 Punkten und Hop 8 192 weiter, Band 64 zaehlt floor((2 880 000 - 16 384)/8 192) + 1 = 350 Segmente der alten Laenge. Mitfallen muss aus derselben Ursache die M1-Laengenpruefung unmittelbar nach vorbereiten.
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp
+Zeile (Nacharbeitsstand, vor dieser Mutation): 228
+SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6n1/m120-m1-weiter/0-AnalyseEngine.cpp
+Wortlaut vorher:
+    bass.init (ordnung (kM1OrdnungBass), sr, kantenLoHz, kantenHiHz);         // §5.10.1 Bassfenster
+    referenz.init (ordnung (kM1OrdnungReferenz), sr, kantenLoHz, kantenHiHz); // analyze-track-Achse bei 48 kHz
+    mitten.init (ordnung (kM1OrdnungMitten), sr, kantenLoHz, kantenHiHz);
+    hoehen.init (ordnung (kM1OrdnungHoehen), sr, kantenLoHz, kantenHiHz);
+Wortlaut nachher:
+    if (bass.n == 0)   // Mutation m120-m1-weiter: ein Ratenwechsel legt die Stufen nicht neu an
+        bass.init (ordnung (kM1OrdnungBass), sr, kantenLoHz, kantenHiHz);         // §5.10.1 Bassfenster
+    if (referenz.n == 0)
+        referenz.init (ordnung (kM1OrdnungReferenz), sr, kantenLoHz, kantenHiHz); // analyze-track-Achse bei 48 kHz
+    if (mitten.n == 0)
+        mitten.init (ordnung (kM1OrdnungMitten), sr, kantenLoHz, kantenHiHz);
+    if (hoehen.n == 0)
+        hoehen.init (ordnung (kM1OrdnungHoehen), sr, kantenLoHz, kantenHiHz);
+  Bau (mutation) EqCopAnalysisGoldenTest: 11:21:08 bis 11:21:12, Exit 0
+  Binary EqCopAnalysisGoldenTest 11:21:12.035 juenger als Quelle 11:21:08.648: ja
+Lauf mit Mutation: B5 --nak380 M-120 11:21:12 bis 11:21:16, Exit 1, 16 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+    [ROT]  380/M-120 ratenwechsel_laengen: M1 traegt nach 30 s bei 96 kHz nur Segmente der neuen Laenge (floor((2 880 000 - 32 768)/16 384) + 1 = 174)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 350 Segmente (Soll 174)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-120 ratenwechsel_laengen: M1 traegt nach 30 s bei 96 kHz nur Segmente der neuen Laenge)
+Mitgefallene Pruefungen (1):
+    [ROT]  380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [16384/8192/4096/2048]
+Pflicht-Gruen unter der Mutation (FeatureEngine|M1 - keine Stufe|M1 - kein Histogramm|Vorbedingung gespeiste Samplezahl): JA (7 gruen, 0 rot)
+Unter derselben Mutation gruen gebliebene Pruefungen: 16
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (96 kHz)  [groesste Nachbardifferenz 0.271 dB (Soll <= 1,0), Oktaven 57.46/57.73/57.68/57.70/57.85/57.80/57.78/57.79/57.76/57.76 dB; RMS 0.09980 gegen 0.10000 (-0.017 dB), 2880000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 32768/16384, Haupt 8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Vorframe der alten Rate ueberlebt - 1 530 Werte, jeder auf P0 (zwei Riegel: Neuanlage des Detektors in vorbereiten, detektorLeeren in zuruecksetzen)  [vorher max -30.86 dB, nachher 1530 Werte, max -100.00, min -100.00 dB (P0 -100.0)]
+    [ok]   380/M-120 ratenwechsel_laengen: kein LRA-Histogramm der alten Rate ueberlebt - kein Bin belegt, Zaehler 0 (Bins zwei Riegel: Neuanlage in vorbereiten, Leeren in zuruecksetzen)  [vorher 271 Werte (Zaehler 271), nachher 0 (Zaehler 0)]
+    [ok]   380/M-120 ratenwechsel_laengen 96 kHz nach dem Wechsel: Vorbedingung gespeiste Samplezahl = 2880000 (30 s * 96 000), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der Engine verarbeitet 2880000]
+    [ok]   380/M-120 ratenwechsel_laengen 96 kHz nach dem Wechsel: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-120 ratenwechsel_laengen: FeatureEngine traegt nach 30 s bei 96 kHz nur Fenster der neuen Laenge (Haupt floor((2 880 000 - 8 192)/4 096) + 1 = 702, Bass floor((2 880 000 - 32 768)/16 384) + 1 = 174)  [Haupt 8192/Hop 4096: 702 Fenster (Soll 702), Rest 4608 (Soll 4608), Bass 32768/Hop 16384: 174 Fenster (Soll 174), Rest 29184 (Soll 29184), verarbeitet 2880000]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: M1 - Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der M1 verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku der alten Rate ueberlebt  [vorher belegt ja, Segmente 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - kein Histogramm der alten Rate ueberlebt (Pegel- und Teilblockhistogramm leer, Riegel zuruecksetzen)  [vorher belegt ja, Histogramme 0]
+    [ok]   380/M-120 ratenwechsel_laengen 96 kHz nach dem Wechsel: M1 - Vorbedingung gespeiste Samplezahl = 2880000 (30 s * 96 000), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der M1 verarbeitet 2880000]
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 11:21:16 bis 11:21:19, Exit 0
+  Binary EqCopAnalysisGoldenTest 11:21:19.579 juenger als Quelle 11:21:16.095: ja
+Lauf nach Ruecknahme: B5 --nak380 M-120 11:21:19 bis 11:21:23, Exit 0, 18 gruen, 0 rot

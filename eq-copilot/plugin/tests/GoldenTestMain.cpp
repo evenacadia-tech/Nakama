@@ -1265,9 +1265,13 @@ void nak380M106 (Pruefer& p)
         const auto l = nak380KFahren (k.x, 48000.0);
         const auto kk = nak380Karten (*l, 45.0);
         std::printf ("  mess [380/M-106] K4 45 Hz: %d Snapshots ab messbereit, ohne Karte %d\n", kk.snapshots, kk.ohneKarte);
-        p.wahr (l->gespeist == samples && l->messbereit == 61,
+        // Nacharbeit 1 der Etappe 6 (D6): der Satz sagt "gespeist und
+        // verarbeitet", die Pruefung misst beides (Muster M-103 bis M-105, M-107).
+        p.wahr (l->gespeist == samples && l->verarbeitet == samples && l->messbereit == 61,
                 "380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit",
-                juce::String ((juce::int64) l->gespeist) + " Samples, " + juce::String (l->messbereit) + " Snapshots");
+                "gespeist " + juce::String ((juce::int64) l->gespeist) + ", verarbeitet "
+                    + juce::String ((juce::int64) l->verarbeitet) + " Samples, " + juce::String (l->messbereit)
+                    + " Snapshots");
         p.wahr (kk.snapshots == 61 && kk.ohneKarte == kk.snapshots,
                 "380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot",
                 juce::String (kk.ohneKarte) + " von " + juce::String (kk.snapshots) + " ohne Karte");
@@ -1280,6 +1284,13 @@ void nak380M106 (Pruefer& p)
         const auto selbst = sig::kSelbstpruefung (k, 60.0, 48000.0, samples);
         p.wahr (selbst.ok, "380/M-106 Karte 60 Hz: Vorbedingung k_selbstpruefung", juce::String (selbst.meldung));
         const auto l = nak380KFahren (k.x, 48000.0);
+        // Nacharbeit 1 der Etappe 6 (D7): derselbe Vorbedingungssatz wie die
+        // M-107-Gegenprobe vor der Kartenpruefung.
+        p.wahr (l->gespeist == samples && l->verarbeitet == samples && l->messbereit == 61,
+                "380/M-106 Karte 60 Hz: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit",
+                "gespeist " + juce::String ((juce::int64) l->gespeist) + ", verarbeitet "
+                    + juce::String ((juce::int64) l->verarbeitet) + " Samples, " + juce::String (l->messbereit)
+                    + " Snapshots");
         const juce::String ende = " " + nak380SatzSoll (51);
         int karten = 0, mitSatz = 0;
         juce::String beispiel;

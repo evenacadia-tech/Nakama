@@ -24,3 +24,37 @@ Etikett: heute rot
       [ROT]  380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [0 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
       Pflicht-Gruen unter der Mutation: JA
       mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-110 07:40:07 bis 07:40:21, Exit 0, 3 gruen, 0 rot
+
+== Nacharbeit 1 der Etappe 6 (e6n1), 26.09.2026 (Bauer Opus 5.5 xhigh, Befund D4 der Erstpruefung 6 mit Validierung, Regel R-380-15 (iii), Matrixfassung §58.2; Stand uncommittet auf e744f40a)
+Vorbedingung in der Fassung §58.2: gespeist 960 000 (1 875 Bloecke zu 512, kein Rest), verarbeitet 959 488 (Quarantaene hergeleitet), Dropzaehler 0 als eigene Pruefungen; die Toleranz von `verbraucht` (ein Block) traegt die Herleitung aus der Ein-Block-Quarantaene im Kommentar
+Herleitung (Kommentar AnalysisGoldenTestMain.cpp:2674-2689, am Code nachgemessen): der Gen-Pfad reicht einen Block erst an die Analyse, wenn sein Nachfolger beweist, dass er ihn fortsetzt (`StampedAudioQueue.h`, `Blockquarantaene::schiebe`, Riegel `schliesstAn`; der gehaltene Block wird nur bei einem Bruch oder `zuruecksetzen` verworfen und dann gezaehlt). Der letzte Block des Signals hat keinen Nachfolger und bleibt gehalten: verarbeitet = 960 000 - 512 = 959 488. `merkmaleBloecke()` zaehlt die Bloecke, die der Worker an die FeatureEngine gab (`prozessor/Analyse.cpp`, derselbe Zug gibt denselben Block an die AnalyseEngine), also hoechstens alle bis auf den gehaltenen - daher ein Block Abstand in `verbraucht`.
+Die verarbeitete Zahl liest der Fall ueber `nak380VerarbeitetGen` (AnalysisGoldenTestMain.cpp:2693-2696): die Kopie des MessSnapshot liegt in einem eigenen Rahmen, der vor `messKompakt` wieder frei ist (Stapelrahmen von main 1 002 752 von 1 048 576 B, NAK-175, NAK-406).
+Endstand (eq-copilot/build/nak380-e6n1/final-B5.log, B5 voll 12:04:17 bis 12:04:52, Exit 0, 384 bestanden, 0 Fehler; die 6 Pruefzeilen der Zeile, vorher 3):
+    [ok]   380/M-110 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.065 dB (Soll <= 1,0), Oktaven 57.82/57.76/57.74/57.69/57.71/57.76/57.78/57.75/57.75/57.76 dB; RMS 0.09917 gegen 0.10000 (-0.072 dB), 960000 Samples]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung gespeiste Samplezahl = 960 000 (20 s * 48 000, 1 875 Bloecke zu 512)  [Puffer 960000, gespeist 960000 in 1875 Bloecken]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0  [Ueberlauf 0, Oversize 0, Quarantaene verworfen 0]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung von der AnalyseEngine verarbeitet = 960 000 - 512 = 959 488 (der letzte Block bleibt in der Ein-Block-Quarantaene)  [verarbeitet 959488 (Soll 959488)]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung 20 s verbraucht, Heartbeat traegt 221 Baender, Maske der Referenz nicht leer  [1875 Bloecke, 221 Baender, Maske 29]
+    [ok]   380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [29 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 0 Zahl trotz Maske]
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll (e6n1)
+- Vorbedingung: gespeist 960 000 in 1 875 Bloecken = Signallaenge
+  Pruefzeile: B5 380/M-110 heartbeat_null_interpoliert: Vorbedingung gespeiste Samplezahl = 960 000
+  Mutation: m110-letzter-block (Test, Muster des Auftrags): die Speisung laesst den letzten Block aus
+  rot: JA (gespeist 959 488 in 1 874 Bloecken); die NaN-Zusage bleibt dabei gruen (Pflicht-Gruen JA) - der Nebeneffekt, den der Pruefer nannte, ist jetzt getrennt gemessen
+  Protokoll: NAK-380-e6n1-mutation-m110-letzter-block.txt
+- Vorbedingung: von der AnalyseEngine verarbeitet = 959 488 (Ein-Block-Quarantaene)
+  Pruefzeile: B5 380/M-110 ...: Vorbedingung von der AnalyseEngine verarbeitet = 960 000 - 512 = 959 488
+  Mutation: m110-letzter-block
+  rot: JA (verarbeitet 958 976)
+  Protokoll: NAK-380-e6n1-mutation-m110-letzter-block.txt
+- Vorbedingung: Dropzaehler 0 (Queue-Ueberlauf, Oversize, Quarantaeneverwurf)
+  Pruefzeile: B5 380/M-110 ...: Vorbedingung kein Verlust - Queue-Ueberlauf, Oversize und Quarantaeneverwurf 0
+  Mutation: m110-drops (Test): der Speiser wartet nicht mehr auf den Worker
+  rot: JA (Ueberlauf 1 619); mitgefallen die verarbeitete Zahl (130 560, dieselbe Ursache)
+  Protokoll: NAK-380-e6n1-mutation-m110-drops.txt
+
+== Mutationen e6n1 (Wortlaut in den Protokollen docs/beweise/roh/NAK-380-e6n1-mutation-<Kuerzel>.txt; SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m110-letzter-block: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-110 11:29:36 bis 11:29:50, Exit 1, 4 gruen, 2 rot; nach Ruecknahme Exit 0, 6 gruen, 0 rot
+  m110-drops: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-110 11:30:25 bis 11:30:36, Exit 1, 4 gruen, 2 rot (mitgefallen 1); nach Ruecknahme Exit 0, 6 gruen, 0 rot
+  m110-maske (Etappe 6, NaN-Zusage): Pruefzeile unveraendert, nicht neu gefahren (Auftrag D1: bestehende Rotbeweise bleiben gueltig)

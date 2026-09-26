@@ -1,0 +1,41 @@
+NAK-380 Etappe 6, Nacharbeit 1 (26.09.2026) - Mutationsprotokoll a2-kfahren-rest
+Matrixzeile: M-106 (Fassung §58.2, D6/D7); Vorbedingung: K4 und der 60-Hz-Lauf gespeist = verarbeitet = 1 440 000
+Begruendung der Mutation: Testmutation (Trennschaerfe der Speisehaelfte): der Laeufer speist nur ganze Bloecke, der Rest 256 von 1 440 000 = 2 812*512 + 256 fehlt; gespeist und verarbeitet 1 439 744.
+Datei: eq-copilot/plugin/tests/GoldenTestMain.cpp
+Zeile (Nacharbeitsstand, vor dieser Mutation): 1125
+SHA-256 vor der Mutation: 5441E542A6A3427DC08B2B7BF6C07876E6D3B0C9C1E61FC6BB61FEF7016072A6; Sicherung eq-copilot/build/nak380-sicherung/e6n1/a2-kfahren-rest/0-GoldenTestMain.cpp
+Wortlaut vorher:
+    while (i < x.size())
+    {
+        const int n = (int) std::min<std::size_t> (512u, x.size() - i);
+        for (int k = 0; k < n; ++k)
+            inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
+        engine->verarbeite
+Wortlaut nachher:
+    while (i + 512u <= x.size())   // Mutation a2-kfahren-rest: der Rest fehlt
+    {
+        const int n = (int) std::min<std::size_t> (512u, x.size() - i);
+        for (int k = 0; k < n; ++k)
+            inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
+        engine->verarbeite
+  Bau (mutation) EqCopGoldenTest: 11:31:12 bis 11:31:17, Exit 0
+  Binary EqCopGoldenTest 11:31:16.963 juenger als Quelle 11:31:12.817: ja
+Lauf mit Mutation: A2 eq-copilot\fixtures --nak380 M-106 11:31:17 bis 11:31:18, Exit 1, 7 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit ÔÇö gespeist 1439744, verarbeitet 1439744 Samples, 61 Snapshots
+    [ROT]  380/M-106 Karte 60 Hz: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit ÔÇö gespeist 1439744, verarbeitet 1439744 Samples, 61 Snapshots
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-106 K4 und Karte 60 Hz: Vorbedingung 30 s gespeist und verarbeitet)
+Mitgefallene Pruefungen (0):
+Pflicht-Gruen unter der Mutation (keine Resonanzkarte|der Satz nennt): JA (2 gruen, 0 rot)
+Unter derselben Mutation gruen gebliebene Pruefungen: 7
+    [ok]   380/M-106 nicht_gesucht_satz (48.0 kHz): die Satzfunktion nennt die gerundete Suchgrenze 51 Hz im Wortlaut aus ┬º8.6
+    [ok]   380/M-106 nicht_gesucht_satz (44.1 kHz): die Satzfunktion nennt die gerundete Suchgrenze 47 Hz im Wortlaut aus ┬º8.6
+    [ok]   380/M-106 K4: Vorbedingung k_selbstpruefung
+    [ok]   380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot
+    [ok]   380/M-106 nicht_gesucht_satz K4: der Satz nennt 51 Hz
+    [ok]   380/M-106 Karte 60 Hz: Vorbedingung k_selbstpruefung
+    [ok]   380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen
+Ruecknahme aus der Sicherung, eq-copilot/plugin/tests/GoldenTestMain.cpp, SHA-256 5441E542A6A3427DC08B2B7BF6C07876E6D3B0C9C1E61FC6BB61FEF7016072A6: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 11:31:18 bis 11:31:22, Exit 0
+  Binary EqCopGoldenTest 11:31:22.555 juenger als Quelle 11:31:18.910: ja
+Lauf nach Ruecknahme: A2 eq-copilot\fixtures --nak380 M-106 11:31:22 bis 11:31:24, Exit 0, 9 gruen, 0 rot

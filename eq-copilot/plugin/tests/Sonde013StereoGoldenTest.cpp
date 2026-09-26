@@ -198,6 +198,39 @@ struct FeatureEngineTestzugang
                 summe += e.stereoZaehlerWert (FeatureEngine::stereoZaehlerBasis (b, trenn) + (std::size_t) j);
         return summe;
     }
+
+    /** NAK-380 Nacharbeit 0 (R-380-13 (iii)): genutzte Bins des Bandes b am
+        aktuellen Stand - Bins, deren Summe ueber die belegten Ringslots
+        Sxx·Syy > 0 und endliche Summen traegt (die Regel des Schaetzers in
+        `stereoAuswerten`). Eine Zustandsgroesse, keine Messzahl: sie geht nur
+        in die Vorbedingung "genutzte Bins = Gitterbins" ein, nie in T_B. */
+    static int genutzteBins (const FeatureEngine& e, int b) noexcept
+    {
+        if (e.stereoRing.empty())
+            return 0;
+        const int trenn = e.trennIndex();
+        std::size_t basis = FeatureEngine::stereoZaehlerElemente (trenn);
+        for (int v = 0; v < b; ++v)
+            basis += (std::size_t) e.stereoBins (v) * (std::size_t) FeatureEngine::stereoRingSlots (v, trenn);
+        const bool bassBand = b < trenn;
+        const auto w = (std::uint32_t) (bassBand ? kStereoRingBass : kStereoRingHaupt);
+        const auto stand = bassBand ? e.stereoRingStandBass : e.stereoRingStandHaupt;
+        const auto belegt = std::min (bassBand ? e.stereoRingBelegtBass : e.stereoRingBelegtHaupt, w);
+        const auto slots = (std::size_t) FeatureEngine::stereoRingSlots (b, trenn);
+        int genutzt = 0;
+        for (int i = 0; i < e.stereoBins (b); ++i)
+        {
+            double xx = 0.0, yy = 0.0, re = 0.0, im = 0.0;
+            for (std::uint32_t j = 0; j < belegt; ++j)
+            {
+                const auto& x = e.stereoRing[basis + (std::size_t) i * slots + (stand + w - j) % w];
+                xx += x.sxx; yy += x.syy; re += x.sxyRe; im += x.sxyIm;
+            }
+            if (xx * yy > 0.0 && std::isfinite (xx * yy) && std::isfinite (re) && std::isfinite (im))
+                ++genutzt;
+        }
+        return genutzt;
+    }
 };
 } // namespace nakama::analyse
 #endif
@@ -380,6 +413,7 @@ struct Nak380Band
     bool basis { false }, koh { false }, phase { false }, lauf { false }, pers { false };
     float kohWert { 0.0f }, phaseWert { 0.0f }, laufMs { 0.0f }, persWert { 0.0f }, dauerMs { 0.0f };
     std::uint32_t dof { 0 };
+    std::uint32_t genutzt { 0 };          ///< genutzte Bins (Testzugang, Zustandsgroesse; R-380-13 (iii))
 };
 
 Nak380Band nak380Lesen (const StereoBandwert& w)
@@ -514,7 +548,12 @@ __declspec(noinline) const Nak380Rauschlauf& nak380Rauschen (double fs, int bloc
         {
             Nak380Schnapp s ((std::size_t) Gitter::evidenzBaender);
             for (int b = 0; b < Gitter::evidenzBaender; ++b)
+            {
                 s[(std::size_t) b] = nak380Lesen (e.stereoBand (b));
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+                s[(std::size_t) b].genutzt = (std::uint32_t) FeatureEngineTestzugang::genutzteBins (e, b);
+#endif
+            }
             ziel->schnapp.push_back (std::move (s));
         });
     L->gespeist = lauf.gespeist;
@@ -604,17 +643,91 @@ void nak380KohPruefen (const Nak380Rauschlauf& L, int i, Nak380KohBefund& f)
     }
 }
 
-/** Die Laufzeitzusage je Band (M-74 bis M-80): Baender mit mindestens zwei
-    Bins und Kohaerenzbit tragen die Gruppenlaufzeit 1000*d/fs ms +- 0,02 ms;
-    Baender mit einem Bin und Baender ohne Kohaerenzbit tragen KEINE (nie 0).
-    Die Abweichungen je Binzahl werden fuer den Manifestabschnitt
-    mitgeschrieben (groesste je Klasse). */
+/** Toleranz der Gruppenlaufzeit je Band nach R-380-13 (iii), NUR aus den
+    Vorbedingungen gerechnet (R-380-8), nie aus dem Lauf:
+
+    - K   genutzte Bins = Gitterbins des Bandes (`nak380Binfenster`); dass der
+          Lauf genau diese Bins nutzt, prueft der Fall als eigene Vorbedingung
+          am Snapshot (Rauschen mit sigma > 0 belegt jeden Bin).
+    - F   Frames im Ring des Bandes am letzten Snapshot aus dem Kadenzmodell
+          (`nak380RingFrames` ueber `snapSoll`, verriegelt wie M-84).
+    - C   = rho_w(d)^2 der Stufe (`nak380RhoQuadrat`, Kopf von §6.4).
+    - Δf  = fs/N der Stufe (N 4096 bzw. 16 384, `nak380Binfenster`).
+
+    (1) F_eff = F/(1 + 2·(1/3)^2) = F/1,222: aufeinanderfolgende Hann-Frames
+        mit 50 % Ueberlappung sind korreliert, die Fensterkorrelation ist
+        Summe w(n)·w(n + N/2)/Summe w^2 = 0,125/0,375 = 1/3, und ein
+        Welch-Mittel ueber F Frames hat die Varianz eines Mittels ueber
+        F/(1 + 2·(1/3)^2) unabhaengige (Welch 1967).
+    (2) sigma_phi^2 = (1 - C)/(2·C·F_eff): Varianz der Phase eines ueber F_eff
+        Frames gemittelten Kreuzspektrums mit Kohaerenz C (Bendat und Piersol,
+        Random Data, Phasenvarianz (1 - gamma^2)/(2·n_d·gamma^2)).
+    (3) Var(s) = 12·sigma_phi^2/(K·(K^2 - 1)): Varianz der Steigung der
+        kleinsten Quadrate ueber K aequidistante Stuetzstellen mit
+        unabhaengigen Fehlern (Summe (k - k̄)^2 = K·(K^2 - 1)/12). Benachbarte
+        Hann-Bins sind positiv korreliert; ab K = 4 ist die Formel damit
+        konservativ (Nachbau-2: gemessene SD 0,90- bis 0,96-mal sigma_tau bei
+        K = 4, 0,41- bis 0,50-mal bei K = 20), bei K = 2 unterschaetzt sie die
+        Streuung um 7 bis 15 %, bei K = 3 um bis zu 9 %, was die 5-sigma-Reserve
+        traegt (T_B >= 3·SD + |Bias| in jeder Klasse).
+    (4) sigma_tau = sqrt(Var(s))/(2·pi·Δf), in ms.
+    (5) T_B = b·tau_ref + 5·sigma_tau, b = (4/9)/F_eff nur fuer K = 2 (dort ist
+        die Steigung der Lag-1-Winkel, relativer Bias (|W2(1)|/R_w(0))^2/F_eff
+        = (0,25/0,375)^2/F_eff, R-380-13 (i)), sonst b = 0. 5 sigma, weil ein
+        Lauf 70 bis 134 Baender und die Etappe 33 Laeufe prueft (rund 4 200
+        Bandpruefungen; Bonferroni bei 1 % je Etappe verlangt 4,7 sigma).
+
+    Gegenprobe: `docs/beweise/roh/NAK-380-etappe-5-laufzeit-nachbau-2.txt`
+    (numpy, 40 Laeufe je Rate D1 bis D6): T_B >= 3·SD + |Bias| je Band in
+    jeder Binzahlklasse, groesstes Verhaeltnis 0,879 (96 kHz, K = 2). Unter
+    8 Frames (F_eff unbestimmt) ist T_B = 0: fail-closed, jedes Band mit
+    Laufzeit liegt dann ausserhalb. */
+struct Nak380Toleranz
+{
+    int k { 0 };
+    std::uint64_t f { 0 };
+    double fEff { 0.0 }, c { 0.0 }, df { 0.0 }, sigmaTau { 0.0 }, bias { 0.0 }, tb { 0.0 };
+};
+
+Nak380Toleranz nak380Toleranz (const Nak380Rauschlauf& L, int b)
+{
+    Nak380Toleranz t;
+    const auto bf = nak380Binfenster (b, L.fs);
+    t.k = bf.bins();
+    if (L.snapSoll.empty() || t.k < 2)
+        return t;
+    t.f = nak380RingFrames (L.snapSoll, (int) L.snapSoll.size(), bf.punkte(), bf.ring());
+    t.c = nak380RhoQuadrat (L.d, bf.punkte());
+    t.df = L.fs / (double) bf.punkte();
+    if (t.f < 8u || ! (t.c > 0.0))
+        return t;
+    t.fEff = (double) t.f / (1.0 + 2.0 / 9.0);
+    const double sigmaPhi2 = (1.0 - t.c) / (2.0 * t.c * t.fEff);
+    const double k = (double) t.k;
+    const double varS = 12.0 * sigmaPhi2 / (k * (k * k - 1.0));
+    t.sigmaTau = 1000.0 * std::sqrt (varS) / (kZweiPi * t.df);
+    const double tauRef = 1000.0 * (double) L.d / L.fs;
+    t.bias = t.k == 2 ? (4.0 / 9.0) / t.fEff * tauRef : 0.0;
+    t.tb = t.bias + 5.0 * t.sigmaTau;
+    return t;
+}
+
+/** Die Laufzeitzusage je Band (M-74 bis M-80, Fassung §47.3): jedes Band mit
+    mindestens zwei genutzten Bins und Kohaerenzbit traegt die Gruppenlaufzeit
+    1000*d/fs ms innerhalb T_B (`nak380Toleranz`); Baender mit einem genutzten
+    Bin und Baender ohne Kohaerenzbit tragen KEINE (nie 0). Dazu die Wache der
+    Formel (M-80): bei 48 kHz und vollem Ring haelt jedes Band mit K >= 20
+    Bins +- 0,02 ms. Fuer den Manifestabschnitt je Binzahl (Bassbaender
+    getrennt, Schluessel -K) die groesste Abweichung, das groesste Verhaeltnis
+    Abweichung/T_B und T_B. */
 struct Nak380LaufzeitBefund
 {
-    int geprueft { 0 }, ohneBit { 0 }, daneben { 0 }, einBinMitBit { 0 }, ohneKohMitBit { 0 };
-    double maxAbw { 0.0 }, summeAbw { 0.0 };
-    int maxBand { -1 };
-    std::map<int, double> maxAbwJeBins;
+    int geprueft { 0 }, ohneBit { 0 }, daneben { 0 }, ohneKohMitBit { 0 };
+    int einBin { 0 }, einBinMitBit { 0 }, genutztFalsch { 0 }, weit { 0 }, weitDaneben { 0 };
+    double maxAbw { 0.0 }, summeAbw { 0.0 }, maxVerh { 0.0 }, maxVerhTb { 0.0 }, maxAbwWeit { 0.0 };
+    int maxBand { -1 }, maxVerhBand { -1 }, maxVerhK { 0 }, maxWeitBand { -1 };
+    struct JeBins { double abw { 0.0 }, verh { 0.0 }, tb { 0.0 }; };
+    std::map<int, JeBins> jeBins;
 };
 
 Nak380LaufzeitBefund nak380LaufzeitPruefen (const Nak380Rauschlauf& L)
@@ -629,12 +742,13 @@ Nak380LaufzeitBefund nak380LaufzeitPruefen (const Nak380Rauschlauf& L)
         const auto bf = nak380Binfenster (b, L.fs);
         const auto& z = s[(std::size_t) b];
         if (z.lauf && ! z.koh) ++f.ohneKohMitBit;
-        if (bf.bins() < 2)
+        if (z.genutzt != (std::uint32_t) bf.bins()) ++f.genutztFalsch;
+        if (bf.bins() == 1 && z.koh)
         {
+            ++f.einBin;
             if (z.lauf) ++f.einBinMitBit;
-            continue;
         }
-        if (! z.koh)
+        if (bf.bins() < 2 || ! z.koh)
             continue;
         ++f.geprueft;
         if (! z.lauf)
@@ -642,28 +756,59 @@ Nak380LaufzeitBefund nak380LaufzeitPruefen (const Nak380Rauschlauf& L)
             ++f.ohneBit;
             continue;
         }
+        const auto t = nak380Toleranz (L, b);
         const double abw = std::abs ((double) z.laufMs - soll);
+        const double verh = t.tb > 0.0 ? abw / t.tb : 1.0e9;
         f.summeAbw += (double) z.laufMs - soll;
-        auto& je = f.maxAbwJeBins[std::min (bf.bins(), 40)];
-        je = std::max (je, abw);
+        auto& je = f.jeBins[bf.bass ? -std::min (bf.bins(), 40) : std::min (bf.bins(), 40)];
+        je.abw = std::max (je.abw, abw);
+        if (verh > je.verh)
+        {
+            je.verh = verh;
+            je.tb = t.tb;
+        }
         if (abw > f.maxAbw)
         {
             f.maxAbw = abw;
             f.maxBand = b;
         }
-        if (! (abw <= 0.02))
+        if (verh > f.maxVerh)
+        {
+            f.maxVerh = verh;
+            f.maxVerhBand = b;
+            f.maxVerhK = bf.bins();
+            f.maxVerhTb = t.tb;
+        }
+        if (! (abw <= t.tb))
             ++f.daneben;
+        // Wache der Formel (M-80): 48 kHz, voller Ring der Stufe, K >= 20.
+        if (L.fs == 48000.0 && bf.bins() >= 20 && (int) L.snapSoll.size() >= bf.ring())
+        {
+            ++f.weit;
+            if (! (abw <= 0.02)) ++f.weitDaneben;
+            if (abw > f.maxAbwWeit)
+            {
+                f.maxAbwWeit = abw;
+                f.maxWeitBand = b;
+            }
+        }
     }
     return f;
 }
 
+/** Je Binzahlklasse 2, 3, 5, 10, 20, 39 und 40+ (Bass mit Praefix): groesste
+    Abweichung, T_B und groesstes Verhaeltnis Abweichung/T_B. */
 juce::String nak380JeBinsText (const Nak380LaufzeitBefund& f)
 {
     juce::String t;
-    for (const auto& [bins, abw] : f.maxAbwJeBins)
+    for (const auto& [schluessel, je] : f.jeBins)
+    {
+        const int bins = std::abs (schluessel);
         if (bins == 2 || bins == 3 || bins == 5 || bins == 10 || bins == 20 || bins >= 39)
-            t << (t.isEmpty() ? "" : ", ") << bins << (bins >= 40 ? "+" : "") << " Bins "
-              << juce::String (abw, 4);
+            t << (t.isEmpty() ? "" : ", ") << (schluessel < 0 ? "Bass " : "") << bins << (bins >= 40 ? "+" : "")
+              << " Bins " << juce::String (je.abw, 4) << " (T_B " << juce::String (je.tb, 4) << ", Verh. "
+              << juce::String (je.verh, 3) << ")";
+    }
     return t;
 }
 
@@ -707,15 +852,27 @@ void nak380LaufzeitWert (const char* id, const char* name, const Nak380Rauschlau
     const auto kopf = nak380Kopf (id, name, L);
     const auto f = nak380LaufzeitPruefen (L);
     const double soll = 1000.0 * (double) L.d / L.fs;
+    // Vorbedingung von K_eff (R-380-13 (iii)): der Lauf nutzt genau die
+    // Gitterbins jedes Bandes - gelesen am Snapshot (Zustandsgroesse).
+    pruefe (! L.schnapp.empty() && f.genutztFalsch == 0,
+            kopf + ": Vorbedingung genutzte Bins je Band am letzten Snapshot (Testzugang) = Gitterbins, "
+                "K_eff der Toleranz",
+            juce::String (f.genutztFalsch) + " Baender mit abweichender Zahl genutzter Bins");
     pruefe (f.geprueft > 0 && f.ohneBit == 0 && f.daneben == 0,
-            kopf + ": jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit "
-                + juce::String (soll, 6) + " ms +- 0,02 ms",
+            kopf + ": jedes Band mit mindestens zwei genutzten Bins und Kohaerenzbit traegt die Gruppenlaufzeit "
+                + juce::String (soll, 6) + " ms innerhalb T_B(K_eff, F, C, Delta f) nach R-380-13 (iii)",
             juce::String (f.geprueft) + " Baender, ohne Laufzeitbit " + juce::String (f.ohneBit)
-                + ", ausserhalb " + juce::String (f.daneben) + ", groesste Abweichung "
-                + juce::String (f.maxAbw, 4) + " ms (Band " + juce::String (f.maxBand) + "), mittlere "
+                + ", ausserhalb T_B " + juce::String (f.daneben) + ", groesstes Verhaeltnis Abweichung/T_B "
+                + juce::String (f.maxVerh, 3) + " (Band " + juce::String (f.maxVerhBand) + ", "
+                + juce::String (f.maxVerhK) + " Bins, T_B " + juce::String (f.maxVerhTb, 4) + " ms), groesste "
+                "Abweichung " + juce::String (f.maxAbw, 4) + " ms (Band " + juce::String (f.maxBand) + "), mittlere "
                 "Abweichung mit Vorzeichen " + juce::String (f.geprueft > f.ohneBit
-                    ? f.summeAbw / (double) (f.geprueft - f.ohneBit) : 0.0, 4) + " ms; groesste je Binzahl: "
+                    ? f.summeAbw / (double) (f.geprueft - f.ohneBit) : 0.0, 4) + " ms; je Binzahl: "
                 + nak380JeBinsText (f));
+    pruefe (! L.schnapp.empty() && f.einBin > 0 && f.einBinMitBit == 0,
+            kopf + ": Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)",
+            juce::String (f.einBin) + " Einbinbaender mit Kohaerenzbit, davon mit Laufzeit "
+                + juce::String (f.einBinMitBit));
 }
 
 __declspec(noinline) void nak380M73()
@@ -785,9 +942,13 @@ __declspec(noinline) void nak380Rate (const char* id, const char* name, double f
     }
 }
 
-/** M-80: dieselben Laeufe D1 bis D6, je Rate und Block eine Ausgabe; dazu
-    "Baender mit einem Bin tragen keine Laufzeit, nie 0" und "keine Laufzeit
-    ohne Kohaerenzbit". */
+/** M-80 (Fassung §47.3): dieselben Laeufe D1 bis D6, je Rate und Block eine
+    Ausgabe; tau ist die Phasensteigung nach R-380-13 (ii) und haelt T_B, die
+    Einbinbaender tragen keine Laufzeit (beides in `nak380LaufzeitWert`); dazu
+    "keine Laufzeit ohne Kohaerenzbit" und die Wache der Formel: bei 48 kHz
+    und vollem Ring haelt jedes Band mit K_eff >= 20 Bins +- 0,02 ms (5 sigma
+    liegen dort bei hoechstens 0,0197 ms; Nachbau-2: SD <= 0,0011 ms, Bias
+    <= 0,0001 ms, das Lag-1-Produkt laege um 0,021 ms daneben). */
 __declspec(noinline) void nak380M80()
 {
     std::vector<std::pair<double, int>> laeufe;
@@ -803,10 +964,16 @@ __declspec(noinline) void nak380M80()
         nak380Vorbedingungen (kopf, L);
         nak380LaufzeitWert ("M-80", "laufzeit_aus_phase", L);
         const auto f = nak380LaufzeitPruefen (L);
-        pruefe (! L.schnapp.empty() && f.einBinMitBit == 0 && f.ohneKohMitBit == 0,
-                kopf + ": Baender mit einem Bin und Baender ohne Kohaerenzbit tragen keine Laufzeit",
-                "Einbinbaender mit Laufzeit " + juce::String (f.einBinMitBit) + ", ohne Kohaerenz mit Laufzeit "
-                    + juce::String (f.ohneKohMitBit));
+        pruefe (! L.schnapp.empty() && f.ohneKohMitBit == 0,
+                kopf + ": Baender ohne Kohaerenzbit tragen keine Laufzeit",
+                "ohne Kohaerenz mit Laufzeit " + juce::String (f.ohneKohMitBit));
+        if (fs == 48000.0)
+            pruefe (f.weit > 0 && f.weitDaneben == 0,
+                    kopf + ": Wache der Formel - bei 48 kHz und vollem Ring haelt jedes Band mit K_eff >= 20 "
+                        "Bins +- 0,02 ms",
+                    juce::String (f.weit) + " Baender mit K >= 20, ausserhalb +- 0,02 ms "
+                        + juce::String (f.weitDaneben) + ", groesste Abweichung " + juce::String (f.maxAbwWeit, 4)
+                        + " ms (Band " + juce::String (f.maxWeitBand) + ")");
     }
 }
 

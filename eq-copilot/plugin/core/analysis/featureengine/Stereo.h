@@ -19,9 +19,11 @@
 // Coherence entsteht je BIN aus Auto- und Kreuzspektren, die ueber die Frames
 // der letzten W Evidenzfenster summiert sind (Ring, W_H = kStereoRingHaupt,
 // W_B = kStereoRingBass), und wird erst danach im Band gemittelt; die Phase
-// wird am Bin der geometrischen Bandmitte gelesen, die Laufzeit aus dem
-// Lag-1-Produkt benachbarter Bins. Korrelation, Mid/Side, Seitenanteil,
-// Zeitperzentile und Folddown bleiben je Evidenzfenster.
+// wird am Bin der geometrischen Bandmitte gelesen, die Laufzeit als
+// Phasensteigung ueber die Bins des Bandes (R-380-13 (ii): kleinste Quadrate
+// ueber die sequenziell entwickelten Binphasen, nie aus dem Lag-1-Produkt).
+// Korrelation, Mid/Side, Seitenanteil, Zeitperzentile und Folddown bleiben je
+// Evidenzfenster.
 
 #ifndef NAKAMA_FEATUREENGINE_TEIL
 #error "Teilkopf von FeatureEngine.h - nur ueber FeatureEngine.h einbinden."
@@ -341,12 +343,23 @@ inline void FeatureEngine::stereoSample (double l, double r) noexcept
     Bin |Sxy|^2/(Sxx·Syy) ueber die Bins mit Sxx·Syy > 0, jeder Bin ueber die
     belegten Slots summiert; ohne Bin mit Energie oder unter
     `kWelchMindestFrames` gibt es kein Bit. Die Phase (Stufe 2) steht am Bin
-    der geometrischen Bandmitte, die Laufzeit aus arg(Summe Sxy[k+1]·
-    conj(Sxy[k]))/(2 pi Δf) ueber Baender mit mindestens zwei Bins - beide
-    nur ueber `kKohaerenzSchwellePhase`, weil die Laufzeit eine Deutung der
-    Interchannel-Phase ist (§40.1). Kohaerenz, Phase und Laufzeit gibt es nur
-    fuer ein Band, das in DIESEM Evidenzfenster gemessen wurde (wie bisher
-    unter `basisGesetzt`). */
+    der geometrischen Bandmitte. Die Laufzeit nach R-380-13 (ii): je Band mit
+    Kohaerenzbit werden die Binphasen phi_k = arg Sxy[k] der Bins mit
+    Sxx·Syy > 0 und endlichen Summen gelesen (Ringsumme, dieselben Akkus wie
+    die MSC), in aufsteigender Binfolge sequenziell entwickelt (Sprung ueber
+    pi um 2 pi berichtigt; ein uebersprungener Bin verdoppelt den Schritt und
+    ist erlaubt), und die Gruppenlaufzeit ist die Steigung der kleinsten
+    Quadrate s = Summe (k - k̄)(phi_k - phī)/Summe (k - k̄)^2 ueber die K_eff
+    genutzten Bins, tau = s/(2 pi Δf) mit Δf = fs/N der Stufe, Vorzeichen so,
+    dass ein verzoegertes R (Sxy = L·conj(R) ~ e^{+i 2 pi k d/N}) eine
+    positive Laufzeit ergibt. K_eff >= 2, sonst kein Laufzeitbit (nie 0 als
+    Wert). Eindeutig bis |tau| < 1/(2 Δf). Zweiter Durchlauf ueber die Bins
+    mit laufenden Summen (Summe k, Summe phi, Summe k^2, Summe k·phi; k relativ
+    zum ersten Bin, die Steigung ist verschiebungsfrei), kein Speicher. Phase
+    und Laufzeit nur ueber `kKohaerenzSchwellePhase`, weil die Laufzeit eine
+    Deutung der Interchannel-Phase ist (§40.1). Kohaerenz, Phase und Laufzeit
+    gibt es nur fuer ein Band, das in DIESEM Evidenzfenster gemessen wurde (wie
+    bisher unter `basisGesetzt`). */
 inline void FeatureEngine::stereoAuswerten() noexcept
 {
     if ((int) stereoAkku.size() < Gitter::evidenzBaender
@@ -422,7 +435,6 @@ inline void FeatureEngine::stereoAuswerten() noexcept
                 const int kMitte = std::clamp ((int) std::llround (Gitter::evidenzMitte (b) / df),
                                                von, von + binsB - 1);
                 double summe = 0.0, mitteRe = 0.0, mitteIm = 0.0;
-                double lagRe = 0.0, lagIm = 0.0, vorRe = 0.0, vorIm = 0.0;
                 int mitEnergie = 0;
                 bool mitteEnergie = false;
                 for (int i = 0; i < binsB; ++i)
@@ -448,14 +460,6 @@ inline void FeatureEngine::stereoAuswerten() noexcept
                         mitteIm = im;
                         mitteEnergie = n2 > 0.0;
                     }
-                    // Lag-1-Produkt Sxy[k]·conj(Sxy[k-1]).
-                    if (i > 0)
-                    {
-                        lagRe += re * vorRe + im * vorIm;
-                        lagIm += im * vorRe - re * vorIm;
-                    }
-                    vorRe = re;
-                    vorIm = im;
                 }
                 const double koh = mitEnergie > 0 ? summe / (double) mitEnergie : 0.0;
                 if (mitEnergie > 0 && std::isfinite (koh))
@@ -471,17 +475,34 @@ inline void FeatureEngine::stereoAuswerten() noexcept
                             e.phaseGesetzt = true;
                             e.phaseRad = (float) phi;
                         }
-                        // R verzoegert: Sxy[k] ~ exp(+i 2 pi k d/N), das
-                        // Lag-Produkt dreht um +2 pi Δf tau, tau > 0.
-                        if (binsB >= 2 && (lagRe != 0.0 || lagIm != 0.0))
+                        // Laufzeit (R-380-13 (ii)), zweiter Durchlauf: Steigung der kleinsten
+                        // Quadrate der entwickelten Binphasen; R verzoegert: s > 0, tau > 0.
+                        double sk = 0.0, sp = 0.0, skk = 0.0, skp = 0.0, phiVor = 0.0, phiEntw = 0.0;
+                        int kEff = 0;
+                        for (int i = 0; i < binsB; ++i)
                         {
-                            const double tauMs = 1000.0 * std::atan2 (lagIm, lagRe) / (2.0 * kPi * df);
-                            if (std::isfinite (tauMs))
+                            double xx = 0.0, yy = 0.0, re = 0.0, im = 0.0;
+                            for (std::uint32_t j = 0; j < belegt; ++j)
                             {
-                                e.laufzeitGesetzt = true;
-                                e.laufzeitMs = (float) tauMs;
+                                const auto& x = stereoRing[bandBasis + (std::size_t) i * slotsB + (stand + w - j) % w];
+                                xx += x.sxx; yy += x.syy; re += x.sxyRe; im += x.sxyIm;
                             }
+                            const double n2 = xx * yy;
+                            if (! (n2 > 0.0 && std::isfinite (n2) && std::isfinite (re) && std::isfinite (im)))
+                                continue;                       // kein genutzter Bin
+                            const double phiK = std::atan2 (im, re);
+                            double sprung = phiK - phiVor;      // Sprung ueber pi: um 2 pi berichtigt
+                            sprung += sprung > kPi ? -2.0 * kPi : (sprung < -kPi ? 2.0 * kPi : 0.0);
+                            phiEntw = kEff == 0 ? phiK : phiEntw + sprung;
+                            phiVor = phiK;
+                            sk += (double) i; sp += phiEntw; skk += (double) i * (double) i; skp += (double) i * phiEntw;
+                            ++kEff;
                         }
+                        const double nennerS = (double) kEff * skk - sk * sk;
+                        const double tauMs = kEff >= 2 && nennerS > 0.0
+                            ? 1000.0 * ((double) kEff * skp - sk * sp) / nennerS / (2.0 * kPi * df) : 0.0;
+                        e.laufzeitGesetzt = kEff >= 2 && nennerS > 0.0 && std::isfinite (tauMs);
+                        e.laufzeitMs = e.laufzeitGesetzt ? (float) tauMs : 0.0f;
                     }
                 }
             }

@@ -1,71 +1,65 @@
-NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-78 (Bauer Opus 5.5 xhigh, 26.09.2026)
-Befund: DSP-23 · Kohärenz und Laufzeit bei 176,4 kHz
-Zusage (§6.4, woertlich): Kohärenz ≥ 0,95 (Referenz 0,9760 vor, 0,9985 nach Etappe 6) und Gruppenlaufzeit 1000·176/176 400 = 0,997732 ms ± 0,02 ms, nachgerechnet
-Test je Sprache (§6.4): C++: B19 NEU `380/M-78 laufzeit_1ms_176k4`
-Rotbeweis-Spalte (§6.4, woertlich): heute rot; nach dem Bau Mutation Laufzeitdivisor `fs` → 48 000 ergibt 3,666667 ms → rot
-Etikett: heute rot
+NAK-380 Etappe 5 — Rotbeweise der Matrixzeile M-78, Fassung Nacharbeit 0 nach R-380-13 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Ersetzt die Fassung der Etappe 5 (§46.5); die Laufzeithaelfte ist nach R-380-13 und der Matrixfassung §47.3 neu gefasst, die
+Kohaerenzhaelfte ist unveraendert (Kohaerenzpfad in Stereo.h unveraendert; die 560 Nicht-Laufzeitpruefungen von B19 sind
+am Endstand bytegleich zum Etappenstand, §48). Basis der Nacharbeit: HEAD 80cd027485e97216d0de8b4fa23e86a048e6a0ab.
+Stand vor der Nacharbeit (§46.4, §46.7): Laufzeitpruefung +- 0,02 ms rot (Lag-1-Produkt; B19 593/66).
+Befund: DSP-23 · Kohärenz und Laufzeit bei 176,4 kHz (D5)
+Zusage (§6.4 in der Fassung §47.3, woertlich): Kohärenz ≥ 0,95 (Referenz 0,9760 vor Etappe 6) und jedes Band mit mindestens zwei genutzten Bins und Kohärenzbit trägt die Gruppenlaufzeit 1000·176/176 400 = 0,997732 ms innerhalb T_B(K_eff, F, C, Δf) nach R-380-13 (iii), aus den Vorbedingungen gerechnet, nie aus dem Lauf; Bänder mit einem genutzten Bin ohne Laufzeitbit
+Test je Sprache: C++: B19 `380/M-78 laufzeit_1ms_176k4` (Sonde013StereoGoldenTest.cpp, Einzelaufruf --nak380 M-78)
+Etikett: Kohaerenzhaelfte heute rot (§46.5, Rotbeweis gilt weiter); Laufzeithaelfte in der Fassung §47.3: am Stand vor der Nacharbeit rot (+-0,02 ms verfehlt), nach dem Umbau Rotbeweis durch Delta-f-Mutation; Einbinsatz und Vorbedingung K_eff nach dem Umbau je mit eigener Mutation
 
-== Basisstand (c43c1646, unveraenderter Produktcode, neue Faelle zuerst; Rohdatei NAK-380-etappe-5-basisstand-gegenprobe.txt)
-Ergebnis: rot (B19, 6 Prüfungen): 16 Bänder ohne Bit, Minimum 0,32 bis 0,38, 73 Bänder ohne Laufzeit
-    == 380/M-78 laufzeit_1ms_176k4 ==
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 176, Laenge)  [Kennwerte ja, Saat 58720271, d 176, 1764000 Samples, Spitze 0.350000, RMS 0.0041 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung gespeiste Samplezahl = 1764000, Laeufer und Engine  [gespeist 1764000, von der Engine verarbeitet 1764000]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [33 Snapshots, Modell 33]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): letzter Snapshot - jedes Band mit Energie traegt ein Bit, jedes Band mit Bit Kohaerenz >= 0,95 und rho_w(176)^2 = 0.97599 (N 4096) bzw. 0.99848 (N 16 384) innerhalb 5 sigma; Freiheitsgrade nach Kadenzmodell  [132 Baender mit Bins, ohne Bit 16, Minimum 0.3797 (Band 219), unter 0,95 59, neben der Referenz 62 (groesste Abweichung 0.5962), Freiheitsgrade falsch 132]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms +- 0,02 ms  [73 Baender, ohne Laufzeitbit 73, ausserhalb 0, groesste Abweichung 0.0000 ms (Band -1); je Binzahl: ]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 176, Laenge)  [Kennwerte ja, Saat 58720271, d 176, 1764000 Samples, Spitze 0.350000, RMS 0.0041 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung gespeiste Samplezahl = 1764000, Laeufer und Engine  [gespeist 1764000, von der Engine verarbeitet 1764000]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [32 Snapshots, Modell 32]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): letzter Snapshot - jedes Band mit Energie traegt ein Bit, jedes Band mit Bit Kohaerenz >= 0,95 und rho_w(176)^2 = 0.97599 (N 4096) bzw. 0.99848 (N 16 384) innerhalb 5 sigma; Freiheitsgrade nach Kadenzmodell  [132 Baender mit Bins, ohne Bit 16, Minimum 0.3179 (Band 219), unter 0,95 58, neben der Referenz 60 (groesste Abweichung 0.6581), Freiheitsgrade falsch 132]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms +- 0,02 ms  [73 Baender, ohne Laufzeitbit 73, ausserhalb 0, groesste Abweichung 0.0000 ms (Band -1); je Binzahl: ]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 176, Laenge)  [Kennwerte ja, Saat 58720271, d 176, 1764000 Samples, Spitze 0.350000, RMS 0.0041 dB gegen 0,35/sqrt(3), Verschiebungsfehler 0]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung gespeiste Samplezahl = 1764000, Laeufer und Engine  [gespeist 1764000, von der Engine verarbeitet 1764000]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
-    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [27 Snapshots, Modell 27]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): letzter Snapshot - jedes Band mit Energie traegt ein Bit, jedes Band mit Bit Kohaerenz >= 0,95 und rho_w(176)^2 = 0.97599 (N 4096) bzw. 0.99848 (N 16 384) innerhalb 5 sigma; Freiheitsgrade nach Kadenzmodell  [132 Baender mit Bins, ohne Bit 16, Minimum 0.3762 (Band 220), unter 0,95 59, neben der Referenz 64 (groesste Abweichung 0.5998), Freiheitsgrade falsch 132]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms +- 0,02 ms  [73 Baender, ohne Laufzeitbit 73, ausserhalb 0, groesste Abweichung 0.0000 ms (Band -1); je Binzahl: ]
-
-== Endstand (Etappenstand, Binaries des Endbaus)
-LAUF B19 --nak380 M-78 02:53:47 bis 02:53:49, EXIT=1, Binary 02:49:40.127
+== Endstand Nacharbeit 0 (B19 --nak380 M-78 03:42:06 bis 03:42:08, Exit 0, 27 bestanden, 0 gescheitert; Binary 03:39:18.328)
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 176, Laenge)  [Kennwerte ja, Saat 58720271, d 176, 1764000 Samples, Spitze 0.350000, RMS 0.0041 dB gegen 0,35/sqrt(3) (Toleranz 0.0146 dB), Verschiebungsfehler 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung gespeiste Samplezahl = 1764000, Laeufer und Engine  [gespeist 1764000, von der Engine verarbeitet 1764000]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [33 Snapshots, Modell 33]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): letzter Snapshot - jedes Band mit Energie traegt ein Bit, jedes Band mit Bit Kohaerenz >= 0,95; Freiheitsgrade nach Kadenzmodell  [132 Baender mit Bins, ohne Bit 0, Minimum 0.9661 (Band 134), unter 0,95 0, Freiheitsgrade falsch 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Kohaerenz gegen die Referenz rho_w(176)^2 = 0.97599 (N 4096) bzw. 0.99848 (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber die Baender mit Bit in [0,8; 1,2]  [Mittel 0.9922, groesstes q 1.560 ueber 132 Baender]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms +- 0,02 ms  [73 Baender, ohne Laufzeitbit 0, ausserhalb 29, groesste Abweichung 0.1604 ms (Band 143), mittlere Abweichung mit Vorzeichen 0.0008 ms; groesste je Binzahl: 2 Bins 0.1604, 3 Bins 0.0562, 5 Bins 0.0256, 10 Bins 0.0123]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Vorbedingung genutzte Bins je Band am letzten Snapshot (Testzugang) = Gitterbins, K_eff der Toleranz  [0 Baender mit abweichender Zahl genutzter Bins]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): jedes Band mit mindestens zwei genutzten Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms innerhalb T_B(K_eff, F, C, Delta f) nach R-380-13 (iii)  [73 Baender, ohne Laufzeitbit 0, ausserhalb T_B 0, groesstes Verhaeltnis Abweichung/T_B 0.431 (Band 143, 2 Bins, T_B 0.3721 ms), groesste Abweichung 0.1604 ms (Band 143), mittlere Abweichung mit Vorzeichen 0.0037 ms; je Binzahl: 2 Bins 0.1604 (T_B 0.3721, Verh. 0.431), 3 Bins 0.0522 (T_B 0.1826, Verh. 0.286), 5 Bins 0.0223 (T_B 0.0816, Verh. 0.273), 10 Bins 0.0040 (T_B 0.0284, Verh. 0.141)]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 176, Laenge)  [Kennwerte ja, Saat 58720271, d 176, 1764000 Samples, Spitze 0.350000, RMS 0.0041 dB gegen 0,35/sqrt(3) (Toleranz 0.0146 dB), Verschiebungsfehler 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung gespeiste Samplezahl = 1764000, Laeufer und Engine  [gespeist 1764000, von der Engine verarbeitet 1764000]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [32 Snapshots, Modell 32]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): letzter Snapshot - jedes Band mit Energie traegt ein Bit, jedes Band mit Bit Kohaerenz >= 0,95; Freiheitsgrade nach Kadenzmodell  [132 Baender mit Bins, ohne Bit 0, Minimum 0.9676 (Band 134), unter 0,95 0, Freiheitsgrade falsch 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Kohaerenz gegen die Referenz rho_w(176)^2 = 0.97599 (N 4096) bzw. 0.99848 (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber die Baender mit Bit in [0,8; 1,2]  [Mittel 1.0017, groesstes q 1.583 ueber 132 Baender]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms +- 0,02 ms  [73 Baender, ohne Laufzeitbit 0, ausserhalb 24, groesste Abweichung 0.1594 ms (Band 168), mittlere Abweichung mit Vorzeichen -0.0002 ms; groesste je Binzahl: 2 Bins 0.1594, 3 Bins 0.0719, 5 Bins 0.0311, 10 Bins 0.0101]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Vorbedingung genutzte Bins je Band am letzten Snapshot (Testzugang) = Gitterbins, K_eff der Toleranz  [0 Baender mit abweichender Zahl genutzter Bins]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): jedes Band mit mindestens zwei genutzten Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms innerhalb T_B(K_eff, F, C, Delta f) nach R-380-13 (iii)  [73 Baender, ohne Laufzeitbit 0, ausserhalb T_B 0, groesstes Verhaeltnis Abweichung/T_B 0.434 (Band 168, 2 Bins, T_B 0.3673 ms), groesste Abweichung 0.1594 ms (Band 168), mittlere Abweichung mit Vorzeichen 0.0023 ms; je Binzahl: 2 Bins 0.1594 (T_B 0.3673, Verh. 0.434), 3 Bins 0.0684 (T_B 0.1802, Verh. 0.379), 5 Bins 0.0271 (T_B 0.0806, Verh. 0.336), 10 Bins 0.0072 (T_B 0.0281, Verh. 0.256)]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 176, Laenge)  [Kennwerte ja, Saat 58720271, d 176, 1764000 Samples, Spitze 0.350000, RMS 0.0041 dB gegen 0,35/sqrt(3) (Toleranz 0.0146 dB), Verschiebungsfehler 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung gespeiste Samplezahl = 1764000, Laeufer und Engine  [gespeist 1764000, von der Engine verarbeitet 1764000]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung Evidenzsnapshots an den Samplezahlen des Kadenzmodells  [27 Snapshots, Modell 27]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): letzter Snapshot - jedes Band mit Energie traegt ein Bit, jedes Band mit Bit Kohaerenz >= 0,95; Freiheitsgrade nach Kadenzmodell  [132 Baender mit Bins, ohne Bit 0, Minimum 0.9653 (Band 134), unter 0,95 0, Freiheitsgrade falsch 0]
     [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Kohaerenz gegen die Referenz rho_w(176)^2 = 0.97599 (N 4096) bzw. 0.99848 (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber die Baender mit Bit in [0,8; 1,2]  [Mittel 0.9951, groesstes q 1.447 ueber 132 Baender]
-    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): jedes Band mit mindestens zwei Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms +- 0,02 ms  [73 Baender, ohne Laufzeitbit 0, ausserhalb 21, groesste Abweichung 0.1471 ms (Band 168), mittlere Abweichung mit Vorzeichen 0.0030 ms; groesste je Binzahl: 2 Bins 0.1471, 3 Bins 0.0579, 5 Bins 0.0216, 10 Bins 0.0115]
-    18 bestanden, 3 gescheitert
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Vorbedingung genutzte Bins je Band am letzten Snapshot (Testzugang) = Gitterbins, K_eff der Toleranz  [0 Baender mit abweichender Zahl genutzter Bins]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): jedes Band mit mindestens zwei genutzten Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0.997732 ms innerhalb T_B(K_eff, F, C, Delta f) nach R-380-13 (iii)  [73 Baender, ohne Laufzeitbit 0, ausserhalb T_B 0, groesstes Verhaeltnis Abweichung/T_B 0.435 (Band 168, 2 Bins, T_B 0.3380 ms), groesste Abweichung 0.1471 ms (Band 168), mittlere Abweichung mit Vorzeichen 0.0053 ms; je Binzahl: 2 Bins 0.1471 (T_B 0.3380, Verh. 0.435), 3 Bins 0.0544 (T_B 0.1661, Verh. 0.327), 5 Bins 0.0241 (T_B 0.0743, Verh. 0.324), 10 Bins 0.0042 (T_B 0.0259, Verh. 0.163)]
+    [ok]   380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 0]
 
 == Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
-- Zusagesatz: jedes Band mit Bit hat Kohärenz ≥ 0,95 (Referenz ρ_w(d)², 176,4 kHz)
-  Pruefzeile: Sonde013StereoGoldenTest.cpp:688 und :696 „380/M-78 laufzeit_1ms_176k4“ je Block 64, 512, 16 384, B19
-  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:426-443 Kohärenz aus der über Bins summierten Kreuzleistung (alter Weg, Matrixmutation) (m73-bandsumme)
-  rot: JA
+- Zusagesatz: jedes Band mit Bit hat Kohaerenz >= 0,95 (Referenz rho_w(d)^2)
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:833 und :841 je Block, B19
+  Mutation: Stereo.h (Etappenstand :426-443) Kohaerenz aus der ueber Bins summierten Kreuzleistung (m73-bandsumme, §46.5); der Kohaerenzpfad ist unveraendert
+  rot: JA (§46.5, gilt weiter)
   Protokoll: NAK-380-e5-mutation-m73-bandsumme.txt
-- Zusagesatz: Gruppenlaufzeit 0,997732 ms ± 0,02 ms
-  Pruefzeile: Sonde013StereoGoldenTest.cpp:710 je Block, B19
-  Mutation: eq-copilot/plugin/core/analysis/featureengine/Stereo.h:478 Laufzeitdivisor `fs` → 48 000 (Matrixmutation) (m80-divisor48k)
-  rot: NEIN (Prüfzeile am Etappenstand rot, offen §46.11)
-  Protokoll: NAK-380-e5-mutation-m80-divisor48k.txt
-
-== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
-  m73-bandsumme (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:426-443): Exit mit Mutation 1, rote Pruefungen 9; nach Ruecknahme Exit 1, rot 3; SHA gleich True; faellt an der erwarteten Pruefung: JA
-    Begruendung: Matrix M-73: Kohaerenz aus der ueber Bins summierten Kreuzleistung (alter Weg): C = |Summe Sxy|^2/(Summe Sxx * Summe Syy) ueber die Bins des Bandes statt Mittel der MSC je Bin.
-  m80-divisor48k (eq-copilot/plugin/core/analysis/featureengine/Stereo.h:478): Exit mit Mutation 1, rote Pruefungen 3; nach Ruecknahme Exit 1, rot 3; SHA gleich True; faellt an der erwarteten Pruefung: NEIN (Pruefzeile schon am Etappenstand rot)
-    Begruendung: Matrix M-75 bis M-80: Laufzeitdivisor fs -> 48 000 (nur in der Laufzeitformel; die Bandmitte bleibt). Dokumentation: die Laufzeitpruefung ist am Etappenstand schon rot.
+- Zusagesatz: jedes Band mit mindestens zwei genutzten Bins und Kohaerenzbit traegt die Gruppenlaufzeit 0,997732 ms innerhalb T_B(K_eff, F, C, Δf) nach R-380-13 (iii)
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:861 je Block, B19
+  Mutation: Stereo.h:503 Δf aus 48 000 statt fs der Stufe (D5 ergibt 3,666667 ms) (m80-df48k)
+  rot: JA
+  Protokoll: NAK-380-e5n0-mutation-m80-df48k.txt
+- Zusagesatz: T_B aus den Vorbedingungen gerechnet, nie aus dem Lauf
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:711 (nak380Toleranz: K aus dem Gitter, F aus dem Kadenzmodell ueber snapSoll, C = rho_w(d)^2, Δf = fs/N) und :861
+  Mutation: keine: ein Satz ueber die Herkunft der Schranke; eine Schranke aus dem Lauf machte die Pruefung nur gruener. Die Formel ist durch den Nachbau-2 belegt, ihre Wirkung durch m80-tb-fest (M-80)
+  rot: — (Struktursatz, am Code gelesen)
+  Protokoll: NAK-380-etappe-5-laufzeit-nachbau-2.txt, NAK-380-e5n0-mutation-m80-tb-fest.txt
+- Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:872 je Block, B19
+  Mutation: Stereo.h:504 Laufzeitbit ab K_eff >= 1 (Einbinband traegt 0 ms) (m80-einbin)
+  rot: JA
+  Protokoll: NAK-380-e5n0-mutation-m80-einbin.txt
+- Zusagesatz: Vorbedingung von K_eff: genutzte Bins je Band = Gitterbins (R-380-13 (iii))
+  Pruefzeile: Sonde013StereoGoldenTest.cpp:857 je Block, B19
+  Mutation: Stereo.h:229 letzter Bin jedes Bandes bleibt im Ring leer (e5n0-genutzt)
+  rot: JA
+  Protokoll: NAK-380-e5n0-mutation-e5n0-genutzt.txt

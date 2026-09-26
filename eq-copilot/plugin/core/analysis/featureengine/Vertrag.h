@@ -483,13 +483,16 @@ struct StereoBandwert
         Etappe 5 am Bin der geometrischen Bandmitte gelesen (R-380-3). */
     bool  phaseGesetzt { false };      float phaseRad { 0.0f };
 
-    /** NAK-380 Etappe 5 (R-380-3, A-3): Gruppenlaufzeit des Bandes in ms,
-        arg(Summe Sxy[k+1]·conj(Sxy[k]))/(2 pi Δf) ueber die Bins des Bandes;
-        positiv, wenn R hinter L liegt. Nur bei mindestens zwei Bins und ueber
-        `kKohaerenzSchwellePhase` (dieselbe Stufe 2 wie die Phase), sonst kein
-        Bit und nie 0 als Aussage. Ein ENGINE-Ergebnis: es geht nicht auf die
-        Leitung (`stereo_evidenz` fuehrt kein Feld dafuer, der Serialisierer
-        bleibt unveraendert). */
+    /** NAK-380 Etappe 5 (R-380-3, A-3; Schaetzer nach R-380-13 (ii)):
+        Gruppenlaufzeit des Bandes in ms als Phasensteigung - Steigung s der
+        kleinsten Quadrate der sequenziell entwickelten Binphasen arg Sxy[k]
+        ueber die genutzten Bins des Bandes (Sxx·Syy > 0, endlich), tau =
+        s/(2 pi Δf) mit Δf = fs/N der Stufe; positiv, wenn R hinter L liegt.
+        Eindeutig bis |tau| < 1/(2 Δf). Nur bei K_eff >= 2 genutzten Bins und
+        ueber `kKohaerenzSchwellePhase` (dieselbe Stufe 2 wie die Phase), sonst
+        kein Bit und nie 0 als Aussage. Ein ENGINE-Ergebnis (A-3): es geht nicht
+        auf die Leitung (`stereo_evidenz` fuehrt kein Feld dafuer, der
+        Serialisierer bleibt unveraendert). */
     bool  laufzeitGesetzt { false };   float laufzeitMs { 0.0f };
 
     /** Anteil der abgeschlossenen Kurzfenster, in denen dieses Band kohaerent

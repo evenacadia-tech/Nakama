@@ -1,0 +1,137 @@
+NAK-380 Etappe 5 Nacharbeit 0 (R-380-13) - Mutationsprotokoll m80-einbin
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Stand Nacharbeit 0): 504
+SHA-256 vor der Mutation: 21B5107B6CD44ACE6A1DBD16139451544546BF5BDAE3B2CA25BF6C84A8C93860; Sicherung eq-copilot/build/nak380-sicherung/e5n0/m80-einbin/Stereo.h
+Begruendung: Rotbeweis M-74 bis M-80 (e) nach R-380-13 (iv): ein Band mit einem genutzten Bin bekommt ein Laufzeitbit (K_eff >= 1 statt >= 2, Wert 0 ms). Formgueltig: kein Riegel, keine Division (tauMs ist fuer K_eff < 2 schon 0).
+Wortlaut vorher (1):
+                            e.laufzeitGesetzt = kEff >= 2 && nennerS > 0.0 && std::isfinite (tauMs);
+Wortlaut nachher (1):
+                            e.laufzeitGesetzt = kEff >= 1 && std::isfinite (tauMs);
+  Bau EqCopSonde013StereoGoldenTest (mutation): 03:36:08 bis 03:36:15, Exit 0
+  Binary 03:36:15.739 juenger als Quelle 03:36:08.570: ja
+
+== Matrixzeile M-74; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-74 03:36:15 bis 03:36:18, Exit 1, 144 bestanden, 18 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (18):
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 1): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 2): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 3): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 7): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 15): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 16): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 31): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 127): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 128): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 333): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 1024): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 2048): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 4096): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 8192): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 12345): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-74 laufzeit_1ms_alle_blockgroessen (48.0 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 144 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+== Matrixzeile M-75; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-75 03:36:18 bis 03:36:18, Exit 1, 24 bestanden, 3 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (3):
+    [ROT]  380/M-75 laufzeit_1ms_44k1 (44.1 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [65 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 65]
+    [ROT]  380/M-75 laufzeit_1ms_44k1 (44.1 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [65 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 65]
+    [ROT]  380/M-75 laufzeit_1ms_44k1 (44.1 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [65 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 65]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 24 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+== Matrixzeile M-76; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-76 03:36:18 bis 03:36:19, Exit 1, 24 bestanden, 3 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (3):
+    [ROT]  380/M-76 laufzeit_1ms_88k2 (88.2 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [69 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 69]
+    [ROT]  380/M-76 laufzeit_1ms_88k2 (88.2 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [69 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 69]
+    [ROT]  380/M-76 laufzeit_1ms_88k2 (88.2 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [69 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 69]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 24 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+== Matrixzeile M-77; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-77 03:36:19 bis 03:36:20, Exit 1, 24 bestanden, 3 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (3):
+    [ROT]  380/M-77 laufzeit_1ms_96k (96.0 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [67 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 67]
+    [ROT]  380/M-77 laufzeit_1ms_96k (96.0 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [67 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 67]
+    [ROT]  380/M-77 laufzeit_1ms_96k (96.0 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [67 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 67]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 24 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+== Matrixzeile M-78; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-78 03:36:20 bis 03:36:21, Exit 1, 24 bestanden, 3 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (3):
+    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 59]
+    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 59]
+    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 59]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 24 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+== Matrixzeile M-79; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-79 03:36:21 bis 03:36:23, Exit 1, 24 bestanden, 3 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (3):
+    [ROT]  380/M-79 laufzeit_1ms_192k (192.0 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [57 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 57]
+    [ROT]  380/M-79 laufzeit_1ms_192k (192.0 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [57 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 57]
+    [ROT]  380/M-79 laufzeit_1ms_192k (192.0 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [57 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 57]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 24 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+== Matrixzeile M-80; Zusagesatz: Baender mit einem genutzten Bin ohne Laufzeitbit (nie 0)
+Lauf mit Mutation: B19 --nak380 M-80 03:36:23 bis 03:36:30, Exit 1, 249 bestanden, 33 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (33):
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 1): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 2): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 3): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 7): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 15): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 16): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 31): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 127): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 128): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 333): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 1024): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 2048): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 4096): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 8192): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 12345): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (48.0 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [68 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 68]
+    [ROT]  380/M-80 laufzeit_aus_phase (44.1 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [65 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 65]
+    [ROT]  380/M-80 laufzeit_aus_phase (44.1 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [65 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 65]
+    [ROT]  380/M-80 laufzeit_aus_phase (44.1 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [65 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 65]
+    [ROT]  380/M-80 laufzeit_aus_phase (88.2 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [69 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 69]
+    [ROT]  380/M-80 laufzeit_aus_phase (88.2 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [69 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 69]
+    [ROT]  380/M-80 laufzeit_aus_phase (88.2 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [69 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 69]
+    [ROT]  380/M-80 laufzeit_aus_phase (96.0 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [67 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 67]
+    [ROT]  380/M-80 laufzeit_aus_phase (96.0 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [67 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 67]
+    [ROT]  380/M-80 laufzeit_aus_phase (96.0 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [67 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 67]
+    [ROT]  380/M-80 laufzeit_aus_phase (176.4 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 59]
+    [ROT]  380/M-80 laufzeit_aus_phase (176.4 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 59]
+    [ROT]  380/M-80 laufzeit_aus_phase (176.4 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [59 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 59]
+    [ROT]  380/M-80 laufzeit_aus_phase (192.0 kHz, B 64): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [57 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 57]
+    [ROT]  380/M-80 laufzeit_aus_phase (192.0 kHz, B 512): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [57 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 57]
+    [ROT]  380/M-80 laufzeit_aus_phase (192.0 kHz, B 16384): Baender mit einem genutzten Bin tragen kein Laufzeitbit (nie 0)  [57 Einbinbaender mit Kohaerenzbit, davon mit Laufzeit 57]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Pruefung mit 'einem genutzten Bin tragen kein Laufzeitbit')
+Mitgefallene Pruefungen (0); Grund: keine erwartet
+Unter derselben Mutation gruen: 249 Pruefungen (Vorbedingungen, Kohaerenzhaelften und die uebrigen Laufzeitpruefungen des Falls)
+
+Ruecknahme aus der Sicherung, SHA-256 21B5107B6CD44ACE6A1DBD16139451544546BF5BDAE3B2CA25BF6C84A8C93860: gleich
+  Bau EqCopSonde013StereoGoldenTest (ruecknahme): 03:36:30 bis 03:36:37, Exit 0
+  Binary 03:36:37.494 juenger als Quelle 03:36:30.854: ja
+  Lauf nach Ruecknahme: B19 --nak380 M-74 03:36:37 bis 03:36:40, Exit 0, 162 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-75 03:36:40 bis 03:36:40, Exit 0, 27 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-76 03:36:40 bis 03:36:41, Exit 0, 27 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-77 03:36:41 bis 03:36:42, Exit 0, 27 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-78 03:36:42 bis 03:36:44, Exit 0, 27 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-79 03:36:44 bis 03:36:45, Exit 0, 27 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-80 03:36:45 bis 03:36:53, Exit 0, 282 bestanden, 0 gescheitert

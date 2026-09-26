@@ -1,0 +1,12 @@
+NAK-380 Etappe 6 - Pflichterfassung M-119 (Objektgroessen) am unveraenderten Produktcode
+Erfasst 2026-09-26 07:11:26; Produktcode = HEAD a4ccba93 (git diff leer auf eq-copilot/plugin/core, AnalyseEngine.*, Diagnose.*, DiagnoseAntwort.cpp, Ipc.cpp; nur Testcode und der Testbau-Haken in PluginEditor.cpp geaendert)
+Bein B5 EqCopAnalysisGoldenTest, Binary 07:08:55.319, Lauf basis2 07:08:55 bis 07:09:25 (Rohlog eq-copilot/build/nak380-e6/basis2-B5.log, SHA-256 7026A2FFC06E9BC80F47FEF888D5B7B36F6CD6105CAF4335AB70A12689BFAF64)
+
+Ausgabezeile des Falls 380/M-119 (woertlich):
+    380/M-119 sizeof (FeatureEngine) = 16248 B, sizeof (AnalyseEngine) = 54816 B
+    [ok]   380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) = Startwert 16 248 B (kein neues Mitglied)  [16248 B]
+    [ROT]  380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) <= Startwert + 64 B (double und zwei 28-B-Masken)  [54816 B, Startwert 0 B, Delta 54816 B]
+
+Startwerte: sizeof (FeatureEngine) = 16 248 B (gleich dem Endstand der Etappe 5, M-97), sizeof (AnalyseEngine) = 54 816 B.
+Schranken der Etappe 6 (E-380-14, M-119): sizeof (FeatureEngine) = 16 248 B (kein neues Mitglied), sizeof (AnalyseEngine) <= 54 816 + 64 = 54 880 B.
+Die Pruefung „<= Startwert + 64 B“ war am Basisstand rot, weil der Startwert im Test noch 0 war (Erfassung); danach steht er als Literal kNak380M119StartAnalyse = 54816 im Test.

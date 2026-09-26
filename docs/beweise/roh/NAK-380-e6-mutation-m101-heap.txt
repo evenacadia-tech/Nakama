@@ -1,0 +1,30 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m101-heap
+Ring L der M1-Stufe doppelt so lang (2*n float)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m101-heap/AnalyseEngine.cpp
+Begruendung: Die Zusage 24 B je Punkt traegt die Summe der Stufenvektoren in WelchStufe::init; ein um n float laengerer Ring macht 28 B je Punkt.
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, WelchStufe::init, Ring L
+Wortlaut vorher:
+        ringL.assign ((size_t) n, 0.0f);
+Wortlaut nachher:
+        ringL.assign ((size_t) n * 2, 0.0f);
+  Bau (mutation) EqCopGoldenTest: 08:06:25 bis 08:06:28, Exit 0
+  Binary EqCopGoldenTest 08:06:28.784 juenger als Quelle 08:06:25.325: ja
+
+== Matrixzeile M-101 (24 B je Punkt)
+Lauf mit Mutation: A2 --nak380 M-101 08:06:28 bis 08:06:29, Exit 1, 0 gruen, 7 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (44.1 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 860192 B (Soll 737312), Punktanteil 737280 (Matrix 737280), Histogramme 249288
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (192.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 3440672 B (Soll 2949152), Punktanteil 2949120 (Matrix 2949120), Histogramme 249288
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-101 speicher_m1 \(44\.1 kHz\) | M-101 speicher_m1 \(192\.0 kHz\))
+Mitgefallene Pruefungen (5)
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (48.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 860192 B (Soll 737312), Punktanteil 737280 (Matrix 737280), Histogramme 249288
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (88.2 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 1720352 B (Soll 1474592), Punktanteil 1474560 (Matrix 1474560), Histogramme 249288
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (96.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 1720352 B (Soll 1474592), Punktanteil 1474560 (Matrix 1474560), Histogramme 249288
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (176.4 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 3440672 B (Soll 2949152), Punktanteil 2949120 (Matrix 2949120), Histogramme 249288
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt - Stufen 65 536/65 536/32 768/16 384, 4 325 408 B — Stufen 65536/65536/32768/16384, 5046304 B
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 08:06:29 bis 08:06:32, Exit 0
+  Binary EqCopGoldenTest 08:06:32.509 juenger als Quelle 08:06:29.141: ja
+Lauf nach Ruecknahme: A2 --nak380 M-101 08:06:32 bis 08:06:32, Exit 0, 7 gruen, 0 rot

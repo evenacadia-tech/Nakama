@@ -3,6 +3,7 @@
 #include "../core/analysis/Fft.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstdint>
@@ -324,6 +325,19 @@ public:
             summe += h * h;
         }
         return summe;
+    }
+
+    /** NAK-380 Etappe 6 (K1 bis K5): die Impulsantwort DESSELBEN Filters,
+        ueber dieselbe Laenge wie `leistungsverstaerkung` (der langsamste Pol
+        0,99886 ist nach 100 000 Schritten unter 1e-40 abgeklungen). Grundlage
+        der analytischen Rosa-Dichte `rosaDichte`. */
+    static std::vector<double> impulsantwort()
+    {
+        Zustand z;
+        std::vector<double> h ((std::size_t) 100000);
+        for (int n = 0; n < 100000; ++n)
+            h[(std::size_t) n] = z.schritt (n == 0 ? 1.0 : 0.0);
+        return h;
     }
 
 private:
@@ -726,6 +740,258 @@ inline RauschpaarSelbstpruefung rauschpaarSelbstpruefung (const Rauschpaar& p, d
               + detail::festkomma (e.rmsDb, 4) + " dB gegen 0,35/sqrt(3) (Toleranz "
               + detail::festkomma (e.rmsToleranzDb, 4) + " dB), Verschiebungsfehler "
               + std::to_string (e.verschiebungFehler);
+    return e;
+}
+
+//==============================================================================
+// NAK-380 Etappe 6 (DSP-20; T-380-7 bis T-380-9, §7.2 K1 bis K5, W1 bei 96
+// und 192 kHz). Alle Referenzen hier sind UNABHAENGIG vom Produkt gerechnet
+// (R-380-8): die Laengenregel mit std::log2/std::round statt der
+// Produktfunktion, die Bin-Zuordnung und die Naehte aus dem Gitter, die
+// Rosa-Dichte aus der Impulsantwort des Erzeugers.
+
+/** Obergrenze der Fensterlaenge (E-380-12, Variante A). */
+inline constexpr int kReferenzNmax = 65536;
+
+/** T-380-7: N_s(fs) = 2^round(log2(T_s*fs)), T_s = N_s(48 kHz)/48 000 s,
+    gekappt auf [N_s(48 kHz), 65 536]. Nachgerechnet (Matrix §6.5, Auftrag):
+    44,1 kHz: 16 384*44 100/48 000 = 15 052,8, log2 13,877 -> 2^14 = 16 384
+    (Untergrenze); 88,2 kHz: 30 105,6, 14,877 -> 32 768; 96 kHz: 32 768;
+    176,4 kHz: 60 211,2, 15,877 -> 65 536; 192 kHz: 65 536; 384 kHz: 131 072
+    -> Kappe 65 536. Die uebrigen Stufen entsprechend (Basis 8192, 4096,
+    2048). std::round rundet halbe Werte vom Nullpunkt weg; bei keiner
+    Pruefrate liegt log2 naeher als 0,12 an einem halben Wert. */
+inline int referenzPunkte (int basis48k, double fs)
+{
+    if (! (fs > 0.0) || ! std::isfinite (fs))
+        return basis48k;
+    const double exponent = std::round (std::log2 ((double) basis48k / 48000.0 * fs));
+    const double n = std::ldexp (1.0, (int) exponent);
+    return (int) std::clamp (n, (double) basis48k, (double) kReferenzNmax);
+}
+
+/** Das 1/24-Oktav-Raster der M1-LTAS (`AnalyseEngine.cpp`, analyze-track):
+    Kanten 30*2^(b/24), Zentrum geometrisch. */
+inline double m1Kante (int b) { return 30.0 * std::pow (2.0, (double) b / 24.0); }
+inline double m1Zentrum (int b) { return std::sqrt (m1Kante (b) * m1Kante (b + 1)); }
+
+/** Bin-Fenster eines M1-Bandes in einer Stufe der Laenge n:
+    [ceil(lo*n/fs), min(ceil(hi*n/fs), n/2 + 1)), bis >= von. */
+struct M1Binfenster
+{
+    int von { 0 }, bis { 0 };
+    int bins() const noexcept { return bis > von ? bis - von : 0; }
+};
+
+inline M1Binfenster m1Binfenster (int b, int n, double fs)
+{
+    M1Binfenster x;
+    x.von = (int) std::ceil (m1Kante (b) * (double) n / fs);
+    x.bis = std::max (x.von, std::min ((int) std::ceil (m1Kante (b + 1) * (double) n / fs), n / 2 + 1));
+    return x;
+}
+
+inline int m1ErsterAb (double f)
+{
+    for (int b = 0; b < 221; ++b)
+        if (m1Zentrum (b) >= f)
+            return b;
+    return 221;
+}
+
+/** T-380-9, im Test unabhaengig gezaehlt: welche Baender von Komposit und
+    8192er-Referenz tragen einen interpolierten Wert (Fuellung oder
+    Randklemmung) oder einen Nahtwert, in den ein solcher Wert mit Gewicht > 0
+    eingeht. Stufen (Akkubereich): Bass [0, Naht 250), Mitten [Naht 160,
+    Naht 2500), Hoehen [Naht 1600, 221), Referenz [0, 221); Nahtindex =
+    erstes Band mit Zentrum >= 160/250/1600/2500 Hz; gemessen ist ein Band,
+    das im Akkubereich seiner Stufe unter der Kappe min(18 kHz, 0,95*fs/2)
+    liegt und dort mindestens einen Bin hat (bei aktivem Breitbandsignal traegt
+    jedes solche Band Segmente). Interpoliert ist jedes Band unter der Kappe,
+    das nicht gemessen ist, sofern die Stufe ueberhaupt ein gemessenes Band
+    hat. Naht 160-250 Hz: t = ln(f/160)/ln(250/160), Bass mit 1 - t, Mitten mit
+    t; Naht 1,6-2,5 kHz entsprechend. Baender ueber der Kappe sind NaN und nicht
+    interpoliert. */
+struct M1Masken
+{
+    std::array<bool, 221> komposit {}, referenz {};
+    int punkte[4] {};              // Bass, Referenz, Mitten, Hoehen
+    int ltasBis { 0 };
+    int anzahlKomposit { 0 }, anzahlReferenz { 0 };
+};
+
+inline M1Masken m1MaskenReferenz (double fs)
+{
+    M1Masken m;
+    m.punkte[0] = referenzPunkte (16384, fs);
+    m.punkte[1] = referenzPunkte (8192, fs);
+    m.punkte[2] = referenzPunkte (4096, fs);
+    m.punkte[3] = referenzPunkte (2048, fs);
+    const double grenze = std::min (18000.0, 0.95 * fs / 2.0);
+    for (int b = 0; b < 221; ++b)
+        if (m1Zentrum (b) <= grenze)
+            m.ltasBis = b + 1;
+    const int n160 = m1ErsterAb (160.0), n250 = m1ErsterAb (250.0);
+    const int n1600 = m1ErsterAb (1600.0), n2500 = m1ErsterAb (2500.0);
+    const auto interpoliert = [&] (int n, int von, int bis)
+    {
+        std::array<bool, 221> gemessen {}, aus {};
+        bool irgendeins = false;
+        for (int b = 0; b < m.ltasBis; ++b)
+        {
+            gemessen[(std::size_t) b] = b >= von && b < std::min (bis, m.ltasBis)
+                                     && m1Binfenster (b, n, fs).bins() > 0;
+            irgendeins = irgendeins || gemessen[(std::size_t) b];
+        }
+        for (int b = 0; b < m.ltasBis; ++b)
+            aus[(std::size_t) b] = irgendeins && ! gemessen[(std::size_t) b];
+        return aus;
+    };
+    const auto tief = interpoliert (m.punkte[0], 0, n250);
+    const auto mitte = interpoliert (m.punkte[2], n160, n2500);
+    const auto hoch = interpoliert (m.punkte[3], n1600, 221);
+    m.referenz = interpoliert (m.punkte[1], 0, 221);
+    for (int b = 0; b < m.ltasBis; ++b)
+    {
+        const double f = m1Zentrum (b);
+        bool v;
+        if (b < n160)
+            v = tief[(std::size_t) b];
+        else if (b < n250)
+        {
+            const double t = std::log (f / 160.0) / std::log (250.0 / 160.0);
+            v = (tief[(std::size_t) b] && 1.0 - t > 0.0) || (mitte[(std::size_t) b] && t > 0.0);
+        }
+        else if (b < n1600)
+            v = mitte[(std::size_t) b];
+        else if (b < n2500)
+        {
+            const double t = std::log (f / 1600.0) / std::log (2500.0 / 1600.0);
+            v = (mitte[(std::size_t) b] && 1.0 - t > 0.0) || (hoch[(std::size_t) b] && t > 0.0);
+        }
+        else
+            v = hoch[(std::size_t) b];
+        m.komposit[(std::size_t) b] = v;
+    }
+    for (int b = 0; b < 221; ++b)
+    {
+        m.anzahlKomposit += m.komposit[(std::size_t) b] ? 1 : 0;
+        m.anzahlReferenz += m.referenz[(std::size_t) b] ? 1 : 0;
+    }
+    return m;
+}
+
+/** Analytische einseitige Leistungsdichte des Rosa-Erzeugers P1/P2 bei f und
+    fs (Einheit: Vollausschlag^2 je Hz): S(f) = 2*skala^2*|H(e^{j*2*pi*f/fs})|^2/fs
+    mit skala = rms/sqrt(leistungsverstaerkung()). H ist die DTFT der
+    Impulsantwort DESSELBEN Filters (`RosaRauschen::impulsantwort`), keine
+    abgeschriebenen Koeffizienten. */
+inline double rosaDichte (double f, double fs, double rms)
+{
+    const auto h = RosaRauschen::impulsantwort();
+    double re = 0.0, im = 0.0;
+    const double w = kZweiPi * f / fs;
+    for (std::size_t n = 0; n < h.size(); ++n)
+    {
+        re += h[n] * std::cos (w * (double) n);
+        im -= h[n] * std::sin (w * (double) n);
+    }
+    const double skala2 = rms * rms / RosaRauschen::leistungsverstaerkung();
+    return 2.0 * skala2 * (re * re + im * im) / fs;
+}
+
+/** §7.2 K1 bis K5: P2 (rosa, RMS 0,1 = -20 dBFS, Saat 0x3800008) plus Sinus
+    fTon. Die Sinusleistung ist so gewaehlt, dass die Leistungsdichte des
+    1/24-Oktavbandes des Tons (M1-Raster, Breite B = Kante(b+1) - Kante(b))
+    15 dB ueber der analytischen Rosa-Banddichte S(fTon) liegt:
+    (S*B + A^2/2)/(S*B) = 10^1,5, also A = sqrt(2*(10^1,5 - 1)*S*B). */
+struct KSignal
+{
+    std::vector<float> x, rosa, ton;
+    double fTon { 0.0 }, fs { 0.0 }, amplitude { 0.0 }, rosaDichteAmTon { 0.0 };
+    double bandUnten { 0.0 }, bandOben { 0.0 };
+    std::uint64_t samples { 0 };
+};
+
+inline KSignal kSignal (double fTon, double fs, std::uint64_t samples)
+{
+    KSignal k;
+    k.fTon = fTon;
+    k.fs = fs;
+    k.samples = samples;
+    k.rosa = rosaMono (kP2Saat, 0.1, samples);
+    const int b = (int) std::floor (24.0 * std::log2 (fTon / 30.0));
+    k.bandUnten = m1Kante (b);
+    k.bandOben = m1Kante (b + 1);
+    k.rosaDichteAmTon = rosaDichte (fTon, fs, 0.1);
+    const double bandLeistungRosa = k.rosaDichteAmTon * (k.bandOben - k.bandUnten);
+    k.amplitude = std::sqrt (2.0 * (std::pow (10.0, 1.5) - 1.0) * bandLeistungRosa);
+    k.ton.resize ((std::size_t) samples);
+    k.x.resize ((std::size_t) samples);
+    for (std::uint64_t n = 0; n < samples; ++n)
+    {
+        const double s = k.amplitude * std::sin (kZweiPi * fTon * (double) n / fs);
+        k.ton[(std::size_t) n] = (float) s;
+        k.x[(std::size_t) n] = (float) ((double) k.rosa[(std::size_t) n] + s);
+    }
+    return k;
+}
+
+/** Kopffunktion des K-Erzeugers (E-380-13, Lehre D4 aus §39.1), vor jedem
+    Nutzer am unveraenderten Puffer:
+    - Rosa-Anteil: `rosaSelbstpruefung` bei der Rate des Signals.
+    - Sinusfrequenz am Erzeuger gemessen: aufsteigende Nulldurchgaenge des
+      Tonanteils mit linearer Interpolation, f = (Anzahl - 1)/(t_letzter -
+      t_erster); Toleranz 0,01 Hz (die Interpolation irrt je Durchgang um
+      weniger als 1e-7 s, ueber 30 s also unter 1e-5 Hz).
+    - Sinuspegel am Erzeuger gemessen: Leistung = Mittel der Quadrate des
+      Tonanteils (float32), daraus 10*log10((S*B + P)/(S*B)); Soll 15 dB auf
+      0,01 dB (float32-Rundung des Tons wirkt relativ unter 1e-7, die
+      Stichprobenleistung eines Sinus ueber ganze und halbe Perioden weicht um
+      hoechstens 1/(Perioden) ab: bei 45 Hz und 30 s 1350 Perioden, 0,003 dB).
+    - Rate, Laenge, Ton wie gefordert. */
+struct KSelbstpruefung
+{
+    bool ok { false };
+    double fMess { 0.0 }, pegelDb { 0.0 };
+    std::string meldung;
+};
+
+inline KSelbstpruefung kSelbstpruefung (const KSignal& k, double fTonSoll, double fsSoll,
+                                        std::uint64_t samplesSoll)
+{
+    KSelbstpruefung e;
+    const auto rosa = rosaSelbstpruefung (k.rosa, 0.1, k.fs);
+    double erster = -1.0, letzter = -1.0;
+    std::uint64_t durchgaenge = 0;
+    for (std::size_t n = 1; n < k.ton.size(); ++n)
+    {
+        const double a = (double) k.ton[n - 1], b = (double) k.ton[n];
+        if (a < 0.0 && b >= 0.0)
+        {
+            const double t = ((double) (n - 1) + (-a) / (b - a)) / k.fs;
+            if (erster < 0.0) erster = t;
+            letzter = t;
+            ++durchgaenge;
+        }
+    }
+    e.fMess = durchgaenge >= 2 && letzter > erster ? (double) (durchgaenge - 1) / (letzter - erster) : 0.0;
+    double summe = 0.0;
+    for (const float v : k.ton)
+        summe += (double) v * (double) v;
+    const double leistung = k.ton.empty() ? 0.0 : summe / (double) k.ton.size();
+    const double sb = k.rosaDichteAmTon * (k.bandOben - k.bandUnten);
+    e.pegelDb = sb > 0.0 ? 10.0 * std::log10 ((sb + leistung) / sb) : 0.0;
+    const bool form = k.fs == fsSoll && k.fTon == fTonSoll && k.samples == samplesSoll
+                   && k.x.size() == (std::size_t) samplesSoll && k.ton.size() == (std::size_t) samplesSoll;
+    e.ok = rosa.ok && form && std::abs (e.fMess - fTonSoll) <= 0.01 && std::abs (e.pegelDb - 15.0) <= 0.01;
+    e.meldung = "Rosa " + std::string (rosa.ok ? "ja" : "NEIN") + " (" + rosa.meldung + "); Ton "
+              + detail::festkomma (e.fMess, 4) + " Hz gemessen (Soll " + detail::festkomma (fTonSoll, 1)
+              + "), Banddichte " + detail::festkomma (e.pegelDb, 4) + " dB ueber Rosa (Soll 15,0), Band "
+              + detail::festkomma (k.bandUnten, 2) + "-" + detail::festkomma (k.bandOben, 2) + " Hz, S "
+              + detail::festkomma (10.0 * std::log10 (k.rosaDichteAmTon), 3) + " dB/Hz, A "
+              + detail::festkomma (k.amplitude, 6) + ", " + std::to_string (k.samples) + " Samples bei "
+              + detail::festkomma (k.fs, 0) + " Hz" + (form ? "" : " FORM FALSCH");
     return e;
 }
 

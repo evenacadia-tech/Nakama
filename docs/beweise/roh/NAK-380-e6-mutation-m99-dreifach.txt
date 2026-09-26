@@ -1,0 +1,63 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m99-dreifach
+floor statt round UND Untergrenze in fensterPunkte entfernt UND Ordnungslambda ab Ordnung 0
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m99-dreifach/FeatureEngine.h
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m99-dreifach/AnalyseEngine.cpp
+Begruendung: Die M1-Laengen bei 44,1 kHz tragen drei Riegel: das Runden, die Untergrenze in fensterPunkte und die Startordnung des Lambdas (sie waechst nur von der 48-kHz-Ordnung aus). Gegenproben: m98-floor, m98-untergrenze, m98-doppel (floor und Untergrenze) und m99-start lassen 44,1 kHz gruen.
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, fensterPunkte, Rundung
+Wortlaut vorher:
+        for (int e = 0; e < 62 && soll >= n * kWurzelZwei; ++e)
+Wortlaut nachher:
+        for (int e = 0; e < 62 && soll >= n * 2.0; ++e)
+Mutation 2: eq-copilot/plugin/core/analysis/FeatureEngine.h, fensterPunkte, Untergrenze
+Wortlaut vorher:
+        return n < (double) basisPunkte ? basisPunkte : (int) n;
+Wortlaut nachher:
+        return (int) n;
+Mutation 3: eq-copilot/plugin/src/AnalyseEngine.cpp, AnalyseEngine::vorbereiten, Ordnungslambda, Startordnung
+Wortlaut vorher:
+            int o = basisOrdnung;
+Wortlaut nachher:
+            int o = 0;
+  Bau (mutation) EqCopGoldenTest: 08:10:47 bis 08:10:50, Exit 0
+  Binary EqCopGoldenTest 08:10:50.787 juenger als Quelle 08:10:47.337: ja
+
+== Matrixzeile M-99 (Haelfte 44,1 kHz, Dreifachmutation)
+Lauf mit Mutation: A2 --nak380 M-99 08:10:50 bis 08:10:51, Exit 1, 12 gruen, 12 rot
+Gefallene Pruefungen, die die Zusage tragen (4):
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 16384, Matrix 16384), Dauer 185.76 ms (Soll 371.5)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 8192, Matrix 8192), Dauer 92.88 ms (Soll 185.8)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 4096, Matrix 4096), Dauer 46.44 ms (Soll 92.9)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 1024 (Formel 2048, Matrix 2048), Dauer 23.22 ms (Soll 46.4)
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-99 laengentafel_m1 \(44\.1 kHz, Bass\) | M-99 laengentafel_m1 \(44\.1 kHz, Referenz\) | M-99 laengentafel_m1 \(44\.1 kHz, Mitten\) | M-99 laengentafel_m1 \(44\.1 kHz, Hoehen\))
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-99 laengentafel_m1 \(48\.0 kHz': gruen 4, rot 0
+    Muster 'M-99 laengentafel_m1 \(96\.0 kHz': gruen 4, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (8); Grund: die 88,2- und 176,4-kHz-Laengen folgen derselben Rundung
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 32768, Matrix 32768), Dauer 185.76 ms (Soll 371.5)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 16384, Matrix 16384), Dauer 92.88 ms (Soll 185.8)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 8192, Matrix 8192), Dauer 46.44 ms (Soll 92.9)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 4096, Matrix 4096), Dauer 23.22 ms (Soll 46.4)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 32768 (Formel 65536, Matrix 65536), Dauer 185.76 ms (Soll 371.5)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 32768, Matrix 32768), Dauer 92.88 ms (Soll 185.8)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 16384, Matrix 16384), Dauer 46.44 ms (Soll 92.9)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 8192, Matrix 8192), Dauer 23.22 ms (Soll 46.4)
+Unter derselben Mutation gruen gebliebene Pruefungen: 12
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 08:10:51 bis 08:10:55, Exit 0
+  Binary EqCopGoldenTest 08:10:54.950 juenger als Quelle 08:10:51.104: ja
+Lauf nach Ruecknahme: A2 --nak380 M-99 08:10:55 bis 08:10:55, Exit 0, 24 gruen, 0 rot

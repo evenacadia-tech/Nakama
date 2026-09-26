@@ -1,0 +1,41 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m122-riegel
+Matrixmutation M-122: der Versionsriegel wird entfernt (Rotbeweisspalte §6.5 Nachtrag, §8.6).
+Datei: broker/src/telemetrie.rs; SHA-256 vor der Mutation: 87B0FC8C1EE14C23B3880DA3390FC98B5E1401F3BD6BC33B34467C697A943679; Sicherung eq-copilot/build/nak380-sicherung/e6/m122-riegel/telemetrie.rs
+Begruendung: Ohne den Riegel in fingerprint_vergleich (broker/src/telemetrie.rs) rechnen ungleiche Fassungen wieder die drei Cosinus: numerische Unaehnlichkeit 0, die Invalidierung klassifiziert Materialwechsel, die Vergleichbarkeit MaterialVerschieden. Formgueltig: keine Assertion, kein Riegel am Test, der Rueckgabewert wandert.
+Mutation 1: broker/src/telemetrie.rs, fn fingerprint_vergleich, der Riegel vor den Cosinusrechnungen
+Wortlaut vorher:
+        if fassung_a != fassung_b {
+            return FingerprintVergleich::NichtVergleichbar;
+        }
+        FingerprintVergleich::Aehnlichkeit(fingerprint_aehnlichkeit(a, b))
+Wortlaut nachher:
+        let _ = (fassung_a, fassung_b); // Mutation m122-riegel: Versionsriegel entfernt
+        FingerprintVergleich::Aehnlichkeit(fingerprint_aehnlichkeit(a, b))
+
+== Matrixzeile M-122 (R-380-9, E-380-15): ungleiche metrics_version ergibt fail-closed nicht vergleichbar, kein Zahlenwert, nie anderes Material
+Lauf mit Mutation: A4 cargo test --lib nak380_m122 06:43:51 bis 06:43:53, Exit 101, 6 gruen, 6 rot
+Gefallene Pruefungen, die die Zusage tragen (4):
+      ROT M-122 ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert  [Aehnlichkeit(0.0) / Aehnlichkeit(0.0)]
+      ROT M-122 Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+      ROT M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Schwach [MaterialVerschieden]]
+      ROT M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)  [0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: ROT M-122 ungleiche Messfassung | ROT M-122 Invalidierung, ungleiche Fassung | ROT M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar | ROT M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'OK  M-122 gleiche Messfassung': gruen 1, rot 0
+    Muster 'OK  M-122 Invalidierung, gleiche Fassung': gruen 1, rot 0
+    Muster 'OK  M-122 Vergleichbarkeit, gleiche Fassung': gruen 1, rot 0
+    Muster 'OK  M-122 die Messfassung entscheidet': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (2); Grund: die Summenpruefung des Falls (assert rot.is_empty) und die Testzeile FAILED
+    thread 'telemetrie::tests::nak380_m122_fingerprint_nur_gleiche_metrics_version' (292492) panicked at src\telemetrie.rs:1344:9: | M-122 rot: ["ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert", "Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)", "Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden", "Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)"]
+    test telemetrie::tests::nak380_m122_fingerprint_nur_gleiche_metrics_version ... FAILED
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+      OK  M-122 Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten  [1 / 1]
+      OK  M-122 gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute  [Aehnlichkeit(0.0)]
+      OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)  [Aehnlichkeit(0.0)]
+      OK  M-122 die Messfassung entscheidet, nicht Fingerprintwerte.version  [Aehnlichkeit(0.0)]
+      OK  M-122 Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+      OK  M-122 Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute  [0 Schwach [MaterialVerschieden]]
+
+Ruecknahme aus der Sicherung, broker/src/telemetrie.rs, SHA-256 87B0FC8C1EE14C23B3880DA3390FC98B5E1401F3BD6BC33B34467C697A943679: gleich
+Lauf nach Ruecknahme: A4 cargo test --lib nak380_m122 06:43:53 bis 06:43:56, Exit 0, 11 gruen, 0 rot

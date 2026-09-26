@@ -1,0 +1,34 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m119-ersatz
+je ein Mitglied std::array<double, 16> (+128 B) in FeatureEngine und AnalyseEngine
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m119-ersatz/FeatureEngine.h
+Datei: eq-copilot/plugin/src/AnalyseEngine.h; SHA-256 vor der Mutation: C0A7308C2E0EBA884931BDAD8D97677D4A75218D4D883F142406C1B8A1D1EB70; Sicherung eq-copilot/build/nak380-sicherung/e6/m119-ersatz/AnalyseEngine.h
+Begruendung: Beide Groessenzusagen einzeln: sizeof (FeatureEngine) = Startwert, sizeof (AnalyseEngine) <= Startwert + 64 B; 128 B reissen beide, ohne den Stapel zu gefaehrden.
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, FeatureEngine, Mitglieder
+Wortlaut vorher:
+        int    zellenSamples { 0 }, zelleStand { 0 };
+Wortlaut nachher:
+        int    zellenSamples { 0 }, zelleStand { 0 };
+        std::array<double, 16> nak380Mutation {};
+Mutation 2: eq-copilot/plugin/src/AnalyseEngine.h, AnalyseEngine, private Mitglieder
+Wortlaut vorher:
+        double suchgrenzeHz() const noexcept;
+Wortlaut nachher:
+        double suchgrenzeHz() const noexcept;
+        std::array<double, 16> nak380Mutation {};
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:45:12 bis 07:45:32, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:45:31.966 juenger als Quelle 07:45:12.184: ja
+
+== Matrixzeile M-119 (formgueltiger Ersatz)
+Lauf mit Mutation: B5 --nak380 M-119 07:45:32 bis 07:45:33, Exit 1, 0 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) = Startwert 16 248 B (kein neues Mitglied)  [16376 B]
+    [ROT]  380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) <= Startwert + 64 B (double und zwei 28-B-Masken)  [55008 B, Startwert 54816 B, Delta 192 B]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-119 objektgroessen_begrenzt: sizeof \(FeatureEngine\) | M-119 objektgroessen_begrenzt: sizeof \(AnalyseEngine\))
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.h, SHA-256 C0A7308C2E0EBA884931BDAD8D97677D4A75218D4D883F142406C1B8A1D1EB70: gleich
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:45:33 bis 07:45:53, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:45:53.228 juenger als Quelle 07:45:33.213: ja
+Lauf nach Ruecknahme: B5 --nak380 M-119 07:45:53 bis 07:45:53, Exit 0, 2 gruen, 0 rot

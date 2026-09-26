@@ -1,0 +1,48 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-106 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · „nicht gesucht“ im vorhandenen Textweg (messen↔melden)
+Zustand und Vorbedingung (§6.5, woertlich): AnalyseEngine 48 kHz; nach E-380-13 selbstgeprüftes rosa Rauschen mit Sinus 45 Hz +15 dB (§7 K4)
+Zusage (§6.5, woertlich): keine Karte; der Satz „Unter 51 Hz wurde nicht nach Tönen gesucht – das Messfenster ist dort zu grob.“ (Wortlaut §8.6, Zahl = gerundetes `resonanzSucheAbHz`) steht im Leertext (`PluginEditor.cpp:453-456`) und in `gemessen` jeder Resonanzkarte; bei 44,1 kHz nennt er 47 Hz
+Test je Sprache (§6.5): C++: A2 NEU `380/M-106 nicht_gesucht_satz`; B15 NEU `380/M-106 leertext_nennt_suchgrenze`
+Rotbeweis-Spalte (§6.5, woertlich): heute rot: der Leertext sagt „Kein Ton sticht heraus“ ohne Grenze (`PluginEditor.cpp:453`), die Karten schweigen; nach dem Bau Mutation Satzfunktion liefert leer → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-106 heute rot: kein Satz (Satzfunktion fehlt), Karten ohne Satz (0 von 61 Karten bei 60 Hz), Leertext ohne Grenze (B15); K4 (45 Hz) ohne Karte schon am Basisstand.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 8 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+    B15: 6 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:15:34 ENDE=08:15:48
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: keine Karte bei 45 Hz (K4)
+  Pruefzeile: A2 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte
+  Mutation: m106-k4: Unterdrueckung UND Breitenkriterium entfernt (dieselben zwei Riegel wie M-107, deren Gegenproben dort)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m106-k4.txt
+- Zusagesatz: der Satz mit gerundeter Suchgrenze (51 Hz bei 48 kHz, 47 Hz bei 44,1 kHz) aus der Satzfunktion
+  Pruefzeile: A2 380/M-106 nicht_gesucht_satz (48.0 kHz) und (44.1 kHz), K4: der Satz nennt 51 Hz
+  Mutation: m106-satz: suchgrenzeSatz liefert leer (Matrixmutation)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m106-satz.txt
+- Zusagesatz: der Satz steht in gemessen jeder Resonanzkarte
+  Pruefzeile: A2 380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen
+  Mutation: m106-satz
+  rot: JA (0 von 61 Karten)
+  Protokoll: NAK-380-e6-mutation-m106-satz.txt
+- Zusagesatz: der Satz steht im Leertext der Befundliste (vom Editor nur angefuegt)
+  Pruefzeile: B15 380/M-106 leertext_nennt_suchgrenze (48,0 kHz) und (44,1 kHz): der Leertext nennt als zweiten Satz die Suchgrenze
+  Mutation: m106-satz
+  rot: JA (beide Raten)
+  Protokoll: NAK-380-e6-mutation-m106-satz.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m106-satz: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-106; B15 --sonde012-suite 07:51:54 bis 07:52:10, Exit 1, 104 gruen, 6 rot
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (48.0 kHz): die Satzfunktion nennt die gerundete Suchgrenze 51 Hz im Wortlaut aus §8.6 — kein Satz
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen — 0 von 61 Karten; ohne Satz: Bei 59 Hz ragt eine sehr schmale Spitze 8,7 dB über ihre Umgebung, in 85 % der Musikzeit. Als Note: A#2. Der Pegel dort steht ruhig (Schwankung ~1 dB).
+      FEHLER  380/M-106 leertext_nennt_suchgrenze (48,0 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 51 Hz  [Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegenüber ihren Nachbarn. Das heißt nicht „perfekt“ — nur: die Kurve gibt gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort.]
+      FEHLER  380/M-106 leertext_nennt_suchgrenze (44,1 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 47 Hz  [Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegenüber ihren Nachbarn. Das heißt nicht „perfekt“ — nur: die Kurve gibt gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort.]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-106; B15 --sonde012-suite 07:52:17 bis 07:52:34, Exit 0, 110 gruen, 0 rot
+  m106-k4: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-106 08:06:35 bis 08:06:37, Exit 1, 7 gruen, 1 rot
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot — 0 von 61 ohne Karte
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-106 08:06:41 bis 08:06:43, Exit 0, 8 gruen, 0 rot

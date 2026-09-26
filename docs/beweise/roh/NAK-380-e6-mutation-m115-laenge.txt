@@ -1,0 +1,33 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m115-laenge
+Laengenregel -> Konstante in FeatureEngine::vorbereiten (Mutation wie M-98)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m115-laenge/FeatureEngine.h
+Begruendung: Hop und Detektor-Bins bei 96/192 kHz folgen der Laenge der Hauptstufe; mit 4 096 Punkten waeren es 21,33/10,67 ms und K 765/383.
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, FeatureEngine::vorbereiten, Stufenaufbau
+Wortlaut vorher:
+            bass.vorbereiten (fensterPunkte (kBassPunkte, sr), sr);
+            haupt.vorbereiten (fensterPunkte (kHauptPunkte, sr), sr);
+Wortlaut nachher:
+            bass.vorbereiten (kBassPunkte, sr);
+            haupt.vorbereiten (kHauptPunkte, sr);
+  Bau (mutation) EqCopAnalysisGoldenTest: 08:07:25 bis 08:07:42, Exit 0
+  Binary EqCopAnalysisGoldenTest 08:07:42.275 juenger als Quelle 08:07:25.989: ja
+
+== Matrixzeile M-115 (Hop 42,67 ms, K = 1530 wie bei 48 kHz)
+Lauf mit Mutation: B5 --nak380 M-115 08:07:42 bis 08:07:44, Exit 1, 4 gruen, 4 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 765, Hop 21.3333 ms (N_H 4096)]
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 383, Hop 10.6667 ms (N_H 4096)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-115 nullkorpus_W1_hohe_raten 96\.0 kHz: Vorbedingung Detektor-Bins | M-115 nullkorpus_W1_hohe_raten 192\.0 kHz: Vorbedingung Detektor-Bins)
+Mitgefallene Pruefungen (2); Grund: die Ereigniszahl bei kurzer Hauptstufe (Basisstand 22 bzw. 67)
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 22, Golden 1; 3.1147 sF, 5.4187 sF, 6.4853 sF, 10.3253 sF, 12.8427 sF, 13.0987 sF, 13.2267 sFP, 14.9760 sFP, ...]
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 67, Golden 0; 5.4187 sFP, 5.9733 sFP, 6.4853 sF, 7.4240 sFP, 8.3627 sFP, 10.3253 sFP, 13.2267 sFP, 13.8667 sF, ...]
+Unter derselben Mutation gruen gebliebene Pruefungen: 4
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung gespeiste Samplezahl = 2880000 (30 s * fs), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der Engine verarbeitet 2880000]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung gespeiste Samplezahl = 5760000 (30 s * fs), Laeufer und Engine  [Puffer 5760000, gespeist 5760000, von der Engine verarbeitet 5760000]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 08:07:44 bis 08:08:00, Exit 0
+  Binary EqCopAnalysisGoldenTest 08:08:00.741 juenger als Quelle 08:07:44.897: ja
+Lauf nach Ruecknahme: B5 --nak380 M-115 08:08:00 bis 08:08:03, Exit 0, 8 gruen, 0 rot

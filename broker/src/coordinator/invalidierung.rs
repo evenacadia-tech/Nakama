@@ -24,7 +24,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::telemetrie::{fingerprint_aehnlichkeit, Fingerprintwerte};
+use crate::telemetrie::{fingerprint_vergleich, FingerprintVergleich, Fingerprintwerte};
 
 /// Die geschlossene Gründemenge aus `evidence_invalidate.grund`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -200,19 +200,56 @@ pub const GATE_MATERIAL_GLEICH: f64 = 0.95;
 /// Ein fehlender Fingerprint auf einer Seite ist KEIN „gleiches Material":
 /// ohne Beleg gibt es keine Aussage, und fail-closed heisst hier
 /// invalidieren.
+///
+/// NAK-380 M-122: dieser Weg traegt keine Messfassung je Fingerprint; er
+/// vergleicht innerhalb der Fassung, die dieser Broker anwendet
+/// (`vergleichbarkeit::METRICS_VERSION`), ueber denselben versionsgebundenen
+/// Pfad wie `material_urteil`.
 pub fn material_wechsel(
     vorher: Option<&Fingerprintwerte>,
     jetzt: Option<&Fingerprintwerte>,
     umfang: Umfang,
 ) -> Option<Invalidierung> {
+    let fassung = super::vergleichbarkeit::METRICS_VERSION;
+    match material_urteil(vorher.map(|f| (f, fassung)), jetzt.map(|f| (f, fassung)), umfang) {
+        Materialurteil::Wechsel(inv) => Some(inv),
+        Materialurteil::Gleich | Materialurteil::NichtVergleichbar => None,
+    }
+}
+
+/// Ergebnis der an die Messfassung gebundenen Materialpruefung (M-54, M-122).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Materialurteil {
+    /// Dieselbe Fassung und Aehnlichkeit ueber dem Gate: dasselbe Material.
+    Gleich,
+    /// Dieselbe Fassung und unaehnlich, oder ein Fingerprint fehlt
+    /// (fail-closed invalidieren, M-54).
+    Wechsel(Invalidierung),
+    /// Verschiedene Messfassungen (R-380-9): kein Vergleich und NIE ein
+    /// Materialwechsel — ein Fassungswechsel ist keine Aussage ueber das
+    /// Material.
+    NichtVergleichbar,
+}
+
+/// Materialpruefung mit der Messfassung (`metrics_version`) je Fingerprint
+/// (NAK-380 M-122). Der Versionsriegel liegt in `fingerprint_vergleich`, vor
+/// jeder Cosinusrechnung und vor der Klassifikation hier.
+pub fn material_urteil(
+    vorher: Option<(&Fingerprintwerte, u32)>,
+    jetzt: Option<(&Fingerprintwerte, u32)>,
+    umfang: Umfang,
+) -> Materialurteil {
     let gleich = match (vorher, jetzt) {
-        (Some(a), Some(b)) => fingerprint_aehnlichkeit(a, b) >= GATE_MATERIAL_GLEICH,
+        (Some((a, fa)), Some((b, fb))) => match fingerprint_vergleich(a, fa, b, fb) {
+            FingerprintVergleich::Aehnlichkeit(c) => c >= GATE_MATERIAL_GLEICH,
+            FingerprintVergleich::NichtVergleichbar => return Materialurteil::NichtVergleichbar,
+        },
         _ => false,
     };
     if gleich {
-        return None;
+        return Materialurteil::Gleich;
     }
-    Some(Invalidierung {
+    Materialurteil::Wechsel(Invalidierung {
         grund: Grund::MaterialWechsel,
         umfang,
     })

@@ -1,0 +1,398 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m113-schranke
+Schranke des NAK-182-Sweeps fest 4096 statt N_H(fs) (Matrixmutation, im Test)
+Datei: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp; SHA-256 vor der Mutation: 92C94AAABAFF4E9ED48AF95C4DD1B2A36030442BB5BEBDC7F586EB76B695E964; Sicherung eq-copilot/build/nak380-sicherung/e6/m113-schranke/AnalysisGoldenTestMain.cpp
+Begruendung: Die Zusage "innerhalb EINER Fensterlaenge vor t0" misst die Schranke N_H(fs); mit fester 4096 faellt sie, sobald das Ereignis mehr als 4096 Samples vor t0 liegt (88,2/96 kHz 7 168, 192 kHz 14 336 gemessen).
+Mutation 1: eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp, NAK-182-Sweep, Schranke (b)
+Wortlaut vorher:
+                            && kT0 - z.stempel < nH)
+Wortlaut nachher:
+                            && kT0 - z.stempel < 4096u)
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:40:21 bis 07:40:32, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:40:32.347 juenger als Quelle 07:40:21.239: ja
+
+== Matrixzeile M-113 (Schranke)
+Lauf mit Mutation: B5 voll 07:40:32 bis 07:41:04, Exit 1, 370 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+    [ROT]  (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 (0 <= t0 - stromSample < N_H(fs) = 4096, 8192 bzw. 16384) - die Schranke kommt aus der Fensterlaenge der Hauptstufe, nicht aus dem Hop  [10 von 25; t0 - Stempel je Rate: 3584, 3584, 7168, 7168, 14336]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: \(b\): und er liegt bei jeder Kombination)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster '\(a\): der gemeldete stromSample': gruen 1, rot 0
+    Muster 'E-0: Vorbedingung': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 370
+    [ok]   380/M-01 evidenzintervall_und_framezahl  [Intervall 1.0 s; Evidenzframes Soll/Ist 54/54]
+    [ok]   380/M-01 binbelegung_aus_testzugang  [belegt 196; unbelegt 25]
+    [ok]   380/M-01 evidenz_und_p50_bits_je_frame  [0 abweichende Frames von 54]
+    [ok]   380/M-01 evidenz_feinband_ist_dichte  [Referenz 10log10(2 sigma^2/fs)=-63.8021 dBFS/Hz; groesster Fehler Band 30 mit n_b=1: 0.3651 dB bei Toleranz 0.6907 dB; Verstoesse 0]
+    [ok]   380/M-01 systematik_ueber_belegte_baender  [Mittelabweichung -0.00417 dB; Toleranz 0,05000 dB ueber 196 Baender]
+    [ok]   380/M-01 p50_je_belegtem_feinband  [groesster Abstand Band 55 mit n_b=2: 0.6056 dB; Toleranz 1,5000 dB; Verstoesse 0]
+    [ok]   380/M-02 jede_livegruppe_hat_messbeitrag  [64 von 64 Gruppen mit Beitrag]
+    [ok]   380/M-02 livegruppe_ist_bandleistung_weiss  [Spanne 28.4148 dB, Referenz 28.5313 dB; groesster Gruppenfehler 0.2505 dB]
+    [ok]   380/M-03 livegruppe_leere_feinbaender_ergaenzt  [Gruppe 0 -59.2921 dBFS, Referenz Dichte mal 2,7477 Hz -59.4122 dBFS]
+    [ok]   380/M-04 livegruppen_summe_parseval  [Summe -21.2695 dBFS, Referenz -21.2665 dBFS]
+    [ok]   380/M-05 livegruppe_sinus_leistung  [Gruppe 35 -9.3000 dBFS, Referenz 10log10(A^2/2)=-9,0309 dBFS]
+    [ok]   380/M-08 livegruppe_traegerrand  [W0h Gruppe 63 -10.8773 gegen -10.8809 dBFS; S3 A=1 Gruppe 35 -3.3000 gegen -3,0103 dBFS]
+    [ok]   380/M-11 bandbreiten_aus_gitter  [221 Breiten, Summe 17929.032399789 Hz; hex64 b0/b120/b220 3fec77d2b45dde00/403c77d2b45dddc0/407ff44e07b18980]
+    [ok]   380/M-50 nullkorpus_W1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-50 nullkorpus_W1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-50 nullkorpus_W1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-51 nullkorpus_W2: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-51 nullkorpus_W2: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-51 nullkorpus_W2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-52 nullkorpus_W3: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-52 nullkorpus_W3: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-52 nullkorpus_W3: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-53 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.177 dB (Soll <= 1,0), Oktaven 57.79/57.86/57.69/57.80/57.82/57.86/57.79/57.80/57.77/57.77 dB; RMS 0.10030 gegen 0.10000 (0.026 dB), 1440000 Samples]
+    [ok]   380/M-53 nullkorpus_P1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-53 nullkorpus_P1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-53 nullkorpus_P1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-54 nullkorpus_S1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-54 nullkorpus_S1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-54 nullkorpus_S1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-55 nullkorpus_S2: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-55 nullkorpus_S2: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-55 nullkorpus_S2: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-56 nullkorpus_V1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-56 nullkorpus_V1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-56 nullkorpus_V1: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-57 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung Klickzahl aus der Formel  [112 Klicks, 112 Ziele]
+    [ok]   380/M-57 impulskorpus_I1: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-57 impulskorpus_I1: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-57 impulskorpus_I1: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 112, genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+    [ok]   380/M-58 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-58 impulskorpus_I2: Vorbedingung Klickzahl aus der Formel  [112 Klicks, 56 Ziele]
+    [ok]   380/M-58 impulskorpus_I2: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-58 impulskorpus_I2: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-58 impulskorpus_I2: genau 56 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 56, genau einer 56, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+    [ok]   380/M-59 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 37.66/37.70/37.71/37.76/37.75/37.77/37.79/37.75/37.74/37.77 dB; RMS 0.00990 gegen 0.01000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-59 impulskorpus_I3: Vorbedingung Klickzahl aus der Formel  [112 Klicks, 112 Ziele]
+    [ok]   380/M-59 impulskorpus_I3: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-59 impulskorpus_I3: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-59 impulskorpus_I3: genau 112 Ereignisse, je Ziel genau eines in [Klick - 4096, Klick], keine weiteren  [Ereignisse 112, genau einer 112, ohne Treffer 0, mehrfach 0, Fehlalarme 0]
+    [ok]   380/M-60 peakpfad_bleibt: ein reines Peakereignis traegt staerke = Crest ueber Schwelle in dB  [Ereignisse 1, staerke 14.0206 (Soll 14.0206), Bits Peak 1 Fluss 0]
+    [ok]   380/M-60 peakpfad_bleibt: loesen Fluss und Peak im selben Frame aus, entsteht genau ein Ereignis mit beiden Bits  [Ereignisse 1, staerke 6.0000 (Soll 6,0), Bits Peak 1 Fluss 1]
+    [ok]   380/M-61 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.282 dB (Soll <= 1,0), Oktaven 57.74/57.97/57.69/57.72/57.72/57.73/57.81/57.72/57.74/57.74 dB; RMS 0.09955 gegen 0.10000 (-0.039 dB), 576000 Samples]
+    [ok]   380/M-61 wiederbeginn_nach_stille: Vorbedingung gespeiste Samplezahl = 576000 (12 s * 48 000, 1125 Bloecke, Rest 0), Laeufer und Engine  [Puffer 576000, gespeist 576000, von der Engine verarbeitet 576000]
+    [ok]   380/M-61 wiederbeginn_nach_stille: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-61 wiederbeginn_nach_stille: genau ein Ereignis, Fensteranfang in [331904, 336000]  [Ereignisse 1; 6.9547 sFP (Sample 333824)]
+    [ok]   380/M-61 wiederbeginn_nach_stille: der Vorframe laeuft ueber inaktive Frames - in der Stille traegt jeder Detektor-Bin 10*log10(P0) = -100 dB  [5,504 s: -100.0000 bis -100.0000 dB; 6,859 s: -100.0000 bis -100.0000 dB; Toleranz 1.782e-13 dB]
+    [ok]   380/M-61 wiederbeginn_nach_stille: die Historie nimmt nur aktive Frames - Stand und Fuellung zwischen 5,504 s und 6,859 s (31 inaktive Frames) unveraendert  [Stand 21 -> 21, Fuellung 32 -> 32]
+    [ok]   380/M-62 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.085 dB (Soll <= 1,0), Oktaven 57.89/57.80/57.73/57.66/57.71/57.75/57.81/57.73/57.74/57.75 dB; RMS 0.09904 gegen 0.10000 (-0.084 dB), 720000 Samples]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung gespeiste Samplezahl = 720000 (15 s * 48 000, 1406 Bloecke + Rest 128), Laeufer und Engine  [Puffer 720000, gespeist 720000, von der Engine verarbeitet 720000]
+    [ok]   380/M-62 grenze_leert_detektor: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-62 grenze_leert_detektor: Vorbedingung genau ein Seek, Vorframe davor gueltig  [zeitSprung 1, Vorframe vor der Grenze gueltig]
+    [ok]   380/M-62 grenze_leert_detektor: flussBinVorgaengerGueltig() direkt nach der Grenze falsch  [falsch]
+    [ok]   380/M-62 grenze_leert_detektor: kein Ereignis im ersten Frame nach der Grenze und keines, bevor die Historie wieder 32 aktive Frames traegt  [Ereignisse gesamt 0, im ersten Frame 0, vor voller Historie 0]
+    [ok]   380/M-97 featureengine_objektbudget: sizeof (FeatureEngine) <= Startwert 16208 B + 40 B (ein Vektorkopf 24 B, vier std::uint32_t 16 B)  [16248 B, Delta 40 B]
+    [ok]   380/M-98 laengentafel_featureengine (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 371.52 ms (Soll 371.5)]
+    [ok]   380/M-98 laengentafel_featureengine (44.1 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 4096, Matrix 4096), Hop 2048, FFT 4096/4096, Dauer 92.88 ms (Soll 92.9)]
+    [ok]   380/M-98 laengentafel_featureengine (48.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 341.33 ms (Soll 341.3)]
+    [ok]   380/M-98 laengentafel_featureengine (48.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 4096, Matrix 4096), Hop 2048, FFT 4096/4096, Dauer 85.33 ms (Soll 85.3)]
+    [ok]   380/M-98 laengentafel_featureengine (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 32768 (Formel 32768, Matrix 32768), Hop 16384, FFT 32768/32768, Dauer 371.52 ms (Soll 371.5)]
+    [ok]   380/M-98 laengentafel_featureengine (88.2 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 8192 (Formel 8192, Matrix 8192), Hop 4096, FFT 8192/8192, Dauer 92.88 ms (Soll 92.9)]
+    [ok]   380/M-98 laengentafel_featureengine (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 32768 (Formel 32768, Matrix 32768), Hop 16384, FFT 32768/32768, Dauer 341.33 ms (Soll 341.3)]
+    [ok]   380/M-98 laengentafel_featureengine (96.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 8192 (Formel 8192, Matrix 8192), Hop 4096, FFT 8192/8192, Dauer 85.33 ms (Soll 85.3)]
+    [ok]   380/M-98 laengentafel_featureengine (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 65536 (Formel 65536, Matrix 65536), Hop 32768, FFT 65536/65536, Dauer 371.52 ms (Soll 371.5)]
+    [ok]   380/M-98 laengentafel_featureengine (176.4 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 92.88 ms (Soll 92.9)]
+    [ok]   380/M-98 laengentafel_featureengine (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 65536 (Formel 65536, Matrix 65536), Hop 32768, FFT 65536/65536, Dauer 341.33 ms (Soll 341.3)]
+    [ok]   380/M-98 laengentafel_featureengine (192.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 85.33 ms (Soll 85.3)]
+    [ok]   380/M-100 speicher_featureengine (44.1 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ok]   380/M-100 speicher_featureengine (44.1 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2522234 B = Stufen 2257834 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (48.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ok]   380/M-100 speicher_featureengine (48.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2501546 B = Stufen 2257834 + Stereoring 217792 + Detektor 25920]
+    [ok]   380/M-100 speicher_featureengine (88.2 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 3606256 B Nutzdaten (Soll 3606256, N 32768), gesamt 3606997 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 902896 B Nutzdaten (Soll 902896, N 8192), gesamt 903637 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 4505600 B]
+    [ok]   380/M-100 speicher_featureengine (88.2 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [4775034 B = Stufen 4510634 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (96.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 3606256 B Nutzdaten (Soll 3606256, N 32768), gesamt 3606997 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 902896 B Nutzdaten (Soll 902896, N 8192), gesamt 903637 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 4505600 B]
+    [ok]   380/M-100 speicher_featureengine (96.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [4754346 B = Stufen 4510634 + Stereoring 217792 + Detektor 25920]
+    [ok]   380/M-100 speicher_featureengine (176.4 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 7210736 B Nutzdaten (Soll 7210736, N 65536), gesamt 7211477 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 9011200 B]
+    [ok]   380/M-100 speicher_featureengine (176.4 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [9280634 B = Stufen 9016234 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (192.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 7210736 B Nutzdaten (Soll 7210736, N 65536), gesamt 7211477 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 9011200 B]
+    [ok]   380/M-100 speicher_featureengine (192.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [9259946 B = Stufen 9016234 + Stereoring 217792 + Detektor 25920]
+    [ok]   380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt - Bassstufe N_max = 65 536, Nutzdaten 7 210 736 B, kein Absturz  [Bass 7210736 B Nutzdaten (Soll 7210736, N 65536), gesamt 7211477 B bei 21 Anforderungen, davon 19 ab 4 KiB]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (44.1 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 22, Gitterreferenz 22, Matrix 22]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (48.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 25, Gitterreferenz 25, Matrix 25]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (88.2 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 22, Gitterreferenz 22, Matrix 22]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (96.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 25, Gitterreferenz 25, Matrix 25]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (176.4 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 22, Gitterreferenz 22, Matrix 22]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (192.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 25, Gitterreferenz 25, Matrix 25]
+    [ok]   380/M-110 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.065 dB (Soll <= 1,0), Oktaven 57.82/57.76/57.74/57.69/57.71/57.76/57.78/57.75/57.75/57.76 dB; RMS 0.09917 gegen 0.10000 (-0.072 dB), 960000 Samples]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung 20 s verbraucht, Heartbeat traegt 221 Baender, Maske der Referenz nicht leer  [1875 Bloecke, 221 Baender, Maske 29]
+    [ok]   380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [29 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 0 Zahl trotz Maske]
+    [ok]   380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [221 von 221 gleich, Δf 2.9297 / 2.9297 Hz (N 16384 / 32768)]
+    [ok]   380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [221 von 221 gleich, Δf 11.7188 / 11.7188 Hz (N 4096 / 8192)]
+    [ok]   380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten (kein Band ueber der Kappe)  [221 / 221]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung gespeiste Samplezahl = 2880000 (30 s * fs), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der Engine verarbeitet 2880000]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 1530, Hop 42.6667 ms (N_H 8192)]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 1, Golden 1; 21.5040 sF]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung gespeiste Samplezahl = 5760000 (30 s * fs), Laeufer und Engine  [Puffer 5760000, gespeist 5760000, von der Engine verarbeitet 5760000]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 1530, Hop 42.6667 ms (N_H 16384)]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 0, Golden 0]
+    [ok]   380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) = Startwert 16 248 B (kein neues Mitglied)  [16248 B]
+    [ok]   380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) <= Startwert + 64 B (double und zwei 28-B-Masken)  [54880 B, Startwert 54816 B, Delta 64 B]
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 32768/16384, Haupt 8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [32768/16384/8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt  [vorher belegt ja, Segmente 0, Histogramme 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge (floor((96 000 - 32 768)/16 384) + 1 = 4)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 4 Segmente (Soll 4)]
+    [ok]   Evidenzgitter: band_anzahl == kEvidenzBaender  [221]
+    [ok]   Livegitter: band_anzahl == kLiveBaender  [64]
+    [ok]   Evidenz-Kanten BITGLEICH zur Fixture (222 Werte)  [0 Abweichungen]
+    [ok]   Evidenz-Mitten BITGLEICH zur Fixture (221 Werte)  [0 Abweichungen]
+    [ok]   Live-Kanten BITGLEICH zur Fixture (65 Werte)  [0 Abweichungen]
+    [ok]   Live-Mitten BITGLEICH zur Fixture (64 Werte)  [0 Abweichungen]
+    [ok]   Live-Gruppierung deckt die 221 Feinbaender lueckenlos und genau einmal  [0 Abweichungen, Ende bei 221]
+    [ok]   Live-Kanten sind bitgleiche KOPIEN feiner Kanten, keine zweite Bank  [0 Abweichungen]
+    [ok]   q_db_0p1_i16: Skalierung stimmt mit der Fixture ueberein  [10]
+    [ok]   q_db_0p1_i16: alle 23 Vektoren treffen
+    [ok]   q_db_0p01_i16: Skalierung stimmt mit der Fixture ueberein  [100]
+    [ok]   q_db_0p01_i16: alle 23 Vektoren treffen
+    [ok]   float32: alle 15 Vektoren treffen bitgenau
+    [ok]   Rundungsfalle: floor(|x|+0.5) waere hier 1, std::round ist 0
+    [ok]   halbe Werte VON NULL WEG (0,05 -> 1), nicht zur geraden Zahl
+    [ok]   und negativ genauso (-0,05 -> -1)
+    [ok]   Band i sitzt in Byte i/8, Bit i%8 (LSB-first)  [Byte0=81 Byte1=1]
+    [ok]   ein Bit loeschen laesst die Nachbarn stehen
+    [ok]   Lesen und Schreiben sind dieselbe Adressierung
+    [ok]   221 Baender brauchen 28 Bitmapbytes  [28]
+    [ok]   die 3 Fuellbits des letzten Bytes bleiben 0 (sonst waere ein Bytevergleich sinnlos)  [letztes Byte = 1f]
+    [ok]   Sinus auf einer Binmitte legt >99,9 % der Leistung in genau diesen Bin  [100.0000 %]
+    [ok]   Parseval haelt (Zeit- und Frequenzenergie gleich)  [rel. Fehler 0.0000000000000002]
+    [ok]   Gleichanteil sitzt vollstaendig in Bin 0  [Bin0 = 1048576.0, Rest = 0.00000000000000000000]
+    [ok]   RBJ-Kette und BS.1770-Referenzkette liegen ueber 20 Hz..20 kHz unter 0,1 dB auseinander  [max 0.04312 dB bei 20000.0 Hz]
+    [ok]   Hochpass sperrt den Gleichanteil vollstaendig  [|H(0)|Â² = 0.000000000000000000000000]
+    [ok]   die Sequenz zaehlt ab 1 aufwaerts  [6]
+    [ok]   mit gueltiger Projektzeit ist die Zeitbasis project_samples
+    [ok]   und project_sample_start ist gesetzt
+    [ok]   Gueltigkeitsbit project_time steht
+    [ok]   der Frame traegt seine Metrikversion  [20260929]
+    [ok]   und die Samplerate
+    [ok]   Frame-Stempel spannt alle integrierten Hostbloecke auf  [0 + 5120]
+    [ok]   Frame-Stempel umfasst den ueberlappenden FFT-Support  [2048 + 8192]
+    [ok]   ein vorgezogener FFT-Start zieht die Continuous-Time gleich weit zurueck
+    [ok]   Continuous-Time-Unterlauf laesst nur die optionale Uhr fallen
+    [ok]   fehlende Continuous-Werte im FFT-Support werden nicht rueckwaerts erfunden
+    [ok]   Evidenzframe vereinigt Haupt- und aelteren Basssupport  [0 + 30720, 196 Baender]
+    [ok]   stille Evidenzluecke kann fehlende Continuous-Time nicht verbergen
+    [ok]   stehende FL-Teilstuecke erfinden kein Projektintervall
+    [ok]   ueberlaufende Host-Projektspanne wird konservativ lokal publiziert
+    [ok]   Frame direkt nach Seek beschreibt nur den Nachgrenzen-Block  [104608 + 512]
+    [ok]   ohne Zeitbeweis faellt die Zeitbasis auf local_monotonic (Â§32.3)
+    [ok]   und dann steht WEDER das Bit NOCH ein Startwert da
+    [ok]   alle SIEBEN Gueltigkeitsbits gesetzt, wenn der Host alle meldet  [0x7f]
+    [ok]   eine GEMELDETE 0 ist etwas anderes als 'nie gesagt' (Â§32.3)
+    [ok]   Schleifen-Samplegrenzen sind `unproven` - es gibt kein FL-Golden dafuer
+    [ok]   continuous_time_samples kommt mit demselben Frameanker durch
+    [ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: NaN
+    [ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Inf
+    [ok]   unbrauchbare Cycle-Bounds werden nicht publiziert: Ende vor Start
+    [ok]   ungueltiger Folge-Prepare deaktiviert; gueltiger Reprepare erholt sich
+    [ok]   G1 Drop (kFlagLueckeDavor): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G1 Drop (kFlagLueckeDavor): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+    [ok]   G1 Drop (kFlagLueckeDavor): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G1 Drop (kFlagLueckeDavor): Ursache ist lokaleLuecke  [Zaehler 1]
+    [ok]   G1 Drop (kFlagLueckeDavor): drop_counts_as_segment_not_epoch - zaehlt als SEGMENT, nicht als Epoche (§32.3)  [Epochen 0 Segmente 1]
+    [ok]   G2 Seek waehrend Wiedergabe: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G2 Seek waehrend Wiedergabe: no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+    [ok]   G2 Seek waehrend Wiedergabe: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G2 Seek waehrend Wiedergabe: Ursache ist zeitSprung  [Zaehler 1]
+    [ok]   G2 Seek waehrend Wiedergabe: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+    [ok]   G3: bei gestopptem Transport laufen die Fenster normal weiter  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G3: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G3: eine STEHENDE Zeit bei Stopp ist keine Grenze (sonst stuerbe das Vorhoeren)  [0 Epochenwechsel]
+    [ok]   G3: eine SPRINGENDE Zeit bei Stopp trennt jedes Fenster  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+    [ok]   G3: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G3: und sie heisst zeitSprung, nicht lokaleLuecke
+    [ok]   G4: aktive Schleife allein trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G4: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G4 Loop-Wrap: jedes Fenster getrennt  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+    [ok]   G4: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G4: und die Ursache heisst loopWrap, nicht zeitSprung
+    [ok]   G5: Schleife ohne erreichbare Grenze trennt nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G5: und die Bandakkus tragen Inhalt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G5 moeglicher Straddle: jedes Fenster getrennt - und WIRKLICH leer, weil der Straddle-Block auch kein neues beginnt  [Bass=0 Haupt=0 Zelle=0 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0]
+    [ok]   G5: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G5: der Straddle-Block selbst wird verworfen, nicht halb verwendet
+    [ok]   G5: mit eigener Ursache moeglicherStraddle
+    [ok]   G6 Transportkante (Play -> Stop): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G6 Transportkante (Play -> Stop): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G6 Transportkante (Play -> Stop): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+    [ok]   G6 Transportkante (Play -> Stop): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G6 Transportkante (Play -> Stop): Ursache ist transportKante  [Zaehler 1]
+    [ok]   G6 Transportkante (Play -> Stop): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+    [ok]   G7 Sampleratewechsel: vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G7 Sampleratewechsel: und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G7 Sampleratewechsel: no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+    [ok]   G7 Sampleratewechsel: und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G7 Sampleratewechsel: Ursache ist sampleratewechsel  [Zaehler 1]
+    [ok]   G7 Sampleratewechsel: zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+    [ok]   G7 Sampleratewechsel, Laengenhaelfte: ein Block mit 96 kHz zieht die Grenze, allokiert nicht und laesst die Laengen 16 384/4 096 - der Audiopfad baut nichts um  [Grenzen +1, Anforderungen 0, Bass/Haupt 16384/4096]
+    [ok]   G7 Sampleratewechsel, Laengenhaelfte: erst vorbereiten (96000) setzt Bass/Haupt 32 768/8 192, Hop N/2  [Bass 32768/16384, Haupt 8192/4096]
+    [ok]   G8 Neuanlauf (prepareToPlay): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G8 Neuanlauf (prepareToPlay): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+    [ok]   G8 Neuanlauf (prepareToPlay): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G8 Neuanlauf (prepareToPlay): Ursache ist neuanlauf  [Zaehler 1]
+    [ok]   G8 Neuanlauf (prepareToPlay): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+    [ok]   G9 Beweislagewechsel (Kontext faellt weg): vor der Grenze sind alle Fenster offen  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G9 Beweislagewechsel (Kontext faellt weg): no_window_crosses_an_epoch_boundary - NACH der Grenze traegt kein Fenster ein Sample von davor  [Bass=512 Haupt=512 Zelle=512 Kurz=0 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=0 (erwartet je 512)]
+    [ok]   G9 Beweislagewechsel (Kontext faellt weg): und die Bandakkus wurden dabei WIRKLICH verworfen  [1035 Band-Fensterbeitraege gefallen]
+    [ok]   G9 Beweislagewechsel (Kontext faellt weg): Ursache ist beweislageWechsel  [Zaehler 1]
+    [ok]   G9 Beweislagewechsel (Kontext faellt weg): zaehlt als EPOCHE, nicht als Segment  [Epochen 1 Segmente 0]
+    [ok]   G11: im Betrieb traegt die K-Kette einen Filterzustand  [1.392229]
+    [ok]   G11: beide Laeufe brauchen gleich viele Bloecke bis zum ersten LUFS-Frame  [290 / 290]
+    [ok]   G11: beide Laeufe liefern eine Kurzzeitlautheit
+    [ok]   G11: LUFS-S nach der Grenze ist BITGLEICH zum frischen Lauf - der Filternachklang ueberbrueckt nicht  [A=-60.034744263 B=-60.034744263]
+    [ok]   G10: FL-Teilstuecke mit stehender Projektzeit sind KEINE Grenze (NAK-56)  [0 Trennungen]
+    [ok]   G10: die Fenster laufen dabei weiter  [Bass=9224 Haupt=3080 Zelle=264 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   G12: vor der Grenze tragen BEIDE Bandakkus den Ton  [Live 149 / Evidenz 149 Baender]
+    [ok]   G12: der Grenzblock macht den Frame faellig - die Uhr laeuft ueber die Grenze weiter (Entscheid Â§10.1)  [liveSamples=0]
+    [ok]   G12: und der Frame traegt die NEUE Epoche  [1]
+    [ok]   G12: der Evidenzsatz ist in genau diesem Frame faellig - er wird also wirklich geprueft
+    [ok]   G12: KEIN Live-Band im Frame - der Ton von vor der Grenze ist weg (T2-1)  [0 gesetzte Baender]
+    [ok]   G12: und KEIN Evidenzband - die langsamere Kadenz reicht nicht weiter  [0 gesetzte Baender]
+    [ok]   G12: auch keine Aktivitaet auf Stille - die fertigen Zellen fielen mit  [nicht gesetzt]
+    [ok]   G12: die Akkus wurden GELEERT, nicht bloss leer vorgefunden  [1606 Band-Fensterbeitraege]
+    [ok]   G12: der Sweep hat genug Grenzzeitpunkte wirklich bis zum Frame gefahren  [120 von 120]
+    [ok]   G12: ueber 120 Grenzzeitpunkte traegt KEIN Frame etwas von davor (Pruefer-Messung: 80 / 40 / 43)  [0 mit Live-Baendern, 0 mit Evidenz, 0 mit Aktivitaet]
+    [ok]   G13.0: zwei frische Frames sind gleich - der Vergleich sagt nicht pauschal ungleich
+    [ok]   G13.0: ein einziger geaenderter Skalar macht sie ungleich
+    [ok]   G13.0: ein einziger geaenderter Bandwert ebenso
+    [ok]   G13.0: und ein einziges Bitmapbit ebenso
+    [ok]   G13.0: und ein Feld im verschachtelten Transportstempel - der Vergleich reicht bis dorthin
+    [ok]   G13.0: nach dem Zuruecksetzen wieder gleich - beide Richtungen vorgefuehrt
+    [ok]   G13a lokaleLuecke [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+    [ok]   G13a lokaleLuecke [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+    [ok]   G13a lokaleLuecke [Zwilling]: beide haben die Grenze lokaleLuecke gezogen  [A 1 / B 1]
+    [ok]   G13a lokaleLuecke [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+    [ok]   G13a lokaleLuecke [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+    [ok]   G13a lokaleLuecke [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+    [ok]   G13a lokaleLuecke [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+    [ok]   G13a lokaleLuecke [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+    [ok]   G13b zeitSprung [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+    [ok]   G13b zeitSprung [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+    [ok]   G13b zeitSprung [Zwilling]: beide haben die Grenze zeitSprung gezogen  [A 1 / B 1]
+    [ok]   G13b zeitSprung [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+    [ok]   G13b zeitSprung [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+    [ok]   G13b zeitSprung [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+    [ok]   G13b zeitSprung [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+    [ok]   G13b zeitSprung [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+    [ok]   G13c transportKante [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+    [ok]   G13c transportKante [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+    [ok]   G13c transportKante [Zwilling]: beide haben die Grenze transportKante gezogen  [A 1 / B 1]
+    [ok]   G13c transportKante [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+    [ok]   G13c transportKante [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+    [ok]   G13c transportKante [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+    [ok]   G13c transportKante [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+    [ok]   G13c transportKante [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+    [ok]   G13d sampleratewechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+    [ok]   G13d sampleratewechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+    [ok]   G13d sampleratewechsel [Zwilling]: beide haben die Grenze sampleratewechsel gezogen  [A 1 / B 1]
+    [ok]   G13d sampleratewechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+    [ok]   G13d sampleratewechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+    [ok]   G13d sampleratewechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+    [ok]   G13d sampleratewechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+    [ok]   G13d sampleratewechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+    [ok]   G13e neuanlauf [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+    [ok]   G13e neuanlauf [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+    [ok]   G13e neuanlauf [Zwilling]: beide haben die Grenze neuanlauf gezogen  [A 1 / B 1]
+    [ok]   G13e neuanlauf [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+    [ok]   G13e neuanlauf [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+    [ok]   G13e neuanlauf [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+    [ok]   G13e neuanlauf [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+    [ok]   G13e neuanlauf [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+    [ok]   G13f beweislageWechsel [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=1 LiveAkku=149 EvidAkku=196 Breite=149B/4.162e-03 RZellen=1 kFilter=8.569e-01 RAktiv=1]
+    [ok]   G13f beweislageWechsel [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden  [Bass=13824 Haupt=3584 Zelle=64 Kurz=30 Fluss=0 LiveAkku=0 EvidAkku=0 Breite=0B/0.000e+00 RZellen=1 kFilter=0.000e+00 RAktiv=0]
+    [ok]   G13f beweislageWechsel [Zwilling]: beide haben die Grenze beweislageWechsel gezogen  [A 1 / B 1]
+    [ok]   G13f beweislageWechsel [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr haengt nicht am Inhalt (Entscheid §10.1)  [0 Bloecke auseinander]
+    [ok]   G13f beweislageWechsel [Zwilling]: es wurden ueberhaupt genug Frames verglichen  [14 Frames]
+    [ok]   G13f beweislageWechsel [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille  [13 von 14 mit Live-Baendern]
+    [ok]   G13f beweislageWechsel [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)  [14 Frames feldgleich]
+    [ok]   G13f beweislageWechsel [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche  [A 0 / B 0]
+    [ok]   ein sauberer Stempel kommt durch
+    [ok]   Fall 1: project_samples + Bit, aber KEIN project_sample_start
+    [ok]   Fall 1: project_samples + project_sample_start, aber KEIN project_time-Bit
+    [ok]   Fall 2: local_monotonic MIT project_time-Bit (Widerspruch zu Â§32.3)
+    [ok]   Fall 2: local_monotonic MIT project_sample_start (Widerspruch zu Â§32.3)
+    [ok]   Fall 3: bounds_valid ohne start_ppq/end_ppq
+    [ok]   Fall 4: derivation=validated_block_mapping ohne bounds_valid
+    [ok]   Fall 5: cycle_bounds-Bit ohne die PPQ-Werte, auf die es sich bezieht
+    [ok]   Fall 6: continuous_time-Bit ohne continuous_time_samples
+    [ok]   Fall 7: das Projektintervall laeuft nicht ueber int64 hinaus
+    [ok]   Fall 7: sample_count bleibt unter der Vertragsobergrenze
+    [ok]   Fall 7: der Feature-Erzeuger publiziert keinen Leerframe
+    [ok]   der ERZEUGER loest den Riegel nicht aus - kein verletzter Stempel entsteht im normalen, gedeckelten Betrieb  [0]
+    [ok]   abgelehnte faellige Evidenz wird konsumiert und der Erzeuger erholt sich  [1]
+    [ok]   der spektrale Fluss hat im Betrieb einen Vorgaenger
+    [ok]   nach einem Seek ist der Vorgaenger WEG - sonst meldete der Fluss einen Onset, den es nie gab
+    [ok]   jedes Ereignis traegt die Epoche, in der es gesehen wurde  [5 Ereignis(se)]
+    [ok]   der Ereignisring laeuft WIRKLICH ueber - der Deckel ist gemessen, nicht behauptet  [64 im Ring, 1 verworfen, nach 995 Bloecken]
+    [ok]   und er waechst dabei NICHT ueber seine 64 Plaetze hinaus (Â§48.1: ein Strom, der bei Ueberlast waechst, waere ein unbegrenzter Vektor)  [64 / 64]
+    [ok]   drop-oldest: beim Ueberlauf faellt das AELTESTE, nicht das neueste  [aeltestes vorher 71680, jetzt 79872]
+    [ok]   und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf
+    [ok]   Eventzeit ist der 4096er-Fensteranfang und unabhaengig vom 512er Hostblock
+    [ok]   stehende Host-Zeit erzeugt keine extrapolierte FFT-Event-Projektzeit  [1 Ereignis(se) nach 148 Bloecken]
+    [ok]   short_impulse_triggers_peak_path_only: ein sehr kurzer Impuls erzeugt ein Ereignis mit qualitaetPeak und OHNE qualitaetFluss - vor M-86 erzeugte er gar keines  [13 reine Peakereignisse von 19 im Ring]
+    [ok]   flux_event_carries_flux_quality: ein Flussereignis traegt weiterhin qualitaetFluss  [48 von 58]
+    [ok]   both_paths_yield_one_event: es gibt Ereignisse, die BEIDE Bits tragen  [9 von 9 bei 9 Ausschlaegen]
+    [ok]   und kein Zeitpunkt traegt ZWEI Ereignisse - die zwei Pfade erzeugen eines mit beiden Bits, nicht zwei nebeneinander
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates E-0: Vorbedingung je Rate liegt der Impuls hinter der Historie der adaptiven Schwelle und in der ersten Haelfte des spaeteren Fensters (Raster N_H(fs), T-380-7)  [5 von 5; 44.1kHz: N_H 4096, t0 206336, erster Ereignisframe schliesst 69632, 48kHz: N_H 4096, t0 206336, erster Ereignisframe schliesst 69632, 88.2kHz: N_H 8192, t0 412672, erster Ereignisframe schliesst 139264, 96kHz: N_H 8192, t0 412672, erster Ereignisframe schliesst 139264, 192kHz: N_H 16384, t0 825344, erster Ereignisframe schliesst 278528]
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates E-a: jeder der 25 Laeufe erzeugt ueberhaupt ein Ereignis - die Ausloesung ist gemessen, nicht angenommen  [25 von 25]
+    [ok]   E-b: kein Ereignisring ist uebergelaufen - die Ringreihenfolge ist damit die Zeitreihenfolge und ereignis(0) das erste Ereignis  [25 von 25]
+    [ok]   E-c: jeder Lauf traegt ein Flussereignis - gemessen wird der Flusspfad, nicht die rahmenphasenabhaengige Peakspur  [25 von 25]
+    [ok]   E-d: das gewaehlte Ereignis ist unzweifelhaft das staerkste - mindestens zehnmal so stark wie das naechststaerkste Flussereignis. Die Auswahlregel ist damit gemessen, nicht angenommen  [25 von 25; kleinster Abstand kein zweites Ereignis]
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse nicht  [5 von 5 Raten; erster Stempel je Rate: 44.1kHz:202752, 48kHz:202752, 88.2kHz:405504, 96kHz:405504, 192kHz:811008]
+    [ok]   Gegenprobe: ein stehender Sinus ohne Pegelsprung erzeugt KEIN reines Peakereignis - der Pfad reagiert auf die Steigung, nicht auf den Pegel  [0 reine Peakereignisse]
+    [ok]   LUFS-S ist nach 4 s gesetzt
+    [ok]   LUFS-S trifft die analytische Erwartung auf besser als 0,1 LU (Â§39.3)  [gemessen -6.0620 erwartet -6.0620 d=0.00000]
+    [ok]   Peak trifft die Amplitude  [-6.021 dBFS]
+    [ok]   Crest eines Sinus ist 3,01 dB  [3.0091 dB]
+    [ok]   L==R ergibt Korrelation 1  [1.000000]
+    [ok]   und Breite 0 (kein Seitenanteil)  [0.000000000000]
+    [ok]   das Live-Band um 997 Hz ist gueltig  [Band 35]
+    [ok]   und das unterste Band (30 Hz) ist es NICHT - dort ist kein Signal
+    [ok]   die FeatureEngine hat Bloecke aus dem echten Prozessorweg gesehen  [35 Bloecke]
+    [ok]   und mindestens einen Frame gebaut  [3 Frames]
+    [ok]   process_context_present kommt aus der BRUECKE durch (Â§32.3)
+    [ok]   recording: Bit gesetzt, Wert false - die Bruecke kann beides sagen
+    [ok]   continuous_time_samples kommt durch
+    [ok]   die Schleifengrenzen kommen durch, samt `active`
+    [ok]   beide Presentation-Latencies kommen durch  [3924 / 4410]
+    [ok]   ueber die Bruecke stehen ALLE SIEBEN Gueltigkeitsbits  [0x7f]
+    [ok]   Gegenprobe: der Playhead-Rueckfallweg erreicht NICHT alle sieben Bits  [0x3]
+    [ok]   insbesondere kennt JUCEs Playhead kein Gueltigkeitsbit fuer `recording`
+    [ok]   Projektblock ueber INT64_MAX wird als ungueltiges Fenster verworfen
+    [ok]   Abstand INT64_MIN zu INT64_MAX wird ohne Subtraktionsueberlauf als Sprung erkannt
+    [ok]   nichtendliche Sampleraten initialisieren keine Analyseengine
+    [ok]   L1: OHNE Grenze meldet die Messgroesse FALSE - sie reagiert also ueberhaupt  [Bass=9216 Haupt=3072 Zelle=256 Kurz=30 Fluss=1 LiveAkku=196 EvidAkku=196 Breite=196B/2.660e-04 RZellen=1]
+    [ok]   L1: MIT Grenze meldet sie TRUE - beide Richtungen vorgefuehrt
+    [ok]   L2: der Gittervergleich meldet gegen die UNVERAENDERTE Zeile 0 Abweichungen  [0]
+    [ok]   L2: und gegen eine um EIN Bit gekippte Zeile genau 1 - er reagiert also, und zwar nur dort  [1 Abweichung(en), Zeile 26]
+    [ok]   L3: sieben Verletzungen ergeben sieben VERSCHIEDENE Nummern, nicht siebenmal 'nein'
+    [ok]   L4: auf Stille ist KEIN Band gueltig - es steht nicht '0 dB' da, sondern nichts  [0 gesetzte Baender]
+    [ok]   L5: drei Versuche verbrauchen drei Sequenznummern - auch der abgelehnte  [3]
+    [ok]   L5: der Empfaenger sieht 1 und 3 - die LUECKE bei 2 ist die Meldung  [1, 3]
+    [ok]   L5: und der Versuch nennt den FALL, nicht nur 'abgelehnt'
+    [ok]   L6: ein echter Grund wird gezaehlt  [1]
+    [ok]   L6: `anzahl` ist kein Grund und liefert 0, statt hinter das Array zu lesen  [gelesen: 0]
+    [ok]   L6: und `keine` ebenso - getrennt wird nie ohne Grund
+    [ok]   die unteren Baender sind bei dieser Aufloesung NICHT messbar - und das steht da  [erstes messbares Band 2 (32.6 Hz)]
+    [ok]   bei 48 kHz greift die Kappe nirgends - das oberste Band endet bei 17,96 kHz  [erstes Band ueber der Kappe 221]
+    [ok]   bei 22,05 kHz greift die Nyquist-Kappe WIRKLICH und schneidet oben ab  [erstes Band ueber der Kappe 202 (10525.6 Hz)]
+    [ok]   und sie sitzt genau am ersten Band, dessen Oberkante 0,95Â·Nyquist ueberschreitet  [10374.7 .. 10678.7 Hz gegen 10473.8 Hz]
+    [ok]   kein Live-Band vollstaendig ueber der Kappe traegt einen Wert  [0 Baender]
+    [ok]   Gegenpfad: neu vorbereiten setzt alles zurueck, auch die Zaehler
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/tests/AnalysisGoldenTestMain.cpp, SHA-256 92C94AAABAFF4E9ED48AF95C4DD1B2A36030442BB5BEBDC7F586EB76B695E964: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:41:04 bis 07:41:15, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:41:15.863 juenger als Quelle 07:41:04.692: ja
+Lauf nach Ruecknahme: B5 voll 07:41:15 bis 07:41:48, Exit 0, 371 gruen, 0 rot

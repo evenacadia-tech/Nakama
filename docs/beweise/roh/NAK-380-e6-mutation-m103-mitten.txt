@@ -1,0 +1,39 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m103-mitten
+Mittenstufe fest 4 096 Punkte (Ordnung 12 ohne Laengenregel)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m103-mitten/AnalyseEngine.cpp
+Begruendung: Die Resonanzsuche in 200 bis 2 000 Hz bei 96 und 192 kHz traegt die Mittenstufe mit der Laenge der Fensterdauer (8 192 bzw. 16 384); mit 4 096 Punkten fehlen dort die Bins (Basisstand: Luecke 203 bis 374 Hz bei 96 kHz, bei 192 kHz erst ab etwa 746 Hz).
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, AnalyseEngine::vorbereiten, Mittenstufe
+Wortlaut vorher:
+        mitten.init (ordnung (kM1OrdnungMitten), sr, kantenLoHz, kantenHiHz);
+Wortlaut nachher:
+        mitten.init (kM1OrdnungMitten, sr, kantenLoHz, kantenHiHz);
+  Bau (mutation) EqCopGoldenTest: 07:51:09 bis 07:51:13, Exit 0
+  Binary EqCopGoldenTest 07:51:12.940 juenger als Quelle 07:51:09.097: ja
+
+== Matrixzeile M-103, M-104 (Mutation wie M-103)
+Lauf mit Mutation: A2 --nak380 M-103, M-104 07:51:13 bis 07:51:18, Exit 1, 6 gruen, 6 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+      FEHLER [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+      FEHLER [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-103 resonanz_300hz_96k K1: genau eine Resonanzkarte | M-104 resonanz_500hz_192k K2: genau eine Resonanzkarte)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-103 resonanz_300hz_96k K1: Vorbedingung': gruen 3, rot 0
+    Muster 'M-104 resonanz_500hz_192k K2: Vorbedingung': gruen 3, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (4)
+      FEHLER [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: die Karte liegt bei 300 Hz +-1/6 Oktave an jedem Snapshot — 0 von 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: und sie ist dauerhaft an jedem Snapshot — 0 von 61
+      FEHLER [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: die Karte liegt bei 500 Hz +-1/6 Oktave an jedem Snapshot — 0 von 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: und sie ist dauerhaft an jedem Snapshot — 0 von 61
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 07:51:18 bis 07:51:21, Exit 0
+  Binary EqCopGoldenTest 07:51:21.723 juenger als Quelle 07:51:18.863: ja
+Lauf nach Ruecknahme: A2 --nak380 M-103, M-104 07:51:21 bis 07:51:27, Exit 0, 12 gruen, 0 rot

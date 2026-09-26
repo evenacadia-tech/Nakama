@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-115 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Detektor bei hohen Raten nach dem Umbau
+Zustand und Vorbedingung (§6.5, woertlich): FeatureEngine 96 und 192 kHz nach Etappe 6 (Hauptstufe 8 192 bzw. 16 384, K = 1530 wie bei 48 kHz, T_min = 76,5 dB); Nullkorpus W1 (§7) je 30 s
+Zusage (§6.5, woertlich): höchstens 1 Ereignis in 30 s bei beiden Raten; Hop 42,67 ms, Sperrzeit und Historie in Zeit wie bei 48 kHz
+Test je Sprache (§6.5): C++: B5 NEU `380/M-115 nullkorpus_W1_hohe_raten`
+Rotbeweis-Spalte (§6.5, woertlich): heute nicht messbar: den exakten Zähler für die feste W1-Saat bei 96 und 192 kHz gibt es am Basisstand nicht; der neue B5-Fall schafft ihn in Etappe 6. Nach dem Bau Mutation ρ = 0 und T_min = 0 → mehr als 1 Ereignis in 30 s → rot
+Etikett: heute nicht messbar (Golden entsteht in Etappe 6; am Basisstand gemessen 22 bzw. 67 Ereignisse bei K 765/383)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-115 heute nicht messbar (Etikett); gemessen am Basisstand: 96 kHz K 765, Hop 21,33 ms, 22 Ereignisse; 192 kHz K 383, Hop 10,67 ms, 67 Ereignisse.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 8 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: hoechstens 1 Ereignis in 30 s bei 96 und 192 kHz (Golden 1 bzw. 0)
+  Pruefzeile: B5 380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz und 192.0 kHz: hoechstens 1 Ereignis, exakt der Golden
+  Mutation: m115-schwelle: rho = 0 und T_min = 0 (Matrixmutation)
+  rot: JA (40 bzw. 42 Ereignisse)
+  Protokoll: NAK-380-e6-mutation-m115-schwelle.txt
+- Zusagesatz: Hop 42,67 ms, K = 1530 wie bei 48 kHz
+  Pruefzeile: B5 380/M-115 ...: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms
+  Mutation: m115-laenge: Laengenregel -> Konstante (wie M-98); unter m115-schwelle Pflicht-Gruen
+  rot: JA (beide Raten)
+  Protokoll: NAK-380-e6-mutation-m115-laenge.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m115-schwelle: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-115 07:43:42 bis 07:43:44, Exit 1, 6 gruen, 2 rot
+      [ROT]  380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 40, Golden 1; 5.2053 sFP, 5.4613 sF, 12.7147 sF, 14.7627 sF, 16.2987 sF, 16.9813 sFP, 18.2613 sF, 18.6027 sF, ...]
+      [ROT]  380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 42, Golden 0; 10.2400 sF, 10.7520 sF, 16.2133 sF, 17.4080 sFP, 20.4800 sF, 21.5040 sF, 22.6987 sF, 26.2827 sFP, ...]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-115 07:44:01 bis 07:44:04, Exit 0, 8 gruen, 0 rot
+  m115-laenge: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-115 08:07:42 bis 08:07:44, Exit 1, 4 gruen, 4 rot
+      [ROT]  380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 765, Hop 21.3333 ms (N_H 4096)]
+      [ROT]  380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 383, Hop 10.6667 ms (N_H 4096)]
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-115 08:08:00 bis 08:08:03, Exit 0, 8 gruen, 0 rot

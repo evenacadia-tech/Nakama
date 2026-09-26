@@ -1,0 +1,47 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m112-zelle
+Zellenlaenge = Hop der Mittenstufe statt lround(0,1*fs)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m112-zelle/AnalyseEngine.cpp
+Begruendung: Die 30 Ticks je Zone in 30 s traegt die Zellenlaenge 0,1 s (zellenSamples); mit dem Hop der Mittenstufe (42,67 ms) entstehen mehr Ticks (Matrixmutation).
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, AnalyseEngine::vorbereiten, Zellenlaenge
+Wortlaut vorher:
+        zellenSamples = (int) std::lround (0.1 * sr);
+Wortlaut nachher:
+        zellenSamples = mitten.n / 2;
+  Bau (mutation) EqCopGoldenTest: 07:55:26 bis 07:55:28, Exit 0
+  Binary EqCopGoldenTest 07:55:28.782 juenger als Quelle 07:55:26.052: ja
+
+== Matrixzeile M-112
+Lauf mit Mutation: A2 --nak380 M-112 07:55:28 bis 07:55:31, Exit 1, 14 gruen, 10 rot
+Gefallene Pruefungen, die die Zusage tragen (8):
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-112 zonenticks_30_bei_48_und_96k \(48\.0 kHz\): Zone \d genau 30 Ticks | M-112 zonenticks_30_bei_48_und_96k \(96\.0 kHz\): Zone \d genau 30 Ticks)
+Mitgefallene Pruefungen (2); Grund: dieselbe Zellenlaenge traegt Vorbedingung und Ratengleichheit
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Vorbedingung 30 s gespeist, 300 aktive Zellen — 1440000 Samples, aktiv 70.30 s
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Vorbedingung 30 s gespeist, 300 aktive Zellen — 2880000 Samples, aktiv 70.30 s
+Unter derselben Mutation gruen gebliebene Pruefungen: 14
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 ratengleich mit 48 kHz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 ratengleich mit 48 kHz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 ratengleich mit 48 kHz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 ratengleich mit 48 kHz
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 07:55:31 bis 07:55:34, Exit 0
+  Binary EqCopGoldenTest 07:55:34.410 juenger als Quelle 07:55:31.598: ja
+Lauf nach Ruecknahme: A2 --nak380 M-112 07:55:34 bis 07:55:37, Exit 0, 24 gruen, 0 rot

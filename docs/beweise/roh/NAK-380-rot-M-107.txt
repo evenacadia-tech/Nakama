@@ -1,0 +1,50 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-107 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Kandidaten unter der Suchgrenze werden nicht gemeldet
+Zustand und Vorbedingung (§6.5, woertlich): wie M-106 mit demselben nach E-380-13 selbstgeprüften P2 und Sinus 48 Hz (§7 K5)
+Zusage (§6.5, woertlich): keine Karte (48 Hz < 50,69 Hz), Satz wie M-106
+Test je Sprache (§6.5): C++: A2 NEU `380/M-107 kandidat_unter_suchgrenze`
+Rotbeweis-Spalte (§6.5, woertlich): heute rot: bei 48 kHz lückenlos ab ≈ 47 Hz, die Karte entsteht (gemessen Validierung Teil C `:228`); nach dem Bau Mutation Unterdrückung weg → Karte → rot
+Etikett: heute rot (Abweichung: am Basisstand entstand bei 48 Hz KEINE Karte, das Breitenkriterium traegt; Gegenprobe-Dokument Basisstand)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-107 Abweichung von der Matrix: K5 (48 Hz bei 48 kHz) ergibt am Basisstand KEINE Karte (61 von 61 Snapshots ohne Karte); die Zusage „keine Karte unter der Grenze“ traegt am Basisstand das Breitenkriterium (kBreiteMaxOktaven). Gegenprobe 60 Hz: genau eine Karte bei 59,1 Hz an 61 von 61 Snapshots. Der Satz fehlt (rot).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 7 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: keine Karte bei 48 Hz (48 Hz < 50,69 Hz), K5
+  Pruefzeile: A2 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot
+  Mutation: Doppelmutation m107-doppel (Unterdrueckung unter der Suchgrenze entfernt UND Breitenkriterium abgeschaltet); Gegenproben m107-suche (nur Unterdrueckung entfernt) und m107-breite (nur Breite abgeschaltet) bleiben gruen
+  rot: JA (Doppelmutation: 0 von 61 ohne Karte); Gegenproben NEIN wie erwartet (Pflicht-Gruen JA)
+  Protokoll: NAK-380-e6-mutation-m107-doppel.txt, -m107-suche.txt, -m107-breite.txt
+- Zusagesatz: Satz wie M-106 (51 Hz)
+  Pruefzeile: A2 380/M-107 ... K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz
+  Mutation: m107-satz: Satzfunktion liefert leer (wie M-106)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m107-satz.txt
+- Zusagesatz: Trennschaerfe: Gegenprobe 60 Hz bei 48 kHz ergibt genau eine Karte
+  Pruefzeile: A2 380/M-107 ... Gegenprobe (60 Hz bei 48 kHz): genau eine Karte bei 60 Hz
+  Mutation: keine (Vorbedingung der Trennschaerfe)
+  rot: -
+  Protokoll: -
+
+Doppelt getragen: die Zusage 'keine Karte unter der Suchgrenze' halten die Unterdrueckung in findeResonanzen (Bandmitte unter resonanzSucheAbHz) und das Breitenkriterium kBreiteMaxOktaven (unter 50,69 Hz misst der Hann-Hauptlappen breiter als 1/6 Oktave). Jede Einzelmutation laesst die Zusage gruen (gemessen), erst beide zusammen machen sie rot.
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m107-suche: faellt an der erwarteten Pruefung: NEIN; mit Mutation A2 --nak380 M-107 07:52:37 bis 07:52:39, Exit 0, 7 gruen, 0 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-107 07:52:42 bis 07:52:44, Exit 0, 7 gruen, 0 rot
+      Deutung fuer M-107: Gegenprobe (Unterdrueckung allein entfernt): keine Karte, das Breitenkriterium haelt; Pflicht-Gruen JA.
+  m107-breite: faellt an der erwarteten Pruefung: NEIN; mit Mutation A2 --nak380 M-107 07:52:47 bis 07:52:49, Exit 0, 7 gruen, 0 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-107 07:52:52 bis 07:52:54, Exit 0, 7 gruen, 0 rot
+      Deutung fuer M-107: Gegenprobe (Breitenkriterium allein abgeschaltet): keine Karte, die Suchgrenze haelt; Pflicht-Gruen JA.
+  m107-doppel: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-107 07:52:57 bis 07:52:59, Exit 1, 6 gruen, 1 rot
+      FEHLER [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot (48 Hz liegt unter 50,69 Hz) — 0 von 61 ohne Karte
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-107 07:53:03 bis 07:53:05, Exit 0, 7 gruen, 0 rot
+      Deutung fuer M-107: JA: erst beide Riegel zusammen lassen die Karte bei 48 Hz entstehen.
+  m107-satz: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-107 08:06:46 bis 08:06:48, Exit 1, 6 gruen, 1 rot
+      FEHLER [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz —
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-107 08:06:50 bis 08:06:52, Exit 0, 7 gruen, 0 rot

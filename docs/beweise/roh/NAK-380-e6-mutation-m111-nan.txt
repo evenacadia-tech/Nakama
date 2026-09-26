@@ -1,0 +1,414 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m111-nan
+NaN statt interpolierter Werte im Snapshot (Kompositkurve)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m111-nan/AnalyseEngine.cpp
+Begruendung: Dass die Werte im Prozess bleiben, traegt die Zuweisung s.ltasKompositDb[b] = v ohne Maskenbezug (Matrixmutation: NaN fuer Maskenbaender).
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, finalisiereLtas, Kompositwert
+Wortlaut vorher:
+            s.ltasKompositDb[(size_t) b] = v;
+Wortlaut nachher:
+            s.ltasKompositDb[(size_t) b] = interpoliert ? std::numeric_limits<double>::quiet_NaN() : v;
+  Bau (mutation) EqCopGoldenTest: 07:53:14 bis 07:53:17, Exit 0
+  Binary EqCopGoldenTest 07:53:17.927 juenger als Quelle 07:53:14.872: ja
+
+== Matrixzeile M-111
+Lauf mit Mutation: A2 voll 07:53:17 bis 07:54:20, Exit 1, 383 gruen, 5 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      FEHLER [pink-minus20] LTAS Komposit — Band 0 ist NaN, Referenz -37.26
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: \[pink-minus20\] LTAS Komposit)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster '\[pink-minus20\] LTAS Referenzachse': gruen 3, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (4)
+      FEHLER [resonanz-116hz] LTAS Komposit — Band 0 ist NaN, Referenz -43.26
+      FEHLER [diag-mulm] Mulm gefunden — 0 Karten, kein mulm
+      FEHLER [diag-mulm-halb] Halbzeit-Mulm gefunden — 0 Karten, kein mulm
+      FEHLER [nyquist-32k] unterhalb der Kappe keine Luecken — NaN im messbaren Bereich
+Unter derselben Mutation gruen gebliebene Pruefungen: 383
+      ok [380/M-32 W4] 380/M-32 Vorbedingung W4 vollstaendig
+      ok [380/M-32 W4] 380/M-32 m1_rauschen_steht_ruhig: jedes belegte Band <=6 dB
+      ok [380/M-32 W4] 380/M-32 m1_rauschen_steht_ruhig: jedes Einbinband <=4 dB
+      ok [380/M-33 M1] 380/M-33 Vorbedingung 300 s und 17 Einbinbaender
+      ok [380/M-33 M1] 380/M-33 m1_bewegung_1p8db
+      ok [380/M-34 M2] 380/M-34 Vorbedingung 300 s und 17 Einbinbaender
+      ok [380/M-34 M2] 380/M-34 m1_bewegung_3p6db
+      ok [380/M-35 M3] 380/M-35 Vorbedingung 300 s und 17 Einbinbaender
+      ok [380/M-35 M3] 380/M-35 m1_bewegung_5p4db
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Charaktertext steht ruhig woertlich (Schwelle 6 dB)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36a 5 dB: Werkzeugtext fester Absenker woertlich (Schwelle 10 dB)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Charaktertext kommt in Wellen woertlich (Schwelle 6 dB)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36b 8 dB: Werkzeugtext fester Absenker woertlich (Schwelle 10 dB)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Vorbedingung gelesene Spanne = Tiefe (P50 -30 dB, P95 -30 dB + Tiefe)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Vorbedingung genau eine dauerhafte Resonanzkarte bei 1502,06 Hz
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Charaktertext kommt in Wellen woertlich (Schwelle 6 dB)
+      ok [380/M-36 M36a bis M36c] 380/M-36 M36c 13 dB: Werkzeugtext dynamisches Werkzeug woertlich (Schwelle 10 dB)
+      ok [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Vorbedingung W4 und 196 belegte Baender
+      ok [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Segmentzahl je Band = Formel der Stufe (Bass 350, Mitten 1405, Hoehen 2811), jede > 0
+      ok [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 abdeckung_zaehlt_segmente: jedes Band
+      ok [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 Kontrastlauf Segmentzahl je Band in [innen, gesamt - still] der Stufe, jede > 0
+      ok [380/M-37 abdeckung_zaehlt_segmente] 380/M-37 berechneAbdeckung liest das Einzelsegmenthistogramm
+      ok [380/M-38 teilblock_raender] 380/M-38 Vorbedingung 196 Baender mit Bin, 25 ohne
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 Vorbedingung W4 60 s
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: Segmente je Band = Formel der Stufe
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: Teilbloecke je Band = floor(Segmente/8)
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: P10 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: P50 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: P95 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 1 60 s: perzentileGueltig wahr
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 Vorbedingung W4 30 s bis zum Reset
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 30 s vor dem Reset: Segmente je Band = Formel der Stufe
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 30 s vor dem Reset: Teilbloecke je Band = floor(Segmente/8)
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 30 s vor dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: Segmente je Band = Formel der Stufe
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: Teilbloecke je Band = floor(Segmente/8)
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: P10 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: P50 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: P95 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 unmittelbar nach dem Reset: perzentileGueltig falsch
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: Segmente je Band = Formel der Stufe
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: Teilbloecke je Band = floor(Segmente/8)
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: P10 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: P50 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: P95 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9215 Samples nach dem Reset: perzentileGueltig falsch
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: Segmente je Band = Formel der Stufe
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: Teilbloecke je Band = floor(Segmente/8)
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: P10 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: P50 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: P95 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 9216 Samples nach dem Reset: perzentileGueltig wahr
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 Vorbedingung Weiterfahrt bis 60 s
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: Segmente je Band = Formel der Stufe
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: Teilbloecke je Band = floor(Segmente/8)
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: Rest je Band = Segmente mod 8, Restsumme leer genau ohne Rest
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: P10 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: P50 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: P95 je Band NaN ohne, endlich mit Teilblock
+      ok [380/M-38 teilblock_raender] 380/M-38 Lauf 2 60 s: perzentileGueltig wahr
+      ok [380/M-38 teilblock_raender] 380/M-38 Heap-Speicherzahl je AnalyseEngine
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (44.1 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (48.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (88.2 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (96.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (176.4 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (192.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt - Stufen 65 536/65 536/32 768/16 384, 4 325 408 B
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: genau eine Resonanzkarte an jedem Snapshot ab messbereit
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: die Karte liegt bei 300 Hz +-1/6 Oktave an jedem Snapshot
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: und sie ist dauerhaft an jedem Snapshot
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: genau eine Resonanzkarte an jedem Snapshot ab messbereit
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: die Karte liegt bei 500 Hz +-1/6 Oktave an jedem Snapshot
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: und sie ist dauerhaft an jedem Snapshot
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte an jedem Snapshot ab messbereit
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: die Karte liegt bei 60 Hz +-1/6 Oktave an jedem Snapshot
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: und sie ist dauerhaft an jedem Snapshot
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (48.0 kHz): die Satzfunktion nennt die gerundete Suchgrenze 51 Hz im Wortlaut aus §8.6
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (44.1 kHz): die Satzfunktion nennt die gerundete Suchgrenze 47 Hz im Wortlaut aus §8.6
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 K4: Vorbedingung k_selbstpruefung
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4: der Satz nennt 51 Hz
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 Karte 60 Hz: Vorbedingung k_selbstpruefung
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot (48 Hz liegt unter 50,69 Hz)
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): genau eine Karte bei 60 Hz +-1/6 Oktave an jedem Snapshot (Trennschaerfe)
+      ok [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (44.1 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz
+      ok [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (48.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz
+      ok [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (88.2 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz
+      ok [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (96.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz
+      ok [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (176.4 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz
+      ok [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (192.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Vorbedingung 30 s gespeist, 300 aktive Zellen
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Vorbedingung 30 s gespeist, 300 aktive Zellen
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 ratengleich mit 48 kHz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 ratengleich mit 48 kHz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 ratengleich mit 48 kHz
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 ratengleich mit 48 kHz
+      ok [sinus-1k-minus12] Zustand messbereit
+      ok [sinus-1k-minus12] aktive Sekunden
+      ok [sinus-1k-minus12] LUFS integriert
+      ok [sinus-1k-minus12] True Peak dBTP
+      ok [sinus-1k-minus12] Crest dB
+      ok [sinus-1k-minus12] Centroid (magnitude)
+      ok [sinus-1k-minus12] Rolloff
+      ok [sinus-1k-minus12] low_frac (<250 Hz)
+      ok [sinus-1k-minus12] Stereo-Width
+      ok [sinus-1k-minus12] Korrelation
+      ok [sinus-1k-minus12] Band-% sub 20-60
+      ok [sinus-1k-minus12] Band-% bass 60-120
+      ok [sinus-1k-minus12] Band-% lowbass 120-250
+      ok [sinus-1k-minus12] Band-% lomid 250-500
+      ok [sinus-1k-minus12] Band-% mid 500-2k
+      ok [sinus-1k-minus12] Band-% himid 2k-6k
+      ok [sinus-1k-minus12] Band-% hi 6k-12k
+      ok [sinus-1k-minus12] Band-% air 12k-20k
+      ok [sinus-1k-minus12] LTAS Referenzachse Abdeckung
+      ok [sinus-1k-minus12] LTAS Referenzachse mittl. Abw.
+      ok [sinus-1k-minus12] LTAS Referenzachse max. Abw.
+      ok [sinus-1k-minus12] Komposit-Peak bei 1 kHz
+      ok [sinus-1k-minus12] Flatness-Ordnung Sinus
+      ok [sinus-1k-minus12] genau 1 Kandidat (1 kHz)
+      ok [sinus-1k-minus12] Kandidat bei 1 kHz
+      ok [sinus-1k-minus12] Kandidat dauerhaft
+      ok [sinus-1k-minus12] Sinus nur um 1 kHz belastbar
+      ok [sinus-1k-minus12] Karte vollstaendig (Â§7.3)
+      ok [sinus-1k-minus12] Gemessen traegt Zahlen
+      ok [sinus-1k-minus12] Hoeren hat Stop-Bedingung (Â§7.4)
+      ok [sinus-1k-minus12] Konfidenz benannt
+      ok [sinus-1k-minus12] Sinus: genau 1 Resonanz-Karte
+      ok [pink-minus20] Zustand messbereit
+      ok [pink-minus20] aktive Sekunden
+      ok [pink-minus20] LUFS integriert
+      ok [pink-minus20] True Peak dBTP
+      ok [pink-minus20] Crest dB
+      ok [pink-minus20] Centroid (magnitude)
+      ok [pink-minus20] Rolloff
+      ok [pink-minus20] low_frac (<250 Hz)
+      ok [pink-minus20] Stereo-Width
+      ok [pink-minus20] Korrelation
+      ok [pink-minus20] Band-% sub 20-60
+      ok [pink-minus20] Band-% bass 60-120
+      ok [pink-minus20] Band-% lowbass 120-250
+      ok [pink-minus20] Band-% lomid 250-500
+      ok [pink-minus20] Band-% mid 500-2k
+      ok [pink-minus20] Band-% himid 2k-6k
+      ok [pink-minus20] Band-% hi 6k-12k
+      ok [pink-minus20] Band-% air 12k-20k
+      ok [pink-minus20] LTAS Referenzachse Abdeckung
+      ok [pink-minus20] LTAS Referenzachse mittl. Abw.
+      ok [pink-minus20] LTAS Referenzachse max. Abw.
+      ok [pink-minus20] Flatness-Ordnung Pink
+      ok [pink-minus20] keine Kandidaten in Pink
+      ok [pink-minus20] Zonen-Ticks belegt
+      ok [pink-minus20] Pink ohne Zonen-Alarm
+      ok [pink-minus20] Zonen-Ticks belegt
+      ok [pink-minus20] Pink ohne Zonen-Alarm
+      ok [pink-minus20] Zonen-Ticks belegt
+      ok [pink-minus20] Pink ohne Zonen-Alarm
+      ok [pink-minus20] Zonen-Ticks belegt
+      ok [pink-minus20] Pink ohne Zonen-Alarm
+      ok [pink-minus20] Perzentile belegt
+      ok [pink-minus20] Perzentile weitgehend belegt
+      ok [pink-minus20] P10 <= P50 <= P95 ueberall
+      ok [pink-minus20] Pink weitgehend belastbar
+      ok [pink-minus20] Falsch-Positiv-Riegel: Pink ohne Karten
+      ok [resonanz-116hz] Zustand messbereit
+      ok [resonanz-116hz] aktive Sekunden
+      ok [resonanz-116hz] LUFS integriert
+      ok [resonanz-116hz] True Peak dBTP
+      ok [resonanz-116hz] Crest dB
+      ok [resonanz-116hz] Centroid (magnitude)
+      ok [resonanz-116hz] Rolloff
+      ok [resonanz-116hz] low_frac (<250 Hz)
+      ok [resonanz-116hz] Stereo-Width
+      ok [resonanz-116hz] Korrelation
+      ok [resonanz-116hz] Band-% sub 20-60
+      ok [resonanz-116hz] Band-% bass 60-120
+      ok [resonanz-116hz] Band-% lowbass 120-250
+      ok [resonanz-116hz] Band-% lomid 250-500
+      ok [resonanz-116hz] Band-% mid 500-2k
+      ok [resonanz-116hz] Band-% himid 2k-6k
+      ok [resonanz-116hz] Band-% hi 6k-12k
+      ok [resonanz-116hz] Band-% air 12k-20k
+      ok [resonanz-116hz] LTAS Referenzachse Abdeckung
+      ok [resonanz-116hz] LTAS Referenzachse mittl. Abw.
+      ok [resonanz-116hz] LTAS Referenzachse max. Abw.
+      ok [resonanz-116hz] genau 1 Kandidat (116 Hz)
+      ok [resonanz-116hz] Kandidat bei 116 Hz (Bassfenster Â§5.10.1)
+      ok [resonanz-116hz] db_over plausibel
+      ok [resonanz-116hz] dauerhaft + Persistenz >= 50 %
+      ok [resonanz-116hz] Karte vollstaendig (Â§7.3)
+      ok [resonanz-116hz] Gemessen traegt Zahlen
+      ok [resonanz-116hz] Hoeren hat Stop-Bedingung (Â§7.4)
+      ok [resonanz-116hz] Konfidenz benannt
+      ok [resonanz-116hz] 116-Hz-Karte vorhanden
+      ok [resonanz-116hz] keine Fremdklassen am 116er
+      ok [resonanz-116hz] Karte am 116er (Bassfenster)
+      ok [resonanz-116hz] Titel nennt die Frequenz
+      ok [resonanz-116hz] Titel nennt die Note (FL-Zaehlung)
+      ok [resonanz-116hz] als dauerhaft erkannt
+      ok [resonanz-116hz] Tu nennt Frequenz + konkreten Absenk-Startwert
+      ok [resonanz-116hz] messfeste Dauer-Resonanz = Konfidenz hoch
+      ok [resonanz-116hz] Resonanz ist Top-Rang
+      ok [resonanz-116hz] 380/M-36 karte_116hz_steht_ruhig
+      ok [resonanz-116hz] 380/M-36 116-Hz-Karte behaelt den festen Absenker
+      ok [stille-mit-tick] Zustand
+      ok [stille-mit-tick] Befund-Sperre
+      ok [stille-mit-tick] Spektral-Sperre
+      ok [stille-mit-tick] LUFS null
+      ok [stille-mit-tick] True Peak dBTP
+      ok [stille-mit-tick] Crest dB
+      ok [stille-mit-tick] Diagnose still bei Stille
+      ok [diag-scoop-mitte] Zustand messbereit
+      ok [diag-scoop-mitte] Karte vollstaendig (Â§7.3)
+      ok [diag-scoop-mitte] Gemessen traegt Zahlen
+      ok [diag-scoop-mitte] Hoeren hat Stop-Bedingung (Â§7.4)
+      ok [diag-scoop-mitte] Konfidenz benannt
+      ok [diag-scoop-mitte] Mitten-Loch gefunden
+      ok [diag-scoop-mitte] keine Fremdklassen am Scoop
+      ok [diag-scoop-mitte] Fehlbetrag >= Schwelle
+      ok [diag-scoop-mitte] Erstidee ist Balance, nicht EQ (Â§5.10.6 breit+dauerhaft)
+      ok [diag-scoop-mitte] Scoop erreicht Top-Rang
+      ok [diag-mulm] Zustand messbereit
+      ok [diag-mulm] Mulm-Zeitverlauf belegt
+      ok [diag-mulm] stationaerer Mulm ~durchgehend
+      ok [diag-mulm] keine Fremdklassen am Mulm
+      ok [diag-haerte] Zustand messbereit
+      ok [diag-haerte] Karte vollstaendig (Â§7.3)
+      ok [diag-haerte] Gemessen traegt Zahlen
+      ok [diag-haerte] Hoeren hat Stop-Bedingung (Â§7.4)
+      ok [diag-haerte] Konfidenz benannt
+      ok [diag-haerte] Haerte gefunden
+      ok [diag-haerte] kein Mulm an der Haerte
+      ok [diag-haerte] dynamische Erstidee nennt sein Werkzeug
+      ok [diag-mulm-halb] Zustand messbereit
+      ok [diag-mulm-halb] Halbzeit-Zeitverlauf belegt
+      ok [diag-mulm-halb] Halbzeit-Anteil ~0,5
+      ok [diag-mulm-halb] keine Fremdklassen am Halbzeit-Mulm
+      ok [diag-wander-ton] Zustand messbereit
+      ok [diag-wander-ton] wandernder Ton liefert Kandidaten
+      ok [diag-wander-ton] Kandidat zeitweise (nie dauerhaft)
+      ok [diag-wander-ton] Persistenz ~25 %
+      ok [diag-wander-ton] Kandidat zeitweise (nie dauerhaft)
+      ok [diag-wander-ton] Persistenz ~25 %
+      ok [diag-wander-ton] Kandidat zeitweise (nie dauerhaft)
+      ok [diag-wander-ton] Persistenz ~25 %
+      ok [diag-wander-ton] Kandidat zeitweise (nie dauerhaft)
+      ok [diag-wander-ton] Persistenz ~25 %
+      ok [diag-wander-ton] Karte vollstaendig (Â§7.3)
+      ok [diag-wander-ton] Gemessen traegt Zahlen
+      ok [diag-wander-ton] Hoeren hat Stop-Bedingung (Â§7.4)
+      ok [diag-wander-ton] Konfidenz benannt
+      ok [diag-wander-ton] Karte vollstaendig (Â§7.3)
+      ok [diag-wander-ton] Gemessen traegt Zahlen
+      ok [diag-wander-ton] Hoeren hat Stop-Bedingung (Â§7.4)
+      ok [diag-wander-ton] Konfidenz benannt
+      ok [diag-wander-ton] Resonanz-Karte vorhanden
+      ok [diag-wander-ton] Karte sagt zeitweise (wandernder Ton)
+      ok [diag-wander-ton] Titel nennt zeitweise
+      ok [diag-wander-ton] zeitweise â dynamische Erstidee
+      ok [diag-wander-ton] Karte sagt zeitweise (wandernder Ton)
+      ok [diag-wander-ton] Titel nennt zeitweise
+      ok [diag-wander-ton] zeitweise â dynamische Erstidee
+      ok [stereo-antiphase] Antiphase ist messbereit
+      ok [stereo-antiphase] aktive Sekunden
+      ok [stereo-antiphase] LTAS Referenzachse Abdeckung
+      ok [stereo-antiphase] LTAS Referenzachse mittl. Abw.
+      ok [stereo-antiphase] LTAS Referenzachse max. Abw.
+      ok [stereo-antiphase] LUFS wie Referenz
+      ok [stereo-antiphase] Crest wie Referenz
+      ok [stereo-antiphase] True Peak wie Referenz
+      ok [stereo-antiphase] Korrelation exakt â1
+      ok [stereo-antiphase] Width side-dominant
+      ok [stereo-nur-links] messbereit
+      ok [stereo-nur-links] LTAS = Referenz â 3,01 dB Abdeckung
+      ok [stereo-nur-links] LTAS = Referenz â 3,01 dB mittl. Abw.
+      ok [stereo-nur-links] LTAS = Referenz â 3,01 dB max. Abw.
+      ok [stereo-nur-links] LUFS â 3,01
+      ok [stereo-nur-links] Crest + 3,01
+      ok [stereo-nur-links] True Peak unveraendert
+      ok [stereo-nur-links] Width = 1 (einseitig)
+      ok [stereo-nur-rechts] messbereit
+      ok [stereo-nur-rechts] LTAS = Referenz â 3,01 dB Abdeckung
+      ok [stereo-nur-rechts] LTAS = Referenz â 3,01 dB mittl. Abw.
+      ok [stereo-nur-rechts] LTAS = Referenz â 3,01 dB max. Abw.
+      ok [stereo-nur-rechts] LUFS â 3,01
+      ok [stereo-dekorr] messbereit
+      ok [stereo-dekorr] LTAS wie Referenz Abdeckung
+      ok [stereo-dekorr] LTAS wie Referenz mittl. Abw.
+      ok [stereo-dekorr] LTAS wie Referenz max. Abw.
+      ok [stereo-dekorr] LUFS wie Referenz
+      ok [stereo-dekorr] Korrelation nahe 0
+      ok [stereo-dekorr] Width nahe 1
+      ok [nan-recovery] trotz NaN messbereit
+      ok [nan-recovery] Ersetzt-Zaehler exakt
+      ok [nan-recovery] LUFS endlich+gueltig
+      ok [nan-recovery] LUFS nahe Referenz
+      ok [nan-recovery] True Peak endlich
+      ok [nan-recovery] Crest endlich
+      ok [nan-recovery] LTAS erholt Abdeckung
+      ok [nan-recovery] LTAS erholt mittl. Abw.
+      ok [nan-recovery] LTAS erholt max. Abw.
+      ok [nyquist-32k] Kappe liegt im Raster
+      ok [nyquist-32k] LTAS gueltig
+      ok [nyquist-32k] oberhalb der Kappe nur NaN
+      ok [leicht-publikation] Leichtpfad publiziert
+      ok [leicht-publikation] Zustand sammelt (5 s)
+      ok [leicht-publikation] Kurz-LUFS ohne Schwerlauf
+      ok [leicht-publikation] True Peak ohne Schwerlauf
+      ok [leicht-publikation] Live-Kurve belegt
+      ok [leicht-publikation] Komposit bleibt dem Schwerlauf vorbehalten
+      ok [leicht-publikation] Leerlauf publiziert nicht
+      ok [leicht-publikation] neue Daten => neue Revision
+      ok [konvergenz] erstes Fenster: noch kein Konvergenzwert
+      ok [konvergenz] Konvergenz nach zweitem Fenster
+      ok [konvergenz] mittlere Bewegung klein (stationaeres Pink)
+      ok [konvergenz] maximale Bewegung plausibel
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 07:54:20 bis 07:54:23, Exit 0
+  Binary EqCopGoldenTest 07:54:23.316 juenger als Quelle 07:54:20.346: ja
+Lauf nach Ruecknahme: A2 voll 07:54:23 bis 07:55:26, Exit 0, 404 gruen, 0 rot

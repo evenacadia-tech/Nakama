@@ -1,6 +1,7 @@
 // M1-Messkern — Implementierung. Maßstab der Zahlen: tools/analyze-track.py
 // (eingefroren in fixtures/golden-referenz.json); Produktregeln: Plan §5.10.
 #include "AnalyseEngine.h"
+#include "analysis/FeatureEngine.h"   // NAK-380 T-380-7: dieselbe Laengenregel `fensterPunkte`
 #include <cmath>
 #include <cstring>
 #include <algorithm>
@@ -211,10 +212,27 @@ void AnalyseEngine::vorbereiten (double samplerate)
                 ltasBisBand = b + 1;
     }
 
-    bass.init (14, sr, kantenLoHz, kantenHiHz);       // 16384 — §5.10.1 Bassfenster
-    referenz.init (13, sr, kantenLoHz, kantenHiHz);   // 8192 — analyze-track-Achse
-    mitten.init (12, sr, kantenLoHz, kantenHiHz);     // 4096
-    hoehen.init (11, sr, kantenLoHz, kantenHiHz);     // 2048
+    // NAK-380 T-380-7 (R-380-5, E-380-12): die Ordnungen folgen derselben
+    // Laengenregel wie die FeatureEngine - Fensterdauer statt Samplezahl, die
+    // 48-kHz-Ordnungen als Untergrenze, Kappe kFensterPunkteMax (Ordnung 16).
+    // 44,1/48 kHz: 16384/8192/4096/2048 wie bisher; 88,2/96 kHz das Doppelte,
+    // 176,4/192 kHz das Vierfache. Naehte, Zustaendigkeiten und Zonen bleiben.
+    const auto ordnung = [this] (int basisOrdnung)
+    {
+        const int n = nakama::analyse::fensterPunkte (1 << basisOrdnung, sr);
+        int o = basisOrdnung;
+        while ((1 << o) < n)
+            ++o;
+        return o;
+    };
+    bass.init (ordnung (kM1OrdnungBass), sr, kantenLoHz, kantenHiHz);         // §5.10.1 Bassfenster
+    referenz.init (ordnung (kM1OrdnungReferenz), sr, kantenLoHz, kantenHiHz); // analyze-track-Achse bei 48 kHz
+    mitten.init (ordnung (kM1OrdnungMitten), sr, kantenLoHz, kantenHiHz);
+    hoehen.init (ordnung (kM1OrdnungHoehen), sr, kantenLoHz, kantenHiHz);
+    // Der Segmentpuffer waechst hier auf die groesste Stufe, nicht erst im
+    // ersten Segment der laengeren Bassstufe (keine Allokation ausserhalb
+    // von `vorbereiten`).
+    scratchPsd.reserve ((size_t) bass.n / 2 + 1);
 
     // K-Weighting wie pyloudnorm (RBJ, KEINE DeMan-Variante): High-Shelf
     // G=+4 dB, Q=1/√2, fc=1500 · Hochpass G=0, Q=0.5, fc=38.
@@ -332,6 +350,7 @@ void AnalyseEngine::zuruecksetzen()
         std::lock_guard<std::mutex> l (snapMutex);
         fertig = MessSnapshot {};
         fertig.samplerate = sr;
+        fertig.resonanzSucheAbHz = suchgrenzeHz();   // T-380-8: Zustand aus `vorbereiten`
         for (int b = 0; b < kLtasBaender; ++b)
         {
             fertig.ltasZentrenHz[(size_t) b] = zentrenHz[(size_t) b];
@@ -656,60 +675,96 @@ void AnalyseEngine::finalisiereLtas (MessSnapshot& s) const
     // Lücken (1/24-Bänder ohne FFT-Bin) werden wie in analyze-track in
     // LINEARER Leistung interpoliert, erst danach kommt die dB-Wandlung —
     // dB-Interpolation läge an steilen Ton-Flanken um Größenordnungen daneben.
+    // NAK-380 T-380-9: je Kurve merkt `interpoliert`, welcher Wert erst durch
+    // die Lückenfüllung oder Randklemmung entstanden ist.
+    struct Kurve
+    {
+        std::array<double, kLtasBaender> db;
+        std::array<bool, kLtasBaender> interpoliert;
+    };
     auto kurveVon = [&] (const BandAkku& a, int von, int bis)
     {
-        std::array<double, kLtasBaender> k;
-        k.fill (std::numeric_limits<double>::quiet_NaN());
+        Kurve k;
+        k.db.fill (std::numeric_limits<double>::quiet_NaN());
+        k.interpoliert.fill (false);
         // Auch die Befüllung endet an der Nyquist-Kappe: ein Band, dessen
         // ZENTRUM oberhalb liegt, kann unterhalb Nyquist noch Rest-Bins haben
         // — ein Teilband-Pegel als Bandwert wäre trotzdem erfundene Evidenz.
         for (int b = von; b < std::min (bis, ltasBisBand); ++b)
             if (a.segmente[(size_t) b] > 0)
-                k[(size_t) b] = a.summe[(size_t) b] / (double) a.segmente[(size_t) b] * skala;
-        interpoliereLuecken (k, ltasBisBand);
-        for (auto& v : k)
+                k.db[(size_t) b] = a.summe[(size_t) b] / (double) a.segmente[(size_t) b] * skala;
+        std::array<bool, kLtasBaender> gemessen {};
+        for (int b = 0; b < kLtasBaender; ++b)
+            gemessen[(size_t) b] = ! std::isnan (k.db[(size_t) b]);
+        interpoliereLuecken (k.db, ltasBisBand);
+        for (int b = 0; b < kLtasBaender; ++b)
+            k.interpoliert[(size_t) b] = ! gemessen[(size_t) b] && ! std::isnan (k.db[(size_t) b]);
+        for (auto& v : k.db)
             if (! std::isnan (v))
                 v = 10.0 * std::log10 (v + 1e-30);
         return k;
     };
+    const auto setzeBit = [] (std::array<std::uint8_t, kLtasMaskenBytes>& maske, int b)
+    {
+        maske[(size_t) (b / 8)] = (std::uint8_t) (maske[(size_t) (b / 8)] | (1u << (b % 8)));
+    };
 
-    auto ref = kurveVon (referenzAkku, 0, kLtasBaender);
+    const auto ref = kurveVon (referenzAkku, 0, kLtasBaender);
     bool hatWerte = false;
-    for (const double v : ref)
+    for (const double v : ref.db)
         hatWerte = hatWerte || ! std::isnan (v);
     if (! hatWerte)
     {
         s.ltasGueltig = false;
         return;
     }
-    s.ltasReferenzDb = ref;
+    s.ltasReferenzDb = ref.db;
+    for (int b = 0; b < kLtasBaender; ++b)
+        if (ref.interpoliert[(size_t) b])
+            setzeBit (s.ltasReferenzInterpoliert, b);
 
-    auto tief = kurveVon (bassAkku, 0, idxNaht250);      // klemmt außerhalb des
-    auto mitte = kurveVon (mittenAkku, idxNaht160, idxNaht2500);  // Stufenbereichs —
-    auto hoch = kurveVon (hoehenAkku, idxNaht1600, kLtasBaender); // Blend greift dort nie
+    const auto tief = kurveVon (bassAkku, 0, idxNaht250);      // klemmt außerhalb des
+    const auto mitte = kurveVon (mittenAkku, idxNaht160, idxNaht2500);  // Stufenbereichs —
+    const auto hoch = kurveVon (hoehenAkku, idxNaht1600, kLtasBaender); // Blend greift dort nie
 
     for (int b = 0; b < kLtasBaender; ++b)
     {
         const double f = zentrenHz[(size_t) b];
         double v;
+        bool interpoliert;   // T-380-9: der Wert, oder ein Nahtanteil mit Gewicht > 0, ist interpoliert
         if (b < idxNaht160)
-            v = tief[(size_t) b];
+        {
+            v = tief.db[(size_t) b];
+            interpoliert = tief.interpoliert[(size_t) b];
+        }
         else if (b < idxNaht250)   // Naht Bass→Mitten 160–250 Hz, log-f-Blend
         {
             const double t = std::log (f / 160.0) / std::log (250.0 / 160.0);
-            v = tief[(size_t) b] * (1.0 - t) + mitte[(size_t) b] * t;
+            v = tief.db[(size_t) b] * (1.0 - t) + mitte.db[(size_t) b] * t;
+            interpoliert = (tief.interpoliert[(size_t) b] && 1.0 - t > 0.0)
+                        || (mitte.interpoliert[(size_t) b] && t > 0.0);
         }
         else if (b < idxNaht1600)
-            v = mitte[(size_t) b];
+        {
+            v = mitte.db[(size_t) b];
+            interpoliert = mitte.interpoliert[(size_t) b];
+        }
         else if (b < idxNaht2500)  // Naht Mitten→Höhen 1.6–2.5 kHz
         {
             const double t = std::log (f / 1600.0) / std::log (2500.0 / 1600.0);
-            v = mitte[(size_t) b] * (1.0 - t) + hoch[(size_t) b] * t;
+            v = mitte.db[(size_t) b] * (1.0 - t) + hoch.db[(size_t) b] * t;
+            interpoliert = (mitte.interpoliert[(size_t) b] && 1.0 - t > 0.0)
+                        || (hoch.interpoliert[(size_t) b] && t > 0.0);
         }
         else
-            v = hoch[(size_t) b];
+        {
+            v = hoch.db[(size_t) b];
+            interpoliert = hoch.interpoliert[(size_t) b];
+        }
         s.ltasKompositDb[(size_t) b] = v;
         s.ltasZentrenHz[(size_t) b] = f;
+        if (interpoliert)
+            setzeBit (s.ltasKompositInterpoliert, b);
     }
     s.ltasGueltig = true;
 }
@@ -763,9 +818,18 @@ LautheitsTelemetrie AnalyseEngine::lautheitFuerTelemetrie() const noexcept
 // ── Leicht-Teil beider Auswertungen (m4): EINE Quelle für Zustand, Sekunden,
 //    Live-Kurve und die schnellen Skalare — der 20-Hz-Pfad kann so nie von
 //    der 250-ms-Auswertung abweichen. ───────────────────────────────────────
+// NAK-380 T-380-8: die Suchgrenze der Resonanzkarten folgt aus Rate und Laenge
+// der Bassstufe, die `vorbereiten` setzt; kein eigenes Mitglied (M-119).
+double AnalyseEngine::suchgrenzeHz() const noexcept
+{
+    return sr > 0.0 && bass.n > 0 ? kResonanzSucheFaktor * sr / (double) bass.n
+                                  : std::numeric_limits<double>::quiet_NaN();
+}
+
 void AnalyseEngine::fuelleBasis (MessSnapshot& s) const
 {
     s.samplerate = sr;
+    s.resonanzSucheAbHz = suchgrenzeHz();
     s.verarbeiteteSamples = samplesGesamt;
     s.nanErsetzt = nanErsetzt;
     s.gesamtSekunden = (double) samplesGesamt / sr;
@@ -1013,7 +1077,11 @@ void AnalyseEngine::findeResonanzen (MessSnapshot& s) const
     struct Roh { int band; double excess; };
     std::vector<Roh> kandidaten;
     for (int b = 1; b < kLtasBaender - 1; ++b)
-        if (excess[(size_t) b] >= kExcessSchwelleDb
+        // NAK-380 T-380-8: unter der Suchgrenze wird nicht gesucht - kein
+        // Kandidat mit Bandmitte darunter (ohne Grenze gar keiner; die Karte
+        // und der Leertext nennen die Grenze, `suchgrenzeSatz`).
+        if (zentrenHz[(size_t) b] >= s.resonanzSucheAbHz
+            && excess[(size_t) b] >= kExcessSchwelleDb
             && excess[(size_t) b] >= excess[(size_t) b - 1]
             && excess[(size_t) b] >= excess[(size_t) b + 1])
             kandidaten.push_back ({ b, excess[(size_t) b] });

@@ -12,12 +12,13 @@
   "quellen": [
     "eq-copilot/plugin/core/analysis/FeatureEngine.h",
     "eq-copilot/plugin/core/analysis/Konfidenz.h",
+    "eq-copilot/plugin/src/AnalyseEngine.h",
     "broker/src/coordinator/vergleichbarkeit.rs",
     "broker/src/coordinator/prepost.rs",
     "broker/src/coordinator/invalidierung.rs"
   ],
 
-  "aktuell": 20260928,
+  "aktuell": 20260929,
 
   "fassungen": {
     "20260823": {
@@ -758,6 +759,239 @@
           "einheit": "Analysefenster",
           "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
           "zweck": "M-06: wie viele Analysefenster hinter der Verteilung stehen muessen, damit eine Aussage `stark` sein kann."
+        }
+      },
+      "nicht_gefuehrt": {
+        "hinweis": "NORMFESTE Zahlen und Ressourcengrenzen, keine kalibrierbaren Schwellen. Sie zu aendern waere kein Kalibrierungsschritt, sondern ein Bruch mit der Norm beziehungsweise eine Speicherentscheidung - beides gehoert nicht in eine Metrikversion. Der Riegel prueft deshalb nur die eine Richtung: jede GEFUEHRTE Schwelle steht mit ihrem Wert im Code. Eine Vollstaendigkeitspruefung zwaenge jede neue Konstante ins Register und machte die Unterscheidung wertlos.",
+        "werte": [
+          "kLraMindestSekunden = 60 (EBU Tech 3342 / Entwurf §39.1: 'rund 60 s geeignetes Material')",
+          "kLraAbsGateLufs = -70 (EBU Tech 3342, absolutes Gate)",
+          "kLraRelGateLu = -20 (EBU Tech 3342, relatives Gate der LRA - NICHT die -10 LU der integrierten Lautheit)",
+          "kLraHopZellen = 1 (EBU Tech 3342 §3.1: mindestens 10 Hz Abtastung der Kurzzeitlautheit)",
+          "kEreignisPlaetze = 64, kVerteilungPlaetze = 64 (Ressourcengrenzen, §48.1 'feste Obergrenzen')",
+          "kWelchMindestFrames steht dagegen SEHR WOHL im Register: §40.1 nennt acht ausdruecklich als Startwert, nicht als Norm",
+          "GATE_SUCHRAUM_S = 2.0 und GATE_MINDESTCAPTURE_S = 6.0 (§38.2 nennt beide Zahlen als GRENZE des Verfahrens, nicht als Kalibrierung: 'Der maximale Suchraum beider Stufen ist auf +/-2 s begrenzt und benoetigt dafuer mindestens 6 s Capture')",
+          "GATE_UEBERLAPPUNG = 0.8 und GATE_AKTIVZEIT_DIFFERENZ = 0.1 (M-23 nennt beide woertlich als die drei Herabstufungsgruende des v3-Pfads - sie zu kalibrieren hiesse, die Matrixzeile zu aendern)",
+          "FEATURE_HOP_MS = 100 (die Framekadenz der Telemetrie, eine Vertragsgroesse)",
+          "Vergleichspegel::kMindestSekunden = 0.4 (Ressourcen- und Messgrenze, keine Kalibrierung)"
+        ]
+      }
+    },
+    "20260929": {
+      "seit": "NAK-380 Etappe 6",
+      "hinweis": "Die FFT-Laengen der FeatureEngine und der M1-Analyse folgen seit dieser Fassung einer festen Fensterdauer statt einer festen Samplezahl (NAK-380 R-380-5, T-380-7, E-380-12, 26.09.2026): N(fs) = 2^round(log2(T*fs)) mit der Dauer der 48-kHz-Laenge, gekappt auf [N(48 kHz), 65 536]; bei 44,1 und 48 kHz bleibt jede Laenge, bei 88,2/96 kHz verdoppelt, bei 176,4/192 kHz vervierfacht sie sich. Die Resonanzsuche der M1-Analyse beginnt an der Suchgrenze 17,30*fs/N_Bass (T-380-8), interpolierte LTAS-Baender tragen eine Validity-Maske (T-380-9). Gefuehrt sind die Obergrenze, die zwei 48-kHz-Basislaengen der FeatureEngine, die vier 48-kHz-Ordnungen der M1-Stufen und der Suchgrenzfaktor; alle Eintraege der Fassung 20260928 bleiben unveraendert.",
+      "schwellen": {
+        "kFlussP0Db": {
+          "wert": -100.0,
+          "einheit": "dBFS je Bin",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-47, T-380-5: P0, der absolute Bezugspegel im Logarithmus L = 10*log10(Binleistung + P0). Codebezug kFlussP0Db = -100.0. Liegt mindestens 34 dB ueber den Rauschboeden von 16-Bit-Dither, 24 Bit und float32 und 17 dB unter dem Binpegel von -50-dBFS-Weissrauschen."
+        },
+        "kFlussFilterCent": {
+          "wert": 125.0,
+          "einheit": "Cent",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-42, R-380-12 (i): halbe Breite des Maximumfilters ueber den Vorframe (SuperFlux Gl. 5), an die Hopzeit der Hauptstufe gebunden: ein Vibrato +-D Cent mit Rate f_v bewegt einen Teilton je Hop um hoechstens 2*D*sin(pi*f_v*T_hop) Cent, bei D = 50, f_v = 5,5 Hz 67,2 Cent (48 kHz) und 71,9 Cent (44,1 kHz), bei 7 Hz 80,7 und 85,3 Cent; Startwert ein Halbton (100 Cent), kalibriert am Korpus auf 125 Cent (Manifest NAK-380 §37: das Vibrato V1 traegt bei 100 Cent 4 Ereignisse in 30 s, ab 125 Cent keines), w_k = max(1, ceil(k*(2^(125/1200) - 1))) Bins. Codebezug kFlussFilterCent = 125.0."
+        },
+        "kFlussKappa": {
+          "wert": 3.0,
+          "einheit": "Vielfaches der MAD",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-44: kappa der relativen Schwelle med + kappa*MAD aus der echten MAD. Codebezug kFlussKappa = 3.0."
+        },
+        "kFlussRho": {
+          "wert": 1.0,
+          "einheit": "Faktor",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-46: rho des Rauschbodenbezugs, T_eff >= (1 + rho)*Median. Codebezug kFlussRho = 1.0."
+        },
+        "kFlussTminDbJeBin": {
+          "wert": 0.10,
+          "einheit": "dB je Detektor-Bin",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-45, T-380-5, R-380-12 (i): absolute Mindestschwelle T_min = Wert*K (K Detektor-Bins, bei 48 kHz 153,0 dB). Codebezug kFlussTminDbJeBin = 0.10. Startwert 0,05 dB je Bin (deckt stehende Toene mit Median und MAD nahe 0 und Aenderungen unter P0), kalibriert nach R-380-12 (i) auf die Obergrenze 0,10 dB (Manifest NAK-380 §37: bei 125 Cent halten Null- und Impulskorpus ab 0,095 dB je Bin); das Vibrato haelt das Maximumfilter (kFlussFilterCent), nicht diese Schwelle."
+        },
+        "kSperrzeitMs": {
+          "wert": 50.0,
+          "einheit": "ms",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-49: Sperrzeit, Mindestabstand zweier Ereignisse (SuperFlux combination_width). Codebezug kSperrzeitMs = 50.0."
+        },
+        "kPeakSteigungSchwelleDb": {
+          "wert": 12.0,
+          "einheit": "dB",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-86: ab welchem Anstieg des Rahmenpeaks gegenueber dem Vorrahmen der eigene Peakpfad des Ereignisdetektors ausloest. Ein Faktor 4 im Pegel; unter 6 dB liegt die normale Pegelschwankung zwischen zwei 100-ms-Rahmen."
+        },
+        "kPeakCrestSchwelleDb": {
+          "wert": 12.0,
+          "einheit": "dB",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-86: ab welchem Crest im Rahmen das Peak-Qualitaetsbit gilt. Dieselbe Zahl wie die Peaksteigung, aber eine andere Groesse - hier Peak gegen RMS INNERHALB eines Rahmens."
+        },
+        "kKohaerenzSchwellePhase": {
+          "wert": 0.8,
+          "einheit": "Kohaerenz in [0,1]",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-11: ab welcher Kohaerenz die Interchannel-Phase eines Bandes ueberhaupt ausgewertet wird (§40.1). Dieselbe Schwelle, die §38.3 fuer einen zulaessigen Transferwert nennt."
+        },
+        "kKonvergenzSpanneDb": {
+          "wert": 12.0,
+          "einheit": "dB",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-05: Spanne, ueber die aus der Medianabweichung der Bandhaelften eine Konvergenz in [0,1] wird."
+        },
+        "kKonfidenzAbdeckungStark": {
+          "wert": 0.8,
+          "einheit": "Abdeckung in [0,1]",
+          "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+          "zweck": "M-06: ab welcher gemessenen Signalabdeckung eine Aussage `stark` sein KANN, bevor die Deckel aus §34.3 greifen."
+        },
+        "kKonfidenzAbdeckungMittel": {
+          "wert": 0.5,
+          "einheit": "Abdeckung in [0,1]",
+          "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+          "zweck": "M-06: dieselbe Frage fuer `mittel`."
+        },
+        "GATE_ZEITUEBERDECKUNG": {
+          "wert": 0.95,
+          "einheit": "Ueberdeckung in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-29: Zeitueberdeckung fuer eine STARKE Vergleichbarkeit (§43.2: 95 %). Ausdruecklich ein Startwert, am Korpus zu kalibrieren."
+        },
+        "GATE_QUELLEN_JACCARD": {
+          "wert": 0.9,
+          "einheit": "Jaccard in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-29: Aktivquellen-Jaccard fuer eine starke Vergleichbarkeit (§43.2: 0,9)."
+        },
+        "GATE_MATERIAL_COSINE": {
+          "wert": 0.95,
+          "einheit": "Cosinus in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-29: Upstream-Feature-Cosine fuer eine starke Vergleichbarkeit (§43.2: 0,95)."
+        },
+        "GATE_ABDECKUNG": {
+          "wert": 0.5,
+          "einheit": "Abdeckung in [0,1]",
+          "datei": "broker/src/coordinator/vergleichbarkeit.rs",
+          "zweck": "M-30: ab welcher gemessenen Abdeckung eine Passage ueberhaupt einen Vergleich traegt. Eine Passage mit unzureichender Abdeckung erhaelt kein Siegerlabel."
+        },
+        "GATE_KORRELATIONSSPITZE": {
+          "wert": 0.5,
+          "einheit": "normierte Kreuzkorrelation in [-1,1]",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-16: ab welcher Korrelationsspitze ein Restlag ueberhaupt benannt wird. §38.2 nennt das Kriterium ('Korrelationsspitze und Peak-to-Sidelobe-Verhaeltnis ausreichend'), aber KEINE Zahl - also ein Startwert, kein Vertragswert."
+        },
+        "GATE_PEAK_TO_SIDELOBE": {
+          "wert": 2.0,
+          "einheit": "Verhaeltnis",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-16: wie deutlich die Spitze gegenueber dem besten Nebenmaximum sein muss. Ohne dieses Verhaeltnis genuegte ein flacher Korrelationsberg, dessen Maximum an einer beliebigen Stelle liegt."
+        },
+        "GATE_MATERIAL_GLEICH": {
+          "wert": 0.95,
+          "einheit": "Fingerprintaehnlichkeit in [0,1]",
+          "datei": "broker/src/coordinator/invalidierung.rs",
+          "zweck": "M-54: ab welcher Fingerprintaehnlichkeit dasselbe musikalische Material gilt. Derselbe Startwert wie GATE_MATERIAL_COSINE der Vergleichbarkeit - beide beantworten dieselbe Frage an denselben Verlauf, und zwei verschiedene Zahlen dafuer waeren zwei Wahrheiten ueber dasselbe Material."
+        },
+        "GATE_RELATIONSSCHWANKUNG_DB": {
+          "wert": 1.5,
+          "einheit": "dB Standardabweichung",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-18: ab welcher Schwankung der Bandrelation POST/PRE eine Kette als zeitvariabel markiert wird. §38.3 sagt 'inkonsistente Pegel- und Spektralrelationen', nennt aber keine Zahl. Der Wert liegt bewusst tief: eine LINEARE Kette haelt die Relation exakt konstant, ihre Streuung ist bis auf das 0,1-dB-Raster des Livepfads null - alles darueber ist keine Messstreuung, sondern Wirkung."
+        },
+        "kResonanzSucheFaktor": {
+          "wert": 17.30,
+          "einheit": "Vielfaches der Bassbinbreite",
+          "datei": "eq-copilot/plugin/src/AnalyseEngine.h",
+          "zweck": "NAK-380 M-106 bis M-108, T-380-8: Suchgrenze der Resonanzkarten = Faktor * fs/N_Bass. Die -6-dB-Breite des Hann-Hauptlappens (2 Bins) ist 1/6 Oktave (kBreiteMaxOktaven), wenn 2*Δf = f*(2^(1/12) - 2^(-1/12)), also f = 17,30*Δf: 50,69 Hz in der 48-kHz-, 46,57 Hz in der 44,1-kHz-Familie. Codebezug kResonanzSucheFaktor = 17.30."
+        }
+      },
+      "ganzzahlige_schwellen": {
+        "kFlussHistorie": {
+          "wert": 32,
+          "einheit": "aktive Hauptstufen-Frames",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-43/M-50: H, die Historie aus Median und echter MAD in aktiven Frames (1,37 s bei 48 kHz). Codebezug kFlussHistorie = 32."
+        },
+        "kWelchMindestFrames": {
+          "wert": 8,
+          "einheit": "Welch-Frames",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-11: wie viele gueltige ueberlappende Welch-Frames ein Band mindestens braucht, damit seine Kohaerenz einen Wert bekommt (§40.1 woertlich 'mindestens acht'). Aus EINEM Frame ist die Magnitude-Squared Coherence identisch 1, auch fuer Rauschen."
+        },
+        "kStereoRingHaupt": {
+          "wert": 3,
+          "einheit": "Evidenzfenster",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-82, M-84, T-380-6: W_H, die Laenge des Stereorings der Hauptstufe. Auto- und Kreuzspektren je Bin laufen ueber die letzten drei Evidenzfenster, bevor die Kohaerenz entsteht; bei 44,1 kHz und Bloecken bis 512 traegt ein 0,25-s-Fenster 6 bis 7 Hauptstufenframes, drei Fenster 19 bis 21 (Paragraph 40.1: mindestens acht). Codebezug kStereoRingHaupt = 3."
+        },
+        "kStereoRingBass": {
+          "wert": 7,
+          "einheit": "Evidenzfenster",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-83, M-84, T-380-6, NAK-177: W_B, die Laenge des Stereorings der Bassstufe (Hop 8192 Samples). Ein 0,25-s-Fenster traegt 1 bis 2 Bassframes, sieben Fenster bei 44,1 kHz mindestens 11; Baender unter 200 Hz tragen damit Kohaerenz. Codebezug kStereoRingBass = 7."
+        },
+        "kKorrelationKurzFrames": {
+          "wert": 8,
+          "einheit": "Welch-Frames",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "M-11: Laenge des KURZEN Korrelationsfensters, zugleich das Fenster, ueber dem die Persistenz gezaehlt wird."
+        },
+        "GATE_KONSISTENTE_SPUREN": {
+          "wert": 3,
+          "einheit": "Spuren",
+          "datei": "broker/src/coordinator/prepost.rs",
+          "zweck": "M-16: wie viele der bandbegrenzten Huellkurven und die Onsetfolge denselben Lag liefern muessen. §38.2 sagt 'mehrere Baender einen konsistenten Lag' - 'mehrere' ist ein Startwert, keine Norm."
+        },
+        "kKonfidenzFensterStark": {
+          "wert": 8,
+          "einheit": "Analysefenster",
+          "datei": "eq-copilot/plugin/core/analysis/Konfidenz.h",
+          "zweck": "M-06: wie viele Analysefenster hinter der Verteilung stehen muessen, damit eine Aussage `stark` sein kann."
+        },
+        "kFensterPunkteMax": {
+          "wert": 65536,
+          "einheit": "Punkte",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-98, M-100, T-380-7, E-380-12 (Variante A): Obergrenze der Fensterlaenge beider Stufen der FeatureEngine und der vier M1-Stufen. Bei 176,4 und 192 kHz traegt die Bassstufe genau diese Laenge; darueber haelt die Kappe den Speicher (Budget der FeatureEngine <= 9,3 MB je Rate bis 192 kHz). Codebezug kFensterPunkteMax = 65536."
+        },
+        "kBassBasisPunkte": {
+          "wert": 16384,
+          "einheit": "Punkte",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-98, T-380-7: Laenge der Bassstufe bei 48 kHz, zugleich Untergrenze und Dauerbasis (16 384/48 000 s = 341,3 ms); bei 44,1 kHz dieselbe Laenge (371,5 ms). Codebezug kBassBasisPunkte = 16384."
+        },
+        "kHauptBasisPunkte": {
+          "wert": 4096,
+          "einheit": "Punkte",
+          "datei": "eq-copilot/plugin/core/analysis/FeatureEngine.h",
+          "zweck": "NAK-380 M-98, T-380-7: Laenge der Hauptstufe bei 48 kHz, zugleich Untergrenze und Dauerbasis (85,3 ms); bei 44,1 kHz dieselbe Laenge (92,9 ms). Codebezug kHauptBasisPunkte = 4096."
+        },
+        "kM1OrdnungBass": {
+          "wert": 14,
+          "einheit": "log2 Punkte",
+          "datei": "eq-copilot/plugin/src/AnalyseEngine.h",
+          "zweck": "NAK-380 M-99, T-380-7: Ordnung der M1-Bassstufe bei 48 kHz (16 384 Punkte, 341,3 ms), Untergrenze und Dauerbasis der Laengenregel. Codebezug kM1OrdnungBass = 14."
+        },
+        "kM1OrdnungReferenz": {
+          "wert": 13,
+          "einheit": "log2 Punkte",
+          "datei": "eq-copilot/plugin/src/AnalyseEngine.h",
+          "zweck": "NAK-380 M-99, T-380-7: Ordnung der M1-Referenzstufe bei 48 kHz (8 192 Punkte, 170,7 ms, die analyze-track-Achse). Codebezug kM1OrdnungReferenz = 13."
+        },
+        "kM1OrdnungMitten": {
+          "wert": 12,
+          "einheit": "log2 Punkte",
+          "datei": "eq-copilot/plugin/src/AnalyseEngine.h",
+          "zweck": "NAK-380 M-99, T-380-7: Ordnung der M1-Mittenstufe bei 48 kHz (4 096 Punkte, 85,3 ms). Codebezug kM1OrdnungMitten = 12."
+        },
+        "kM1OrdnungHoehen": {
+          "wert": 11,
+          "einheit": "log2 Punkte",
+          "datei": "eq-copilot/plugin/src/AnalyseEngine.h",
+          "zweck": "NAK-380 M-99, T-380-7: Ordnung der M1-Hoehenstufe bei 48 kHz (2 048 Punkte, 42,7 ms). Codebezug kM1OrdnungHoehen = 11."
         }
       },
       "nicht_gefuehrt": {

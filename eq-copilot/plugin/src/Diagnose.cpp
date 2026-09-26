@@ -215,6 +215,10 @@ static Befund resonanzKarte (const MessSnapshot& m, const ResonanzKandidat& k)
             }
         }
     }
+    // NAK-380 T-380-8: jede Resonanzkarte nennt am Ende von `gemessen`, wo
+    // nicht gesucht wurde.
+    if (const auto satz = suchgrenzeSatz (m); satz.isNotEmpty())
+        b.gemessen += " " + satz;
     b.wirkung = dauerhaft
         ? u8 ("So ein Dauerton kann dröhnen oder klingeln und macht den Mix anstrengend — oft fällt er erst beim leisen Hören auf.")
         : u8 ("Ein Ton, der nur in Momenten hervorsticht, wirkt wie gelegentliches Dröhnen — dauerhaft absenken würde den Rest der Zeit Substanz kosten.");
@@ -516,6 +520,17 @@ juce::String diagnoseKnopfText (const std::vector<Befund>& befunde)
     if (n == 1)
         return u8 ("1 Auffälligkeit");
     return juce::String (n) + u8 (" Auffälligkeiten");
+}
+
+juce::String suchgrenzeSatz (const MessSnapshot& m)
+{
+    // NAK-380 T-380-8, Wortlaut §8.6: die Zahl ist die gerundete Suchgrenze,
+    // unter der `findeResonanzen` keinen Kandidaten meldet (48 kHz: 51 Hz,
+    // 44,1 kHz: 47 Hz). Ohne endliche Grenze kein Satz.
+    if (! std::isfinite (m.resonanzSucheAbHz) || m.resonanzSucheAbHz <= 0.0)
+        return {};
+    return u8 ("Unter ") + juce::String ((int) std::lround (m.resonanzSucheAbHz))
+         + u8 (" Hz wurde nicht nach Tönen gesucht – das Messfenster ist dort zu grob.");
 }
 
 } // namespace eqcop

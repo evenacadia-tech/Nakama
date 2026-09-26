@@ -1,0 +1,30 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-121 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: Audio unberührt, Etappe 6
+Zustand und Vorbedingung (§6.5, woertlich): Längen, Stufen und Masken entstehen in `vorbereiten` im Worker; A16 fährt 44,1/48/96/192 kHz
+Zusage (§6.5, woertlich): A1, A16 (bei allen vier Raten bitgleich, 0 Latenz) und B1 grün
+Test je Sprache (§6.5): A1, A16, B1, B4
+Rotbeweis-Spalte (§6.5, woertlich): Regressionswache wie M-20
+Etikett: Regressionswache (wie M-20)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    siehe Gegenprobe
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A1: 3 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:16:31 ENDE=08:16:31
+    A16: 11 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:16:30 ENDE=08:16:31
+    B1: 0 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:16:31 ENDE=08:16:32
+    B4: 6 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:16:32 ENDE=08:16:35
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: A1, A16 (bei allen vier Raten bitgleich, 0 Latenz) und B1 gruen; B4 zaehlt 0 Allokationen im Audiothread
+  Pruefzeile: B4 die Nullforderungen der Audiothread-Allokationen; A1, A16, B1 Exit
+  Mutation: m121-audio: std::vector<float> im processBlock (wie M-20)
+  rot: JA (4 000/2 000/2 000 Bloecke mit Allokationen, dazu der erste Block nach prepareToPlay)
+  Protokoll: NAK-380-e6-mutation-m121-audio.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m121-audio: faellt an der erwarteten Pruefung: JA; mit Mutation B4 voll 07:56:49 bis 07:56:52, Exit 1, 117 gruen, 4 rot
+      FEHLER  4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [4000]
+      FEHLER  2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und Interventionsring: 0 Allokationen  [2000]
+      FEHLER  M-72: 2 000 Bloecke, waehrend Intent, Schutz und Schritt laufen: 0 Allokationen im Audiothread  [4000]
+      mitgefallen 1; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B4 voll 07:56:58 bis 07:57:01, Exit 0, 121 gruen, 0 rot

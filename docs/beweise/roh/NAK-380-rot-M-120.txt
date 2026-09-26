@@ -1,0 +1,88 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-120 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Ratenwechsel im Lauf (starten↔stoppen)
+Zustand und Vorbedingung (§6.5, woertlich): FeatureEngine und AnalyseEngine: 30 s bei 48 kHz, dann `vorbereiten (96000)`, 30 s
+Zusage (§6.5, woertlich): neue Längen 32 768/8 192 (M1 32 768/16 384/8 192/4 096), kein Akku, Ring, Vorframe oder Histogramm der alten Rate überlebt (B5-Grenzfall „Sampleratewechsel“ erweitert), Allokation nur im Worker unter der Steuersperre
+Test je Sprache (§6.5): C++: B5 bestehend „Sampleratewechsel“, NEU `380/M-120 ratenwechsel_laengen`
+Rotbeweis-Spalte (§6.5, woertlich): zwei Hälften: Leeren Regressionswache (Mutation `zuruecksetzen` aus `vorbereiten` → Akkus überleben → rot); Längen heute rot (Mutation wie M-98)
+Etikett: Laengenhaelfte heute rot; Leeren Regressionswache
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-120 Laengenhaelfte heute rot: nach vorbereiten (96000) FeatureEngine 16 384/4 096 und M1 16 384/8 192/4 096/2 048, nach 1 s bei 96 kHz traegt Band 64 (ein Bin bei beiden Laengen) 10 Segmente der alten Laenge statt 4; Leerhaelfte gruen (Wache: Stufenringe, Akkus, Historie, Samplezaehler, M1-Stufen und Histogramme leer).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 16 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: neue Laengen 32 768/8 192 nach vorbereiten (96000)
+  Pruefzeile: B5 380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192
+  Mutation: m98-regel (Mutation wie M-98)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m98-regel.txt
+- Zusagesatz: M1 32 768/16 384/8 192/4 096 nach vorbereiten (96000)
+  Pruefzeile: B5 380/M-120 ...: M1 nach vorbereiten (96000)
+  Mutation: m120-m1laengen: Ordnungslambda ohne fensterPunkte (wie M-99)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m120-m1laengen.txt
+- Zusagesatz: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt
+  Pruefzeile: B5 380/M-120 ...: kein Akku, keine Historie, kein Samplezaehler
+  Mutation: m120-akku: zuruecksetzen aus FeatureEngine::vorbereiten (Matrixmutation)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m120-akku.txt
+- Zusagesatz: kein Stufenring der alten Rate ueberlebt (zwei Riegel)
+  Pruefzeile: B5 380/M-120 ...: kein Stufenring der alten Rate ueberlebt
+  Mutation: Doppelmutation m120-doppel (Neuanlage behaelt Ringe und Fuellstand UND zuruecksetzen entfernt); Gegenproben m120-akku und m120-neuanlage lassen sie gruen
+  rot: JA (gefuellt 14 592/2 304); Gegenproben gruen
+  Protokoll: NAK-380-e6-mutation-m120-doppel.txt, -m120-akku.txt, -m120-neuanlage.txt
+- Zusagesatz: M1: keine Stufe, kein Akku, kein Histogramm der alten Rate; danach nur Segmente der neuen Laenge
+  Pruefzeile: B5 380/M-120 ...: M1 - keine Stufe, kein Akku, kein Histogramm; M1 traegt nach dem Wechsel nur Segmente der neuen Rate
+  Mutation: m120-m1: zuruecksetzen aus AnalyseEngine::vorbereiten
+  rot: JA (Segmente 249 553, Histogramme 186 248; Band 64 178 statt 4 Segmente)
+  Protokoll: NAK-380-e6-mutation-m120-m1.txt
+- Zusagesatz: Allokation nur im Worker (B5-Grenzfall Sampleratewechsel erweitert): ein Block mit anderer Rate zieht nur die Grenze
+  Pruefzeile: B5 G7 Sampleratewechsel, Laengenhaelfte (zwei Pruefzeilen)
+  Mutation: m120-g7: vorbereiten (block.sampleRate) im nimmBlock bei Sampleratewechsel
+  rot: JA (38 Anforderungen, Laengen 32 768/8 192)
+  Protokoll: NAK-380-e6-mutation-m120-g7.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m98-regel: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-98, M-102, M-114, M-120 07:38:37 bis 07:38:39, Exit 1, 14 gruen, 15 rot
+      [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 185.76 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 46.44 ms (Soll 92.9)]
+      [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 170.67 ms (Soll 341.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 42.67 ms (Soll 85.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 92.88 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 23.22 ms (Soll 92.9)]
+      [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 85.33 ms (Soll 341.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 21.33 ms (Soll 85.3)]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (96.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 60, Gitterreferenz 25, Matrix 25]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (192.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 94, Gitterreferenz 25, Matrix 25]
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [156 von 221 gleich, erste Abweichung Band 0, Δf 2.9297 / 5.8594 Hz (N 16384 / 16384)]
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [65 von 221 gleich, erste Abweichung Band 65, Δf 11.7188 / 23.4375 Hz (N 4096 / 4096)]
+      [ROT]  380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 16384/8192, Haupt 4096/2048]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102, M-114, M-120 07:38:56 bis 07:38:58, Exit 0, 29 gruen, 0 rot
+  m120-m1laengen: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 08:08:06 bis 08:08:08, Exit 1, 6 gruen, 2 rot
+      [ROT]  380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [16384/8192/4096/2048]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 1; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 08:08:11 bis 08:08:13, Exit 0, 8 gruen, 0 rot
+  m120-akku: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 07:46:11 bis 07:46:12, Exit 1, 7 gruen, 1 rot
+      [ROT]  380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 196, verarbeitet 1440000, Historie 0]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 07:46:30 bis 07:46:32, Exit 0, 8 gruen, 0 rot
+      Deutung fuer M-120: JA fuer den Akku-Satz; zugleich Gegenprobe fuer den Stufenring (Neuanlage haelt ihn leer, Pflicht-Gruen JA).
+  m120-neuanlage: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-120 07:46:49 bis 07:46:50, Exit 0, 8 gruen, 0 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 07:47:10 bis 07:47:11, Exit 0, 8 gruen, 0 rot
+      Deutung fuer M-120: Gegenprobe fuer den Stufenring: ohne Neuanlage leert zuruecksetzen/Stufe::leeren weiter; Pflicht-Gruen JA, das NEIN ist erwartet.
+  m120-doppel: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 07:47:28 bis 07:47:30, Exit 1, 6 gruen, 2 rot
+      [ROT]  380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 14592/2304]
+      [ROT]  380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 196, verarbeitet 1440000, Historie 0]
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 07:47:48 bis 07:47:50, Exit 0, 8 gruen, 0 rot
+      Deutung fuer M-120: JA: beide Riegel zusammen lassen den Stufenring der alten Rate stehen.
+  m120-m1: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-120 07:47:53 bis 07:47:55, Exit 1, 6 gruen, 2 rot
+      [ROT]  380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt  [vorher belegt ja, Segmente 249553, Histogramme 186248]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 1; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-120 07:47:59 bis 07:48:00, Exit 0, 8 gruen, 0 rot
+  m120-g7: faellt an der erwarteten Pruefung: JA; mit Mutation B5 voll 07:48:20 bis 07:48:54, Exit 1, 366 gruen, 5 rot
+      [ROT]  G7 Sampleratewechsel, Laengenhaelfte: ein Block mit 96 kHz zieht die Grenze, allokiert nicht und laesst die Laengen 16 384/4 096 - der Audiopfad baut nichts um  [Grenzen +0, Anforderungen 38, Bass/Haupt 32768/8192]
+      mitgefallen 4; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 voll 07:49:11 bis 07:49:44, Exit 0, 371 gruen, 0 rot

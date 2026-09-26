@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m107-satz
+Satzfunktion suchgrenzeSatz liefert leer
+Datei: eq-copilot/plugin/src/Diagnose.cpp; SHA-256 vor der Mutation: 7A1AD58ED25121295A89A3D5B4CA139CECF3E2AD0727F4C874FF1E10087210CD; Sicherung eq-copilot/build/nak380-sicherung/e6/m107-satz/Diagnose.cpp
+Begruendung: Der Satz in M-107 kommt aus derselben Satzfunktion wie in M-106.
+Mutation 1: eq-copilot/plugin/src/Diagnose.cpp, suchgrenzeSatz, Anfang
+Wortlaut vorher:
+    juce::String suchgrenzeSatz (const MessSnapshot& m)
+    {
+Wortlaut nachher:
+    juce::String suchgrenzeSatz (const MessSnapshot& m)
+    {
+        return {};
+  Bau (mutation) EqCopGoldenTest: 08:06:43 bis 08:06:46, Exit 0
+  Binary EqCopGoldenTest 08:06:46.186 juenger als Quelle 08:06:43.544: ja
+
+== Matrixzeile M-107 (Satz wie M-106)
+Lauf mit Mutation: A2 --nak380 M-107 08:06:46 bis 08:06:48, Exit 1, 6 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      FEHLER [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz — 
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-107 kandidat_unter_suchgrenze K5 \(48 Hz bei 48 kHz\): der Satz nennt 51 Hz)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-107 kandidat_unter_suchgrenze K5 \(48 Hz bei 48 kHz\): keine Resonanzkarte': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot (48 Hz liegt unter 50,69 Hz)
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): genau eine Karte bei 60 Hz +-1/6 Oktave an jedem Snapshot (Trennschaerfe)
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/Diagnose.cpp, SHA-256 7A1AD58ED25121295A89A3D5B4CA139CECF3E2AD0727F4C874FF1E10087210CD: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 08:06:48 bis 08:06:50, Exit 0
+  Binary EqCopGoldenTest 08:06:50.904 juenger als Quelle 08:06:48.095: ja
+Lauf nach Ruecknahme: A2 --nak380 M-107 08:06:50 bis 08:06:52, Exit 0, 7 gruen, 0 rot

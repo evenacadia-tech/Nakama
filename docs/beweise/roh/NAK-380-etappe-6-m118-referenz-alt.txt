@@ -1,0 +1,88 @@
+NAK-380 Etappe 6, M-118 Klasse (ii): B30 festhalten_bytegleich gegen die ALTE Referenz, danach --erzeuge
+Datum 26.09.2026; Binary EqCopBriefkastenTest.exe 07:29:27 (Etappenstand, Bau bau-umbau-2 EXIT 0 07:29:39)
+
+1. Rotlauf am Etappenstand gegen die alte Referenz (SHA-256 D05639C42C013F12961282B281ECD4CEFD25D3C7772A5AD018F5304A6EBB1938, 35 550 Bytes):
+   [ROT] M-39 festhalten_bytegleich (Knopfweg gegen Referenz, created_utc maskiert) [Referenz 35550 Bytes, Knopfweg 34729 Bytes, Versuche 1, erste Abweichung bei Byte 52]
+   NAK-286 BRIEFKASTEN: 217 bestanden, 1 fehlgeschlagen
+   EXIT=1 START=07:30:00 ENDE=07:31:13
+
+2. EqCopBriefkastenTest.exe --erzeuge:
+   REFERENZ ERZEUGT: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\diagnose\festhalten-referenz.json
+     Bytes 34729, SHA-256 0f6db2b16730110841446a1dc47990584c3fc33bbd448f3794b5775fdccc6eb2
+     Versuche 1, Knopfwegdatei snapshot-20260926-073131-NAK286Referenz.json in C:\Users\phili\AppData\Local\Temp\nak313e7-346184-1-erzeuge\evenacadia\EQ-Copilot\snapshots, entfernt ja
+     zustand messbereit, resonanzen 2, befunde 3, konvergenz.gueltig 1
+   Zeilenenden neu: LF 1626, CRLF 0 (Index i/lf, attr -text, unveraendert)
+
+3. Felddiff alt gegen neu (refdiff.py, created_utc maskiert; Klassen null = Zahl wird null (M-109), satz = Text waechst um den Suchgrenzsatz (M-106), version (M-118), andere = Befund):
+   satz    $.befunde[0].gemessen: + "Unter 51 Hz wurde nicht nach Tönen gesucht – das Messfenster ist dort zu grob."
+   satz    $.befunde[1].gemessen: + "Unter 51 Hz wurde nicht nach Tönen gesucht – das Messfenster ist dort zu grob."
+   null    $.ltas.komposit_db[0]: -64.91303496103912 -> null
+   null    $.ltas.komposit_db[1]: -64.91303496103912 -> null
+   null    $.ltas.komposit_db[3]: -64.81699212906953 -> null
+   null    $.ltas.komposit_db[4]: -64.72302738024507 -> null
+   null    $.ltas.komposit_db[6]: -64.40293825670898 -> null
+   null    $.ltas.komposit_db[7]: -64.18621002458707 -> null
+   null    $.ltas.komposit_db[9]: -64.23973668377228 -> null
+   null    $.ltas.komposit_db[11]: -64.68737577130733 -> null
+   null    $.ltas.komposit_db[12]: -64.86552839641593 -> null
+   null    $.ltas.komposit_db[14]: -64.9275488622994 -> null
+   null    $.ltas.komposit_db[16]: -64.68344171795358 -> null
+   null    $.ltas.komposit_db[18]: -64.73640244859678 -> null
+   null    $.ltas.komposit_db[20]: -64.92896697949143 -> null
+   null    $.ltas.komposit_db[22]: -64.50339208889876 -> null
+   null    $.ltas.komposit_db[25]: -64.20967637110162 -> null
+   null    $.ltas.komposit_db[27]: -64.13276493281417 -> null
+   null    $.ltas.komposit_db[31]: -65.18444037633898 -> null
+   null    $.ltas.komposit_db[35]: -64.6027781641558 -> null
+   null    $.ltas.komposit_db[59]: -64.79317804226015 -> null
+   null    $.ltas.komposit_db[60]: -64.66741277642839 -> null
+   null    $.ltas.komposit_db[62]: -65.16319504469914 -> null
+   null    $.ltas.komposit_db[64]: -64.87077683898795 -> null
+   null    $.ltas.komposit_db[66]: -63.23037515632387 -> null
+   null    $.ltas.komposit_db[68]: -57.56702468272509 -> null
+   null    $.ltas.komposit_db[70]: -40.49303374076458 -> null
+   null    $.ltas.komposit_db[73]: -21.92243327176496 -> null
+   null    $.ltas.komposit_db[75]: -25.94086955642128 -> null
+   null    $.ltas.komposit_db[79]: -62.88205960866137 -> null
+   null    $.ltas.komposit_db[83]: -64.42123806799725 -> null
+   null    $.ltas.referenz_8192_db[0]: -64.49382855625679 -> null
+   null    $.ltas.referenz_8192_db[1]: -64.49382855625679 -> null
+   null    $.ltas.referenz_8192_db[2]: -64.49382855625679 -> null
+   null    $.ltas.referenz_8192_db[3]: -64.49382855625679 -> null
+   null    $.ltas.referenz_8192_db[4]: -64.49382855625679 -> null
+   null    $.ltas.referenz_8192_db[6]: -64.47914611938016 -> null
+   null    $.ltas.referenz_8192_db[7]: -64.46451315303969 -> null
+   null    $.ltas.referenz_8192_db[8]: -64.44992932498556 -> null
+   null    $.ltas.referenz_8192_db[9]: -64.43539430630403 -> null
+   null    $.ltas.referenz_8192_db[11]: -64.49900662302318 -> null
+   null    $.ltas.referenz_8192_db[12]: -64.57853567898239 -> null
+   null    $.ltas.referenz_8192_db[13]: -64.65954829988077 -> null
+   null    $.ltas.referenz_8192_db[14]: -64.74210088952 -> null
+   null    $.ltas.referenz_8192_db[16]: -64.81495582281067 -> null
+   null    $.ltas.referenz_8192_db[17]: -64.80368782632306 -> null
+   null    $.ltas.referenz_8192_db[18]: -64.79244898959888 -> null
+   null    $.ltas.referenz_8192_db[20]: -64.66982242867482 -> null
+   null    $.ltas.referenz_8192_db[21]: -64.56119270199432 -> null
+   null    $.ltas.referenz_8192_db[22]: -64.4552139481298 -> null
+   null    $.ltas.referenz_8192_db[24]: -64.29618602179352 -> null
+   null    $.ltas.referenz_8192_db[25]: -64.24131435395341 -> null
+   null    $.ltas.referenz_8192_db[27]: -64.26648253343554 -> null
+   null    $.ltas.referenz_8192_db[28]: -64.34731476206525 -> null
+   null    $.ltas.referenz_8192_db[30]: -64.60275340777844 -> null
+   null    $.ltas.referenz_8192_db[31]: -64.78301133130246 -> null
+   null    $.ltas.referenz_8192_db[33]: -64.85469998792213 -> null
+   null    $.ltas.referenz_8192_db[35]: -64.74236495354185 -> null
+   null    $.ltas.referenz_8192_db[36]: -64.74336911603987 -> null
+   null    $.ltas.referenz_8192_db[38]: -64.92565517999253 -> null
+   null    $.ltas.referenz_8192_db[40]: -65.017990249924 -> null
+   null    $.ltas.referenz_8192_db[42]: -64.92970830632895 -> null
+   null    $.ltas.referenz_8192_db[44]: -64.8047710088163 -> null
+   null    $.ltas.referenz_8192_db[46]: -64.74600575029515 -> null
+   null    $.ltas.referenz_8192_db[49]: -64.85292035839942 -> null
+   null    $.ltas.referenz_8192_db[51]: -64.82027663627598 -> null
+   null    $.ltas.referenz_8192_db[55]: -64.69053742800376 -> null
+   null    $.ltas.referenz_8192_db[59]: -64.66351083312672 -> null
+   version $.metrics_version: m4.2-2026-09-25 -> m4.3-2026-09-26
+   Summe: null 66, satz 2, version 1, andere 0
+
+Urteil: nur die drei erwarteten Klassen (29 komposit_db- und 37 referenz_8192_db-Baender null, Satz in beiden Resonanzkarten, metrics_version), keine andere Abweichung.

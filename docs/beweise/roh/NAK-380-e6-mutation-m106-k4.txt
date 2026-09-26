@@ -1,0 +1,39 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m106-k4
+Unterdrueckung unter der Suchgrenze entfernt UND Breitenkriterium abgeschaltet (wie m107-doppel)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m106-k4/AnalyseEngine.cpp
+Begruendung: K4 (45 Hz) liegt wie K5 unter der Suchgrenze; dieselben zwei Riegel tragen „keine Karte“ (Gegenproben in M-107).
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, findeResonanzen, Kandidatenbedingung
+Wortlaut vorher:
+            if (zentrenHz[(size_t) b] >= s.resonanzSucheAbHz
+                && excess[(size_t) b] >= kExcessSchwelleDb
+Wortlaut nachher:
+            if (excess[(size_t) b] >= kExcessSchwelleDb
+Mutation 2: eq-copilot/plugin/src/AnalyseEngine.cpp, findeResonanzen, Breitenkriterium
+Wortlaut vorher:
+            if (breite > kBreiteMaxOktaven)
+                continue;
+Wortlaut nachher:
+            if (false && breite > kBreiteMaxOktaven)
+                continue;
+  Bau (mutation) EqCopGoldenTest: 08:06:32 bis 08:06:35, Exit 0
+  Binary EqCopGoldenTest 08:06:35.682 juenger als Quelle 08:06:32.666: ja
+
+== Matrixzeile M-106 (keine Karte bei 45 Hz, K4)
+Lauf mit Mutation: A2 --nak380 M-106 08:06:35 bis 08:06:37, Exit 1, 7 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot — 0 von 61 ohne Karte
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-106 nicht_gesucht_satz K4 \(45 Hz bei 48 kHz\): keine Resonanzkarte)
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 7
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (48.0 kHz): die Satzfunktion nennt die gerundete Suchgrenze 51 Hz im Wortlaut aus §8.6
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (44.1 kHz): die Satzfunktion nennt die gerundete Suchgrenze 47 Hz im Wortlaut aus §8.6
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 K4: Vorbedingung k_selbstpruefung
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4: der Satz nennt 51 Hz
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 Karte 60 Hz: Vorbedingung k_selbstpruefung
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 08:06:37 bis 08:06:41, Exit 0
+  Binary EqCopGoldenTest 08:06:41.545 juenger als Quelle 08:06:37.811: ja
+Lauf nach Ruecknahme: A2 --nak380 M-106 08:06:41 bis 08:06:43, Exit 0, 8 gruen, 0 rot

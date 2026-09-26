@@ -1,0 +1,60 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m98-regel
+Laengenregel -> Konstante in FeatureEngine::vorbereiten
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m98-regel/FeatureEngine.h
+Begruendung: Die Laengen beider Stufen traegt allein der Aufruf fensterPunkte (kBassPunkte/kHauptPunkte, sr) in vorbereiten; mit den Konstanten gilt 16 384/4 096 bei jeder Rate (Basisstand).
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, FeatureEngine::vorbereiten, Stufenaufbau
+Wortlaut vorher:
+            bass.vorbereiten (fensterPunkte (kBassPunkte, sr), sr);
+            haupt.vorbereiten (fensterPunkte (kHauptPunkte, sr), sr);
+Wortlaut nachher:
+            bass.vorbereiten (kBassPunkte, sr);
+            haupt.vorbereiten (kHauptPunkte, sr);
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:38:19 bis 07:38:37, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:38:37.072 juenger als Quelle 07:38:19.984: ja
+
+== Matrixzeile M-98 (dazu M-102, M-114, M-120 Laengenhaelfte: Mutation wie M-98)
+Lauf mit Mutation: B5 --nak380 M-98, M-102, M-114, M-120 07:38:37 bis 07:38:39, Exit 1, 14 gruen, 15 rot
+Gefallene Pruefungen, die die Zusage tragen (13):
+    [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 185.76 ms (Soll 371.5)]
+    [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 46.44 ms (Soll 92.9)]
+    [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 170.67 ms (Soll 341.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 42.67 ms (Soll 85.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 92.88 ms (Soll 371.5)]
+    [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 23.22 ms (Soll 92.9)]
+    [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 85.33 ms (Soll 341.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 21.33 ms (Soll 85.3)]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (96.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 60, Gitterreferenz 25, Matrix 25]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (192.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 94, Gitterreferenz 25, Matrix 25]
+    [ROT]  380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [156 von 221 gleich, erste Abweichung Band 0, Δf 2.9297 / 5.8594 Hz (N 16384 / 16384)]
+    [ROT]  380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [65 von 221 gleich, erste Abweichung Band 65, Δf 11.7188 / 23.4375 Hz (N 4096 / 4096)]
+    [ROT]  380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 16384/8192, Haupt 4096/2048]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-98 laengentafel_featureengine \(88\.2 kHz | M-98 laengentafel_featureengine \(96\.0 kHz | M-98 laengentafel_featureengine \(176\.4 kHz | M-98 laengentafel_featureengine \(192\.0 kHz | M-102 baender_ohne_bin_je_rate \(96\.0 kHz | M-102 baender_ohne_bin_je_rate \(192\.0 kHz | M-114 zuordnung_96k_gleich_48k \(Bass\) | M-114 zuordnung_96k_gleich_48k \(Haupt\) | M-120 ratenwechsel_laengen: nach vorbereiten \(96000\) Bass/Haupt)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-98 laengentafel_featureengine \(44\.1 kHz': gruen 2, rot 0
+    Muster 'M-98 laengentafel_featureengine \(48\.0 kHz': gruen 2, rot 0
+    Muster 'M-102 baender_ohne_bin_je_rate \(48\.0 kHz': gruen 1, rot 0
+    Muster 'M-102 baender_ohne_bin_je_rate \(44\.1 kHz': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (2); Grund: dieselbe Laengenzusage an anderer Stelle (Speicher- und Folgepruefungen der Rate)
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (88.2 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 55, Gitterreferenz 22, Matrix 22]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (176.4 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 89, Gitterreferenz 22, Matrix 22]
+Unter derselben Mutation gruen gebliebene Pruefungen: 14
+    [ok]   380/M-98 laengentafel_featureengine (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 371.52 ms (Soll 371.5)]
+    [ok]   380/M-98 laengentafel_featureengine (44.1 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 4096, Matrix 4096), Hop 2048, FFT 4096/4096, Dauer 92.88 ms (Soll 92.9)]
+    [ok]   380/M-98 laengentafel_featureengine (48.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 341.33 ms (Soll 341.3)]
+    [ok]   380/M-98 laengentafel_featureengine (48.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 4096, Matrix 4096), Hop 2048, FFT 4096/4096, Dauer 85.33 ms (Soll 85.3)]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (44.1 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 22, Gitterreferenz 22, Matrix 22]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (48.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 25, Gitterreferenz 25, Matrix 25]
+    [ok]   380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten (kein Band ueber der Kappe)  [221 / 221]
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [32768/16384/8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt  [vorher belegt ja, Segmente 0, Histogramme 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge (floor((96 000 - 32 768)/16 384) + 1 = 4)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 4 Segmente (Soll 4)]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:38:39 bis 07:38:56, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:38:56.758 juenger als Quelle 07:38:39.476: ja
+Lauf nach Ruecknahme: B5 --nak380 M-98, M-102, M-114, M-120 07:38:56 bis 07:38:58, Exit 0, 29 gruen, 0 rot

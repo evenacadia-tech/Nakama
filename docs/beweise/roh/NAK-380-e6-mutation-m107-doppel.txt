@@ -1,0 +1,38 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m107-doppel
+Unterdrueckung unter der Suchgrenze entfernt UND Breitenkriterium abgeschaltet
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m107-doppel/AnalyseEngine.cpp
+Begruendung: Erst beide Riegel zusammen entfernt lassen die Karte bei 48 Hz entstehen (Gegenproben m107-suche, m107-breite).
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, findeResonanzen, Kandidatenbedingung
+Wortlaut vorher:
+            if (zentrenHz[(size_t) b] >= s.resonanzSucheAbHz
+                && excess[(size_t) b] >= kExcessSchwelleDb
+Wortlaut nachher:
+            if (excess[(size_t) b] >= kExcessSchwelleDb
+Mutation 2: eq-copilot/plugin/src/AnalyseEngine.cpp, findeResonanzen, Breitenkriterium
+Wortlaut vorher:
+            if (breite > kBreiteMaxOktaven)
+                continue;
+Wortlaut nachher:
+            if (false && breite > kBreiteMaxOktaven)
+                continue;
+  Bau (mutation) EqCopGoldenTest: 07:52:54 bis 07:52:57, Exit 0
+  Binary EqCopGoldenTest 07:52:57.730 juenger als Quelle 07:52:54.799: ja
+
+== Matrixzeile M-107 (Doppelmutation)
+Lauf mit Mutation: A2 --nak380 M-107 07:52:57 bis 07:52:59, Exit 1, 6 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      FEHLER [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot (48 Hz liegt unter 50,69 Hz) — 0 von 61 ohne Karte
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-107 kandidat_unter_suchgrenze K5 \(48 Hz bei 48 kHz\): keine Resonanzkarte)
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): genau eine Karte bei 60 Hz +-1/6 Oktave an jedem Snapshot (Trennschaerfe)
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 07:52:59 bis 07:53:03, Exit 0
+  Binary EqCopGoldenTest 07:53:03.351 juenger als Quelle 07:52:59.841: ja
+Lauf nach Ruecknahme: A2 --nak380 M-107 07:53:03 bis 07:53:05, Exit 0, 7 gruen, 0 rot

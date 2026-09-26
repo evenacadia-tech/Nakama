@@ -1,0 +1,26 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-110 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Validity im v2-Heartbeat
+Zustand und Vorbedingung (§6.5, woertlich): Gen 48 kHz nach einem Schwerlauf
+Zusage (§6.5, woertlich): `ltasKompositDb` trägt NaN (im JSON `null`, `PipeClient.cpp:196-197`) genau für die Bänder aus M-109; der Broker nimmt `null` an (`broker/src/protokoll.rs:157`, `:191`)
+Test je Sprache (§6.5): C++: B5 NEU `380/M-110 heartbeat_null_interpoliert` (Muster `AnalysisGoldenTestMain.cpp:2722`)
+Rotbeweis-Spalte (§6.5, woertlich): heute rot; Mutation wie M-109 → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-110 heute rot: ltasKompositDb 0 von 29 Maskenbaendern NaN.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 3 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: ltasKompositDb traegt NaN (JSON null) genau fuer die Baender aus M-109
+  Pruefzeile: B5 380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN genau fuer die Maskenbaender
+  Mutation: m110-maske: Maskenbedingung in messKompakt entfernt (Mutation wie M-109)
+  rot: JA (0 von 29 NaN)
+  Protokoll: NAK-380-e6-mutation-m110-maske.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m110-maske: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-110 07:39:48 bis 07:40:02, Exit 1, 2 gruen, 1 rot
+      [ROT]  380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [0 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-110 07:40:07 bis 07:40:21, Exit 0, 3 gruen, 0 rot

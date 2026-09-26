@@ -1,0 +1,32 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-112 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Zonen-Ticks deterministisch (Zeit ist Musikzeit)
+Zustand und Vorbedingung (§6.5, woertlich): AnalyseEngine 48 und 96 kHz, nach E-380-13 selbstgeprüftes rosa Rauschen −20 dBFS, genau 30 s vollständig aktive Samples; der Fall prüft vor der Tickassertion für jede Zone die Belegungs- und Pegelvoraussetzungen aus `AnalyseEngine.cpp:568-574`
+Zusage (§6.5, woertlich): je belegter Zone genau 30 Ticks bei beiden Raten: ein Tick je 10 Zellen à lround(0,1·fs) Samples (`AnalyseEngine.cpp:28,270,385-399`), also 300 aktive Zellen/10; die Tickzahlen sind zusätzlich ratengleich; A2 `pink-minus20` „Zonen-Ticks belegt ≥ 15“ bleibt
+Test je Sprache (§6.5): C++: A2 NEU `380/M-112 zonenticks_30_bei_48_und_96k`, bestehend `GoldenTestMain.cpp:507-520`
+Rotbeweis-Spalte (§6.5, woertlich): Regressionswache: Mutation Zellenlänge = Hop der Mittenstufe (2048/48 000 = 4096/96 000 = 42,67 ms) erzeugt bei 30 s 70 statt 30 vollständige Ticks je belegter Zone; die absolute Assertion fällt, obwohl die Ratengleichheit grün bliebe
+Etikett: Regressionswache (Abweichung: bei 96 kHz am Basisstand rot, Zonen 0 und 1 ohne Belegung)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-112 Abweichung von der Matrix (Regressionswache): bei 48 kHz 30 Ticks je Zone (gruen), bei 96 kHz Zonen 0 und 1 ohne Belegungsvoraussetzung und mit 0 Ticks (rot) - die Mittenstufe 4096 laesst bei 96 kHz 203 bis 374 Hz ohne Bin (Validierung Teil C), die Live-Kurve ist dort NaN. Die Zeile ist damit bei 96 kHz heute rot, bei 48 kHz Wache.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 24 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: je belegter Zone genau 30 Ticks in 30 s bei 48 und 96 kHz, ratengleich
+  Pruefzeile: A2 380/M-112 zonenticks_30_bei_48_und_96k (48.0 und 96.0 kHz): Zone n genau 30 Ticks
+  Mutation: m112-zelle: Zellenlaenge = Hop der Mittenstufe (Matrixmutation)
+  rot: JA (70 Ticks je Zone)
+  Protokoll: NAK-380-e6-mutation-m112-zelle.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m112-zelle: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-112 07:55:28 bis 07:55:31, Exit 1, 14 gruen, 10 rot
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10) — 70 Ticks
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-112 07:55:34 bis 07:55:37, Exit 0, 24 gruen, 0 rot

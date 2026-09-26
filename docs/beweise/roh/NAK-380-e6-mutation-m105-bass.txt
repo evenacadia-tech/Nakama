@@ -1,0 +1,32 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m105-bass
+M1-Bassstufe fest 16 384 Punkte (Ordnung 14 ohne Laengenregel)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m105-bass/AnalyseEngine.cpp
+Begruendung: Die Karte bei 60 Hz und 192 kHz traegt die Bassstufe mit 65 536 Punkten; mit 16 384 fehlt die Aufloesung (und die Suchgrenze 17,30*fs/N_Bass stiege auf 202,7 Hz).
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, AnalyseEngine::vorbereiten, Bassstufe
+Wortlaut vorher:
+        bass.init (ordnung (kM1OrdnungBass), sr, kantenLoHz, kantenHiHz);
+Wortlaut nachher:
+        bass.init (kM1OrdnungBass, sr, kantenLoHz, kantenHiHz);
+  Bau (mutation) EqCopGoldenTest: 07:51:27 bis 07:51:30, Exit 0
+  Binary EqCopGoldenTest 07:51:30.388 juenger als Quelle 07:51:27.510: ja
+
+== Matrixzeile M-105
+Lauf mit Mutation: A2 --nak380 M-105 07:51:30 bis 07:51:34, Exit 1, 3 gruen, 3 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-105 resonanz_60hz_192k K3: Vorbedingung': gruen 3, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (2)
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: die Karte liegt bei 60 Hz +-1/6 Oktave an jedem Snapshot — 0 von 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: und sie ist dauerhaft an jedem Snapshot — 0 von 61
+Unter derselben Mutation gruen gebliebene Pruefungen: 3
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopGoldenTest: 07:51:34 bis 07:51:37, Exit 0
+  Binary EqCopGoldenTest 07:51:37.569 juenger als Quelle 07:51:34.234: ja
+Lauf nach Ruecknahme: A2 --nak380 M-105 07:51:37 bis 07:51:41, Exit 0, 6 gruen, 0 rot

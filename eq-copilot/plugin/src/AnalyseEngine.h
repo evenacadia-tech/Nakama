@@ -57,7 +57,30 @@ namespace eqcop
 // Mindestpegel — ohne ihn zaehlte die Haerte-Zone „50 % jenseits" auf einem
 // Track mit 0,24 % Energie ueber 2 kHz (Schulterlinie fiel steil, die Live-EMA
 // hielt nur Teppich; die Karten schwiegen korrekt, aber die Zahl log).
-inline constexpr const char* kMetricsVersion = "m4.2-2026-09-25";
+// m4.3 (NAK-380 Etappe 6, DSP-20, 26.09.2026): die vier Welch-Stufen folgen
+// einer festen Fensterdauer statt einer festen Samplezahl (T-380-7; bei 44,1
+// und 48 kHz unveraendert), die Resonanzsuche beginnt an der Suchgrenze
+// `resonanzSucheAbHz` (T-380-8), interpolierte LTAS-Baender tragen eine
+// Validity-Maske (T-380-9).
+inline constexpr const char* kMetricsVersion = "m4.3-2026-09-26";
+
+// NAK-380 Etappe 6 (T-380-7, R-380-5, E-380-12): die Ordnungen der vier
+// Welch-Stufen bei 48 kHz (und 44,1 kHz), zugleich Untergrenze und Dauerbasis
+// der Laengenregel `nakama::analyse::fensterPunkte` (FeatureEngine.h, Kappe
+// kFensterPunkteMax = 65 536): Bass 16 384 (341,3 ms bei 48 kHz), Referenz
+// 8 192 (170,7 ms, die analyze-track-Achse bei 48 kHz), Mitten 4 096
+// (85,3 ms), Hoehen 2 048 (42,7 ms). Gefuehrt in `metriken-v1.json`.
+inline constexpr int kM1OrdnungBass     = 14;
+inline constexpr int kM1OrdnungReferenz = 13;
+inline constexpr int kM1OrdnungMitten   = 12;
+inline constexpr int kM1OrdnungHoehen   = 11;
+// T-380-8: die Suchgrenze der Resonanzkarten ist kResonanzSucheFaktor mal der
+// Binbreite der Bassstufe, fs/N_Bass. Herleitung: die -6-dB-Breite des
+// Hann-Hauptlappens ist 2 Bins; sie ist 1/6 Oktave (`kBreiteMaxOktaven`),
+// wenn 2*Δf = f*(2^(1/12) - 2^(-1/12)), also f = 17,30*Δf. Darunter kann die
+// Karte eine schmale Spitze nicht von ihrer Umgebung trennen: 50,69 Hz in der
+// 48-kHz-, 46,57 Hz in der 44,1-kHz-Familie.
+inline constexpr double kResonanzSucheFaktor = 17.30;
 
 // 1/24-Okt-Raster der LTAS — identisch zu analyze-track.py _log_spectrum():
 // edges = 30·2^(k/24), centers = √(edge·edge), 221 Bänder bis <18 kHz.
@@ -65,6 +88,8 @@ inline constexpr int    kLtasBpo  = 24;
 inline constexpr double kLtasFmin = 30.0;
 inline constexpr double kLtasFmax = 18000.0;
 inline constexpr int    kLtasBaender = 221;
+// T-380-9: eine Validity-Maske je LTAS-Kurve, ein Bit je Band (28 B).
+inline constexpr int    kLtasMaskenBytes = (kLtasBaender + 7) / 8;
 
 enum class MessZustand { keineDaten, sammelt, messbereit };
 enum class AbdeckungsKlasse { nichtMessbar, eingeschraenkt, belastbar };
@@ -92,6 +117,11 @@ struct MessSnapshot
     double aktivSekunden = 0.0;
     double gesamtSekunden = 0.0;
     double samplerate = 0.0;
+    // NAK-380 Etappe 6 (T-380-8): unter dieser Frequenz wurde nicht nach
+    // Toenen gesucht (kResonanzSucheFaktor * fs/N_Bass, ein Zustand der Engine
+    // aus `vorbereiten`); NaN ohne vorbereitete Rate. Reist nicht in Datei und
+    // Heartbeat (kein Vertragsfeld, B-4); der Satz steht in den Texten.
+    double resonanzSucheAbHz = std::numeric_limits<double>::quiet_NaN();
 
     // Loudness/Dynamik — lufsGueltig=false heißt: kein Block über dem
     // absoluten Gate (Referenz-JSON kodiert das als null, nie als Zahl).
@@ -123,6 +153,15 @@ struct MessSnapshot
     std::array<double, kLtasBaender> ltasReferenzDb {};   // reine 8192er-Achse
     std::array<double, kLtasBaender> ltasLiveDb {};       // 3-s-EMA (§5.10.1 Anzeige)
     bool ltasGueltig = false;
+    // NAK-380 Etappe 6 (T-380-9): Validity der interpolierten LTAS-Baender je
+    // Kurve, Bit b in Byte b/8, Bit b%8, Fuellbits 0. Gesetzt fuer jedes Band,
+    // dessen Wert aus einer Lueckenfuellung oder Randklemmung stammt oder aus
+    // einer Naht, in die ein solcher Wert mit Gewicht > 0 eingeht. Die Werte
+    // oben bleiben (Diagnose, Resonanzsuche, Konvergenz und Editor lesen sie
+    // unveraendert); nur die Schreiber - Festhalten-Datei und Briefkasten
+    // (`snapshotObjekt`), v2-Heartbeat (`messKompakt`) - schreiben dort `null`.
+    std::array<std::uint8_t, kLtasMaskenBytes> ltasKompositInterpoliert {};
+    std::array<std::uint8_t, kLtasMaskenBytes> ltasReferenzInterpoliert {};
 
     std::vector<DrittelOktavAbdeckung> abdeckung;
     std::vector<ResonanzKandidat> resonanzen;   // nur Bänder mit Klasse belastbar
@@ -166,6 +205,14 @@ struct MessSnapshot
     // durch Stille ersetzt hat (das Audio bleibt unberührt — Passthrough).
     juce::uint64 nanErsetzt = 0;
 };
+
+/** NAK-380 T-380-9: traegt Band `band` in der Maske das Validity-Bit
+    „interpoliert“? Ausserhalb [0, kLtasBaender) nie. */
+inline bool ltasBandInterpoliert (const std::array<std::uint8_t, kLtasMaskenBytes>& maske, int band) noexcept
+{
+    return band >= 0 && band < kLtasBaender
+        && (maske[(std::size_t) (band / 8)] & (std::uint8_t) (1u << (band % 8))) != 0;
+}
 
 /** Worker-seitige Sicht auf den fixed-memory-LoudnessAccumulator fuer P2.
     Ein Paar ist bereits auf die wire-faehigen float-Werte begrenzt. Ohne
@@ -272,6 +319,8 @@ private:
     // Live-Kurve, True Peak, Crest, Kurz-LUFS — EINE Quelle, damit der
     // 20-Hz-Pfad nie von der 250-ms-Auswertung abweichen kann.
     void fuelleBasis (MessSnapshot&) const;
+    // NAK-380 T-380-8: kResonanzSucheFaktor * fs/N_Bass, NaN ohne Rate.
+    double suchgrenzeHz() const noexcept;
     void finalisiereLtas (MessSnapshot&) const;
     void finalisiereLoudness (MessSnapshot&) const;
     void finalisiereSkalar (MessSnapshot&) const;

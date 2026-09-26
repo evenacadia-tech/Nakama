@@ -1,0 +1,47 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m100-kappe
+Obergrenze kFensterPunkteMax in fensterPunkte aufgehoben, 384 kHz vorbereitet
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m100-kappe/FeatureEngine.h
+Begruendung: Die Kappe auf N_max = 65 536 traegt allein die Zeile in fensterPunkte; ohne sie ergibt 384 kHz 131 072 Punkte in der Bassstufe (FeatureEngine) und in der M1-Bassstufe.
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, fensterPunkte, Kappe
+Wortlaut vorher:
+        if (n > (double) kFensterPunkteMax)
+            n = (double) kFensterPunkteMax;
+    
+Wortlaut nachher:
+    
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:38:58 bis 07:39:17, Exit 0
+  Bau (mutation) EqCopGoldenTest: 07:39:17 bis 07:39:22, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:39:17.414 juenger als Quelle 07:38:58.837: ja
+  Binary EqCopGoldenTest 07:39:22.059 juenger als Quelle 07:38:58.837: ja
+
+== Matrixzeile M-100 (dazu M-101: Mutation wie M-100)
+Lauf mit Mutation: B5 --nak380 M-100; A2 --nak380 M-101 07:39:22 bis 07:39:22, Exit 1, 12 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt - Bassstufe N_max = 65 536, Nutzdaten 7 210 736 B, kein Absturz  [Bass 14419696 B Nutzdaten (Soll 14419696, N 131072), gesamt 14420437 B bei 21 Anforderungen, davon 19 ab 4 KiB]
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt - Stufen 65 536/65 536/32 768/16 384, 4 325 408 B — Stufen 131072/65536/32768/16384, 5898272 B
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-100 speicher_featureengine \(384,0 kHz | M-101 speicher_m1 \(384 kHz\))
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-100 speicher_featureengine \(192\.0 kHz': gruen 2, rot 0
+    Muster 'M-101 speicher_m1 \(192\.0 kHz\)': gruen 0, rot 0
+Erwartet gruen geblieben: NEIN
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 12
+    [ok]   380/M-100 speicher_featureengine (44.1 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ok]   380/M-100 speicher_featureengine (44.1 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2522234 B = Stufen 2257834 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (48.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ok]   380/M-100 speicher_featureengine (48.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2501546 B = Stufen 2257834 + Stereoring 217792 + Detektor 25920]
+    [ok]   380/M-100 speicher_featureengine (88.2 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 3606256 B Nutzdaten (Soll 3606256, N 32768), gesamt 3606997 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 902896 B Nutzdaten (Soll 902896, N 8192), gesamt 903637 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 4505600 B]
+    [ok]   380/M-100 speicher_featureengine (88.2 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [4775034 B = Stufen 4510634 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (96.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 3606256 B Nutzdaten (Soll 3606256, N 32768), gesamt 3606997 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 902896 B Nutzdaten (Soll 902896, N 8192), gesamt 903637 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 4505600 B]
+    [ok]   380/M-100 speicher_featureengine (96.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [4754346 B = Stufen 4510634 + Stereoring 217792 + Detektor 25920]
+    [ok]   380/M-100 speicher_featureengine (176.4 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 7210736 B Nutzdaten (Soll 7210736, N 65536), gesamt 7211477 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 9011200 B]
+    [ok]   380/M-100 speicher_featureengine (176.4 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [9280634 B = Stufen 9016234 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (192.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 7210736 B Nutzdaten (Soll 7210736, N 65536), gesamt 7211477 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 9011200 B]
+    [ok]   380/M-100 speicher_featureengine (192.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [9259946 B = Stufen 9016234 + Stereoring 217792 + Detektor 25920]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:39:22 bis 07:39:39, Exit 0
+  Bau (ruecknahme) EqCopGoldenTest: 07:39:39 bis 07:39:42, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:39:39.180 juenger als Quelle 07:39:22.432: ja
+  Binary EqCopGoldenTest 07:39:42.268 juenger als Quelle 07:39:22.432: ja
+Lauf nach Ruecknahme: B5 --nak380 M-100; A2 --nak380 M-101 07:39:42 bis 07:39:42, Exit 0, 13 gruen, 0 rot

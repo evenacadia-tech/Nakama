@@ -2307,9 +2307,12 @@ def pruefe_metrikregister(lauf: Lauf) -> None:
     register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
 
     kern = WURZEL / "eq-copilot/plugin/core/analysis"
+    # NAK-380 Etappe 6 (M-118): die Ordnungen der M1-Stufen und der
+    # Suchgrenzfaktor stehen als `inline constexpr` in AnalyseEngine.h.
     konstanten = _konstanten_aus_kern([
         kern / "FeatureEngine.h",
         kern / "Konfidenz.h",
+        WURZEL / "eq-copilot/plugin/src/AnalyseEngine.h",
         WURZEL / "broker/src/coordinator/vergleichbarkeit.rs",
         WURZEL / "broker/src/coordinator/prepost.rs",
         WURZEL / "broker/src/coordinator/invalidierung.rs",
@@ -2746,26 +2749,13 @@ def pruefe_nak380_etappe_5(lauf: Lauf, schema: dict, nur: str | None = None) -> 
         fassungen = register.get("fassungen", {})
         neu = fassungen.get(NAK380_E5_FASSUNG, {})
         alt = fassungen.get(NAK380_E4_FASSUNG, {})
-        feature = (WURZEL / "eq-copilot/plugin/core/analysis/FeatureEngine.h").read_text(
-            encoding="utf-8")
-        # Die vier Versionsstellen einzeln (R-380-7, T-380-10).
-        versions_treffer = re.search(r"kFeatureMetricsVersion\s*=\s*(\d+)u", feature)
+        # Seit NAK-380 Etappe 6 ist 20260928 nicht mehr `aktuell`: die vier
+        # Versionsstellen (FeatureEngine, beide METRICS_VERSION, `aktuell`)
+        # prueft nak380_m118_fassung_etappe_6; hier bleibt der Fassungsinhalt
+        # 20260928 geprueft (Muster Etappe 5 fuer nak380_m70).
         lauf.wahr(
-            f"nak380_m96_fassung_etappe_5: FeatureEngine nennt {NAK380_E5_FASSUNG}",
-            versions_treffer is not None and versions_treffer.group(1) == NAK380_E5_FASSUNG,
-            versions_treffer.group(1) if versions_treffer else "fehlt",
-        )
-        for rust_datei in ("vergleichbarkeit.rs", "prepost.rs"):
-            rust = _konstanten_aus_kern([WURZEL / "broker/src/coordinator" / rust_datei])
-            rust_version = rust.get("METRICS_VERSION", ("", ""))[0]
-            lauf.wahr(
-                f"nak380_m96_fassung_etappe_5: {rust_datei} nennt {NAK380_E5_FASSUNG}",
-                rust_version == NAK380_E5_FASSUNG,
-                repr(rust_version),
-            )
-        lauf.wahr(
-            f"nak380_m96_fassung_etappe_5: aktuell ist {NAK380_E5_FASSUNG}",
-            str(register.get("aktuell")) == NAK380_E5_FASSUNG,
+            f"nak380_m96_fassung_etappe_5: Fassung {NAK380_E5_FASSUNG} bleibt registriert",
+            bool(neu),
             f"aktuell={register.get('aktuell')!r}",
         )
         lauf.wahr(
@@ -2841,6 +2831,116 @@ def pruefe_nak380_etappe_5(lauf: Lauf, schema: dict, nur: str | None = None) -> 
             "nak380_m96_fassung_etappe_5: die Fassung fuehrt Schwellen",
             gefuehrt >= 8,
             f"{gefuehrt} Eintraege",
+        )
+
+
+NAK380_E6_FASSUNG = "20260929"
+NAK380_E6_M1_VERSION = "m4.3-2026-09-26"
+# Die neuen gefuehrten Groessen der Fassung 20260929 (T-380-7, T-380-8,
+# E-380-12, M-118): Name -> (Block im Register, geltender Wert, Codedatei).
+# Jede ist eine `inline constexpr`-Konstante auf Namensraumebene und traegt im
+# Register den Codebezug `kName = Wert`; jede wird einzeln an ihrer Codestelle
+# geprueft (Lehre D4 aus §31: jedes Paar, nicht nur das erste).
+NAK380_E6_SCHWELLEN = {
+    "kFensterPunkteMax": ("ganzzahlige_schwellen", 65536, "FeatureEngine.h"),
+    "kBassBasisPunkte": ("ganzzahlige_schwellen", 16384, "FeatureEngine.h"),
+    "kHauptBasisPunkte": ("ganzzahlige_schwellen", 4096, "FeatureEngine.h"),
+    "kM1OrdnungBass": ("ganzzahlige_schwellen", 14, "AnalyseEngine.h"),
+    "kM1OrdnungReferenz": ("ganzzahlige_schwellen", 13, "AnalyseEngine.h"),
+    "kM1OrdnungMitten": ("ganzzahlige_schwellen", 12, "AnalyseEngine.h"),
+    "kM1OrdnungHoehen": ("ganzzahlige_schwellen", 11, "AnalyseEngine.h"),
+    "kResonanzSucheFaktor": ("schwellen", 17.30, "AnalyseEngine.h"),
+}
+
+
+def pruefe_nak380_etappe_6(lauf: Lauf, nur: str | None = None) -> None:
+    """NAK-380 M-118: Fassung Etappe 6 (Fensterdauer statt Samplezahl, DSP-20)."""
+    if nur not in (None, "M-118"):
+        return
+    register = json_laden_strikt(METRIKEN.read_text(encoding="utf-8"))
+    fassungen = register.get("fassungen", {})
+    neu = fassungen.get(NAK380_E6_FASSUNG, {})
+    alt = fassungen.get(NAK380_E5_FASSUNG, {})
+    feature = (WURZEL / "eq-copilot/plugin/core/analysis/FeatureEngine.h").read_text(encoding="utf-8")
+    analyse_h = (WURZEL / "eq-copilot/plugin/src/AnalyseEngine.h").read_text(encoding="utf-8")
+    # Die vier Versionsstellen einzeln (R-380-7, T-380-10), dazu die M1-Fassung.
+    versions_treffer = re.search(r"kFeatureMetricsVersion\s*=\s*(\d+)u", feature)
+    lauf.wahr(
+        f"nak380_m118_fassung_etappe_6: FeatureEngine nennt {NAK380_E6_FASSUNG}",
+        versions_treffer is not None and versions_treffer.group(1) == NAK380_E6_FASSUNG,
+        versions_treffer.group(1) if versions_treffer else "fehlt",
+    )
+    for rust_datei in ("vergleichbarkeit.rs", "prepost.rs"):
+        rust = _konstanten_aus_kern([WURZEL / "broker/src/coordinator" / rust_datei])
+        rust_version = rust.get("METRICS_VERSION", ("", ""))[0]
+        lauf.wahr(
+            f"nak380_m118_fassung_etappe_6: {rust_datei} nennt {NAK380_E6_FASSUNG}",
+            rust_version == NAK380_E6_FASSUNG,
+            repr(rust_version),
+        )
+    lauf.wahr(
+        f"nak380_m118_fassung_etappe_6: aktuell ist {NAK380_E6_FASSUNG}",
+        str(register.get("aktuell")) == NAK380_E6_FASSUNG,
+        f"aktuell={register.get('aktuell')!r}",
+    )
+    m1 = re.search(r'kMetricsVersion\s*=\s*"([^"]+)"', analyse_h)
+    lauf.wahr(
+        f"nak380_m118_fassung_etappe_6: kMetricsVersion ist {NAK380_E6_M1_VERSION}",
+        m1 is not None and m1.group(1) == NAK380_E6_M1_VERSION,
+        m1.group(1) if m1 else "fehlt",
+    )
+    lauf.wahr(
+        "nak380_m118_fassung_etappe_6: seit nennt NAK-380 Etappe 6, der Hinweis den 26.09.2026",
+        neu.get("seit") == "NAK-380 Etappe 6" and "26.09.2026" in str(neu.get("hinweis", "")),
+        repr(neu.get("seit")),
+    )
+    # Die Eintraege der Fassung 20260928 sind unveraendert uebernommen (auch
+    # die Konfidenzschwellen, Detektorschwellen und Ringlaengen); neu sind
+    # genau die acht Groessen der Etappe.
+    abweichend = []
+    for block in ("schwellen", "ganzzahlige_schwellen"):
+        for name, feld in alt.get(block, {}).items():
+            if neu.get(block, {}).get(name) != feld:
+                abweichend.append(f"{block}/{name}")
+        for name in neu.get(block, {}):
+            if name not in alt.get(block, {}) and NAK380_E6_SCHWELLEN.get(name, ("",))[0] != block:
+                abweichend.append(f"{block}/{name} (nicht erwartet)")
+    if neu.get("nicht_gefuehrt") != alt.get("nicht_gefuehrt"):
+        abweichend.append("nicht_gefuehrt")
+    lauf.wahr(
+        f"nak380_m118_fassung_etappe_6: Eintraege der Fassung {NAK380_E5_FASSUNG} unveraendert "
+        "uebernommen, neu nur die acht Groessen der Etappe",
+        bool(neu) and bool(alt) and not abweichend,
+        ", ".join(abweichend),
+    )
+    # Jede neue gefuehrte Groesse einzeln an ihrer Codestelle: Code, Register
+    # und geltender Wert gleich, Datei gleich, Codebezug `kName = Wert` im Zweck.
+    index = _kern_konstantenindex(
+        sorted((WURZEL / "eq-copilot/plugin/core/analysis").rglob("*.h"))
+        + [WURZEL / "eq-copilot/plugin/src/AnalyseEngine.h"])
+    for name, (block, geltend, datei_soll) in NAK380_E6_SCHWELLEN.items():
+        feld = neu.get(block, {}).get(name, {})
+        fundstellen = index.get(name, [])
+        if not feld:
+            gleich, befund = False, f"nicht im Block {block} der Fassung"
+        elif len(fundstellen) != 1:
+            gleich, befund = False, f"{len(fundstellen)} Codefunde"
+        else:
+            roh, datei = fundstellen[0]
+            ist = _cpp_zahl(roh)
+            soll = feld.get("wert")
+            wert_text = f"{geltend:.2f}" if isinstance(geltend, float) else str(geltend)
+            gleich = (ist is not None and isinstance(soll, (int, float))
+                      and ist == float(soll) == float(geltend)
+                      and datei == datei_soll
+                      and str(feld.get("datei", "")).endswith(datei_soll)
+                      and f"{name} = {wert_text}" in str(feld.get("zweck", "")))
+            befund = (f"Code {roh} ({datei}), Register {soll!r} ({feld.get('datei')!r}), "
+                      f"geltend {geltend!r}")
+        lauf.wahr(
+            f"nak380_m118_fassung_etappe_6: {name} = {geltend!r} steht mit dem Registerwert in {datei_soll}",
+            gleich,
+            befund,
         )
 
 
@@ -2959,6 +3059,7 @@ def main(argv: list[str]) -> int:
         pruefe_nak380_etappe_3(lauf, argv[1])
         pruefe_nak380_etappe_4(lauf, schema, argv[1])
         pruefe_nak380_etappe_5(lauf, schema, argv[1])
+        pruefe_nak380_etappe_6(lauf, argv[1])
         print(f"Pruefungen: {lauf.ok} bestanden, {len(lauf.fehler)} gescheitert")
         for f in lauf.fehler:
             print(f"  ROT: {f}")
@@ -2984,6 +3085,7 @@ def main(argv: list[str]) -> int:
     pruefe_nak380_etappe_3(lauf)
     pruefe_nak380_etappe_4(lauf, schema)
     pruefe_nak380_etappe_5(lauf, schema)
+    pruefe_nak380_etappe_6(lauf)
     pruefe_comparability_schwellen(lauf)
     pruefe_experiment_belegung(lauf, schema, reserviert)
 

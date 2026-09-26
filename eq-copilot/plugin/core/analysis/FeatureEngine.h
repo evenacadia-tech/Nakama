@@ -33,6 +33,8 @@
 // einzigen Bin und ist schlicht nicht messbar.  Deshalb zwei Stufen: 16384 fuer
 // alles unter 200 Hz, 4096 darueber (dieselbe Aufteilung wie in `AnalyseEngine`,
 // nur ohne deren zwei Zusatzstufen, die der `analyze-track`-Achse dienen).
+// Seit NAK-380 Etappe 6 (T-380-7) gelten diese Laengen fuer 44,1 und 48 kHz;
+// bei anderen Raten bleibt die FENSTERDAUER, die Laenge folgt `fensterPunkte`.
 //
 // 🔑 Das ist nicht nur Genauigkeit, es ist die eigentliche BEWEISFLAECHE dieses
 // Tickets.  Zwei Stufen heissen zwei GLEICHZEITIG OFFENE Fenster mit
@@ -86,7 +88,7 @@ namespace nakama::analyse
 /** Versionierte Startwerte.  Aenderung nur ueber eine neue Zahl, nie still —
     dieselbe Regel wie `kMetricsVersion` in `AnalyseEngine`, nur maschinenlesbar,
     weil `table Frame` ein `uint` verlangt. */
-inline constexpr std::uint32_t kFeatureMetricsVersion = 20260928u;
+inline constexpr std::uint32_t kFeatureMetricsVersion = 20260929u;
 
 /*  ⚠️ WARUM DIE ZAHL MIT SONDE-013 STEIGT — und warum sie es MUSS.
 
@@ -121,10 +123,57 @@ inline constexpr std::uint32_t kFeatureMetricsVersion = 20260928u;
     `freiheitsgrade` und `fenster_dauer_ms` tragen damit andere Werte; die
     zwei Ringlaengen sind gefuehrt.
 
+    Warum die Zahl mit NAK-380 Etappe 6 steigt (20260929): die FFT-Laengen
+    beider Stufen folgen seit dieser Fassung einer festen Fensterdauer statt
+    einer festen Samplezahl (T-380-7, `fensterPunkte`): bei 88,2 und 96 kHz
+    32 768/8 192, bei 176,4 und 192 kHz 65 536/16 384 Punkte statt 16 384/
+    4 096. Bei 44,1 und 48 kHz bleibt jede Zahl gleich; darueber tragen
+    dieselben Felder (Baender, Stereoevidenz, Ereignisse, Fingerprint) Werte
+    aus anderen Fensterlaengen. Die Obergrenze und die zwei Basislaengen sind
+    gefuehrt.
+
     Die Schwellen dieser Fassung stehen in
     `eq-copilot/schemas/v3/metriken-v1.json`; **A5**
     (`metrics_version_bindet_schwellen`) haelt Register und Code
     gegeneinander und faellt, wenn eine Zahl ohne Versionsschritt wandert. */
+
+/** NAK-380 Etappe 6 (DSP-20, R-380-5, T-380-7, E-380-12): Fensterdauer statt
+    Samplezahl. Die Laengen der zwei Stufen bei 48 kHz sind zugleich die
+    Untergrenze und die Dauerbasis: T_Bass = 16 384/48 000 s = 341,3 ms,
+    T_Haupt = 4 096/48 000 s = 85,3 ms. Bei jeder Rate gilt
+    N(fs) = 2^round(log2(T*fs)), gekappt auf [N(48 kHz), kFensterPunkteMax]
+    (`fensterPunkte`); keine Rate bekommt ein kuerzeres Fenster als heute
+    bei 48 kHz, und 44,1 kHz bleibt bei 16 384/4 096 (log2 13,88 rundet auf
+    14). Hop = N/2, also in Zeit bei jeder Rate gleich. Gefuehrt in
+    `metriken-v1.json` (Fassung 20260929). */
+inline constexpr int kBassBasisPunkte = 16384;
+inline constexpr int kHauptBasisPunkte = 4096;
+/** Obergrenze der Fensterlaenge (E-380-12, Variante A): 65 536 Punkte. Bei
+    176,4 und 192 kHz traegt die Bassstufe genau diese Laenge; darueber
+    haelt die Kappe den Speicher (M-100). */
+inline constexpr int kFensterPunkteMax = 65536;
+/** Die Rate, bei der die Basislaengen ihre Dauer haben. */
+inline constexpr double kFensterBasisRateHz = 48000.0;
+
+/** T-380-7: die Fensterlaenge einer Stufe mit der 48-kHz-Laenge
+    `basisPunkte` bei der Rate fs. round(log2(x)) ist die Zweierpotenz 2^e
+    mit 2^e/sqrt(2) <= x < 2^e*sqrt(2) (halbe Werte runden auf); die Schleife
+    sucht sie ohne log2, damit die Funktion `constexpr` bleibt. Ungueltige
+    Raten (nicht endlich, <= 0) liefern die Basislaenge - `vorbereiten`
+    weist sie ohnehin vorher ab. */
+constexpr int fensterPunkte (int basisPunkte, double fs) noexcept
+{
+    if (! (fs > 0.0) || ! (fs < 1.0e12))
+        return basisPunkte;
+    constexpr double kWurzelZwei = 1.4142135623730950488;
+    const double soll = (double) basisPunkte / kFensterBasisRateHz * fs;
+    double n = 1.0;
+    for (int e = 0; e < 62 && soll >= n * kWurzelZwei; ++e)
+        n *= 2.0;
+    if (n > (double) kFensterPunkteMax)
+        n = (double) kFensterPunkteMax;
+    return n < (double) basisPunkte ? basisPunkte : (int) n;
+}
 
 /** Wie viele Analysefenster hoechstens in P10/P50/P95 eines Bandes eingehen.
 
@@ -195,7 +244,8 @@ inline constexpr double kFlussP0Db = -100.0;
     An die Hopzeit gebunden (R-380-12 (i)): SuperFlux legt ±1 Band der
     Viertelton-Filterbank (±50 Cent) bei 10 ms Hop an (Boeck/Widmer, DAFx-13,
     Gl. 5). Die Hauptstufe hoppt mit 2048 Samples, 42,67 ms bei 48 kHz und
-    46,44 ms bei 44,1 kHz. Ein Vibrato mit Tiefe ±D Cent und Rate f_v bewegt
+    46,44 ms bei 44,1 kHz; seit NAK-380 Etappe 6 (T-380-7) ist das die Hopzeit
+    der ganzen Familie (96 kHz: 4096 Samples, 42,67 ms). Ein Vibrato mit Tiefe ±D Cent und Rate f_v bewegt
     einen Teilton je Hop um hoechstens Delta = 2*D*sin(pi*f_v*T_hop) Cent (die
     Differenz der Sinusphase ueber einen Hop): fuer D = 50 und f_v = 5,5 Hz
     67,2 Cent bei 48 kHz und 71,9 Cent bei 44,1 kHz, mit Reserve bis 7 Hz
@@ -272,7 +322,8 @@ inline constexpr int kStereoRingHaupt = 3;
 
 /** Laenge des Stereorings der BASSstufe in Evidenzfenstern (W_B, NAK-177,
     NAK-380 R-380-3, T-380-6). Der Bass-Hop betraegt 8192 Samples (170,7 ms
-    bei 48 kHz); ein 0,25-s-Fenster traegt 1 bis 2 Bassframes, sieben halten
+    bei 48 kHz; seit T-380-7 in Zeit bei jeder Rate der Familie derselbe,
+    16 384 Samples bei 96 kHz); ein 0,25-s-Fenster traegt 1 bis 2 Bassframes, sieben halten
     bei 44,1 kHz mindestens 11, im 1-s-Takt bei 48 kHz 11 ab dem zweiten
     Snapshot. Fuenf Fenster hielten gerade acht. Gefuehrt in
     `metriken-v1.json`. */
@@ -501,11 +552,18 @@ class FeatureEngine
 
 public:
     // ── Feste Groessen (§53.7 Schlussabsatz: Startwerte, keine ABI) ─────────
-    /** Bassstufe: aufloesungsbestimmend unter `kTrennungHz`. */
-    static constexpr int kBassPunkte = 16384;
-    /** Hauptstufe. */
-    static constexpr int kHauptPunkte = 4096;
-    /** Ueberlappung 50 % — die Hann-Fenster addieren sich damit zu 1. */
+    /** Bassstufe: aufloesungsbestimmend unter `kTrennungHz`. Ihre Laenge bei
+        44,1 und 48 kHz; bei anderen Raten traegt die Stufe die Laenge
+        `fensterPunkte (kBassPunkte, fs)` (NAK-380 T-380-7: 32 768 bei 88,2
+        und 96 kHz, 65 536 bei 176,4 und 192 kHz) - dieselbe Dauer, 371,5 ms
+        in der 44,1-kHz-, 341,3 ms in der 48-kHz-Familie. Die Stufe kennt ihre
+        Laenge selbst (`Stufe::punkte`, `Stufe::hop`). */
+    static constexpr int kBassPunkte = kBassBasisPunkte;
+    /** Hauptstufe, Laenge bei 44,1 und 48 kHz (sonst `fensterPunkte`, 8 192
+        bzw. 16 384). */
+    static constexpr int kHauptPunkte = kHauptBasisPunkte;
+    /** Ueberlappung 50 % — die Hann-Fenster addieren sich damit zu 1. Der Hop
+        der Basislaenge; die Stufe fuehrt Hop = N/2 ihrer eigenen Laenge. */
     static constexpr int kBassHop  = kBassPunkte / 2;
     static constexpr int kHauptHop = kHauptPunkte / 2;
     /** Zustaendigkeitsgrenze der zwei Stufen. */
@@ -596,8 +654,11 @@ public:
             return;
 
         sr = samplerate;
-        bass.vorbereiten (kBassPunkte, sr);
-        haupt.vorbereiten (kHauptPunkte, sr);
+        // NAK-380 T-380-7: die Laengen folgen der Fensterdauer (Hop = N/2);
+        // bei einem Ratenwechsel entstehen beide Stufen mit der neuen Laenge
+        // neu, `zuruecksetzen` unten leert sie (M-120).
+        bass.vorbereiten (fensterPunkte (kBassPunkte, sr), sr);
+        haupt.vorbereiten (fensterPunkte (kHauptPunkte, sr), sr);
 
         zuordnung (bass,  0,            trennIndex());
         zuordnung (haupt, trennIndex(), Gitter::evidenzBaender);

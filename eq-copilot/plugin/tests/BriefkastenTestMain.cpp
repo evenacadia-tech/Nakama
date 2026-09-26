@@ -25,6 +25,8 @@
 
 #include "PluginProcessor.h"
 #include "SondeProcessor.h"
+#include "DiagnoseAntwort.h"
+#include "Nak380Pruefsignale.h"
 
 #include <juce_cryptography/juce_cryptography.h>
 
@@ -3768,9 +3770,15 @@ void alle()
         const auto e = exportiere (*ohneDaten, m);
         bool ok = false;
         const auto inhalt = liesJson (juce::File (e.datei), ok);
+        // Seit NAK-380 Etappe 6 (M-109) steht ein interpoliertes Band als null.
         bool baender = ok && inhalt["ltas"]["komposit_db"].size() == (int) m.ltasKompositDb.size();
         for (int i = 0; baender && i < (int) m.ltasKompositDb.size(); ++i)
-            baender = std::abs ((double) inhalt["ltas"]["komposit_db"][i] - m.ltasKompositDb[(std::size_t) i]) <= 1e-9;
+        {
+            const auto& w = inhalt["ltas"]["komposit_db"][i];
+            baender = eqcop::ltasBandInterpoliert (m.ltasKompositInterpoliert, i)
+                        ? w.isVoid()
+                        : ! w.isVoid() && std::abs ((double) w - m.ltasKompositDb[(std::size_t) i]) <= 1e-9;
+        }
         fall ("313/M-142", "export_mit_uebergebenem_snapshot: Gen ohne Messdaten, m mit Daten - neu, die Datei traegt m",
               engineLeer && e.art == Art::neu && baender
                   && std::abs ((double) inhalt["gesamt_sekunden"] - m.gesamtSekunden) <= 1e-9,
@@ -3801,6 +3809,82 @@ void alle()
 }
 } // namespace nak313e7
 
+/** NAK-380 Etappe 6, M-109 (T-380-9, DSP-20): Validity interpolierter
+    LTAS-Baender in Festhalten-Datei und Briefkasten-Antwort. Beide Wege bauen
+    das Snapshot-Objekt mit `nakama::diagnose::snapshotObjekt` (Knopfweg und
+    Antwort, F-5); gemessen wird das Objekt nach JSON und zurueck, so wie die
+    Datei es traegt. AnalyseEngine 48 kHz, P2 (rosa -20 dBFS, Saat 0x3800008,
+    30 s, E-380-13 vor dem Nutzer). Zusage je Band beider Kurven (alle 221):
+    `komposit_db` ist `null` GENAU fuer die Baender der Maskenreferenz
+    (`m1MaskenReferenz`, im Test aus Bin-Zuordnung und Naehten gezaehlt),
+    `referenz_8192_db` ebenso fuer die 8192er-Stufe; jedes andere Band ist
+    eine Zahl. Zwei Riegel tragen „null genau dort“: die Maske in
+    `finalisiereLtas` und der Schreiber `snapshotObjekt`. */
+void nak380M109()
+{
+    namespace sig = nakama::test::nak380;
+    constexpr double fs = 48000.0;
+    const auto x = sig::rosaMono (sig::kP2Saat, 0.1, 1440000u);
+    const auto r = sig::rosaSelbstpruefung (x, 0.1, fs);
+    fall ("380/M-109", "interpolierte_baender_null: Vorbedingung rosa_selbstpruefung_E-380-13", r.ok, juce::String (r.meldung));
+    auto e = std::make_unique<eqcop::AnalyseEngine>();
+    e->vorbereiten (fs);
+    std::vector<float> inter (1024u);
+    for (std::size_t i = 0; i < x.size();)
+    {
+        const int n = (int) std::min<std::size_t> (512u, x.size() - i);
+        for (int k = 0; k < n; ++k)
+            inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
+        e->verarbeite (inter.data(), n, 2);
+        i += (std::size_t) n;
+    }
+    e->auswerten();
+    const auto m = e->snapshot();
+    nakama::diagnose::SnapshotSensor sensor;
+    sensor.sensorId = "nak380-m109";
+    sensor.rolle = "hub";
+    sensor.kanaele = 2;
+    const auto objekt = nakama::diagnose::snapshotObjekt (m, sensor, "2026-09-26T00:00:00Z", nullptr);
+    const auto gelesen = juce::JSON::parse (juce::JSON::toString (objekt));
+    const auto* komposit = gelesen["ltas"]["komposit_db"].getArray();
+    const auto* referenz = gelesen["ltas"]["referenz_8192_db"].getArray();
+    const auto maske = sig::m1MaskenReferenz (fs);
+    fall ("380/M-109", "interpolierte_baender_null: Vorbedingung 30 s verarbeitet, LTAS gueltig, 221 Baender je Kurve, "
+                       "Maske mindestens 25 Baender",
+          m.verarbeiteteSamples == 1440000u && m.ltasGueltig && komposit != nullptr && referenz != nullptr
+              && komposit->size() == 221 && referenz->size() == 221 && maske.anzahlKomposit >= 25,
+          juce::String ((juce::int64) m.verarbeiteteSamples) + " Samples, Maske Komposit "
+              + juce::String (maske.anzahlKomposit) + ", Referenz " + juce::String (maske.anzahlReferenz)
+              + ", Laengen " + juce::String (maske.punkte[0]) + "/" + juce::String (maske.punkte[1]) + "/"
+              + juce::String (maske.punkte[2]) + "/" + juce::String (maske.punkte[3]));
+    const auto zaehle = [&] (const juce::Array<juce::var>* kurve, const std::array<bool, 221>& soll,
+                             const char* name)
+    {
+        int nullGenau = 0, nullOhne = 0, zahlTrotz = 0, zahlen = 0;
+        juce::String erste;
+        for (int b = 0; kurve != nullptr && b < kurve->size() && b < 221; ++b)
+        {
+            const auto& v = (*kurve)[b];
+            const bool istNull = v.isVoid();
+            const bool istZahl = v.isDouble() || v.isInt() || v.isInt64();
+            if (istNull && soll[(std::size_t) b]) ++nullGenau;
+            else if (istNull) { ++nullOhne; if (erste.isEmpty()) erste = "Band " + juce::String (b) + " null ohne Maske"; }
+            else if (soll[(std::size_t) b]) { ++zahlTrotz; if (erste.isEmpty()) erste = "Band " + juce::String (b) + " Zahl trotz Maske"; }
+            else if (istZahl) ++zahlen;
+        }
+        int sollNull = 0;
+        for (const bool s : soll) sollNull += s ? 1 : 0;
+        fall ("380/M-109", (juce::String ("interpolierte_baender_null: ") + name
+                             + " ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl").toRawUTF8(),
+              kurve != nullptr && nullOhne == 0 && zahlTrotz == 0 && nullGenau == sollNull && nullGenau + zahlen == 221,
+              juce::String (nullGenau) + " von " + juce::String (sollNull) + " null, " + juce::String (zahlen)
+                  + " Zahlen, " + juce::String (nullOhne) + " null ohne Maske, " + juce::String (zahlTrotz)
+                  + " Zahl trotz Maske" + (erste.isNotEmpty() ? "; " + erste : juce::String()));
+    };
+    zaehle (komposit, maske.komposit, "komposit_db");
+    zaehle (referenz, maske.referenz, "referenz_8192_db");
+}
+
 } // namespace
 
 int main (int argc, char* argv[])
@@ -3809,6 +3893,15 @@ int main (int argc, char* argv[])
 
     if (argc > 1 && std::strcmp (argv[1], "--erzeuge") == 0)
         return erzeugeReferenz();
+
+    // NAK-380 Etappe 6: nur M-109 (Gegenprobe und Rotbeweise, §8.1).
+    if (argc > 2 && std::strcmp (argv[1], "--nak380") == 0 && std::strcmp (argv[2], "M-109") == 0)
+    {
+        nak380M109();
+        std::cout << "NAK-380 M-109: " << bestanden << " bestanden, " << fehlgeschlagen
+                  << " fehlgeschlagen" << std::endl;
+        return fehlgeschlagen == 0 ? 0 : 1;
+    }
 
     // NAK-313 Etappe 7: nur der Export (313/M-132 bis M-144) - fuer
     // Gegenprobe und Rotlaeufe, damit die Rohausgabe die Faelle traegt.
@@ -3823,6 +3916,7 @@ int main (int argc, char* argv[])
 
     festhaltenBytegleich();
     nak313e7::alle();
+    nak380M109();
     ohneAnfrageNurExistenzpruefung();
     anfrageGenGenauEineAntwort();
     gleicheKennungKeineZweiteAntwort();

@@ -1,0 +1,27 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-108 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Suchgrenze als Zustand der Engine
+Zustand und Vorbedingung (§6.5, woertlich): `AnalyseEngine::vorbereiten` bei den sechs Raten
+Zusage (§6.5, woertlich): `resonanzSucheAbHz` endlich und > 0: 46,57 Hz (44,1/88,2/176,4 kHz), 50,69 Hz (48/96/192 kHz) ± 0,01 Hz (17,30·Δf_Bass, nachgerechnet)
+Test je Sprache (§6.5): C++: A2 NEU `380/M-108 suchgrenze_je_rate`
+Rotbeweis-Spalte (§6.5, woertlich): heute nicht messbar (Feld entsteht erst); Mutation Faktor 17,30 → 8,65 → rot
+Etikett: heute nicht messbar (Feld entsteht erst)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-108 heute nicht messbar: resonanzSucheAbHz fehlt bei allen sechs Raten.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 6 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: resonanzSucheAbHz 46,57 Hz (44,1/88,2/176,4 kHz), 50,69 Hz (48/96/192 kHz) +-0,01 Hz
+  Pruefzeile: A2 380/M-108 suchgrenze_je_rate (je Rate)
+  Mutation: m108-faktor: kResonanzSucheFaktor 17,30 -> 8,65 (Matrixmutation)
+  rot: JA (alle sechs Raten; 23,28 bzw. 25,34 Hz)
+  Protokoll: NAK-380-e6-mutation-m108-faktor.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m108-faktor: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-108 07:53:09 bis 07:53:09, Exit 1, 0 gruen, 6 rot
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (44.1 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — 23.2828 Hz (Soll 46.5656)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (48.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — 25.3418 Hz (Soll 50.6836)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (192.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — 25.3418 Hz (Soll 50.6836)
+      mitgefallen 3; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-108 07:53:14 bis 07:53:14, Exit 0, 6 gruen, 0 rot

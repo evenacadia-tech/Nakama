@@ -285,18 +285,26 @@ bool abschnittWaehlt (const char* ids, const char* text)
     return ja;
 }
 
-// Die Ringlaengen der Matrix (T-380-6: W_H = 3, W_B = 7), die FFT-Laengen vor
-// Etappe 6 und die Mindestframezahl aus §40.1 - bewusst NICHT aus dem Produkt
-// gelesen: eine Mutation einer Produktkonstante muss hier rot werden.
+// Die Ringlaengen der Matrix (T-380-6: W_H = 3, W_B = 7), die FFT-Laengen und
+// die Mindestframezahl aus §40.1 - bewusst NICHT aus dem Produkt gelesen: eine
+// Mutation einer Produktkonstante muss hier rot werden.
 constexpr int kNak380RingHaupt = 3;
 constexpr int kNak380RingBass  = 7;
-constexpr int kNak380NHaupt = 4096;
-constexpr int kNak380NBass  = 16384;
 constexpr double kNak380TrennungHz = 200.0;
 
+/** NAK-380 Etappe 6 (T-380-7): die FFT-Laengen je Rate, unabhaengig vom
+    Produkt mit der Laengenregel des Tests (`referenzPunkte`,
+    2^round(log2(T*fs)) mit T der 48-kHz-Laenge, gekappt auf [N(48 kHz),
+    65 536]): Haupt 4 096 bei 44,1/48 kHz, 8 192 bei 88,2/96 kHz, 16 384 bei
+    176,4/192 kHz; Bass das Vierfache. Vor Etappe 6 galten 4 096/16 384 bei
+    jeder Rate; jede Zusage, die davon abhaengt (Referenz rho_w(d)^2 mit
+    tau = d/N, Kadenz der Frames, Ringbytes, Binzuordnung), liest seitdem N(fs). */
+int nak380NHaupt (double fs) { return sig::referenzPunkte (4096, fs); }
+int nak380NBass (double fs)  { return sig::referenzPunkte (16384, fs); }
+
 /** Binfenster eines Evidenzbandes, unabhaengig vom Produkt aus dem Gitter
-    gerechnet: zustaendig ist die Bassstufe (16 384 Punkte), wenn die
-    Bandmitte unter 200 Hz liegt, sonst die Hauptstufe (4096); Bins
+    gerechnet: zustaendig ist die Bassstufe (N_Bass(fs)), wenn die
+    Bandmitte unter 200 Hz liegt, sonst die Hauptstufe (N_Haupt(fs)); Bins
     [ceil(kante_b*N/fs), min(ceil(kante_b+1*N/fs), N/2+1)); ueber der Kappe
     min(18 kHz, 0,95*fs/2) kein Bin (Manifest §6.4, M-85: "Binzahlen aus
     Zeit.h:120-145"). */
@@ -304,8 +312,9 @@ struct Nak380Binfenster
 {
     int von { 0 }, bis { 0 };
     bool bass { false };
+    int n { 0 };
     int bins() const noexcept { return bis > von ? bis - von : 0; }
-    int punkte() const noexcept { return bass ? kNak380NBass : kNak380NHaupt; }
+    int punkte() const noexcept { return n; }
     int ring() const noexcept { return bass ? kNak380RingBass : kNak380RingHaupt; }
 };
 
@@ -313,6 +322,7 @@ Nak380Binfenster nak380Binfenster (int b, double fs)
 {
     Nak380Binfenster x;
     x.bass = Gitter::evidenzMitte (b) < kNak380TrennungHz;
+    x.n = x.bass ? nak380NBass (fs) : nak380NHaupt (fs);
     const int n = x.punkte();
     const double kappe = std::min (18000.0, 0.95 * fs * 0.5);
     if (Gitter::evidenzKante (b + 1) > kappe)
@@ -857,9 +867,10 @@ void nak380LaufzeitKohaerenz (const char* id, const char* name, const Nak380Raus
                 + juce::String (f.dofFalsch));
     pruefe (! L.schnapp.empty() && f.referenzHaelt(),
             kopf + ": Kohaerenz gegen die Referenz rho_w(" + juce::String (L.d) + ")^2 = "
-                + juce::String (nak380RhoQuadrat (L.d, kNak380NHaupt), 5) + " (N 4096) bzw. "
-                + juce::String (nak380RhoQuadrat (L.d, kNak380NBass), 5)
-                + " (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber die Baender mit Bit in [0,8; 1,2]",
+                + juce::String (nak380RhoQuadrat (L.d, nak380NHaupt (L.fs)), 5) + " (N "
+                + juce::String (nak380NHaupt (L.fs)) + ") bzw. "
+                + juce::String (nak380RhoQuadrat (L.d, nak380NBass (L.fs)), 5) + " (N "
+                + juce::String (nak380NBass (L.fs)) + "): Mittel von (1 - C)/(1 - rho^2) ueber die Baender mit Bit in [0,8; 1,2]",
             "Mittel " + juce::String (f.qMittel(), 4) + ", groesstes q " + juce::String (f.qMax, 3) + " ueber "
                 + juce::String (f.qAnzahl) + " Baender");
 }
@@ -941,9 +952,10 @@ void nak380RateKohaerenz (const char* id, const char* name, const Nak380Rauschla
                 + unter.text (n));
     pruefe (geprueft > 0 && f.referenzHaelt(),
             kopf + ": Kohaerenz gegen die Referenz rho_w(" + juce::String (L.d) + ")^2 = "
-                + juce::String (nak380RhoQuadrat (L.d, kNak380NHaupt), 5) + " (N 4096) bzw. "
-                + juce::String (nak380RhoQuadrat (L.d, kNak380NBass), 5)
-                + " (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber alle Bandbefunde mit Bit der Snapshots 7 "
+                + juce::String (nak380RhoQuadrat (L.d, nak380NHaupt (L.fs)), 5) + " (N "
+                + juce::String (nak380NHaupt (L.fs)) + ") bzw. "
+                + juce::String (nak380RhoQuadrat (L.d, nak380NBass (L.fs)), 5) + " (N "
+                + juce::String (nak380NBass (L.fs)) + "): Mittel von (1 - C)/(1 - rho^2) ueber alle Bandbefunde mit Bit der Snapshots 7 "
                   "bis n in [0,8; 1,2]",
             "Mittel " + juce::String (f.qMittel(), 4) + ", groesstes q " + juce::String (f.qMax, 3) + " ueber "
                 + juce::String (f.qAnzahl) + " Bandbefunde");
@@ -1014,8 +1026,8 @@ __declspec(noinline) void nak380M73()
                 + juce::String (f.unter095) + "; " + band216);
     pruefe (geprueft > 0 && f.referenzHaelt(),
             kopf + ": Kohaerenz gegen die Referenz rho_w(48)^2 = "
-                + juce::String (nak380RhoQuadrat (48, kNak380NHaupt), 5) + " (N 4096) bzw. "
-                + juce::String (nak380RhoQuadrat (48, kNak380NBass), 5)
+                + juce::String (nak380RhoQuadrat (48, nak380NHaupt (48000.0)), 5) + " (N 4096) bzw. "
+                + juce::String (nak380RhoQuadrat (48, nak380NBass (48000.0)), 5)
                 + " (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber alle Bandbefunde mit Bit in [0,8; 1,2]",
             "Mittel " + juce::String (f.qMittel(), 4) + ", groesstes q " + juce::String (f.qMax, 3) + " ueber "
                 + juce::String (f.qAnzahl) + " Bandbefunde");
@@ -1141,8 +1153,8 @@ __declspec(noinline) void nak380M82()
             pruefe (false, kopf + ": zwei Snapshots entstehen");
             continue;
         }
-        const auto k1 = nak380RingFrames (L.snapSoll, 1, kNak380NHaupt, kNak380RingHaupt);
-        const auto k2 = nak380RingFrames (L.snapSoll, 2, kNak380NHaupt, kNak380RingHaupt);
+        const auto k1 = nak380RingFrames (L.snapSoll, 1, nak380NHaupt (44100.0), kNak380RingHaupt);
+        const auto k2 = nak380RingFrames (L.snapSoll, 2, nak380NHaupt (44100.0), kNak380RingHaupt);
         int baender = 0, dof1Falsch = 0, bit1 = 0, dof2Falsch = 0, ohneBit2 = 0;
         for (int b = 0; b < Gitter::evidenzBaender; ++b)
         {
@@ -1195,15 +1207,15 @@ __declspec(noinline) void nak380M83()
             for (int i = 1; i <= n; ++i)
             {
                 const auto& z = L.schnapp[(std::size_t) (i - 1)][(std::size_t) b];
-                if (z.dof != (std::uint32_t) nak380RingFrames (L.snapSoll, i, kNak380NBass, kNak380RingBass))
+                if (z.dof != (std::uint32_t) nak380RingFrames (L.snapSoll, i, nak380NBass (48000.0), kNak380RingBass))
                     ++dofFalsch;
                 if (i < fall.ersterMitBit && z.koh) ++vorherMitBit;
                 if (i >= fall.ersterMitBit && ! z.koh) ++abOhneBit;
             }
         }
         const bool modell = n >= fall.ersterMitBit
-            && nak380RingFrames (L.snapSoll, fall.ersterMitBit - 1, kNak380NBass, kNak380RingBass) == fall.kVorher
-            && nak380RingFrames (L.snapSoll, fall.ersterMitBit, kNak380NBass, kNak380RingBass) == fall.kAb;
+            && nak380RingFrames (L.snapSoll, fall.ersterMitBit - 1, nak380NBass (48000.0), kNak380RingBass) == fall.kVorher
+            && nak380RingFrames (L.snapSoll, fall.ersterMitBit, nak380NBass (48000.0), kNak380RingBass) == fall.kAb;
         pruefe (baender > 0 && modell && dofFalsch == 0,
                 kopf + ": Vorbedingung Bassframes im Ring nach Kadenzmodell (" + juce::String ((int) fall.kVorher)
                     + " vor, " + juce::String ((int) fall.kAb) + " am Snapshot " + juce::String (fall.ersterMitBit) + ")",
@@ -1236,9 +1248,9 @@ __declspec(noinline) void nak380M84M88 (bool m84)
         pruefe (false, kopf + ": Snapshot " + juce::String (i) + " entsteht");
         return;
     }
-    const auto kHaupt = nak380RingFrames (L.snapSoll, i, kNak380NHaupt, kNak380RingHaupt);
-    const auto kBass = nak380RingFrames (L.snapSoll, i, kNak380NBass, kNak380RingBass);
-    const auto seitStart = nak380Frames (L.snapSoll[(std::size_t) (i - 1)], kNak380NHaupt);
+    const auto kHaupt = nak380RingFrames (L.snapSoll, i, nak380NHaupt (L.fs), kNak380RingHaupt);
+    const auto kBass = nak380RingFrames (L.snapSoll, i, nak380NBass (L.fs), kNak380RingBass);
+    const auto seitStart = nak380Frames (L.snapSoll[(std::size_t) (i - 1)], nak380NHaupt (L.fs));
     int haupt = 0, bass = 0, hauptFalsch = 0, bassFalsch = 0;
     std::uint32_t hauptIst = 0, bassIst = 0;
     for (int b = 0; b < Gitter::evidenzBaender; ++b)
@@ -1378,7 +1390,7 @@ __declspec(noinline) void nak380M86()
     if (je.size() != 3u)
         return;
     const double hopMs = 1000.0 * 2048.0 / 48000.0;
-    const auto k3 = nak380RingFrames (snapSoll, 3, kNak380NHaupt, kNak380RingHaupt);
+    const auto k3 = nak380RingFrames (snapSoll, 3, nak380NHaupt (48000.0), kNak380RingHaupt);
     pruefe (je[2].dof == kNak380M86Freiheitsgrade && k3 == (std::uint64_t) kNak380M86Freiheitsgrade,
             kopf + ": Freiheitsgrade am dritten Snapshot = Frames im Ring ueber W = 3 Fenster (74), nicht nur "
                 "das letzte (25)",
@@ -1466,7 +1478,13 @@ int nak380ZuordnungUnterschiede (double fsA, double fsB)
     neu - je Band in beiden Stufen gegen die Gitterreferenz bei 96 kHz
     (`nak380ZuordnungPruefen`, D3) -, der Ring ist fuer 96 kHz bemessen, und
     kein Wert der alten Rate ueberlebt: der Ring traegt direkt danach keinen
-    Frame, der erste Snapshot genau die Frames der neuen Rate (13). Die
+    Frame, der erste Snapshot genau die Frames der neuen Rate. Seit NAK-380
+    Etappe 6 (T-380-7) hat die Hauptstufe bei 96 kHz 8 192 Punkte und Hop
+    4 096: der erste Snapshot nach 29 184 Samples traegt
+    floor((29 184 - 8 192)/4 096) + 1 = 6 Frames (vorher 13 bei 4 096
+    Punkten) und damit wie (a) und (b) Kohaerenz `null` - ein ueberlebender
+    Ring truege 6 plus die Frames davor >= 8 -, der zweite nach 58 368
+    Samples 13 Frames und ein Kohaerenzbit aus der neuen Rate. Die
     Zusage "kein Wert ueberlebt" tragen zwei Riegel: die Neuanlage des Rings
     (`stereoRing.assign` in `vorbereiten`) und `stereoLeeren` in
     `zuruecksetzen`; ihr Rotbeweis ist deshalb eine Doppelmutation. In allen
@@ -1578,8 +1596,8 @@ __declspec(noinline) void nak380M87()
         }
         const auto gespeist2 = lauf2a.gespeist + lauf2.gespeist;
         const bool zwei = danach.size() >= 2u && seit.size() >= 2u;
-        const auto soll1 = zwei ? nak380Frames (seit[0], kNak380NHaupt) : 0u;
-        const auto soll2 = zwei ? nak380Frames (seit[1], kNak380NHaupt) : 0u;
+        const auto soll1 = zwei ? nak380Frames (seit[0], nak380NHaupt (fs2)) : 0u;
+        const auto soll2 = zwei ? nak380Frames (seit[1], nak380NHaupt (fs2)) : 0u;
         pruefe (lauf1.gespeist == n1 && gespeist2 == n2
                     && verarbeitet == (seek ? n1 + nachher : n2)
                     && e.ereignisseVerworfen() == 0u && lauf1.snapshots.size() >= 7u,
@@ -1600,7 +1618,7 @@ __declspec(noinline) void nak380M87()
             std::vector<std::uint64_t> nachIst;
             for (const auto sn : lauf2a.snapshots) nachIst.push_back (sn);
             for (const auto sn : lauf2.snapshots) nachIst.push_back (lauf2a.gespeist + sn);
-            const auto frames1 = seit.empty() ? 0u : nak380Frames (seit[0], kNak380NHaupt);
+            const auto frames1 = seit.empty() ? 0u : nak380Frames (seit[0], nak380NHaupt (fs));
             pruefe (! lauf1.snapshots.empty() && lauf1.snapshots == nak380Snapshots (fs, 512, 0.25, n1)
                         && lauf1.snapshots.back() == n1 && nachIst == seit && frames1 >= 1u && frames1 <= 7u,
                     kopf + ": Vorbedingung Seek unmittelbar hinter dem Snapshot " + juce::String ((int) snapBis5s.size())
@@ -1612,8 +1630,9 @@ __declspec(noinline) void nak380M87()
                         + juce::String ((juce::int64) (nachIst.empty() ? 0u : nachIst[0])) + " Samples mit "
                         + juce::String ((int) frames1) + " Frames");
         }
-        // (a), (b): hoechstens 5 Frames; (c): genau die 13 der neuen Rate.
-        pruefe (zwei && (rate ? soll1 == 13u : soll1 <= 5u) && danach[0].dof == (std::uint32_t) soll1,
+        // (a), (b): hoechstens 5 Frames; (c): genau die 6 der neuen Rate
+        // (seit Etappe 6 N_H(96 kHz) = 8 192, vorher 13 bei 4 096).
+        pruefe (zwei && (rate ? soll1 == 6u && soll2 == 13u : soll1 <= 5u) && danach[0].dof == (std::uint32_t) soll1,
                 kopf + ": der erste Snapshot danach traegt nur die Frames seit dem Ereignis ("
                     + juce::String ((int) soll1) + ", Kadenzmodell)",
                 zwei ? "gemeldet " + juce::String ((int) danach[0].dof) + " nach "
@@ -1623,14 +1642,14 @@ __declspec(noinline) void nak380M87()
                     + juce::String ((int) soll2) + ", Kadenzmodell)",
                 zwei ? "gemeldet " + juce::String ((int) danach[1].dof) + " nach "
                            + juce::String ((juce::int64) seit[1]) + " Samples" : juce::String ("keine zwei Snapshots"));
+        pruefe (zwei && ! danach[0].koh,
+                kopf + ": und die Kohaerenz des ersten ist null (weniger als acht Frames)",
+                zwei && danach[0].koh ? juce::String (danach[0].kohWert, 4) : juce::String ("ohne Bit"));
         if (rate)
-            pruefe (zwei && danach[0].koh && danach[0].kohWert > 0.99f,
-                    kopf + ": bei 96 kHz traegt das 1-kHz-Band aus 13 Frames der neuen Rate ein Kohaerenzbit (Mono)",
-                    zwei && danach[0].koh ? juce::String (danach[0].kohWert, 4) : juce::String ("ohne Bit"));
-        else
-            pruefe (zwei && ! danach[0].koh,
-                    kopf + ": und die Kohaerenz des ersten ist null (weniger als acht Frames)",
-                    zwei && danach[0].koh ? juce::String (danach[0].kohWert, 4) : juce::String ("ohne Bit"));
+            pruefe (zwei && danach[1].koh && danach[1].kohWert > 0.99f,
+                    kopf + ": bei 96 kHz traegt das 1-kHz-Band im zweiten Snapshot aus 13 Frames der neuen Rate "
+                        "ein Kohaerenzbit (Mono)",
+                    zwei && danach[1].koh ? juce::String (danach[1].kohWert, 4) : juce::String ("ohne Bit"));
     }
 }
 
@@ -1699,7 +1718,7 @@ __declspec(noinline) void nak380M92Grenze()
                     erster[(std::size_t) b] = nak380Lesen (eng.stereoBand (b));
             });
         const auto snap = nak380Snapshots (48000.0, block, 0.25, n);
-        const std::uint64_t k = snap.empty() ? 0u : nak380Frames (snap.front(), kNak380NHaupt);
+        const std::uint64_t k = snap.empty() ? 0u : nak380Frames (snap.front(), nak380NHaupt (48000.0));
         const std::uint64_t kSoll = block == 4096 ? 7u : 8u;
         std::uint64_t verarbeitet = 0;
 #if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
@@ -1756,8 +1775,8 @@ __declspec(noinline) void nak380M93()
     double minimum = 2.0;
     for (int i = 1; i <= (int) std::min (L.schnapp.size(), L.snapSoll.size()); ++i)
     {
-        const auto fenster = nak380Frames (L.snapSoll[(std::size_t) (i - 1)], kNak380NHaupt)
-                           - (i >= 2 ? nak380Frames (L.snapSoll[(std::size_t) (i - 2)], kNak380NHaupt) : 0u);
+        const auto fenster = nak380Frames (L.snapSoll[(std::size_t) (i - 1)], nak380NHaupt (L.fs))
+                           - (i >= 2 ? nak380Frames (L.snapSoll[(std::size_t) (i - 2)], nak380NHaupt (L.fs)) : 0u);
         const bool kurz = fenster >= 8u;
         const auto& z = L.schnapp[(std::size_t) (i - 1)][(std::size_t) b];
         if (kurz) ++soll;

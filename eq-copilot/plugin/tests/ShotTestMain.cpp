@@ -42,6 +42,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Nak380Pruefsignale.h"
 #include <cmath>
 #include <cstdio>
 #include <functional>
@@ -312,6 +313,7 @@ namespace eqcop::testzugang
 std::function<bool()>& messpunktMarkeFuerTest();
 std::function<bool()>& konfliktMarkeFuerTest();   // NAK-312 Etappe 6b (NAK-349)
 std::function<void()>& festhaltenHakenFuerTest(); // NAK-313 Etappe 7 (M-142 (b))
+std::function<void (const juce::String&)>& leertextBeobachterFuerTest(); // NAK-380 Etappe 6 (M-106)
 }
 
 namespace
@@ -2357,8 +2359,11 @@ bool speise (eqcop::EqCopilotProcessor& p, std::int64_t& zeit, int n, double fre
     }
 }
 
-/** Die Baender der Datei gegen eine Linie: NaN der Linie ist null in der Datei. */
-bool baenderGleich (const juce::var& datei, const std::array<double, eqcop::kLtasBaender>& linie)
+/** Die Baender der Datei gegen eine Linie: NaN der Linie ist null in der Datei.
+    Seit NAK-380 Etappe 6 (M-109) schreibt die Datei ein interpoliertes Band
+    als null; die Vergleichslinie behaelt dort den Wert des Snapshots. */
+bool baenderGleich (const juce::var& datei, const std::array<double, eqcop::kLtasBaender>& linie,
+                    const std::array<std::uint8_t, eqcop::kLtasMaskenBytes>& interpoliert)
 {
     const auto& werte = datei["ltas"]["komposit_db"];
     if (werte.size() != (int) linie.size())
@@ -2367,6 +2372,12 @@ bool baenderGleich (const juce::var& datei, const std::array<double, eqcop::kLta
     {
         const double l = linie[(std::size_t) b];
         const auto& w = werte[b];
+        if (eqcop::ltasBandInterpoliert (interpoliert, b))
+        {
+            if (! w.isVoid())
+                return false;
+            continue;
+        }
         if (std::isnan (l) ? ! w.isVoid() : (w.isVoid() || std::abs ((double) w - l) > 1e-9 * std::max (1.0, std::abs (l))))
             return false;
     }
@@ -2480,7 +2491,7 @@ bool alle()
                 "313/M-142 ein_snapshot vorbedingung: der Haken hat die Messdaten der Engine geaendert, die Engine weicht von der Linie ab",
                 "Daten " + juce::String (daten ? "ja" : "NEIN") + ", geaendert " + juce::String (geaendert ? "ja" : "NEIN")
                     + ", abweichend " + juce::String (abweichend ? "ja" : "NEIN"));
-        pruefe (gelesen && baenderGleich (inhalt, linie),
+        pruefe (gelesen && baenderGleich (inhalt, linie, vorher.ltasKompositInterpoliert),
                 "313/M-142 ein_snapshot (b): die Baender der Datei gleich der Vergleichslinie",
                 ed != nullptr ? ed->statusMeldungFuerTest() : juce::String ("kein Editor"));
         editor.reset();
@@ -2491,6 +2502,103 @@ bool alle()
     return fehler == 0 && geprueft == 6;
 }
 } // namespace nak313e7
+
+//==============================================================================
+// NAK-380 Etappe 6 (380/M-106, R-380-5, T-380-8): der Leertext der
+// Befundliste am echten Editor nennt, wo nicht gesucht wurde. Gemessen wird
+// nur der Text, den die Liste in ihre Zeile gibt (Beobachter im Testbau,
+// `PluginEditor.cpp`); keine Zeichnung, kein Layout. Das Material ist P2
+// (rosa -20 dBFS, Saat 0x3800008, 20 s, E-380-13 vor dem Nutzer): kein Ton
+// sticht heraus, die Liste ist leer (derselbe Falsch-Positiv-Riegel wie A2
+// `pink-minus20`). Soll: der bisherige Leertext mit dem Satz aus §8.6 als
+// zweitem Satz, die Zahl das gerundete `resonanzSucheAbHz` (48 kHz 51 Hz,
+// 44,1 kHz 47 Hz; 17,30*fs/16 384).
+namespace nak380e6
+{
+int fehler = 0, geprueft = 0;
+
+void pruefe (bool ok, const std::string& was, const std::string& detail)
+{
+    ++geprueft;
+    if (! ok) ++fehler;
+    std::printf ("  %s %s  [%s]\n", ok ? "ok     " : "FEHLER ", was.c_str(), detail.c_str());
+}
+
+bool leertextNenntSuchgrenze()
+{
+    namespace sig = nakama::test::nak380;
+    std::printf ("== NAK-380 Etappe 6 - Leertext der Befundliste (380/M-106) ==\n");
+    for (const double fs : { 48000.0, 44100.0 })
+    {
+        const auto x = sig::rosaMono (sig::kP2Saat, 0.1, (std::uint64_t) std::llround (20.0 * fs));
+        const auto r = sig::rosaSelbstpruefung (x, 0.1, fs);
+        const std::string kopf = std::string ("380/M-106 leertext_nennt_suchgrenze (")
+                               + (fs == 48000.0 ? "48,0" : "44,1") + " kHz)";
+        pruefe (r.ok, kopf + ": Vorbedingung rosa_selbstpruefung_E-380-13", r.meldung);
+        auto proz = std::make_unique<eqcop::EqCopilotProcessor>();   // NAK-175: Heap
+        proz->setPlayConfigDetails (2, 2, fs, 512);
+        proz->prepareToPlay (fs, 512);
+        juce::AudioBuffer<float> block (2, 512);
+        juce::MidiBuffer midi;
+        for (std::size_t i = 0, n = 0; i + 512u <= x.size(); i += 512u, ++n)
+        {
+            for (int k = 0; k < 512; ++k)
+            {
+                block.setSample (0, k, x[i + (std::size_t) k]);
+                block.setSample (1, k, x[i + (std::size_t) k]);
+            }
+            proz->processBlock (block, midi);
+            if ((n + 1) % 48 == 0)
+                juce::Thread::sleep (60);   // Worker-Takt 50 ms: FIFO leeren lassen (Muster Shot)
+        }
+        const auto frist = juce::Time::getMillisecondCounter() + 5000u;
+        while (juce::Time::getMillisecondCounter() < frist
+               && ! (proz->messSnapshot().zustand == eqcop::MessZustand::messbereit && proz->messSnapshot().ltasGueltig))
+            juce::Thread::sleep (20);
+        juce::Thread::sleep (400);          // eine weitere schwere Auswertung (250 ms)
+        const auto m = proz->messSnapshot();
+        auto editor = std::unique_ptr<juce::AudioProcessorEditor> (proz->createEditor());
+        editor->setSize (1200, 832);
+        auto* ed = dynamic_cast<eqcop::EqCopilotEditor*> (editor.get());
+        if (ed != nullptr)
+            ed->timerTickFuerTest();       // die Anzeige-Kopie des Editors
+        juce::TextButton* knopf = nullptr;
+        for (auto* kind : editor->getChildren())
+            if (auto* b = dynamic_cast<juce::TextButton*> (kind))
+                if (b->getButtonText() == juce::String (juce::CharPointer_UTF8 ("keine Auff\xc3\xa4lligkeit")) && b->onClick)
+                    knopf = b;
+        juce::String gesehen;
+        int meldungen = 0;
+        eqcop::testzugang::leertextBeobachterFuerTest() = [&] (const juce::String& t) { gesehen = t; ++meldungen; };
+        if (knopf != nullptr)
+            knopf->onClick();
+        eqcop::testzugang::leertextBeobachterFuerTest() = {};
+        // Die Liste ist eine CallOutBox; sie erscheint mit der naechsten
+        // Nachricht und wird mit dem Editor abgebaut.
+        pumpe (2000, [&] { return erstesKind<juce::CallOutBox> (*editor) != nullptr; });
+        const int hz = fs == 48000.0 ? 51 : 47;
+        const juce::String soll = juce::String (juce::CharPointer_UTF8 (
+                "Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegen\xc3\xbc" "ber ihren Nachbarn. Unter "))
+            + juce::String (hz)
+            + juce::String (juce::CharPointer_UTF8 (" Hz wurde nicht nach T\xc3\xb6nen gesucht \xe2\x80\x93 das Messfenster "
+                "ist dort zu grob. Das hei\xc3\x9ft nicht \xe2\x80\x9eperfekt\xe2\x80\x9c \xe2\x80\x94 nur: die Kurve gibt "
+                "gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort."));
+        pruefe (m.zustand == eqcop::MessZustand::messbereit && knopf != nullptr && meldungen == 1,
+                kopf + ": Vorbedingung messbereit, keine Karte (Knopf 'keine Auffaelligkeit'), die Liste gibt genau "
+                       "einen Leertext",
+                std::string ("messbereit ") + (m.zustand == eqcop::MessZustand::messbereit ? "ja" : "NEIN")
+                    + ", Knopf " + (knopf != nullptr ? "ja" : "NEIN") + ", Meldungen " + std::to_string (meldungen));
+        pruefe (gesehen == soll,
+                kopf + ": der Leertext nennt als zweiten Satz die Suchgrenze " + std::to_string (hz) + " Hz",
+                gesehen.toStdString());
+        editor.reset();
+        proz.reset();
+        pumpe (200, [] { return false; });
+    }
+    std::printf ("NAK-380 LEERTEXT %d geprueft, %d Fehler\n", geprueft, fehler);
+    return fehler == 0 && geprueft == 6;
+}
+} // namespace nak380e6
 } // namespace
 
 int main (int argc, char* argv[])
@@ -2516,7 +2624,9 @@ int main (int argc, char* argv[])
         const bool annahme = nak312Annahmegrenze (ordner);
         // NAK-313 Etappe 7 (R-313-10): der Festhalten-Handgriff am echten Editor.
         const bool festhalten = nak313e7::alle();
-        return shots == 0 && panel && label && ziel && konflikt && annahme && festhalten ? 0 : 1;
+        // NAK-380 Etappe 6 (380/M-106): der Leertext nennt die Suchgrenze.
+        const bool leertext = nak380e6::leertextNenntSuchgrenze();
+        return shots == 0 && panel && label && ziel && konflikt && annahme && festhalten && leertext ? 0 : 1;
     }
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))

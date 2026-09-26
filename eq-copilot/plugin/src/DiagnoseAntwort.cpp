@@ -117,9 +117,14 @@ juce::var snapshotObjekt (const eqcop::MessSnapshot& m, const SnapshotSensor& se
         juce::Array<juce::var> zentren, komposit, referenzKurve;
         for (int b = 0; b < kLtasBaender; ++b)
         {
+            // NAK-380 T-380-9: ein interpoliertes Band (Validity-Maske) ist
+            // `null` - der v2-Vertrag laesst null je Band zu
+            // (eq-snapshot.schema.json); die Zahl bleibt im Prozess.
             zentren.add (m.ltasZentrenHz[(size_t) b]);
-            komposit.add (zahl (m.ltasKompositDb[(size_t) b], m.ltasGueltig));
-            referenzKurve.add (zahl (m.ltasReferenzDb[(size_t) b], m.ltasGueltig));
+            komposit.add (ltasBandInterpoliert (m.ltasKompositInterpoliert, b)
+                              ? juce::var() : zahl (m.ltasKompositDb[(size_t) b], m.ltasGueltig));
+            referenzKurve.add (ltasBandInterpoliert (m.ltasReferenzInterpoliert, b)
+                                   ? juce::var() : zahl (m.ltasReferenzDb[(size_t) b], m.ltasGueltig));
         }
         ltas->setProperty ("zentren_hz", zentren);
         ltas->setProperty ("komposit_db", komposit);

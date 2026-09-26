@@ -96,6 +96,16 @@ std::function<void()>& festhaltenHakenFuerTest()
     static std::function<void()> haken;
     return haken;
 }
+
+/** NAK-380 Etappe 6 (M-106): der Beobachter des Leertexts der Befundliste.
+    Die Liste legt ihren Text in TextLayouts ab, aus denen er sich nicht
+    zuruecklesen laesst; B15 misst deshalb am echten Editor den Text, den die
+    Liste in ihre Zeile gibt. Im Produkt gibt es ihn nicht. */
+std::function<void (const juce::String&)>& leertextBeobachterFuerTest()
+{
+    static std::function<void (const juce::String&)> beobachter;
+    return beobachter;
+}
 } // namespace testzugang
 #endif
 
@@ -450,11 +460,20 @@ struct BefundListe : juce::Component
         {
             zeile ({}, u8 ("Keine Auffälligkeit gefunden."), 14.0f * s,
                    farbe (leitstand::copilot_text_light), 2.0f * s);
-            zeile ({}, u8 ("Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegenüber "
-                           "ihren Nachbarn. Das heißt nicht „perfekt“ — nur: die Kurve gibt "
-                           "gerade keinen konkreten Handgriff her. Die Ohren behalten das "
-                           "letzte Wort."),
-                   12.0f * s, farbe (leitstand::copilot_text_soft), 4.0f * s);
+            // NAK-380 T-380-8: der Satz aus `suchgrenzeSatz` (Diagnose.cpp)
+            // steht als zweiter Satz im Leertext - nur Text, keine Zeichnung.
+            const auto grenze = suchgrenzeSatz (m);
+            const juce::String leertext = u8 ("Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegenüber "
+                                              "ihren Nachbarn.")
+                                        + (grenze.isEmpty() ? juce::String() : " " + grenze)
+                                        + u8 (" Das heißt nicht „perfekt“ — nur: die Kurve gibt "
+                                              "gerade keinen konkreten Handgriff her. Die Ohren behalten das "
+                                              "letzte Wort.");
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+            if (auto& beobachter = testzugang::leertextBeobachterFuerTest(); beobachter)
+                beobachter (leertext);
+#endif
+            zeile ({}, leertext, 12.0f * s, farbe (leitstand::copilot_text_soft), 4.0f * s);
         }
         else
         {

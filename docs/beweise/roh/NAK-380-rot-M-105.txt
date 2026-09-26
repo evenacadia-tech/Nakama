@@ -1,0 +1,26 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-105 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Resonanzsuche bei 192 kHz, 60 Hz
+Zustand und Vorbedingung (§6.5, woertlich): wie M-103 mit demselben nach E-380-13 selbstgeprüften P2 bei 192 kHz und 60 Hz (§7 K3)
+Zusage (§6.5, woertlich): genau eine Karte bei 60 Hz ± 1/6 Oktave
+Test je Sprache (§6.5): C++: A2 NEU `380/M-105 resonanz_60hz_192k`
+Rotbeweis-Spalte (§6.5, woertlich): heute rot (unter 746 Hz nichts); nach dem Bau Mutation Bassstufe fest 16 384 → keine Karte → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-103 bis M-105 heute rot: keine Karte an 61 von 61 Snapshots (K1 300 Hz/96 kHz, K2 500 Hz/192 kHz, K3 60 Hz/192 kHz).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 6 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: genau eine Karte bei 60 Hz +-1/6 Oktave (192 kHz, K3)
+  Pruefzeile: A2 380/M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte / bei 60 Hz / dauerhaft
+  Mutation: m105-bass: M1-Bassstufe fest 16 384 (Matrixmutation)
+  rot: JA (0 von 61)
+  Protokoll: NAK-380-e6-mutation-m105-bass.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m105-bass: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-105 07:51:30 bis 07:51:34, Exit 1, 3 gruen, 3 rot
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-105 07:51:37 bis 07:51:41, Exit 0, 6 gruen, 0 rot

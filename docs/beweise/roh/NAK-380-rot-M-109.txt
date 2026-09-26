@@ -1,0 +1,31 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-109 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Validity interpolierter LTAS-Bänder in Datei und Briefkasten
+Zustand und Vorbedingung (§6.5, woertlich): AnalyseEngine 48 kHz, nach E-380-13 selbstgeprüftes rosa Rauschen 30 s; Festhalten-Datei und Briefkasten-Antwort über `snapshotObjekt` (`DiagnoseAntwort.cpp:52-125`)
+Zusage (§6.5, woertlich): `komposit_db` ist `null` genau für die Bänder, deren Kompositwert aus einem interpolierten Stufenwert mit Gewicht > 0 entsteht (im Test aus der Bin-Zuordnung `AnalyseEngine.cpp:91-99` und den Nähten `:666-688` unabhängig gezählt; bei 48 kHz mindestens die 25 Bänder ohne Bin der zuständigen Stufe); `referenz_8192_db` ebenso für die 8192er-Stufe; alle anderen Bänder bleiben Zahlen; der v2-Vertrag lässt `null` je Band zu (`eq-snapshot.schema.json:94-95`)
+Test je Sprache (§6.5): C++: B30 NEU `380/M-109 interpolierte_baender_null`
+Rotbeweis-Spalte (§6.5, woertlich): heute rot (interpolierte Werte als Zahl, `AnalyseEngine.cpp:595-626`); nach dem Bau Mutation Validitymaske ignoriert → Zahl → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-109 heute rot: komposit_db 0 von 29, referenz_8192_db 0 von 37 Maskenbaendern null (alle Zahl).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B30: 4 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:14:21 ENDE=08:15:34
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: komposit_db null genau fuer die Maskenbaender (29 bei 48 kHz), sonst Zahl
+  Pruefzeile: B30 380/M-109 interpolierte_baender_null: komposit_db
+  Mutation: m109-maske: Maskenbedingung fuer komposit_db in snapshotObjekt entfernt (Matrixmutation)
+  rot: JA (0 von 29 null)
+  Protokoll: NAK-380-e6-mutation-m109-maske.txt
+- Zusagesatz: referenz_8192_db ebenso fuer die 8192er-Stufe (37 Maskenbaender)
+  Pruefzeile: B30 380/M-109 interpolierte_baender_null: referenz_8192_db
+  Mutation: m109-maske: Maskenbedingung fuer referenz_8192_db entfernt
+  rot: JA (0 von 37 null)
+  Protokoll: NAK-380-e6-mutation-m109-maske.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m109-maske: faellt an der erwarteten Pruefung: JA; mit Mutation B30 --nak380 M-109 07:55:50 bis 07:55:52, Exit 1, 2 gruen, 2 rot
+      [ROT] 380/M-109 interpolierte_baender_null: komposit_db ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl [0 von 29 null, 192 Zahlen, 0 null ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+      [ROT] 380/M-109 interpolierte_baender_null: referenz_8192_db ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl [0 von 37 null, 184 Zahlen, 0 null ohne Maske, 37 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B30 --nak380 M-109 07:55:55 bis 07:55:56, Exit 0, 4 gruen, 0 rot

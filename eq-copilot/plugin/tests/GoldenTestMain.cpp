@@ -111,8 +111,59 @@ struct AnalyseEngineTestzugang
         }
         return aus;
     }
+
+    // ── NAK-380 Etappe 6 (T-380-11), nur lesend ─────────────────────────────
+    // M-99: Punktzahl und Hop der vier Stufen (0 Bass, 1 Referenz, 2 Mitten,
+    // 3 Hoehen).
+    static const AnalyseEngine::WelchStufe& stufe (const AnalyseEngine& e, int s)
+    {
+        return s == 0 ? e.bass : s == 1 ? e.referenz : s == 2 ? e.mitten : e.hoehen;
+    }
+    static int punkte (const AnalyseEngine& e, int s) { return stufe (e, s).n; }
+    static int hop (const AnalyseEngine& e, int s)    { return stufe (e, s).hop; }
+
+    // M-101: die eigenen Vektoren einer Stufe, Kapazitaet mal Elementgroesse
+    // (ringL, ringR, fftDaten, summePsd, fenster); die inneren Tafeln von
+    // juce::dsp::FFT zaehlen nicht (Matrix §6.5).
+    static std::uint64_t stufeHeapBytes (const AnalyseEngine& e, int s)
+    {
+        const auto& w = stufe (e, s);
+        return (std::uint64_t) (w.ringL.capacity() * sizeof (float) + w.ringR.capacity() * sizeof (float)
+                                + w.fftDaten.capacity() * sizeof (float) + w.summePsd.capacity() * sizeof (double)
+                                + w.fenster.capacity() * sizeof (float));
+    }
+    static std::uint64_t histogrammBytes (const AnalyseEngine& e)
+    {
+        return (std::uint64_t) (e.pegelHistogramm.capacity() + e.teilblockHistogramm.capacity())
+             * sizeof (juce::uint32);
+    }
 };
 }
+
+namespace
+{
+/** NAK-380 Etappe 6 (M-106 bis M-109): die neuen Traeger entstehen erst mit dem
+    Bau. Damit derselbe Test gegen den unveraenderten Basisstand uebersetzt
+    (Gegenprobe §8.1), liest er sie ueber Anfragen, die ohne den Traeger
+    „fehlt“ melden - fail-closed: fehlt der Traeger, ist die Pruefung rot. */
+template <typename M>
+double nak380Suchgrenze (const M& m)
+{
+    if constexpr (requires { m.resonanzSucheAbHz; })
+        return m.resonanzSucheAbHz;
+    else
+        return std::numeric_limits<double>::quiet_NaN();
+}
+
+template <typename M>
+juce::String nak380Satz (const M& m)
+{
+    if constexpr (requires { suchgrenzeSatz (m); })
+        return suchgrenzeSatz (m);
+    else
+        return {};
+}
+} // namespace
 
 struct Pruefer
 {
@@ -616,7 +667,11 @@ void nak380M36Eingang (Pruefer& p, const char* kennung, double tiefeDb, std::uin
     if (! karte)
         return;
     const auto& b = resonanz.front();
-    p.wahr (b.gemessen.endsWith (charakterSoll),
+    // Seit NAK-380 Etappe 6 (M-106) folgt dem Charaktertext der Satz zur
+    // Suchgrenze (48 kHz: 17,30·48 000/16 384 = 50,68 Hz, gerundet 51).
+    const auto suchgrenzeSoll = juce::String (juce::CharPointer_UTF8 (
+        "Unter 51 Hz wurde nicht nach Tönen gesucht – das Messfenster ist dort zu grob."));
+    p.wahr (b.gemessen.endsWith (charakterSoll + " " + suchgrenzeSoll),
             fall + "Charaktertext " + charakterWort + " woertlich (Schwelle 6 dB)", b.gemessen);
     p.wahr (b.tu == werkzeugSoll,
             fall + "Werkzeugtext " + werkzeugWort + " woertlich (Schwelle 10 dB)", b.tu);
@@ -908,6 +963,484 @@ void nak380M38 (Pruefer& p)
     }
 }
 
+//==============================================================================
+// NAK-380 Etappe 6 (DSP-20; R-380-5, T-380-7, T-380-8; Matrix §6.5). Jede
+// Referenz ist im Test nachgerechnet (`Nak380Pruefsignale.h`), nie aus der
+// Engine gelesen (R-380-8); Engines im Heap (NAK-175).
+
+constexpr double kNak380E6Raten[] = { 44100.0, 48000.0, 88200.0, 96000.0, 176400.0, 192000.0 };
+
+juce::String nak380KHz (double fs) { return juce::String (fs / 1000.0, 1) + " kHz"; }
+
+/** M-99: Laengentafel der M1-Analyse je Rate und Stufe gegen die Formel
+    T-380-7 (`referenzPunkte`, Basen 16 384/8 192/4 096/2 048) und die Tafel
+    der Matrix §6.5; Hop = N/2. Dauern bei 48 kHz 341,3/170,7/85,3/42,7 ms,
+    in der 48-kHz-Familie gleich, in der 44,1-kHz-Familie 371,5/185,8/92,9/
+    46,4 ms (Rechnung 371,52; 185,76; 92,88; 46,44); Toleranz 0,05 ms = halbe
+    letzte Stelle. */
+void nak380M99 (Pruefer& p)
+{
+    namespace sig = nakama::test::nak380;
+    const int basis[4] = { 16384, 8192, 4096, 2048 };
+    const char* namen[4] = { "Bass", "Referenz", "Mitten", "Hoehen" };
+    for (const double fs : kNak380E6Raten)
+    {
+        auto e = std::make_unique<AnalyseEngine>();
+        e->vorbereiten (fs);
+        const bool familie441 = std::fmod (fs, 44100.0) == 0.0;
+        const double dauer441[4] = { 371.5, 185.8, 92.9, 46.4 };
+        const double dauer48[4]  = { 341.3, 170.7, 85.3, 42.7 };
+        const int faktor = fs < 80000.0 ? 1 : fs < 160000.0 ? 2 : 4;
+        for (int s = 0; s < 4; ++s)
+        {
+            const int n = AnalyseEngineTestzugang::punkte (*e, s);
+            const int formel = sig::referenzPunkte (basis[s], fs);
+            const int matrix = basis[s] * faktor;
+            const double dauer = 1000.0 * (double) n / fs;
+            const double soll = familie441 ? dauer441[s] : dauer48[s];
+            std::printf ("  mess [380/M-99] %s %s: N %d (Formel %d, Matrix %d), Hop %d, Dauer %.2f ms\n",
+                         nak380KHz (fs).toRawUTF8(), namen[s], n, formel, matrix,
+                         AnalyseEngineTestzugang::hop (*e, s), dauer);
+            p.wahr (n == formel && formel == matrix && AnalyseEngineTestzugang::hop (*e, s) == n / 2
+                        && std::abs (dauer - soll) <= 0.05,
+                    "380/M-99 laengentafel_m1 (" + nak380KHz (fs) + ", " + namen[s] + "): N = 2^round(log2(T*fs)) "
+                        "gekappt = Matrix, Hop N/2, Dauer der Familie",
+                    "N " + juce::String (n) + " (Formel " + juce::String (formel) + ", Matrix " + juce::String (matrix)
+                        + "), Dauer " + juce::String (dauer, 2) + " ms (Soll " + juce::String (soll, 1) + ")");
+        }
+    }
+}
+
+/** M-101: Speicher der M1-Analyse je Rate. Eigene Vektoren je Stufe (Kapazitaet
+    mal Elementgroesse): ringL, ringR, fenster je 4 B, fftDaten 2*n float = 8 B,
+    summePsd (n/2 + 1) double = 4 B je Punkt + 8 B, also 24 B je Punkt + 8 B
+    (`AnalyseEngine.cpp` WelchStufe::init); die inneren Tafeln von
+    juce::dsp::FFT zaehlen nicht. Summe der vier Stufen 24*Summe N + 32 B; der
+    Punktanteil ist die Matrixzahl 737 280 / 1 474 560 / 2 949 120 B. Dazu die
+    zwei Histogramme 2 * 221 * 141 * 4 = 2 * 124 644 B, unabhaengig von der
+    Rate. */
+void nak380M101 (Pruefer& p)
+{
+    namespace sig = nakama::test::nak380;
+    const int basis[4] = { 16384, 8192, 4096, 2048 };
+    for (const double fs : kNak380E6Raten)
+    {
+        auto e = std::make_unique<AnalyseEngine>();
+        e->vorbereiten (fs);
+        std::uint64_t summe = 0, sollSumme = 0, punkte = 0;
+        bool jeStufe = true;
+        for (int s = 0; s < 4; ++s)
+        {
+            const int n = sig::referenzPunkte (basis[s], fs);
+            const auto ist = AnalyseEngineTestzugang::stufeHeapBytes (*e, s);
+            const std::uint64_t soll = 24u * (std::uint64_t) n + 8u;
+            jeStufe = jeStufe && ist == soll && AnalyseEngineTestzugang::punkte (*e, s) == n;
+            summe += ist;
+            sollSumme += soll;
+            punkte += (std::uint64_t) n;
+        }
+        const std::uint64_t matrix = fs < 80000.0 ? 737280u : fs < 160000.0 ? 1474560u : 2949120u;
+        const auto hist = AnalyseEngineTestzugang::histogrammBytes (*e);
+        std::printf ("  mess [380/M-101] %s: Stufen %llu B (Soll %llu, Punktanteil %llu, Matrix %llu), Histogramme %llu B\n",
+                     nak380KHz (fs).toRawUTF8(), (unsigned long long) summe, (unsigned long long) sollSumme,
+                     (unsigned long long) (24u * punkte), (unsigned long long) matrix, (unsigned long long) hist);
+        p.wahr (jeStufe && summe == sollSumme && 24u * punkte == matrix && hist == 2u * 124644u,
+                "380/M-101 speicher_m1 (" + nak380KHz (fs) + "): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, "
+                    "Histogramme 2 * 124 644 B",
+                "Stufen " + juce::String ((juce::int64) summe) + " B (Soll " + juce::String ((juce::int64) sollSumme)
+                    + "), Punktanteil " + juce::String ((juce::int64) (24u * punkte)) + " (Matrix "
+                    + juce::String ((juce::int64) matrix) + "), Histogramme " + juce::String ((juce::int64) hist));
+    }
+
+    // Obergrenze (Matrixmutation: Kappe aufgehoben, 384 kHz vorbereitet): die
+    // Regel ergaebe bei 384 kHz 131 072/65 536/32 768/16 384; gekappt traegt
+    // keine Stufe mehr als N_max = 65 536 Punkte, also 65 536/65 536/32 768/
+    // 16 384 und 24 * 180 224 + 32 = 4 325 408 B.
+    {
+        auto e = std::make_unique<AnalyseEngine>();
+        e->vorbereiten (384000.0);
+        const int soll[4] = { 65536, 65536, 32768, 16384 };
+        std::uint64_t summe = 0;
+        bool gleich = true;
+        juce::String ist;
+        for (int s = 0; s < 4; ++s)
+        {
+            const int n = AnalyseEngineTestzugang::punkte (*e, s);
+            gleich = gleich && n == soll[s];
+            summe += AnalyseEngineTestzugang::stufeHeapBytes (*e, s);
+            ist << (s ? "/" : "") << n;
+        }
+        p.wahr (gleich && summe == 24u * 180224u + 32u,
+                "380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt - Stufen 65 536/65 536/32 768/16 384, "
+                "4 325 408 B",
+                "Stufen " + ist + ", " + juce::String ((juce::int64) summe) + " B");
+    }
+}
+
+/** Ein K-Lauf (§7.2 K1 bis K5, M-103 bis M-107): frische Engine bei fs,
+    Block 512 (Rest im letzten Block), `auswerten` an jeder vollen
+    Viertelsekunde (Worker-Takt 250 ms) und am Ende. Festgehalten wird jeder
+    Snapshot ab der Vorbedingung `messbereit` (15 s aktive Zeit) und die
+    Karten der Diagnose dazu. Der Lauf verriegelt gespeiste = verarbeitete
+    Samples = Signallaenge. */
+struct Nak380KLauf
+{
+    std::uint64_t gespeist {}, verarbeitet {};
+    int snapshots {}, messbereit {};
+    std::vector<std::vector<Befund>> karten;   // je Snapshot ab messbereit
+    MessSnapshot letzter;
+    // Nur Messausgabe (§54 der Etappe 6): Breite der Resonanzkandidaten im
+    // Snapshot ab messbereit, kleinste und groesste, in Oktaven.
+    int kandidaten {};
+    double breiteMin { 1.0e9 }, breiteMax {};
+};
+
+std::unique_ptr<Nak380KLauf> nak380KFahren (const std::vector<float>& x, double fs)
+{
+    auto aus = std::make_unique<Nak380KLauf>();
+    auto engine = std::make_unique<AnalyseEngine>();
+    engine->vorbereiten (fs);
+    std::vector<float> inter (1024u);
+    const auto takt = (std::uint64_t) std::llround (0.25 * fs);
+    std::uint64_t naechster = takt, bei = 0;
+    std::size_t i = 0;
+    const auto auswerten = [&]
+    {
+        bei = aus->gespeist;
+        engine->auswerten();
+        ++aus->snapshots;
+        const auto m = engine->snapshot();
+        if (m.zustand == MessZustand::messbereit)
+        {
+            ++aus->messbereit;
+            aus->karten.push_back (diagnose (m, "hub"));
+            for (const auto& r : m.resonanzen)
+            {
+                ++aus->kandidaten;
+                aus->breiteMin = std::min (aus->breiteMin, r.breiteOktaven);
+                aus->breiteMax = std::max (aus->breiteMax, r.breiteOktaven);
+            }
+        }
+    };
+    while (i < x.size())
+    {
+        const int n = (int) std::min<std::size_t> (512u, x.size() - i);
+        for (int k = 0; k < n; ++k)
+            inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
+        engine->verarbeite (inter.data(), n, 2);
+        i += (std::size_t) n;
+        aus->gespeist += (std::uint64_t) n;
+        if (aus->gespeist >= naechster)
+        {
+            auswerten();
+            naechster += takt;
+        }
+    }
+    if (bei != aus->gespeist)   // das Ende, falls es nicht auf einen Takt fiel
+        auswerten();
+    aus->letzter = engine->snapshot();
+    aus->verarbeitet = aus->letzter.verarbeiteteSamples;
+    return aus;
+}
+
+/** Die Karten eines K-Laufs: je Snapshot ab `messbereit` die Resonanzkarten
+    der Diagnose. Zusage M-103 bis M-105: an JEDEM dieser Snapshots genau eine
+    Resonanzkarte, ihr Schwerpunkt innerhalb +-1/6 Oktave um den Ton (die
+    Karte nennt die Bandmitte des Spitzenbandes; `kBreiteMaxOktaven` = 1/6
+    Oktave ist die groesste Breite einer Resonanz, die Spitze liegt also
+    hoechstens so weit neben dem Ton), und sie ist dauerhaft (Persistenz
+    >= 0,5). */
+struct Nak380Karten
+{
+    int snapshots {}, genauEine {}, amTon {}, dauerhaft {}, ohneKarte {};
+    double fErste {}, fLetzte {};
+};
+
+Nak380Karten nak380Karten (const Nak380KLauf& l, double fTon)
+{
+    Nak380Karten k;
+    for (const auto& bs : l.karten)
+    {
+        ++k.snapshots;
+        int n = 0;
+        const Befund* r = nullptr;
+        for (const auto& b : bs)
+            if (b.klasse == BefundKlasse::resonanz) { ++n; r = &b; }
+        if (n == 0) ++k.ohneKarte;
+        if (n == 1)
+        {
+            ++k.genauEine;
+            if (std::abs (std::log2 (r->fSchwerpunkt / fTon)) <= 1.0 / 6.0) ++k.amTon;
+            if (r->dauerhaft) ++k.dauerhaft;
+            if (k.fErste == 0.0) k.fErste = r->fSchwerpunkt;
+            k.fLetzte = r->fSchwerpunkt;
+        }
+    }
+    return k;
+}
+
+/** Gemeinsamer Teil von M-103 bis M-105: Signal erzeugen, Kopffunktion des
+    Erzeugers vor dem Nutzer, Lauf, Vorbedingungen, Kartenzusage. */
+void nak380Resonanzfall (Pruefer& p, const char* id, const char* name, double fTon, double fs)
+{
+    namespace sig = nakama::test::nak380;
+    const auto samples = (std::uint64_t) std::llround (30.0 * fs);
+    const auto k = sig::kSignal (fTon, fs, samples);
+    const auto selbst = sig::kSelbstpruefung (k, fTon, fs, samples);
+    const juce::String kopf = juce::String ("380/") + id + " " + name;
+    p.wahr (selbst.ok, kopf + ": Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)",
+            juce::String (selbst.meldung));
+    const auto l = nak380KFahren (k.x, fs);
+    p.wahr (l->gespeist == samples && l->verarbeitet == samples,
+            kopf + ": Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)",
+            "gespeist " + juce::String ((juce::int64) l->gespeist) + ", verarbeitet "
+                + juce::String ((juce::int64) l->verarbeitet));
+    // messbereit ab 150 aktiven Zellen (15 s); bis 30 s liegen die Takte
+    // 15,00 s bis 29,75 s und das Ende: 60 + 1 Snapshots.
+    p.wahr (l->messbereit == 61, kopf + ": Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)",
+            juce::String (l->messbereit) + " von " + juce::String (l->snapshots));
+    const auto kk = nak380Karten (*l, fTon);
+    std::printf ("  mess [%s] %s: %d Snapshots ab messbereit, genau eine Karte %d, am Ton %d, dauerhaft %d, "
+                 "ohne Karte %d, Schwerpunkt %.1f bis %.1f Hz, Breite %.4f bis %.4f Oktaven (%d Kandidaten)\n",
+                 kopf.toRawUTF8(), nak380KHz (fs).toRawUTF8(), kk.snapshots, kk.genauEine, kk.amTon, kk.dauerhaft,
+                 kk.ohneKarte, kk.fErste, kk.fLetzte, l->kandidaten > 0 ? l->breiteMin : 0.0, l->breiteMax,
+                 l->kandidaten);
+    p.wahr (kk.snapshots > 0 && kk.genauEine == kk.snapshots,
+            kopf + ": genau eine Resonanzkarte an jedem Snapshot ab messbereit",
+            juce::String (kk.genauEine) + " von " + juce::String (kk.snapshots) + " (ohne Karte "
+                + juce::String (kk.ohneKarte) + ")");
+    p.wahr (kk.snapshots > 0 && kk.amTon == kk.snapshots,
+            kopf + ": die Karte liegt bei " + juce::String (fTon, 0) + " Hz +-1/6 Oktave an jedem Snapshot",
+            juce::String (kk.amTon) + " von " + juce::String (kk.snapshots) + ", Schwerpunkt "
+                + juce::String (kk.fErste, 1) + " bis " + juce::String (kk.fLetzte, 1) + " Hz");
+    p.wahr (kk.snapshots > 0 && kk.dauerhaft == kk.snapshots,
+            kopf + ": und sie ist dauerhaft an jedem Snapshot",
+            juce::String (kk.dauerhaft) + " von " + juce::String (kk.snapshots));
+}
+
+/** Der Wortlaut aus §8.6 mit der gerundeten Suchgrenze. */
+juce::String nak380SatzSoll (int hz)
+{
+    return juce::String (juce::CharPointer_UTF8 ("Unter ")) + juce::String (hz)
+         + juce::String (juce::CharPointer_UTF8 (" Hz wurde nicht nach T\xc3\xb6nen gesucht \xe2\x80\x93 das Messfenster ist dort zu grob."));
+}
+
+/** Suchgrenze nach T-380-8 im Test: 17,30 * fs/N_Bass(fs). Herleitung des
+    Faktors (§6.5): die -6-dB-Breite des Hann-Hauptlappens ist 2 Bins; sie
+    ist 1/6 Oktave (`kBreiteMaxOktaven`), wenn 2*Δf = f*(2^(1/12) - 2^(-1/12)),
+    also f = 2/(2^(1/12) - 2^(-1/12))*Δf = 17,30*Δf. */
+double nak380SuchgrenzeSoll (double fs)
+{
+    return 17.30 * fs / (double) nakama::test::nak380::referenzPunkte (16384, fs);
+}
+
+/** M-106: „nicht gesucht“ im vorhandenen Textweg. (a) Die Satzfunktion nennt
+    bei 48 kHz 51 Hz und bei 44,1 kHz 47 Hz (gerundetes resonanzSucheAbHz,
+    50,684 und 46,566 Hz). (b) K4 (Ton 45 Hz bei 48 kHz, unter der Grenze):
+    keine Resonanzkarte an irgendeinem Snapshot ab messbereit. (c) Jede
+    Resonanzkarte traegt den Satz am Ende von `gemessen`: gefahren am Ton
+    60 Hz bei 48 kHz (derselbe Erzeuger, ueber der Grenze), jede Karte jedes
+    Snapshots. Der Leertext der Befundliste am echten Editor ist B15. */
+void nak380M106 (Pruefer& p)
+{
+    namespace sig = nakama::test::nak380;
+    for (const double fs : { 48000.0, 44100.0 })
+    {
+        auto e = std::make_unique<AnalyseEngine>();
+        e->vorbereiten (fs);
+        const auto m = e->snapshot();
+        const int hz = (int) std::lround (nak380SuchgrenzeSoll (fs));
+        const auto satz = nak380Satz (m);
+        std::printf ("  mess [380/M-106] %s: Satz \"%s\"\n", nak380KHz (fs).toRawUTF8(), satz.toRawUTF8());
+        p.wahr (satz == nak380SatzSoll (hz) && hz == (fs == 48000.0 ? 51 : 47),
+                "380/M-106 nicht_gesucht_satz (" + nak380KHz (fs) + "): die Satzfunktion nennt die gerundete Suchgrenze "
+                    + juce::String (hz) + " Hz im Wortlaut aus §8.6",
+                satz.isEmpty() ? juce::String ("kein Satz") : satz);
+    }
+    {
+        const auto samples = (std::uint64_t) 1440000u;
+        const auto k = sig::kSignal (45.0, 48000.0, samples);
+        const auto selbst = sig::kSelbstpruefung (k, 45.0, 48000.0, samples);
+        p.wahr (selbst.ok, "380/M-106 K4: Vorbedingung k_selbstpruefung", juce::String (selbst.meldung));
+        const auto l = nak380KFahren (k.x, 48000.0);
+        const auto kk = nak380Karten (*l, 45.0);
+        std::printf ("  mess [380/M-106] K4 45 Hz: %d Snapshots ab messbereit, ohne Karte %d\n", kk.snapshots, kk.ohneKarte);
+        p.wahr (l->gespeist == samples && l->messbereit == 61,
+                "380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit",
+                juce::String ((juce::int64) l->gespeist) + " Samples, " + juce::String (l->messbereit) + " Snapshots");
+        p.wahr (kk.snapshots == 61 && kk.ohneKarte == kk.snapshots,
+                "380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot",
+                juce::String (kk.ohneKarte) + " von " + juce::String (kk.snapshots) + " ohne Karte");
+        p.wahr (nak380Satz (l->letzter) == nak380SatzSoll (51),
+                "380/M-106 nicht_gesucht_satz K4: der Satz nennt 51 Hz", nak380Satz (l->letzter));
+    }
+    {
+        const auto samples = (std::uint64_t) 1440000u;
+        const auto k = sig::kSignal (60.0, 48000.0, samples);
+        const auto selbst = sig::kSelbstpruefung (k, 60.0, 48000.0, samples);
+        p.wahr (selbst.ok, "380/M-106 Karte 60 Hz: Vorbedingung k_selbstpruefung", juce::String (selbst.meldung));
+        const auto l = nak380KFahren (k.x, 48000.0);
+        const juce::String ende = " " + nak380SatzSoll (51);
+        int karten = 0, mitSatz = 0;
+        juce::String beispiel;
+        for (const auto& bs : l->karten)
+            for (const auto& b : bs)
+                if (b.klasse == BefundKlasse::resonanz)
+                {
+                    ++karten;
+                    if (b.gemessen.endsWith (ende)) ++mitSatz;
+                    else if (beispiel.isEmpty()) beispiel = b.gemessen;
+                }
+        p.wahr (karten > 0 && mitSatz == karten,
+                "380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen",
+                juce::String (mitSatz) + " von " + juce::String (karten) + " Karten"
+                    + (beispiel.isNotEmpty() ? "; ohne Satz: " + beispiel : juce::String()));
+    }
+}
+
+/** M-107: ein Kandidat unter der Suchgrenze wird nicht gemeldet. K5 (Ton 48 Hz
+    bei 48 kHz, 48 < 50,69 Hz): keine Resonanzkarte an irgendeinem Snapshot ab
+    messbereit, der Satz nennt 51 Hz. Gegenprobe ueber der Grenze mit demselben
+    Erzeuger (Trennschaerfe, Lehre Z1): Ton 60 Hz bei 48 kHz ergibt an jedem
+    Snapshot genau eine Karte bei 60 Hz. Zwei Riegel tragen die Zusage
+    „keine Karte darunter“: die Unterdrueckung in `findeResonanzen` (Bandmitte
+    unter `resonanzSucheAbHz`) und das Breitenkriterium (`kBreiteMaxOktaven`),
+    das bei 2 Bins Hauptlappen unter 50,69 Hz breiter als 1/6 Oktave misst. */
+void nak380M107 (Pruefer& p)
+{
+    namespace sig = nakama::test::nak380;
+    const auto samples = (std::uint64_t) 1440000u;
+    for (const double fTon : { 48.0, 60.0 })
+    {
+        const auto k = sig::kSignal (fTon, 48000.0, samples);
+        const auto selbst = sig::kSelbstpruefung (k, fTon, 48000.0, samples);
+        const juce::String kopf = fTon < 50.0 ? "380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz)"
+                                              : "380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz)";
+        p.wahr (selbst.ok, kopf + ": Vorbedingung k_selbstpruefung", juce::String (selbst.meldung));
+        const auto l = nak380KFahren (k.x, 48000.0);
+        p.wahr (l->gespeist == samples && l->verarbeitet == samples && l->messbereit == 61,
+                kopf + ": Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit",
+                juce::String ((juce::int64) l->gespeist) + " Samples, " + juce::String (l->messbereit) + " Snapshots");
+        const auto kk = nak380Karten (*l, fTon);
+        std::printf ("  mess [380/M-107] %.0f Hz: %d Snapshots, genau eine %d, am Ton %d, ohne Karte %d, Schwerpunkt %.1f Hz, "
+                     "Breite %.4f bis %.4f Oktaven (%d Kandidaten)\n",
+                     fTon, kk.snapshots, kk.genauEine, kk.amTon, kk.ohneKarte, kk.fLetzte,
+                     l->kandidaten > 0 ? l->breiteMin : 0.0, l->breiteMax, l->kandidaten);
+        if (fTon < 50.0)
+        {
+            p.wahr (kk.snapshots == 61 && kk.ohneKarte == kk.snapshots,
+                    kopf + ": keine Resonanzkarte an irgendeinem Snapshot (48 Hz liegt unter 50,69 Hz)",
+                    juce::String (kk.ohneKarte) + " von " + juce::String (kk.snapshots) + " ohne Karte");
+            p.wahr (nak380Satz (l->letzter) == nak380SatzSoll (51), kopf + ": der Satz nennt 51 Hz",
+                    nak380Satz (l->letzter));
+        }
+        else
+            p.wahr (kk.snapshots == 61 && kk.genauEine == kk.snapshots && kk.amTon == kk.snapshots,
+                    kopf + ": genau eine Karte bei 60 Hz +-1/6 Oktave an jedem Snapshot (Trennschaerfe)",
+                    juce::String (kk.genauEine) + " von " + juce::String (kk.snapshots) + ", am Ton "
+                        + juce::String (kk.amTon));
+    }
+}
+
+/** M-108: die Suchgrenze ist ein Zustand der Engine (T-380-8): nach
+    `vorbereiten` bei jeder der sechs Raten endlich, > 0 und gleich 17,30*fs/
+    N_Bass(fs) auf 0,01 Hz (46,57 Hz in der 44,1-kHz-, 50,69 Hz in der
+    48-kHz-Familie; Rechnung 46,566 und 50,684). Die Toleranz 0,01 Hz ist die
+    Rundung der Matrixangabe; die Engine rechnet dieselbe Formel in double. */
+void nak380M108 (Pruefer& p)
+{
+    for (const double fs : kNak380E6Raten)
+    {
+        auto e = std::make_unique<AnalyseEngine>();
+        e->vorbereiten (fs);
+        const double ist = nak380Suchgrenze (e->snapshot());
+        const double soll = nak380SuchgrenzeSoll (fs);
+        const double matrix = std::fmod (fs, 44100.0) == 0.0 ? 46.57 : 50.69;
+        std::printf ("  mess [380/M-108] %s: resonanzSucheAbHz %.4f Hz (Soll %.4f, Matrix %.2f)\n",
+                     nak380KHz (fs).toRawUTF8(), ist, soll, matrix);
+        p.wahr (std::isfinite (ist) && ist > 0.0 && std::abs (ist - soll) <= 0.01 && std::abs (soll - matrix) <= 0.01,
+                "380/M-108 suchgrenze_je_rate (" + nak380KHz (fs) + "): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz",
+                std::isfinite (ist) ? juce::String (ist, 4) + " Hz (Soll " + juce::String (soll, 4) + ")"
+                                    : juce::String ("Feld fehlt oder nicht endlich"));
+    }
+}
+
+/** M-112: Zonen-Ticks deterministisch (Zeit ist Musikzeit, E-380-16). P2
+    (-20 dBFS, selbstgeprueft) genau 30 s bei 48 und 96 kHz, jede Zelle aktiv:
+    300 Zellen zu lround(0,1*fs) Samples, ein Tick je 10 aktiven Zellen, also
+    30 Ticks je belegter Zone. Vor der Tickzahl die Voraussetzungen jeder Zone
+    (`AnalyseEngine.cpp` zonenTick): Zone und Schultern mit mindestens 3
+    belegten Baendern und 60 % Belegung, jedes Regionsmittel der Live-Kurve
+    >= -80 dB (kBodenDb + 10), gelesen an der Live-Kurve des letzten
+    Snapshots (dieselbe Skala wie der Tick). Die Tickzahlen sind zusaetzlich
+    ratengleich. */
+void nak380M112 (Pruefer& p)
+{
+    namespace sig = nakama::test::nak380;
+    std::array<juce::uint32, kZonenAnzahl> ticks48 {};
+    for (const double fs : { 48000.0, 96000.0 })
+    {
+        const auto samples = (std::uint64_t) std::llround (30.0 * fs);
+        const auto x = sig::rosaMono (sig::kP2Saat, 0.1, samples);
+        const auto r = sig::rosaSelbstpruefung (x, 0.1, fs);
+        const juce::String kopf = "380/M-112 zonenticks_30_bei_48_und_96k (" + nak380KHz (fs) + ")";
+        p.wahr (r.ok, kopf + ": Vorbedingung rosa_selbstpruefung_E-380-13", juce::String (r.meldung));
+        auto e = std::make_unique<AnalyseEngine>();
+        e->vorbereiten (fs);
+        std::vector<float> inter (1024u);
+        for (std::size_t i = 0; i < x.size();)
+        {
+            const int n = (int) std::min<std::size_t> (512u, x.size() - i);
+            for (int k = 0; k < n; ++k)
+                inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
+            e->verarbeite (inter.data(), n, 2);
+            i += (std::size_t) n;
+        }
+        e->auswerten();
+        const auto m = e->snapshot();
+        p.wahr (m.verarbeiteteSamples == samples && std::llround (m.aktivSekunden * 10.0) == 300,
+                kopf + ": Vorbedingung 30 s gespeist, 300 aktive Zellen",
+                juce::String ((juce::int64) m.verarbeiteteSamples) + " Samples, aktiv " + juce::String (m.aktivSekunden, 2) + " s");
+        for (int z = 0; z < kZonenAnzahl; ++z)
+        {
+            const auto& g = kZonen[z];
+            struct Reg { int belegt = 0, gesamt = 0; double summe = 0.0; };
+            const auto region = [&] (double lo, double hi)
+            {
+                Reg rg;
+                for (int b = 0; b < kLtasBaender; ++b)
+                {
+                    const double f = m.ltasZentrenHz[(std::size_t) b];
+                    if (f < lo || f >= hi) continue;
+                    ++rg.gesamt;
+                    if (std::isfinite (m.ltasLiveDb[(std::size_t) b])) { ++rg.belegt; rg.summe += m.ltasLiveDb[(std::size_t) b]; }
+                }
+                return rg;
+            };
+            const auto genug = [] (const Reg& rg)
+            {
+                return rg.gesamt > 0 && rg.belegt >= 3 && (double) rg.belegt / (double) rg.gesamt >= 0.6
+                    && rg.summe / rg.belegt >= -80.0;
+            };
+            const bool mitLinie = g.schulterHiVon > 0.0;
+            const bool voraus = genug (region (g.zoneVon, g.zoneBis)) && genug (region (g.schulterLoVon, g.schulterLoBis))
+                             && (! mitLinie || genug (region (g.schulterHiVon, g.schulterHiBis)));
+            const auto t = m.zonenZeit[(std::size_t) z].ticks;
+            p.wahr (voraus, kopf + ": Zone " + juce::String (z) + " Vorbedingung Belegung und Pegel der Zone und ihrer Schultern",
+                    "Regionen belegt und >= -80 dB: " + juce::String (voraus ? "ja" : "NEIN"));
+            p.wahr (voraus && t == 30u, kopf + ": Zone " + juce::String (z) + " genau 30 Ticks (300 aktive Zellen / 10)",
+                    juce::String ((int) t) + " Ticks");
+            if (fs == 48000.0)
+                ticks48[(std::size_t) z] = t;
+            else
+                p.wahr (t == ticks48[(std::size_t) z], kopf + ": Zone " + juce::String (z) + " ratengleich mit 48 kHz",
+                        juce::String ((int) t) + " / " + juce::String ((int) ticks48[(std::size_t) z]));
+            std::printf ("  mess [380/M-112] %s Zone %d: %u Ticks, Vorbedingung %s\n", nak380KHz (fs).toRawUTF8(), z,
+                         (unsigned) t, voraus ? "ja" : "NEIN");
+        }
+    }
+}
+
 void nak380M1Faelle (const char* nur, int& ok, int& fehler)
 {
     namespace sig = nakama::test::nak380;
@@ -951,6 +1484,25 @@ void nak380M1Faelle (const char* nur, int& ok, int& fehler)
         Pruefer p; p.signal = "380/M-38 teilblock_raender"; nak380M38 (p);
         ok += p.ok; fehler += p.fehler;
     }
+    // NAK-380 Etappe 6 (DSP-20).
+    const struct { const char* id; const char* signal; void (*fall) (Pruefer&); } etappe6[] = {
+        { "M-99",  "380/M-99 laengentafel_m1",           nak380M99 },
+        { "M-101", "380/M-101 speicher_m1",              nak380M101 },
+        { "M-103", "380/M-103 resonanz_300hz_96k",       [] (Pruefer& p) { nak380Resonanzfall (p, "M-103", "resonanz_300hz_96k K1", 300.0, 96000.0); } },
+        { "M-104", "380/M-104 resonanz_500hz_192k",      [] (Pruefer& p) { nak380Resonanzfall (p, "M-104", "resonanz_500hz_192k K2", 500.0, 192000.0); } },
+        { "M-105", "380/M-105 resonanz_60hz_192k",       [] (Pruefer& p) { nak380Resonanzfall (p, "M-105", "resonanz_60hz_192k K3", 60.0, 192000.0); } },
+        { "M-106", "380/M-106 nicht_gesucht_satz",       nak380M106 },
+        { "M-107", "380/M-107 kandidat_unter_suchgrenze", nak380M107 },
+        { "M-108", "380/M-108 suchgrenze_je_rate",       nak380M108 },
+        { "M-112", "380/M-112 zonenticks_30_bei_48_und_96k", nak380M112 },
+    };
+    for (const auto& f : etappe6)
+        if (waehlt (f.id))
+        {
+            Pruefer p; p.signal = f.signal; f.fall (p);
+            std::printf ("%-44s %3d ok, %d Fehler\n", f.signal, p.ok, p.fehler);
+            ok += p.ok; fehler += p.fehler;
+        }
 }
 } // namespace
 

@@ -7,7 +7,7 @@
 - **Bauentscheidung:** erteilt am 20.08.2026 (User: „okay dann fangen wir damit nächste session an"; Errata (a))
 - **Errata 21.08.2026:** **in Fassung 0.5 eingearbeitet.** Der Block unter dieser Liste bleibt als
   **Verlaufsabschnitt** stehen — er ist die Quelle jeder Einarbeitung und wird nicht gelöscht. Seine
-  Vorrangregel ist erfüllt, nicht aufgehoben: jedes Erratum (a) bis (r) steht ab 0.5 zusätzlich an
+  Vorrangregel ist erfüllt, nicht aufgehoben: jedes Erratum (a) bis (s) steht ab 0.5 zusätzlich an
   seiner eigenen Stelle im Text, mit Buchstabe, Datum und User-Wort-Quelle.
 - **Fassung 0.4 (20.08.2026):** Befunde des unabhängigen Prüfberichts
   ([`pruefbericht-sondenentwurf-2026-08-20.md`](pruefbericht-sondenentwurf-2026-08-20.md))
@@ -54,7 +54,7 @@ weder durch stilles Umschreiben noch durch eine Oberfläche, die den Konflikt ve
 
 ## Errata und Entscheide nach dem Kontext-Interview (21.08.2026)
 
-> **Verlaufsabschnitt seit Fassung 0.5 (02.09.2026).** Alle 18 Errata (a) bis (r) sind unten im
+> **Verlaufsabschnitt seit Fassung 0.5 (02.09.2026).** Alle 19 Errata (a) bis (s) sind unten im
 > Text an ihrer Stelle eingearbeitet und dort mit Buchstabe, Datum und User-Wort belegt. Dieser
 > Block bleibt stehen, weil er die **Quelle** jeder Einarbeitung ist — er wird nicht gelöscht und
 > nicht umgeschrieben. Die Regel „Fassung 0.4 bleibt darunter unverändert stehen" galt für 0.4;
@@ -370,6 +370,10 @@ JSON-Rückfall (Zustand und Evidenz laufen über P0/P1-JSON, kein P0-Verlust), d
 Transportzulassung, und die Zählung „2 supported, 8 unsupported“ aus (k) bleibt die Hostmessung vom
 22.08.2026, mit der Build-Tatsache gelten 3 supported, 7 unsupported (Kasten in §53.6, Register
 NAK-386).
+
+**(s) Befund, nachgetragen mit NAK-380 (26.09.2026, `beweise/NAK-380.md` R-380-5).** Kein
+User-Wort und kein Produktentscheid: §35.1 ‚Die vorhandenen FFT-Größen 16.384/8.192/4.096/2.048
+bleiben sinnvoll‘ gilt für 48 kHz; bei anderen Abtastraten gilt die Fensterdauer (Kasten in §35.1).
 
 ---
 
@@ -2297,6 +2301,13 @@ Auflösungen werden über ungefähr eine Oktave gewichtet.
 Die niedrigste 16.384er Auflösung benötigt bei 48 kHz bereits rund 341 ms Eingangsmaterial. Main
 zeigt deshalb Alter und Fensterlänge je Auflösung; die Bassansicht darf nicht dieselbe Frische wie
 ein 2.048-/4.096-Sample-Liveframe vortäuschen.
+
+> **[0.5 · Erratum (s) · Befund 26.09.2026]** Die FFT-Größen 16.384/8.192/4.096/2.048 gelten für
+> 48 kHz (bei 44,1 kHz dieselben). Bei anderen Abtastraten bleibt die Fensterdauer (bei 48 kHz:
+> Bassstufe ≈ 341 ms, Referenz ≈ 171 ms, Mitten ≈ 85 ms, Höhen ≈ 43 ms); die Länge folgt als nächste
+> Zweierpotenz bis höchstens 65.536 Punkte. Was eine Auflösung nicht durchsuchen kann, meldet Nakama
+> als „nicht gesucht“; interpolierte LTAS-Bänder tragen in Datei und Heartbeat `null`. Quelle:
+> NAK-380 R-380-5, DSP-20 (NAK-379); kein User-Wort, kein Produktentscheid.
 
 Aktivität kombiniert einen absoluten Floor mit dem lokalen Rauschboden, beispielsweise
 `level > max(-70 LUFS-M, adaptive_floor + 10 dB)`. Das ist ein zu kalibrierender Startwert. Stille

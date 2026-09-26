@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m122-klass-verg
+Gegenprobe M-122, Aufrufpfad Vergleichbarkeit: Riegel steht, die Klassifikation liest nicht vergleichbar als Aehnlichkeit 0.
+Datei: broker/src/coordinator/vergleichbarkeit.rs; SHA-256 vor der Mutation: 95A8447C9C49ED79B52207B347DE8A625A206DB6F54D210F3745E98ADEC15578; Sicherung eq-copilot/build/nak380-sicherung/e6/m122-klass-verg/vergleichbarkeit.rs
+Begruendung: Einzelmutation der Klassifikation im Vergleichbarkeitspfad; der Riegel in telemetrie.rs bleibt.
+Mutation 1: broker/src/coordinator/vergleichbarkeit.rs, fn beurteile_versioniert, Zweig NichtVergleichbar
+Wortlaut vorher:
+                    crate::telemetrie::FingerprintVergleich::NichtVergleichbar => (f64::NAN, true),
+Wortlaut nachher:
+                    crate::telemetrie::FingerprintVergleich::NichtVergleichbar => (0.0, false), // Mutation m122-klass-verg
+
+== Matrixzeile M-122: nicht vergleichbar fuehrt nie zu MaterialVerschieden und traegt keinen Zahlenwert (vergleichbarkeit.rs beurteile_versioniert)
+Lauf mit Mutation: A4 cargo test --lib nak380_m122 06:44:02 bis 06:44:05, Exit 101, 8 gruen, 4 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+      ROT M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Schwach [MaterialVerschieden]]
+      ROT M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)  [0]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: ROT M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar | ROT M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'OK  M-122 ungleiche Messfassung': gruen 1, rot 0
+    Muster 'OK  M-122 Invalidierung, ungleiche Fassung': gruen 1, rot 0
+    Muster 'OK  M-122 Vergleichbarkeit, gleiche Fassung': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (2); Grund: die Summenpruefung des Falls und die Testzeile FAILED
+    thread 'telemetrie::tests::nak380_m122_fingerprint_nur_gleiche_metrics_version' (114252) panicked at src\telemetrie.rs:1346:9: | M-122 rot: ["Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden", "Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)"]
+    test telemetrie::tests::nak380_m122_fingerprint_nur_gleiche_metrics_version ... FAILED
+Unter derselben Mutation gruen gebliebene Pruefungen: 8
+      OK  M-122 Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten  [1 / 1]
+      OK  M-122 gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute  [Aehnlichkeit(0.0)]
+      OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)  [Aehnlichkeit(0.0)]
+      OK  M-122 die Messfassung entscheidet, nicht Fingerprintwerte.version  [Aehnlichkeit(0.0)]
+      OK  M-122 ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert  [NichtVergleichbar / NichtVergleichbar]
+      OK  M-122 Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+      OK  M-122 Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)  [NichtVergleichbar]
+      OK  M-122 Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute  [0 Schwach [MaterialVerschieden]]
+
+Ruecknahme aus der Sicherung, broker/src/coordinator/vergleichbarkeit.rs, SHA-256 95A8447C9C49ED79B52207B347DE8A625A206DB6F54D210F3745E98ADEC15578: gleich
+Lauf nach Ruecknahme: A4 cargo test --lib nak380_m122 06:44:05 bis 06:44:08, Exit 0, 11 gruen, 0 rot

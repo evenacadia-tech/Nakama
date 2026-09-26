@@ -80,4 +80,12 @@ std::vector<Befund> diagnose (const MessSnapshot& m, const juce::String& rolle);
 // Kompakter Einzeiler für den Hinweis-Knopf: „2 Auffälligkeiten" o. ä.
 juce::String diagnoseKnopfText (const std::vector<Befund>& befunde);
 
+// NAK-380 Etappe 6 (T-380-8, R-380-5): der Satz, der sagt, wo nicht nach
+// Tönen gesucht wurde - „Unter 51 Hz wurde nicht nach Tönen gesucht – das
+// Messfenster ist dort zu grob." mit der gerundeten Suchgrenze
+// `m.resonanzSucheAbHz`. Leer, solange die Engine keine Grenze kennt. Die
+// Resonanzkarte hängt ihn an `gemessen`, der Leertext der Befundliste an
+// seinen ersten Satz; der Text entsteht nur hier.
+juce::String suchgrenzeSatz (const MessSnapshot& m);
+
 } // namespace eqcop

@@ -1,0 +1,25 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-117 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Erratum (s)
+Zustand und Vorbedingung (§6.5, woertlich): Entwurf: Kasten als eigener Absatz hinter `:2299` (Ende des Absatzes, der mit `:2287` beginnt), Verlaufseintrag (s) hinter (r) (`:365-372`), Zähler `:10` und `:57`
+Zusage (§6.5, woertlich): Wortlaut §8.6; die Zähler nennen „(a) bis (s)“ und „Alle 19 Errata“; `:2287` bleibt wörtlich stehen (Entwurfstext wird nicht umgeschrieben, `:360-362`)
+Test je Sprache (§6.5): Dokuriegel (`py -3.13 tools/plan/dokuriegel.py docs/FL-Nakama-Sonden-Design-Entwurf.md`); keine Laufzeitprüfung
+Rotbeweis-Spalte (§6.5, woertlich): heute rot (Text fehlt); Nachweis `git grep -n "Erratum (s)"`
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-117 heute rot: git grep leer.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Kasten Erratum (s) als eigener Absatz hinter dem Absatz, der mit :2287 beginnt; Verlaufseintrag (s) hinter (r); Zaehler (a) bis (s) und 'Alle 19 Errata'; :2287 bleibt woertlich
+  Pruefzeile: Dokuriegel auf docs/FL-Nakama-Sonden-Design-Entwurf.md und git grep -n "Erratum (s)"
+  Mutation: keine (Textzeile); Nachweis am Basisstand git grep leer
+  rot: JA am Basisstand (leer), am Etappenstand Treffer Zeile 2305
+  Protokoll: NAK-380-etappe-6-basisstand-gegenprobe.txt (M-117)
+
+== Endstand (Etappenstand, 26.09.2026)
+    git grep -n "Erratum (s)" -- docs/FL-Nakama-Sonden-Design-Entwurf.md: Treffer Zeile 2305 (Kasten [0.5 · Erratum (s) · Befund 26.09.2026]); Verlaufseintrag (s) Zeile 374 hinter (r) Zeile 365; Zaehler :10 „(a) bis (s)“ und :57 „Alle 19 Errata (a) bis (s)“.
+    py -3.13 tools/plan/dokuriegel.py docs/beweise/NAK-380.md docs/FL-Nakama-Sonden-Design-Entwurf.md: 0 Befunde, 1 benannt (Entwurf :189, historisch markierter Verweis, unveraendert).
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)

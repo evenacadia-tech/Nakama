@@ -1,0 +1,26 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m119-matrix
+festes Array von 65 536 double als Mitglied der FeatureEngine (+524 288 B)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m119-matrix/FeatureEngine.h
+Begruendung: Matrixmutation wortwoertlich; die Zeile nennt sie zugleich Rotbeweis der Stapelwache (B5 laeuft ohne 0xC00000FD). Erwartet: entweder die sizeof-Pruefung rot oder der Abbruch 0xC00000FD (Exit -1073741571).
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, FeatureEngine, Mitglieder
+Wortlaut vorher:
+        int    zellenSamples { 0 }, zelleStand { 0 };
+Wortlaut nachher:
+        int    zellenSamples { 0 }, zelleStand { 0 };
+        std::array<double, 65536> nak380Mutation {};
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:49:53 bis 07:50:10, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:50:10.382 juenger als Quelle 07:49:53.200: ja
+
+== Matrixzeile M-119 (Matrixmutation, Stapelwache)
+Lauf mit Mutation: B5 --nak380 M-119, dann B5 voll (letzte drei Zeilen) 07:50:10 bis 07:50:10, Exit 1, 0 gruen, 0 rot
+  LAUFEXIT B5 --nak380 M-119: -1073741571 (0xC00000FD), 0 Ausgabezeilen
+  LAUFEXIT B5 voll: -1073741571 (0xC00000FD), 0 Ausgabezeilen
+Gefallene Pruefungen, die die Zusage tragen (0):
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: )
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:50:10 bis 07:50:27, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:50:27.769 juenger als Quelle 07:50:10.655: ja
+Lauf nach Ruecknahme: B5 --nak380 M-119, dann B5 voll (letzte drei Zeilen) 07:50:27 bis 07:51:00, Exit 0, 3 gruen, 0 rot

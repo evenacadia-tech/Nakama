@@ -1,0 +1,46 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-114 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Bin-Zuordnung unter anderer Länge
+Zustand und Vorbedingung (§6.5, woertlich): FeatureEngine 96 kHz mit 32 768/8 192 gegen 48 kHz mit 16 384/4 096
+Zusage (§6.5, woertlich): `bandVon`/`bandBis` je Band und Stufe identisch (Δf 2,9297 bzw. 11,7188 Hz in beiden Fällen, nachgerechnet); Kappe `min(18 kHz, 0,95·fs/2)` = 18 kHz in beiden
+Test je Sprache (§6.5): C++: B5 NEU `380/M-114 zuordnung_96k_gleich_48k` (Testzugang)
+Rotbeweis-Spalte (§6.5, woertlich): heute rot (96 kHz nutzt 16 384/4 096); nach dem Bau Mutation wie M-98 → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-114 heute rot: Bass 156 von 221 gleich (Δf 2,9297/5,8594 Hz), Haupt 65 von 221 (11,7188/23,4375 Hz).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 3 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: bandVon/bandBis je Band und Stufe bei 96 kHz identisch zu 48 kHz (Df 2,9297 bzw. 11,7188 Hz)
+  Pruefzeile: B5 380/M-114 zuordnung_96k_gleich_48k (Bass) und (Haupt)
+  Mutation: m98-regel (Mutation wie M-98)
+  rot: JA (Bass 156, Haupt 65 von 221 gleich)
+  Protokoll: NAK-380-e6-mutation-m98-regel.txt
+- Zusagesatz: Kappe 18 kHz in beiden
+  Pruefzeile: B5 380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten
+  Mutation: m114-kappe: kObergrenzeHz 18 000 -> 17 000 Hz
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m114-kappe.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m98-regel: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-98, M-102, M-114, M-120 07:38:37 bis 07:38:39, Exit 1, 14 gruen, 15 rot
+      [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 185.76 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 46.44 ms (Soll 92.9)]
+      [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 170.67 ms (Soll 341.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 42.67 ms (Soll 85.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 92.88 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 23.22 ms (Soll 92.9)]
+      [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 85.33 ms (Soll 341.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 21.33 ms (Soll 85.3)]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (96.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 60, Gitterreferenz 25, Matrix 25]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (192.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 94, Gitterreferenz 25, Matrix 25]
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [156 von 221 gleich, erste Abweichung Band 0, Δf 2.9297 / 5.8594 Hz (N 16384 / 16384)]
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [65 von 221 gleich, erste Abweichung Band 65, Δf 11.7188 / 23.4375 Hz (N 4096 / 4096)]
+      [ROT]  380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 16384/8192, Haupt 4096/2048]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102, M-114, M-120 07:38:56 bis 07:38:58, Exit 0, 29 gruen, 0 rot
+  m114-kappe: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-114 08:07:09 bis 08:07:09, Exit 1, 2 gruen, 1 rot
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten (kein Band ueber der Kappe)  [219 / 219]
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-114 08:07:25 bis 08:07:25, Exit 0, 3 gruen, 0 rot

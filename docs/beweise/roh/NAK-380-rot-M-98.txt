@@ -1,0 +1,59 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-98 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · R-380-5 · Längentafel der FeatureEngine
+Zustand und Vorbedingung (§6.5, woertlich): `vorbereiten` bei 44,1/48/88,2/96/176,4/192 kHz
+Zusage (§6.5, woertlich): Bass/Haupt = 16 384/4 096 (44,1 und 48 kHz), 32 768/8 192 (88,2 und 96 kHz), 65 536/16 384 (176,4 und 192 kHz); Fensterdauern 371,5/92,9 ms in der 44,1-kHz-Familie, 341,3/85,3 ms in der 48-kHz-Familie (nachgerechnet); Hop = N/2
+Test je Sprache (§6.5): C++: B5 NEU `380/M-98 laengentafel_featureengine` (Testzugang Punktzahl je Stufe)
+Rotbeweis-Spalte (§6.5, woertlich): heute rot: 16 384/4 096 bei jeder Rate (`FeatureEngine.h:376`, `:378`); nach dem Bau Mutation Längenregel → Konstante → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-98  heute rot: 16 384/4 096 bei jeder Rate (88,2 bis 192 kHz: Soll 32 768/8 192 bzw. 65 536/16 384); 44,1/48 kHz gruen.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 12 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Bass/Haupt 16 384/4 096 bei 44,1 und 48 kHz, Hop N/2, Dauer 371,5/92,9 bzw. 341,3/85,3 ms
+  Pruefzeile: B5 380/M-98 laengentafel_featureengine (44.1 kHz und 48.0 kHz, Bass/Haupt)
+  Mutation: Doppelmutation m98-doppel (floor statt round UND Untergrenze entfernt; 44,1 kHz fiele auf 8 192/2 048); Gegenproben m98-floor und m98-untergrenze lassen 44,1 kHz gruen; 48 kHz ist exakt die Basislaenge und unter allen Laengenmutationen Pflicht-Gruen
+  rot: JA bei 44,1 kHz (m98-doppel); Gegenproben gruen
+  Protokoll: NAK-380-e6-mutation-m98-doppel.txt, -m98-floor.txt, -m98-untergrenze.txt
+- Zusagesatz: 32 768/8 192 bei 88,2 und 96 kHz, 65 536/16 384 bei 176,4 und 192 kHz, Hop N/2, Dauer wie die Familie
+  Pruefzeile: B5 380/M-98 laengentafel_featureengine (88.2 bis 192.0 kHz, Bass/Haupt)
+  Mutation: m98-regel: fensterPunkte -> Konstante in FeatureEngine::vorbereiten (Matrixmutation)
+  rot: JA (8 Pruefzeilen)
+  Protokoll: NAK-380-e6-mutation-m98-regel.txt
+
+Doppelt getragen (44,1-kHz-Haelfte, auch M-102; M-99 dreifach, siehe dort): die Laengen 16 384/4 096 bei 44,1 kHz halten das Runden in fensterPunkte (floor ergaebe 8 192/2 048) und die Untergrenze N >= N(48 kHz). Jede Einzelmutation laesst 44,1 kHz gruen (m98-floor, m98-untergrenze), erst beide zusammen machen die Zeilen rot (m98-doppel).
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m98-regel: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-98, M-102, M-114, M-120 07:38:37 bis 07:38:39, Exit 1, 14 gruen, 15 rot
+      [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 185.76 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 46.44 ms (Soll 92.9)]
+      [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 170.67 ms (Soll 341.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 42.67 ms (Soll 85.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 92.88 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 23.22 ms (Soll 92.9)]
+      [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 85.33 ms (Soll 341.3)]
+      [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 21.33 ms (Soll 85.3)]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (96.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 60, Gitterreferenz 25, Matrix 25]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (192.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 94, Gitterreferenz 25, Matrix 25]
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [156 von 221 gleich, erste Abweichung Band 0, Δf 2.9297 / 5.8594 Hz (N 16384 / 16384)]
+      [ROT]  380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [65 von 221 gleich, erste Abweichung Band 65, Δf 11.7188 / 23.4375 Hz (N 4096 / 4096)]
+      [ROT]  380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 16384/8192, Haupt 4096/2048]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 2; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102, M-114, M-120 07:38:56 bis 07:38:58, Exit 0, 29 gruen, 0 rot
+  m98-floor: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:05:24 bis 08:05:24, Exit 1, 28 gruen, 14 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 14; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:05:45 bis 08:05:45, Exit 0, 42 gruen, 0 rot
+      Deutung fuer M-98: Gegenprobe: unter der Einzelmutation dieses Riegels bleiben die 44,1-kHz-Zeilen gruen, weil der andere Riegel sie traegt (Pflicht-Gruen JA); das NEIN des Protokolls ist das erwartete Ergebnis. Die Untergrenze hebt 8 192/2 048 wieder auf 16 384/4 096.
+  m98-untergrenze: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:08:43 bis 08:08:43, Exit 0, 42 gruen, 0 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:09:03 bis 08:09:04, Exit 0, 42 gruen, 0 rot
+      Deutung fuer M-98: Gegenprobe: unter der Einzelmutation dieses Riegels bleiben die 44,1-kHz-Zeilen gruen, weil der andere Riegel sie traegt (Pflicht-Gruen JA); das NEIN des Protokolls ist das erwartete Ergebnis. Das Runden liefert 16 384/4 096 ohne Untergrenze.
+  m98-doppel: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:09:24 bis 08:09:24, Exit 1, 25 gruen, 17 rot
+      [ROT]  380/M-98 laengentafel_featureengine (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 8192 (Formel 16384, Matrix 16384), Hop 4096, FFT 8192/8192, Dauer 185.76 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (44.1 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 2048 (Formel 4096, Matrix 4096), Hop 1024, FFT 2048/2048, Dauer 46.44 ms (Soll 92.9)]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (44.1 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 55, Gitterreferenz 22, Matrix 22]
+      mitgefallen 14; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:09:44 bis 08:09:45, Exit 0, 42 gruen, 0 rot
+      Deutung fuer M-98: JA fuer M-98: beide 44,1-kHz-Zeilen fallen (8 192/2 048). Das NEIN des Protokolls betrifft nur die mitgefahrene M-99-Zeile, die dreifach getragen ist (M-99).

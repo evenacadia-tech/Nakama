@@ -1,0 +1,20 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m118-register
+N_max im Code ohne Register (kFensterPunkteMax 65536 -> 131072)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m118-register/FeatureEngine.h
+Begruendung: Der A5-Fall bindet jede gefuehrte Groesse der Fassung 20260929 mit Wert an ihre Codestelle (Matrixmutation).
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, kFensterPunkteMax
+Wortlaut vorher:
+    inline constexpr int kFensterPunkteMax = 65536;
+Wortlaut nachher:
+    inline constexpr int kFensterPunkteMax = 131072;
+
+== Matrixzeile M-118 (A5)
+Lauf mit Mutation: A5 pruefe_v3_vertrag.py --nak380 M-118 07:55:56 bis 07:55:57, Exit 2, 0 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      ROT: nak380_m118_fassung_etappe_6: kFensterPunkteMax = 65536 steht mit dem Registerwert in FeatureEngine.h — Code 131072 (FeatureEngine.h), Register 65536 ('eq-copilot/plugin/core/analysis/FeatureEngine.h'), geltend 65536
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: kFensterPunkteMax)
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 0
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+Lauf nach Ruecknahme: A5 pruefe_v3_vertrag.py --nak380 M-118 07:55:57 bis 07:55:58, Exit 0, 0 gruen, 0 rot

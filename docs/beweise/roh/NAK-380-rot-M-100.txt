@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-100 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Speicher der FeatureEngine je Rate
+Zustand und Vorbedingung (§6.5, woertlich): wie M-98
+Zusage (§6.5, woertlich): Heap der zwei Stufen = 110 B je Punkt (Ringe 2·8, Zeitringe 2·8 + 2·1, Fenster, Arbeit, PSD 4, zwei FFTs je 28, nachgerechnet aus `FeatureEngine.h:1101-1132` und `Fft.h:43-74`): 2 252 800 B (44,1/48), 4 505 600 B (88,2/96), 9 011 200 B (176,4/192); N_max = 65 536; Budget der längen- und binabhängigen Träger je Engine einschließlich Stereoring (M-85) und Detektor (M-43) ≤ 9,3 MB, gerechnet 9 274 080 B
+Test je Sprache (§6.5): C++: B5 NEU `380/M-100 speicher_featureengine`
+Rotbeweis-Spalte (§6.5, woertlich): heute nicht messbar (Zugang entsteht erst); Mutation Obergrenze aufgehoben und 384 kHz vorbereitet → 131 072 Punkte → über dem Budget → rot
+Etikett: heute nicht messbar (Zugang entsteht erst; am Basisstand mit dem Allokationszaehler gemessen, rot ab 88,2 kHz)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-100 heute nicht messbar laut Matrix; mit dem Allokationszaehler messbar: Nutzdaten 1 804 016 + 452 336 B bei jeder Rate (= 110 B je Punkt + 1 776 B bei N 16 384/4 096), Budget 2,33 bis 2,52 MB; rot bei 88,2 bis 192 kHz ueber die Laengen, 384 kHz N 16 384 statt N_max.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 13 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: Heap der zwei Stufen = 110 B je Punkt (dazu 1 776 B je Stufe und der gemessene STL-Verwaltungsanteil 19 * 39 B)
+  Pruefzeile: B5 380/M-100 speicher_featureengine (je Rate): Heap der zwei Stufen gemessen
+  Mutation: m100-heap: Arbeitspuffer der Stufe 2*n statt n (118 B je Punkt)
+  rot: JA (je Rate)
+  Protokoll: NAK-380-e6-mutation-m100-heap.txt
+- Zusagesatz: N_max = 65 536; Budget der laengen- und binabhaengigen Traeger <= 9,3 MB
+  Pruefzeile: B5 380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt
+  Mutation: m100-kappe: Kappe in fensterPunkte entfernt, 384 kHz vorbereitet (Matrixmutation)
+  rot: JA (Bass 131 072 Punkte, 14 419 696 B Nutzdaten)
+  Protokoll: NAK-380-e6-mutation-m100-kappe.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m100-kappe: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-100; A2 --nak380 M-101 07:39:22 bis 07:39:22, Exit 1, 12 gruen, 2 rot
+      [ROT]  380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt - Bassstufe N_max = 65 536, Nutzdaten 7 210 736 B, kein Absturz  [Bass 14419696 B Nutzdaten (Soll 14419696, N 131072), gesamt 14420437 B bei 21 Anforderungen, davon 19 ab 4 KiB]
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt - Stufen 65 536/65 536/32 768/16 384, 4 325 408 B — Stufen 131072/65536/32768/16384, 5898272 B
+      Pflicht-Gruen unter der Mutation: NEIN
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-100; A2 --nak380 M-101 07:39:42 bis 07:39:42, Exit 0, 13 gruen, 0 rot
+  m100-heap: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-100 08:06:05 bis 08:06:05, Exit 1, 4 gruen, 9 rot
+      [ROT]  380/M-100 speicher_featureengine (44.1 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1935088 B Nutzdaten (Soll 1804016, N 16384), gesamt 1935829 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 485104 B Nutzdaten (Soll 452336, N 4096), gesamt 485845 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H)
+      [ROT]  380/M-100 speicher_featureengine (192.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 7735024 B Nutzdaten (Soll 7210736, N 65536), gesamt 7735765 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 1935088 B Nutzdaten (Soll 1804016, N 16384), gesamt 1935829 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B
+      mitgefallen 7; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-100 08:06:25 bis 08:06:25, Exit 0, 13 gruen, 0 rot

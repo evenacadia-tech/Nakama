@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-101 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Speicher der M1-Analyse je Rate
+Zustand und Vorbedingung (§6.5, woertlich): wie M-99
+Zusage (§6.5, woertlich): eigene Vektoren der vier Stufen = 24 B je Punkt (Ringe L/R float 8, FFT-Puffer float 8, `summePsd` 4, Fenster float 4, nachgerechnet aus `AnalyseEngine.cpp:65-89`): 737 280 B (44,1/48), 1 474 560 B (88,2/96), 2 949 120 B (176,4/192), ohne die inneren Tafeln von `juce::dsp::FFT`; dazu die Histogramme 2 · 124 644 B
+Test je Sprache (§6.5): C++: A2 NEU `380/M-101 speicher_m1`
+Rotbeweis-Spalte (§6.5, woertlich): heute nicht messbar; Mutation wie M-100 → rot
+Etikett: heute nicht messbar (am Basisstand gemessen 737 312 B bei jeder Rate)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-101 heute nicht messbar laut Matrix; gemessen 737 312 B bei jeder Rate (Punktanteil 737 280), Histogramme 249 288 B; rot ab 88,2 kHz.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 7 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: eigene Vektoren der vier Stufen 24 B je Punkt: 737 280 / 1 474 560 / 2 949 120 B, Histogramme 2 * 124 644 B
+  Pruefzeile: A2 380/M-101 speicher_m1 (44.1 bis 192.0 kHz)
+  Mutation: m101-heap: Ring L der M1-Stufe 2*n statt n (28 B je Punkt)
+  rot: JA (je Rate)
+  Protokoll: NAK-380-e6-mutation-m101-heap.txt
+- Zusagesatz: Obergrenze (Mutation wie M-100): bei 384 kHz keine Stufe ueber 65 536 Punkte
+  Pruefzeile: A2 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt (in Etappe 6 ergaenzt, damit die Matrixmutation eine Pruefzeile trifft)
+  Mutation: m100-kappe (dieselbe Mutation wie M-100)
+  rot: JA (Stufen 131072/65536/32768/16384, 5 898 272 B)
+  Protokoll: NAK-380-e6-mutation-m100-kappe.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m100-kappe: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-100; A2 --nak380 M-101 07:39:22 bis 07:39:22, Exit 1, 12 gruen, 2 rot
+      [ROT]  380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt - Bassstufe N_max = 65 536, Nutzdaten 7 210 736 B, kein Absturz  [Bass 14419696 B Nutzdaten (Soll 14419696, N 131072), gesamt 14420437 B bei 21 Anforderungen, davon 19 ab 4 KiB]
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt - Stufen 65 536/65 536/32 768/16 384, 4 325 408 B — Stufen 131072/65536/32768/16384, 5898272 B
+      Pflicht-Gruen unter der Mutation: NEIN
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-100; A2 --nak380 M-101 07:39:42 bis 07:39:42, Exit 0, 13 gruen, 0 rot
+  m101-heap: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-101 08:06:28 bis 08:06:29, Exit 1, 0 gruen, 7 rot
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (44.1 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 860192 B (Soll 737312), Punktanteil 737280 (Matrix 737280), Histogramme 249288
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (192.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 3440672 B (Soll 2949152), Punktanteil 2949120 (Matrix 2949120), Histogramme 249288
+      mitgefallen 5; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-101 08:06:32 bis 08:06:32, Exit 0, 7 gruen, 0 rot

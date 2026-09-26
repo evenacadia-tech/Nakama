@@ -1,0 +1,15 @@
+NAK-380 Etappe 6 - Pflichterfassung M-113 (NAK-182-Sweep: Abstand Ereignis zu Impuls je Rate) am unveraenderten Produktcode
+Erfasst 2026-09-26 07:11:26; Produktcode = HEAD a4ccba93; Bein B5, Binary 07:08:55.319, Lauf basis2 07:08:55 bis 07:09:25 (Rohlog SHA-256 7026A2FFC06E9BC80F47FEF888D5B7B36F6CD6105CAF4335AB70A12689BFAF64)
+Sweep: t0 = 100*2048 + 1536 = 206 336 Samples, Blockgroessen 1, 333, 512, 2048, 16 384, Raten 44,1/48/88,2/96/192 kHz, gemessen das staerkste Flussereignis (unveraenderter Testtext).
+
+Ausgabezeilen des Sweeps (woertlich):
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates E-a: jeder der 25 Laeufe erzeugt ueberhaupt ein Ereignis - die Ausloesung ist gemessen, nicht angenommen  [25 von 25]
+    [ok]   E-b: kein Ereignisring ist uebergelaufen - die Ringreihenfolge ist damit die Zeitreihenfolge und ereignis(0) das erste Ereignis  [25 von 25]
+    [ok]   E-c: jeder Lauf traegt ein Flussereignis - gemessen wird der Flusspfad, nicht die rahmenphasenabhaengige Peakspur  [25 von 25]
+    [ok]   E-d: das gewaehlte Ereignis ist unzweifelhaft das staerkste - mindestens zehnmal so stark wie das naechststaerkste Flussereignis. Die Auswahlregel ist damit gemessen, nicht angenommen  [25 von 25; kleinster Abstand kein zweites Ereignis]
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse nicht  [5 von 5 Raten; erster Stempel je Rate: 44.1kHz:202752, 48kHz:202752, 88.2kHz:202752, 96kHz:202752, 192kHz:202752]
+    [ok]   (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 (0 <= t0 - stromSample < 4096) - die Schranke kommt aus kHauptPunkte, nicht aus dem Hop  [25 von 25; t0 - Stempel je Rate: 3584, 3584, 3584, 3584, 3584]
+
+Ergebnis je Rate (Stempel = Fensteranfang des staerksten Flussereignisses, Abstand t0 - Stempel):
+    44,1 kHz: 202 752, 3 584 Samples; 48 kHz: 202 752, 3 584; 88,2 kHz: 202 752, 3 584; 96 kHz: 202 752, 3 584; 192 kHz: 202 752, 3 584.
+Am Basisstand ist N_H bei jeder Rate 4096 (Hop 2048): das Raster W_k = [k*2048, k*2048 + 4096) ist ratengleich, das Ereignis liegt im Fenster, das den Impuls zuerst traegt (202 752 = 99*2048).

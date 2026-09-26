@@ -1,0 +1,29 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m110-maske
+Validity-Maske in messKompakt ignoriert
+Datei: eq-copilot/plugin/src/prozessor/Ipc.cpp; SHA-256 vor der Mutation: C13D6D03EE8DDEAC1E2ECAC56576A66839854DA89058BD7FF4AC1F3F59595790; Sicherung eq-copilot/build/nak380-sicherung/e6/m110-maske/Ipc.cpp
+Begruendung: Die NaN fuer interpolierte Baender im Heartbeat traegt allein die Maskenbedingung in messKompakt (Ipc.cpp).
+Mutation 1: eq-copilot/plugin/src/prozessor/Ipc.cpp, EqCopilotProcessor::messKompakt
+Wortlaut vorher:
+    std::isfinite (v) && ! ltasBandInterpoliert (m.ltasKompositInterpoliert, b)
+Wortlaut nachher:
+    std::isfinite (v)
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:39:42 bis 07:39:48, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:39:48.868 juenger als Quelle 07:39:42.615: ja
+
+== Matrixzeile M-110
+Lauf mit Mutation: B5 --nak380 M-110 07:39:48 bis 07:40:02, Exit 1, 2 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+    [ROT]  380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [0 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-110 heartbeat_null_interpoliert: Vorbedingung': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-110 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.065 dB (Soll <= 1,0), Oktaven 57.82/57.76/57.74/57.69/57.71/57.76/57.78/57.75/57.75/57.76 dB; RMS 0.09917 gegen 0.10000 (-0.072 dB), 960000 Samples]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung 20 s verbraucht, Heartbeat traegt 221 Baender, Maske der Referenz nicht leer  [1875 Bloecke, 221 Baender, Maske 29]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/prozessor/Ipc.cpp, SHA-256 C13D6D03EE8DDEAC1E2ECAC56576A66839854DA89058BD7FF4AC1F3F59595790: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:40:02 bis 07:40:07, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:40:07.833 juenger als Quelle 07:40:02.311: ja
+Lauf nach Ruecknahme: B5 --nak380 M-110 07:40:07 bis 07:40:21, Exit 0, 3 gruen, 0 rot

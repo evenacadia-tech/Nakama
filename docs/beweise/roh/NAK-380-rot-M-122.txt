@@ -1,0 +1,59 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-122 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: R-380-9 · Fingerprints nur innerhalb derselben `metrics_version` vergleichbar (E-380-10, E-380-15)
+Zusage (§6.5 Nachtrag, woertlich): gleiche `metrics_version`: endliche numerische Ähnlichkeit in [0, 1] wie heute; ungleiche `metrics_version`: Ergebniszustand „nicht vergleichbar“ (fail-closed), kein Zahlenwert und nie „anderes Material“
+Reihenfolge und Frist (§6.5): Versionsriegel vor den drei Cosinusrechnungen und vor jeder Klassifikation als Materialwechsel oder `MaterialVerschieden`
+Test je Sprache (§6.5): Rust `broker/src/telemetrie.rs` Modultest NEU `nak380_m122_fingerprint_nur_gleiche_metrics_version`, A4; die Aufrufpfade `coordinator/invalidierung.rs` und `coordinator/vergleichbarkeit.rs` werden mitgeprueft
+Rotbeweis-Spalte (§6.5, woertlich): heute nicht messbar: der Ergebniszustand und der Versionsparameter entstehen erst im Bau; Mutation entfernt den Versionsriegel, die ungleichen Fassungen liefern wieder numerische Unähnlichkeit und werden als „anderes Material“ statt „nicht vergleichbar“ klassifiziert → der A4-Fall rot
+Etikett: heute nicht messbar
+
+== Basisstand (HEAD a4ccba93, unveraenderter Broker, der neue Fall zuerst geschrieben; §8.1 Ablauf M-122)
+LAUF A4 cargo test --lib nak380_m122 06:39:40 bis 06:39:47, EXIT=101 (Uebersetzung scheitert):
+    error[E0432]: unresolved imports `crate::coordinator::invalidierung::material_urteil`, `crate::coordinator::invalidierung::Materialurteil`
+    error[E0432]: unresolved import `crate::coordinator::vergleichbarkeit::beurteile_versioniert`
+    error[E0425]: cannot find function `fingerprint_vergleich` in this scope
+    error[E0433]: failed to resolve: use of undeclared type `FingerprintVergleich`
+    error[E0599]: no variant or associated item named `MessfassungVerschieden` found for enum `vergleichbarkeit::Herabstufungsgrund`
+Ergebnis: heute nicht messbar bestaetigt - weder der Ergebniszustand „nicht vergleichbar“ noch ein Versionsparameter des Vergleichs existieren; am Basisstand vergleicht `fingerprint_aehnlichkeit` jede Fassung numerisch (B-2).
+
+== Endstand
+LAUF A4 cargo test --lib nak380_m122 -- --nocapture, EXIT=0, 1 bestanden, 0 gescheitert, zehn Saetze OK:
+    OK  M-122 Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten  [1 / 1]
+    OK  M-122 gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute  [Aehnlichkeit(0.0)]
+    OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)  [Aehnlichkeit(0.0)]
+    OK  M-122 die Messfassung entscheidet, nicht Fingerprintwerte.version  [Aehnlichkeit(0.0)]
+    OK  M-122 ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert  [NichtVergleichbar / NichtVergleichbar]
+    OK  M-122 Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+    OK  M-122 Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)  [NichtVergleichbar]
+    OK  M-122 Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute  [0 Schwach [MaterialVerschieden]]
+    OK  M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Unvergleichbar [MessfassungVerschieden]]
+    OK  M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)  [NaN]
+LAUF A4 vollstaendig (cargo test --manifest-path broker/Cargo.toml) 06:44:16 bis 07:04:17, EXIT=0, 846 bestanden, 0 gescheitert (Kanon vorher 845 + dieser Fall).
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: gleiche `metrics_version` ergibt eine endliche numerische Aehnlichkeit in [0, 1] wie heute
+  Pruefzeile: broker/src/telemetrie.rs, Satz „gleiche Messfassung“ (und die zwei Aufrufpfade „gleiche Fassung“), A4
+  Mutation: keine eigene - unter allen drei Mutationen gruen geblieben (Pflicht-Gruen in den Protokollen)
+  rot: — (Satz der Wache; er zeigt, dass der Riegel den heutigen Vergleich nicht aendert)
+  Protokoll: NAK-380-e6-mutation-m122-riegel.txt (gruen geblieben)
+- Zusagesatz: ungleiche `metrics_version` ergibt den Ergebniszustand „nicht vergleichbar“ (fail-closed), kein Zahlenwert
+  Pruefzeile: broker/src/telemetrie.rs, Satz „ungleiche Messfassung (beide Richtungen)“ und „Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert“, A4
+  Mutation: broker/src/telemetrie.rs fn fingerprint_vergleich, Versionsriegel entfernt (Matrixmutation, m122-riegel)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m122-riegel.txt
+- Zusagesatz: nie „anderes Material“ (Aufrufpfad Invalidierung: kein Materialwechsel)
+  Pruefzeile: broker/src/telemetrie.rs, Satz „Invalidierung, ungleiche Fassung“, A4
+  Mutation: m122-riegel (Matrixmutation) und die Einzelmutation der Klassifikation m122-klass-inv (Riegel steht, `material_urteil` macht aus NichtVergleichbar einen Materialwechsel)
+  rot: JA (beide)
+  Protokoll: NAK-380-e6-mutation-m122-riegel.txt, NAK-380-e6-mutation-m122-klass-inv.txt
+- Zusagesatz: nie `MaterialVerschieden` (Aufrufpfad Vergleichbarkeit), benannter Grund `MessfassungVerschieden`, Klasse unvergleichbar
+  Pruefzeile: broker/src/telemetrie.rs, Saetze „Vergleichbarkeit, ungleiche Fassung: unvergleichbar …“ und „… kein Zahlenwert“, A4
+  Mutation: m122-riegel (Matrixmutation) und die Einzelmutation der Klassifikation m122-klass-verg (Riegel steht, `beurteile_versioniert` liest NichtVergleichbar als Aehnlichkeit 0)
+  rot: JA (beide)
+  Protokoll: NAK-380-e6-mutation-m122-riegel.txt, NAK-380-e6-mutation-m122-klass-verg.txt
+
+Doppelt getragen (Praezisierung des Auftrags „M-122 (Riegel UND Klassifikation)“): gemessen ist, dass JEDE der zwei Stellen die Zusage allein traegt - die Einzelmutation des Riegels bricht beide Aufrufpfade, die Einzelmutation jeder Klassifikation bricht ihren Aufrufpfad bei stehendem Riegel. Eine Doppelmutation braeuchte die Zusage nur, wenn eine Einzelmutation sie nicht braeche; das ist hier nicht so (Gegenproben m122-klass-inv und m122-klass-verg).
+
+== Mutationen dieser Zeile (Wortlaut in den Protokollen, SHA-256 vor der Mutation und nach der Ruecknahme gleich, Fall danach gruen)
+  m122-riegel (broker/src/telemetrie.rs, fn fingerprint_vergleich): Exit mit Mutation 101, rot 4 Saetze; nach Ruecknahme Exit 0; SHA gleich; faellt an der erwarteten Pruefung: JA
+  m122-klass-inv (broker/src/coordinator/invalidierung.rs, fn material_urteil): faellt an „Invalidierung, ungleiche Fassung“: JA; die uebrigen Saetze gruen
+  m122-klass-verg (broker/src/coordinator/vergleichbarkeit.rs, fn beurteile_versioniert): faellt an „Vergleichbarkeit, ungleiche Fassung“ (zwei Saetze): JA; die uebrigen Saetze gruen

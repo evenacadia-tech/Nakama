@@ -1,0 +1,312 @@
+NAK-380 Etappe 6 - Basisstand-Gegenprobe (vor dem ersten Produktedit; §8.1, Auftrag Ablauf 3)
+Erstellt 2026-09-26 07:13:30. Produktcode = HEAD a4ccba93 unveraendert (git diff leer auf eq-copilot/plugin/core, src/AnalyseEngine.*, src/Diagnose.*, src/DiagnoseAntwort.cpp, src/prozessor/Ipc.cpp, schemas, fixtures).
+Geaendert vor dieser Gegenprobe: nur Tests (AnalysisGoldenTestMain.cpp, GoldenTestMain.cpp, BriefkastenTestMain.cpp, ShotTestMain.cpp, Nak380Pruefsignale.h), A5 (pruefe_v3_vertrag.py) und in PluginEditor.cpp der Leertext-Beobachter NUR unter NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3 (Testbau; der Leertext selbst unveraendert).
+Reihenfolge: (1) M-122 im Broker (eigene Rohdatei NAK-380-rot-M-122.txt); (2) neue C++-Faelle und A5-Fall geschrieben; (3) Bau der Ziele B5, A2, B30, B15, B19 07:04:46 bis 07:05:28 (Exit 0), B5 neu 07:08:55 (Thread fuer den M1-Teil von M-120) und 07:11:49 (M-100 Nutzdaten getrennt); (4) Laeufe unten; (5) danach der erste Produktedit.
+
+== B5 M-98, M-102, M-110, M-114, M-115 (Lauf basis2, 368 Pruefungen, 334 ok, 34 rot, alle roten sind neue 380/-Faelle, 313 Altfaelle gruen) (Log basis2-B5.log)
+    [ok]   380/M-98 laengentafel_featureengine (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 371.52 ms (Soll 371.5)]
+    [ok]   380/M-98 laengentafel_featureengine (44.1 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 4096, Matrix 4096), Hop 2048, FFT 4096/4096, Dauer 92.88 ms (Soll 92.9)]
+    [ok]   380/M-98 laengentafel_featureengine (48.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 16384, Matrix 16384), Hop 8192, FFT 16384/16384, Dauer 341.33 ms (Soll 341.3)]
+    [ok]   380/M-98 laengentafel_featureengine (48.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 4096, Matrix 4096), Hop 2048, FFT 4096/4096, Dauer 85.33 ms (Soll 85.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 185.76 ms (Soll 371.5)]
+    [ROT]  380/M-98 laengentafel_featureengine (88.2 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 46.44 ms (Soll 92.9)]
+    [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 32768, Matrix 32768), Hop 8192, FFT 16384/16384, Dauer 170.67 ms (Soll 341.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (96.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 8192, Matrix 8192), Hop 2048, FFT 4096/4096, Dauer 42.67 ms (Soll 85.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 92.88 ms (Soll 371.5)]
+    [ROT]  380/M-98 laengentafel_featureengine (176.4 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 23.22 ms (Soll 92.9)]
+    [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 16384 (Formel 65536, Matrix 65536), Hop 8192, FFT 16384/16384, Dauer 85.33 ms (Soll 341.3)]
+    [ROT]  380/M-98 laengentafel_featureengine (192.0 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 4096 (Formel 16384, Matrix 16384), Hop 2048, FFT 4096/4096, Dauer 21.33 ms (Soll 85.3)]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (44.1 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 22, Gitterreferenz 22, Matrix 22]
+    [ok]   380/M-102 baender_ohne_bin_je_rate (48.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 25, Gitterreferenz 25, Matrix 25]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (88.2 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 55, Gitterreferenz 22, Matrix 22]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (96.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 60, Gitterreferenz 25, Matrix 25]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (176.4 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 89, Gitterreferenz 22, Matrix 22]
+    [ROT]  380/M-102 baender_ohne_bin_je_rate (192.0 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 94, Gitterreferenz 25, Matrix 25]
+    [ok]   380/M-110 rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.065 dB (Soll <= 1,0), Oktaven 57.82/57.76/57.74/57.69/57.71/57.76/57.78/57.75/57.75/57.76 dB; RMS 0.09917 gegen 0.10000 (-0.072 dB), 960000 Samples]
+    [ok]   380/M-110 heartbeat_null_interpoliert: Vorbedingung 20 s verbraucht, Heartbeat traegt 221 Baender, Maske der Referenz nicht leer  [1875 Bloecke, 221 Baender, Maske 29]
+    [ROT]  380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, sonst Zahl  [0 von 29 Maskenbaendern NaN, 0 NaN ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+    [ROT]  380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [156 von 221 gleich, erste Abweichung Band 0, Δf 2.9297 / 5.8594 Hz (N 16384 / 16384)]
+    [ROT]  380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [65 von 221 gleich, erste Abweichung Band 65, Δf 11.7188 / 23.4375 Hz (N 4096 / 4096)]
+    [ok]   380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten (kein Band ueber der Kappe)  [221 / 221]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung gespeiste Samplezahl = 2880000 (30 s * fs), Laeufer und Engine  [Puffer 2880000, gespeist 2880000, von der Engine verarbeitet 2880000]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 765, Hop 21.3333 ms (N_H 4096)]
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 22, Golden -1; 3.1147 sF, 5.4187 sF, 6.4853 sF, 10.3253 sF, 12.8427 sF, 13.0987 sF, 13.2267 sFP, 14.9760 sFP, ...]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung gespeiste Samplezahl = 5760000 (30 s * fs), Laeufer und Engine  [Puffer 5760000, gespeist 5760000, von der Engine verarbeitet 5760000]
+    [ok]   380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0  [verworfen 0]
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz  [K 383, Hop 10.6667 ms (N_H 4096)]
+    [ROT]  380/M-115 nullkorpus_W1_hohe_raten 192.0 kHz: hoechstens 1 Ereignis in 30 s, exakt der Golden  [Ereignisse 67, Golden -1; 5.4187 sFP, 5.9733 sFP, 6.4853 sF, 7.4240 sFP, 8.3627 sFP, 10.3253 sFP, 13.2267 sFP, 13.8667 sF, ...]
+    EXIT=1 START=07:08:55 ENDE=07:09:25
+
+== B5 M-120 (endgueltige Testfassung mit Band 64, Lauf basis3, Binary 07:13:13) (Log basis3-B5-M-120.log)
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ROT]  380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 16384/8192, Haupt 4096/2048]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ROT]  380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [16384/8192/4096/2048]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt  [vorher belegt ja, Segmente 0, Histogramme 0]
+    [ROT]  380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge (floor((96 000 - 32 768)/16 384) + 1 = 4)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 10 Segmente (Soll 4)]
+
+== B5 M-100 (endgueltige Testfassung, Lauf basis3, Binary 07:11:49) (Log basis3-B5-M-100.log)
+    [ok]   380/M-100 speicher_featureengine (44.1 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ok]   380/M-100 speicher_featureengine (44.1 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2522234 B = Stufen 2257834 + Stereoring 236224 + Detektor 28176]
+    [ok]   380/M-100 speicher_featureengine (48.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ok]   380/M-100 speicher_featureengine (48.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2501546 B = Stufen 2257834 + Stereoring 217792 + Detektor 25920]
+    [ROT]  380/M-100 speicher_featureengine (88.2 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ROT]  380/M-100 speicher_featureengine (88.2 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2394874 B = Stufen 2257834 + Stereoring 122688 + Detektor 14352]
+    [ROT]  380/M-100 speicher_featureengine (96.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ROT]  380/M-100 speicher_featureengine (96.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2384402 B = Stufen 2257834 + Stereoring 113344 + Detektor 13224]
+    [ROT]  380/M-100 speicher_featureengine (176.4 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ROT]  380/M-100 speicher_featureengine (176.4 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2331394 B = Stufen 2257834 + Stereoring 66112 + Detektor 7448]
+    [ROT]  380/M-100 speicher_featureengine (192.0 kHz): Heap der zwei Stufen gemessen = 110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB; Haupt 452336 B Nutzdaten (Soll 452336, N 4096), gesamt 453077 B bei 21 Anforderungen, davon 19 ab 4 KiB; Punktanteil 110*(N_B+N_H) = 2252800 B]
+    [ROT]  380/M-100 speicher_featureengine (192.0 kHz): laengen- und binabhaengige Traeger <= 9,3 MB (Stufen, Stereoring, Detektor)  [2325962 B = Stufen 2257834 + Stereoring 61248 + Detektor 6880]
+    [ROT]  380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt - Bassstufe N_max = 65 536, Nutzdaten 7 210 736 B, kein Absturz  [Bass 1804016 B Nutzdaten (Soll 1804016, N 16384), gesamt 1804757 B bei 21 Anforderungen, davon 19 ab 4 KiB]
+
+== B5 M-119 (Startwerte, endgueltige Testfassung) (Log basis3-B5-M-119.log)
+    380/M-119 sizeof (FeatureEngine) = 16248 B, sizeof (AnalyseEngine) = 54816 B
+    [ok]   380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) = Startwert 16 248 B (kein neues Mitglied)  [16248 B]
+    [ok]   380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) <= Startwert + 64 B (double und zwei 28-B-Masken)  [54816 B, Startwert 54816 B, Delta 0 B]
+
+== B5 M-113 (NAK-182-Sweep, bestehender Fall, Schranke 4096) (Log basis2-B5.log)
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates E-a: jeder der 25 Laeufe erzeugt ueberhaupt ein Ereignis - die Ausloesung ist gemessen, nicht angenommen  [25 von 25]
+    [ok]   E-b: kein Ereignisring ist uebergelaufen - die Ringreihenfolge ist damit die Zeitreihenfolge und ereignis(0) das erste Ereignis  [25 von 25]
+    [ok]   E-c: jeder Lauf traegt ein Flussereignis - gemessen wird der Flusspfad, nicht die rahmenphasenabhaengige Peakspur  [25 von 25]
+    [ok]   E-d: das gewaehlte Ereignis ist unzweifelhaft das staerkste - mindestens zehnmal so stark wie das naechststaerkste Flussereignis. Die Auswahlregel ist damit gemessen, nicht angenommen  [25 von 25; kleinster Abstand kein zweites Ereignis]
+    [ok]   impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse nicht  [5 von 5 Raten; erster Stempel je Rate: 44.1kHz:202752, 48kHz:202752, 88.2kHz:202752, 96kHz:202752, 192kHz:202752]
+    [ok]   (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 (0 <= t0 - stromSample < 4096) - die Schranke kommt aus kHauptPunkte, nicht aus dem Hop  [25 von 25; t0 - Stempel je Rate: 3584, 3584, 3584, 3584, 3584]
+    EXIT=1 START=07:08:55 ENDE=07:09:25
+
+== A2 M-99, M-101, M-103 bis M-108, M-112 (NAK380_ALLE_PRUEFUNGEN=1) (Log basis-A2.log)
+      mess [380/M-99] 44.1 kHz Bass: N 16384 (Formel 16384, Matrix 16384), Hop 8192, Dauer 371.52 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 44.1 kHz Referenz: N 8192 (Formel 8192, Matrix 8192), Hop 4096, Dauer 185.76 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 44.1 kHz Mitten: N 4096 (Formel 4096, Matrix 4096), Hop 2048, Dauer 92.88 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 44.1 kHz Hoehen: N 2048 (Formel 2048, Matrix 2048), Hop 1024, Dauer 46.44 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 48.0 kHz Bass: N 16384 (Formel 16384, Matrix 16384), Hop 8192, Dauer 341.33 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 48.0 kHz Referenz: N 8192 (Formel 8192, Matrix 8192), Hop 4096, Dauer 170.67 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 48.0 kHz Mitten: N 4096 (Formel 4096, Matrix 4096), Hop 2048, Dauer 85.33 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 48.0 kHz Hoehen: N 2048 (Formel 2048, Matrix 2048), Hop 1024, Dauer 42.67 ms
+      ok [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (48.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie
+      mess [380/M-99] 88.2 kHz Bass: N 16384 (Formel 32768, Matrix 32768), Hop 8192, Dauer 185.76 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 32768, Matrix 32768), Dauer 185.76 ms (Soll 371.5)
+      mess [380/M-99] 88.2 kHz Referenz: N 8192 (Formel 16384, Matrix 16384), Hop 4096, Dauer 92.88 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 16384, Matrix 16384), Dauer 92.88 ms (Soll 185.8)
+      mess [380/M-99] 88.2 kHz Mitten: N 4096 (Formel 8192, Matrix 8192), Hop 2048, Dauer 46.44 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 8192, Matrix 8192), Dauer 46.44 ms (Soll 92.9)
+      mess [380/M-99] 88.2 kHz Hoehen: N 2048 (Formel 4096, Matrix 4096), Hop 1024, Dauer 23.22 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 4096, Matrix 4096), Dauer 23.22 ms (Soll 46.4)
+      mess [380/M-99] 96.0 kHz Bass: N 16384 (Formel 32768, Matrix 32768), Hop 8192, Dauer 170.67 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 32768, Matrix 32768), Dauer 170.67 ms (Soll 341.3)
+      mess [380/M-99] 96.0 kHz Referenz: N 8192 (Formel 16384, Matrix 16384), Hop 4096, Dauer 85.33 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 16384, Matrix 16384), Dauer 85.33 ms (Soll 170.7)
+      mess [380/M-99] 96.0 kHz Mitten: N 4096 (Formel 8192, Matrix 8192), Hop 2048, Dauer 42.67 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 8192, Matrix 8192), Dauer 42.67 ms (Soll 85.3)
+      mess [380/M-99] 96.0 kHz Hoehen: N 2048 (Formel 4096, Matrix 4096), Hop 1024, Dauer 21.33 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 4096, Matrix 4096), Dauer 21.33 ms (Soll 42.7)
+      mess [380/M-99] 176.4 kHz Bass: N 16384 (Formel 65536, Matrix 65536), Hop 8192, Dauer 92.88 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 65536, Matrix 65536), Dauer 92.88 ms (Soll 371.5)
+      mess [380/M-99] 176.4 kHz Referenz: N 8192 (Formel 32768, Matrix 32768), Hop 4096, Dauer 46.44 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 32768, Matrix 32768), Dauer 46.44 ms (Soll 185.8)
+      mess [380/M-99] 176.4 kHz Mitten: N 4096 (Formel 16384, Matrix 16384), Hop 2048, Dauer 23.22 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 16384, Matrix 16384), Dauer 23.22 ms (Soll 92.9)
+      mess [380/M-99] 176.4 kHz Hoehen: N 2048 (Formel 8192, Matrix 8192), Hop 1024, Dauer 11.61 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 8192, Matrix 8192), Dauer 11.61 ms (Soll 46.4)
+      mess [380/M-99] 192.0 kHz Bass: N 16384 (Formel 65536, Matrix 65536), Hop 8192, Dauer 85.33 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 65536, Matrix 65536), Dauer 85.33 ms (Soll 341.3)
+      mess [380/M-99] 192.0 kHz Referenz: N 8192 (Formel 32768, Matrix 32768), Hop 4096, Dauer 42.67 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 32768, Matrix 32768), Dauer 42.67 ms (Soll 170.7)
+      mess [380/M-99] 192.0 kHz Mitten: N 4096 (Formel 16384, Matrix 16384), Hop 2048, Dauer 21.33 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 16384, Matrix 16384), Dauer 21.33 ms (Soll 85.3)
+      mess [380/M-99] 192.0 kHz Hoehen: N 2048 (Formel 8192, Matrix 8192), Hop 1024, Dauer 10.67 ms
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 8192, Matrix 8192), Dauer 10.67 ms (Soll 42.7)
+    380/M-99 laengentafel_m1                       8 ok, 16 Fehler
+      mess [380/M-101] 44.1 kHz: Stufen 737312 B (Soll 737312, Punktanteil 737280, Matrix 737280), Histogramme 249288 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (44.1 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      mess [380/M-101] 48.0 kHz: Stufen 737312 B (Soll 737312, Punktanteil 737280, Matrix 737280), Histogramme 249288 B
+      ok [380/M-101 speicher_m1] 380/M-101 speicher_m1 (48.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B
+      mess [380/M-101] 88.2 kHz: Stufen 737312 B (Soll 1474592, Punktanteil 1474560, Matrix 1474560), Histogramme 249288 B
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (88.2 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 737312 B (Soll 1474592), Punktanteil 1474560 (Matrix 1474560), Histogramme 249288
+      mess [380/M-101] 96.0 kHz: Stufen 737312 B (Soll 1474592, Punktanteil 1474560, Matrix 1474560), Histogramme 249288 B
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (96.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 737312 B (Soll 1474592), Punktanteil 1474560 (Matrix 1474560), Histogramme 249288
+      mess [380/M-101] 176.4 kHz: Stufen 737312 B (Soll 2949152, Punktanteil 2949120, Matrix 2949120), Histogramme 249288 B
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (176.4 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 737312 B (Soll 2949152), Punktanteil 2949120 (Matrix 2949120), Histogramme 249288
+      mess [380/M-101] 192.0 kHz: Stufen 737312 B (Soll 2949152, Punktanteil 2949120, Matrix 2949120), Histogramme 249288 B
+      FEHLER [380/M-101 speicher_m1] 380/M-101 speicher_m1 (192.0 kHz): 24 B je Punkt + 8 B je Stufe, Punktanteil = Matrix, Histogramme 2 * 124 644 B — Stufen 737312 B (Soll 2949152), Punktanteil 2949120 (Matrix 2949120), Histogramme 249288
+    380/M-101 speicher_m1                          2 ok, 4 Fehler
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      mess [380/M-103 resonanz_300hz_96k K1] 96.0 kHz: 61 Snapshots ab messbereit, genau eine Karte 0, am Ton 0, dauerhaft 0, ohne Karte 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+      FEHLER [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: die Karte liegt bei 300 Hz +-1/6 Oktave an jedem Snapshot — 0 von 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-103 resonanz_300hz_96k] 380/M-103 resonanz_300hz_96k K1: und sie ist dauerhaft an jedem Snapshot — 0 von 61
+    380/M-103 resonanz_300hz_96k                   3 ok, 3 Fehler
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      mess [380/M-104 resonanz_500hz_192k K2] 192.0 kHz: 61 Snapshots ab messbereit, genau eine Karte 0, am Ton 0, dauerhaft 0, ohne Karte 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+      FEHLER [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: die Karte liegt bei 500 Hz +-1/6 Oktave an jedem Snapshot — 0 von 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-104 resonanz_500hz_192k] 380/M-104 resonanz_500hz_192k K2: und sie ist dauerhaft an jedem Snapshot — 0 von 61
+    380/M-104 resonanz_500hz_192k                  3 ok, 3 Fehler
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung k_selbstpruefung (E-380-13 Rosa, Tonfrequenz und -pegel gemessen)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung gespeiste Samplezahl = 30 s * fs (Laeufer und Engine)
+      ok [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: Vorbedingung 61 Snapshots ab messbereit (15 s bis 30 s im 250-ms-Takt)
+      mess [380/M-105 resonanz_60hz_192k K3] 192.0 kHz: 61 Snapshots ab messbereit, genau eine Karte 0, am Ton 0, dauerhaft 0, ohne Karte 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte an jedem Snapshot ab messbereit — 0 von 61 (ohne Karte 61)
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: die Karte liegt bei 60 Hz +-1/6 Oktave an jedem Snapshot — 0 von 61, Schwerpunkt 0.0 bis 0.0 Hz
+      FEHLER [380/M-105 resonanz_60hz_192k] 380/M-105 resonanz_60hz_192k K3: und sie ist dauerhaft an jedem Snapshot — 0 von 61
+    380/M-105 resonanz_60hz_192k                   3 ok, 3 Fehler
+      mess [380/M-106] 48.0 kHz: Satz ""
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (48.0 kHz): die Satzfunktion nennt die gerundete Suchgrenze 51 Hz im Wortlaut aus §8.6 — kein Satz
+      mess [380/M-106] 44.1 kHz: Satz ""
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz (44.1 kHz): die Satzfunktion nennt die gerundete Suchgrenze 47 Hz im Wortlaut aus §8.6 — kein Satz
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 K4: Vorbedingung k_selbstpruefung
+      mess [380/M-106] K4 45 Hz: 61 Snapshots ab messbereit, ohne Karte 61
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 K4: Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz K4: der Satz nennt 51 Hz — 
+      ok [380/M-106 nicht_gesucht_satz] 380/M-106 Karte 60 Hz: Vorbedingung k_selbstpruefung
+      FEHLER [380/M-106 nicht_gesucht_satz] 380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen — 0 von 61 Karten; ohne Satz: Bei 59 Hz ragt eine sehr schmale Spitze 8,7 dB über ihre Umgebung, in 85 % der Musikzeit. Als Note: A#2. Der Pegel dort steht ruhig (Schwankung ~1 dB).
+    380/M-106 nicht_gesucht_satz                   4 ok, 4 Fehler
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      mess [380/M-107] 48 Hz: 61 Snapshots, genau eine 0, am Ton 0, ohne Karte 61, Schwerpunkt 0.0 Hz
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot (48 Hz liegt unter 50,69 Hz)
+      FEHLER [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz — 
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung k_selbstpruefung
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): Vorbedingung 30 s gespeist und verarbeitet, 61 Snapshots ab messbereit
+      mess [380/M-107] 60 Hz: 61 Snapshots, genau eine 61, am Ton 61, ohne Karte 0, Schwerpunkt 59.1 Hz
+      ok [380/M-107 kandidat_unter_suchgrenze] 380/M-107 kandidat_unter_suchgrenze Gegenprobe (60 Hz bei 48 kHz): genau eine Karte bei 60 Hz +-1/6 Oktave an jedem Snapshot (Trennschaerfe)
+    380/M-107 kandidat_unter_suchgrenze            6 ok, 1 Fehler
+      mess [380/M-108] 44.1 kHz: resonanzSucheAbHz nan Hz (Soll 46.5656, Matrix 46.57)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (44.1 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — Feld fehlt oder nicht endlich
+      mess [380/M-108] 48.0 kHz: resonanzSucheAbHz nan Hz (Soll 50.6836, Matrix 50.69)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (48.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — Feld fehlt oder nicht endlich
+      mess [380/M-108] 88.2 kHz: resonanzSucheAbHz nan Hz (Soll 46.5656, Matrix 46.57)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (88.2 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — Feld fehlt oder nicht endlich
+      mess [380/M-108] 96.0 kHz: resonanzSucheAbHz nan Hz (Soll 50.6836, Matrix 50.69)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (96.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — Feld fehlt oder nicht endlich
+      mess [380/M-108] 176.4 kHz: resonanzSucheAbHz nan Hz (Soll 46.5656, Matrix 46.57)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (176.4 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — Feld fehlt oder nicht endlich
+      mess [380/M-108] 192.0 kHz: resonanzSucheAbHz nan Hz (Soll 50.6836, Matrix 50.69)
+      FEHLER [380/M-108 suchgrenze_je_rate] 380/M-108 suchgrenze_je_rate (192.0 kHz): resonanzSucheAbHz = 17,30*fs/N_Bass +-0,01 Hz — Feld fehlt oder nicht endlich
+    380/M-108 suchgrenze_je_rate                   0 ok, 6 Fehler
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Vorbedingung 30 s gespeist, 300 aktive Zellen
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10)
+      mess [380/M-112] 48.0 kHz Zone 0: 30 Ticks, Vorbedingung ja
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10)
+      mess [380/M-112] 48.0 kHz Zone 1: 30 Ticks, Vorbedingung ja
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10)
+      mess [380/M-112] 48.0 kHz Zone 2: 30 Ticks, Vorbedingung ja
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (48.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10)
+      mess [380/M-112] 48.0 kHz Zone 3: 30 Ticks, Vorbedingung ja
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Vorbedingung 30 s gespeist, 300 aktive Zellen
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern — Regionen belegt und >= -80 dB: NEIN
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 genau 30 Ticks (300 aktive Zellen / 10) — 0 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 0 ratengleich mit 48 kHz — 0 / 30
+      mess [380/M-112] 96.0 kHz Zone 0: 0 Ticks, Vorbedingung NEIN
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern — Regionen belegt und >= -80 dB: NEIN
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 genau 30 Ticks (300 aktive Zellen / 10) — 0 Ticks
+      FEHLER [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 1 ratengleich mit 48 kHz — 0 / 30
+      mess [380/M-112] 96.0 kHz Zone 1: 0 Ticks, Vorbedingung NEIN
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 2 ratengleich mit 48 kHz
+      mess [380/M-112] 96.0 kHz Zone 2: 30 Ticks, Vorbedingung ja
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 Vorbedingung Belegung und Pegel der Zone und ihrer Schultern
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 genau 30 Ticks (300 aktive Zellen / 10)
+      ok [380/M-112 zonenticks_30_bei_48_und_96k] 380/M-112 zonenticks_30_bei_48_und_96k (96.0 kHz): Zone 3 ratengleich mit 48 kHz
+      mess [380/M-112] 96.0 kHz Zone 3: 30 Ticks, Vorbedingung ja
+    380/M-112 zonenticks_30_bei_48_und_96k        18 ok, 6 Fehler
+    EXIT=1 START=07:07:08 ENDE=07:08:12
+
+== A2 Gesamtergebnis (Log basis-A2.log)
+    GOLDEN FEHLGESCHLAGEN — 357 Pruefungen ok, 46 Fehler (metrics m4.2-2026-09-25 · diagnose m4.1-2026-08-15)
+    EXIT=1 START=07:07:08 ENDE=07:08:12
+
+== B30 M-109 (--nak380 M-109) (Log basis-B30-M109.log)
+    [ok]  380/M-109 interpolierte_baender_null: Vorbedingung rosa_selbstpruefung_E-380-13 [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]  380/M-109 interpolierte_baender_null: Vorbedingung 30 s verarbeitet, LTAS gueltig, 221 Baender je Kurve, Maske mindestens 25 Baender [1440000 Samples, Maske Komposit 29, Referenz 37, Laengen 16384/8192/4096/2048]
+    [ROT] 380/M-109 interpolierte_baender_null: komposit_db ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl [0 von 29 null, 192 Zahlen, 0 null ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+    [ROT] 380/M-109 interpolierte_baender_null: referenz_8192_db ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl [0 von 37 null, 184 Zahlen, 0 null ohne Maske, 37 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+    NAK-380 M-109: 2 bestanden, 2 fehlgeschlagen
+    EXIT=1 START=07:08:12 ENDE=07:08:13
+
+== B15 M-106 (Sichtsatz --sonde012-suite; uebrige Teile gruen) (Log basis-B15.log)
+    MESSPUNKT-PANEL (NAK-312, NAK-313) 41 geprueft, 0 Fehler
+    NAK-312 LABEL 15 geprueft, 0 Fehler
+    NAK-312 ZIEL 11 geprueft, 0 Fehler
+    NAK-312 KONFLIKT 4 geprueft, 0 Fehler
+    NAK-312 ANNAHME 19 geprueft, 0 Fehler
+    NAK-313 FESTHALTEN 6 geprueft, 0 Fehler
+    == NAK-380 Etappe 6 - Leertext der Befundliste (380/M-106) ==
+      ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.065 dB (Soll <= 1,0), Oktaven 57.82/57.76/57.74/57.69/57.71/57.76/57.78/57.75/57.75/57.76 dB; RMS 0.09917 gegen 0.10000 (-0.072 dB), 960000 Samples]
+      ok      380/M-106 leertext_nennt_suchgrenze (48,0 kHz): Vorbedingung messbereit, keine Karte (Knopf 'keine Auffaelligkeit'), die Liste gibt genau einen Leertext  [messbereit ja, Knopf ja, Meldungen 1]
+      FEHLER  380/M-106 leertext_nennt_suchgrenze (48,0 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 51 Hz  [Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegenüber ihren Nachbarn. Das heißt nicht „perfekt“ — nur: die Kurve gibt gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort.]
+      ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung rosa_selbstpruefung_E-380-13  [groesste Nachbardifferenz 0.172 dB (Soll <= 1,0), Oktaven 57.91/57.81/57.76/57.69/57.72/57.77/57.79/57.73/57.75/57.58 dB; RMS 0.09906 gegen 0.10000 (-0.082 dB), 882000 Samples]
+      ok      380/M-106 leertext_nennt_suchgrenze (44,1 kHz): Vorbedingung messbereit, keine Karte (Knopf 'keine Auffaelligkeit'), die Liste gibt genau einen Leertext  [messbereit ja, Knopf ja, Meldungen 1]
+      FEHLER  380/M-106 leertext_nennt_suchgrenze (44,1 kHz): der Leertext nennt als zweiten Satz die Suchgrenze 47 Hz  [Kein Ton sticht heraus, keine Zone staut sich oder fehlt gegenüber ihren Nachbarn. Das heißt nicht „perfekt“ — nur: die Kurve gibt gerade keinen konkreten Handgriff her. Die Ohren behalten das letzte Wort.]
+    NAK-380 LEERTEXT 6 geprueft, 2 Fehler
+    EXIT=1 START=07:08:13 ENDE=07:08:27
+
+== A5 M-118 (--nak380 M-118) (Log a5-m118-basis.log)
+    Pruefungen: 0 bestanden, 15 gescheitert
+      ROT: nak380_m118_fassung_etappe_6: FeatureEngine nennt 20260929 — 20260928
+      ROT: nak380_m118_fassung_etappe_6: vergleichbarkeit.rs nennt 20260929 — '20260928'
+      ROT: nak380_m118_fassung_etappe_6: prepost.rs nennt 20260929 — '20260928'
+      ROT: nak380_m118_fassung_etappe_6: aktuell ist 20260929 — aktuell=20260928
+      ROT: nak380_m118_fassung_etappe_6: kMetricsVersion ist m4.3-2026-09-26 — m4.2-2026-09-25
+      ROT: nak380_m118_fassung_etappe_6: seit nennt NAK-380 Etappe 6, der Hinweis den 26.09.2026 — None
+      ROT: nak380_m118_fassung_etappe_6: Eintraege der Fassung 20260928 unveraendert uebernommen, neu nur die acht Groessen der Etappe — schwellen/kFlussP0Db, schwellen/kFlussFilterCent, schwellen/kFlussKappa, schwellen/kFlussRho, schwellen/kFlussTminDbJeBin, schwellen/kSperrzeitMs, schwellen/kPeakSteigungSchwelleDb, schwellen/kPeakCrestSchwelleDb, schwellen/kKohaerenzSchwellePhase, schwellen/kKonvergenzSpanneDb, schwellen/kKonfidenzAbdeckungStark, schwellen/kKonfidenzAbdeckungMittel, schwellen/GATE_ZEITUEBERDECKUNG, schwellen/GATE_QUELLEN_JACCARD, schwellen/GATE_MATERIAL_COSINE, schwellen/GATE_ABDECKUNG, schwellen/GATE_KORRELATIONSSPITZE, schwellen/GATE_PEAK_TO_SIDELOBE, schwellen/GATE_MATERIAL_GLEICH, schwellen/GATE_RELATIONSSCHWANKUNG_DB, ganzzahlige_schwellen/kFlussHistorie, ganzzahlige_schwellen/kWelchMindestFrames, ganzzahlige_schwellen/kStereoRingHaupt, ganzzahlige_schwellen/kStereoRingBass, ganzzahlige_schwellen/kKorrelationKurzFrames, ganzzahlige_schwellen/GATE_KONSISTENTE_SPUREN, ganzzahlige_schwellen/kKonfidenzFensterStark, nicht_gefuehrt
+      ROT: nak380_m118_fassung_etappe_6: kFensterPunkteMax = 65536 steht mit dem Registerwert in FeatureEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kBassBasisPunkte = 16384 steht mit dem Registerwert in FeatureEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kHauptBasisPunkte = 4096 steht mit dem Registerwert in FeatureEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kM1OrdnungBass = 14 steht mit dem Registerwert in AnalyseEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kM1OrdnungReferenz = 13 steht mit dem Registerwert in AnalyseEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kM1OrdnungMitten = 12 steht mit dem Registerwert in AnalyseEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kM1OrdnungHoehen = 11 steht mit dem Registerwert in AnalyseEngine.h — nicht im Block ganzzahlige_schwellen der Fassung
+      ROT: nak380_m118_fassung_etappe_6: kResonanzSucheFaktor = 17.3 steht mit dem Registerwert in AnalyseEngine.h — nicht im Block schwellen der Fassung
+    EXIT=2
+    EXIT=2
+
+== B19 (unveraenderter Test, Basis der Kohaerenzreserve, eigene Rohdatei NAK-380-etappe-6-kohaerenz-basis.txt) (Log basis-B19.log)
+    845 bestanden, 0 gescheitert
+    EXIT=0 START=07:08:27 ENDE=07:08:37
+
+== M-117 (git grep -n "Erratum (s)" -- docs/FL-Nakama-Sonden-Design-Entwurf.md)
+    Ausgabe: (leer), Exit 1
+
+== Zahl je Zeile (Auswertung)
+    M-98  heute rot: 16 384/4 096 bei jeder Rate (88,2 bis 192 kHz: Soll 32 768/8 192 bzw. 65 536/16 384); 44,1/48 kHz gruen.
+    M-99  heute rot: Ordnungen 14/13/12/11 bei jeder Rate (16 384/8 192/4 096/2 048); 44,1/48 kHz gruen.
+    M-100 heute nicht messbar laut Matrix; mit dem Allokationszaehler messbar: Nutzdaten 1 804 016 + 452 336 B bei jeder Rate (= 110 B je Punkt + 1 776 B bei N 16 384/4 096), Budget 2,33 bis 2,52 MB; rot bei 88,2 bis 192 kHz ueber die Laengen, 384 kHz N 16 384 statt N_max.
+    M-101 heute nicht messbar laut Matrix; gemessen 737 312 B bei jeder Rate (Punktanteil 737 280), Histogramme 249 288 B; rot ab 88,2 kHz.
+    M-102 heute rot: Baender ohne Bin 22 (44,1 kHz), 25 (48), 55 (88,2), 60 (96), 89 (176,4), 94 (192); Gitterreferenz nach der Regel 22/25 je Familie (Validierung Teil C: 60 und 94).
+    M-103 bis M-105 heute rot: keine Karte an 61 von 61 Snapshots (K1 300 Hz/96 kHz, K2 500 Hz/192 kHz, K3 60 Hz/192 kHz).
+    M-106 heute rot: kein Satz (Satzfunktion fehlt), Karten ohne Satz (0 von 61 Karten bei 60 Hz), Leertext ohne Grenze (B15); K4 (45 Hz) ohne Karte schon am Basisstand.
+    M-107 Abweichung von der Matrix: K5 (48 Hz bei 48 kHz) ergibt am Basisstand KEINE Karte (61 von 61 Snapshots ohne Karte); die Zusage „keine Karte unter der Grenze“ traegt am Basisstand das Breitenkriterium (kBreiteMaxOktaven). Gegenprobe 60 Hz: genau eine Karte bei 59,1 Hz an 61 von 61 Snapshots. Der Satz fehlt (rot).
+    M-108 heute nicht messbar: resonanzSucheAbHz fehlt bei allen sechs Raten.
+    M-109 heute rot: komposit_db 0 von 29, referenz_8192_db 0 von 37 Maskenbaendern null (alle Zahl).
+    M-110 heute rot: ltasKompositDb 0 von 29 Maskenbaendern NaN.
+    M-112 Abweichung von der Matrix (Regressionswache): bei 48 kHz 30 Ticks je Zone (gruen), bei 96 kHz Zonen 0 und 1 ohne Belegungsvoraussetzung und mit 0 Ticks (rot) - die Mittenstufe 4096 laesst bei 96 kHz 203 bis 374 Hz ohne Bin (Validierung Teil C), die Live-Kurve ist dort NaN. Die Zeile ist damit bei 96 kHz heute rot, bei 48 kHz Wache.
+    M-113 Pflichterfassung: Stempel 202 752 bei allen fuenf Raten, t0 - Stempel 3 584 Samples (Rohdatei NAK-380-etappe-6-m113-sweep-basis.txt).
+    M-114 heute rot: Bass 156 von 221 gleich (Δf 2,9297/5,8594 Hz), Haupt 65 von 221 (11,7188/23,4375 Hz).
+    M-115 heute nicht messbar (Etikett); gemessen am Basisstand: 96 kHz K 765, Hop 21,33 ms, 22 Ereignisse; 192 kHz K 383, Hop 10,67 ms, 67 Ereignisse.
+    M-117 heute rot: git grep leer.
+    M-118 heute rot: A5 15 von 15 Pruefungen rot (keine Fassung 20260929, Versionen 20260928, kMetricsVersion m4.2-2026-09-25).
+    M-119 Startwerte 16 248 / 54 816 B (Rohdatei NAK-380-etappe-6-m119-sizeof-start.txt).
+    M-120 Laengenhaelfte heute rot: nach vorbereiten (96000) FeatureEngine 16 384/4 096 und M1 16 384/8 192/4 096/2 048, nach 1 s bei 96 kHz traegt Band 64 (ein Bin bei beiden Laengen) 10 Segmente der alten Laenge statt 4; Leerhaelfte gruen (Wache: Stufenringe, Akkus, Historie, Samplezaehler, M1-Stufen und Histogramme leer).

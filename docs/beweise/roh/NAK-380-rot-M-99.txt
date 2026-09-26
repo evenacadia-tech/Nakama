@@ -1,0 +1,60 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-99 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Längentafel der M1-Analyse
+Zustand und Vorbedingung (§6.5, woertlich): `AnalyseEngine::vorbereiten` bei denselben Raten
+Zusage (§6.5, woertlich): Bass/Referenz/Mitten/Höhen = 16 384/8 192/4 096/2 048 (44,1 und 48 kHz), 32 768/16 384/8 192/4 096 (88,2 und 96 kHz), 65 536/32 768/16 384/8 192 (176,4 und 192 kHz); Dauern 341,3/170,7/85,3/42,7 ms bei 48 kHz
+Test je Sprache (§6.5): C++: A2 NEU `380/M-99 laengentafel_m1` (Testzugang `AnalyseEngineTestzugang`)
+Rotbeweis-Spalte (§6.5, woertlich): heute rot: Ordnungen 14/13/12/11 fest; Mutation Regel → feste Ordnung → rot
+Etikett: heute rot
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-99  heute rot: Ordnungen 14/13/12/11 bei jeder Rate (16 384/8 192/4 096/2 048); 44,1/48 kHz gruen.
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A2: 24 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:13:19 ENDE=08:14:21
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: 16 384/8 192/4 096/2 048 bei 44,1 und 48 kHz, Dauern 341,3/170,7/85,3/42,7 ms bei 48 kHz
+  Pruefzeile: A2 380/M-99 laengentafel_m1 (44.1 und 48.0 kHz, vier Stufen)
+  Mutation: Dreifachmutation m99-dreifach (floor statt round UND Untergrenze in fensterPunkte UND Ordnungslambda ab Ordnung 0); Gegenproben m98-floor, m98-untergrenze, m98-doppel und m99-start lassen 44,1 kHz gruen; 48 kHz unter m99-regel und m99-dreifach Pflicht-Gruen
+  rot: JA bei 44,1 kHz (m99-dreifach); Gegenproben gruen
+  Protokoll: NAK-380-e6-mutation-m99-dreifach.txt, -m99-start.txt, -m98-floor.txt, -m98-untergrenze.txt, -m98-doppel.txt
+- Zusagesatz: das Doppelte bei 88,2/96 kHz, das Vierfache bei 176,4/192 kHz
+  Pruefzeile: A2 380/M-99 laengentafel_m1 (88.2 bis 192.0 kHz, vier Stufen)
+  Mutation: m99-regel: Ordnungslambda ohne fensterPunkte (Matrixmutation Regel -> feste Ordnung)
+  rot: JA (16 Pruefzeilen)
+  Protokoll: NAK-380-e6-mutation-m99-regel.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m99-regel: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-99 07:51:05 bis 07:51:05, Exit 1, 8 gruen, 16 rot
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (88.2 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 16384 (Formel 32768, Matrix 32768), Dauer 185.76 ms (Soll 371.5)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (96.0 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 4096, Matrix 4096), Dauer 21.33 ms (Soll 42.7)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (176.4 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 32768, Matrix 32768), Dauer 46.44 ms (Soll 185.8)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (192.0 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 16384, Matrix 16384), Dauer 21.33 ms (Soll 85.3)
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 12; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-99 07:51:08 bis 07:51:09, Exit 0, 24 gruen, 0 rot
+  m98-floor: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:05:24 bis 08:05:24, Exit 1, 28 gruen, 14 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 14; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:05:45 bis 08:05:45, Exit 0, 42 gruen, 0 rot
+      Deutung fuer M-99: Gegenprobe: unter der Einzelmutation dieses Riegels bleiben die 44,1-kHz-Zeilen gruen, weil die anderen zwei Riegel sie tragen (Pflicht-Gruen JA); das NEIN des Protokolls ist das erwartete Ergebnis.
+  m98-untergrenze: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:08:43 bis 08:08:43, Exit 0, 42 gruen, 0 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:09:03 bis 08:09:04, Exit 0, 42 gruen, 0 rot
+      Deutung fuer M-99: Gegenprobe: unter der Einzelmutation dieses Riegels bleiben die 44,1-kHz-Zeilen gruen, weil die anderen zwei Riegel sie tragen (Pflicht-Gruen JA); das NEIN des Protokolls ist das erwartete Ergebnis.
+  m98-doppel: faellt an der erwarteten Pruefung: NEIN; mit Mutation B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:09:24 bis 08:09:24, Exit 1, 25 gruen, 17 rot
+      [ROT]  380/M-98 laengentafel_featureengine (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 8192 (Formel 16384, Matrix 16384), Hop 4096, FFT 8192/8192, Dauer 185.76 ms (Soll 371.5)]
+      [ROT]  380/M-98 laengentafel_featureengine (44.1 kHz, Haupt): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, FFT N, Dauer wie die Familie  [N 2048 (Formel 4096, Matrix 4096), Hop 1024, FFT 2048/2048, Dauer 46.44 ms (Soll 92.9)]
+      [ROT]  380/M-102 baender_ohne_bin_je_rate (44.1 kHz): Baender ohne Bin der zustaendigen Stufe = Gitterreferenz = Matrix  [Engine 55, Gitterreferenz 22, Matrix 22]
+      mitgefallen 14; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-98, M-102; A2 --nak380 M-99 08:09:44 bis 08:09:45, Exit 0, 42 gruen, 0 rot
+      Deutung fuer M-99: Gegenprobe fuer M-99: Rundung und Untergrenze zusammen entfernt, die M1-Laengen bei 44,1 kHz bleiben gruen - die Startordnung des Ordnungslambdas traegt sie als dritter Riegel.
+  m99-start: faellt an der erwarteten Pruefung: NEIN; mit Mutation A2 --nak380 M-99 08:10:44 bis 08:10:44, Exit 0, 24 gruen, 0 rot
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A2 --nak380 M-99 08:10:47 bis 08:10:47, Exit 0, 24 gruen, 0 rot
+      Deutung fuer M-99: Gegenprobe: die Startordnung allein haelt nichts offen (fensterPunkte liefert die Basislaengen); gruen, Pflicht-Gruen JA.
+  m99-dreifach: faellt an der erwarteten Pruefung: JA; mit Mutation A2 --nak380 M-99 08:10:50 bis 08:10:51, Exit 1, 12 gruen, 12 rot
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Bass): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 8192 (Formel 16384, Matrix 16384), Dauer 185.76 ms (Soll 371.5)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Referenz): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 4096 (Formel 8192, Matrix 8192), Dauer 92.88 ms (Soll 185.8)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Mitten): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 2048 (Formel 4096, Matrix 4096), Dauer 46.44 ms (Soll 92.9)
+      FEHLER [380/M-99 laengentafel_m1] 380/M-99 laengentafel_m1 (44.1 kHz, Hoehen): N = 2^round(log2(T*fs)) gekappt = Matrix, Hop N/2, Dauer der Familie — N 1024 (Formel 2048, Matrix 2048), Dauer 23.22 ms (Soll 46.4)
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 8; SHA-256 nach der Ruecknahme gleich, gleich; nach Ruecknahme A2 --nak380 M-99 08:10:55 bis 08:10:55, Exit 0, 24 gruen, 0 rot
+      Deutung fuer M-99: JA: alle vier M1-Stufen bei 44,1 kHz fallen, 48 und 96 kHz Pflicht-Gruen.

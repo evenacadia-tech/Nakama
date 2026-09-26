@@ -1,0 +1,35 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m120-m1laengen
+Laengenregel der M1-Ordnungen -> feste Ordnung (Mutation wie M-99)
+Datei: eq-copilot/plugin/src/AnalyseEngine.cpp; SHA-256 vor der Mutation: 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C; Sicherung eq-copilot/build/nak380-sicherung/e6/m120-m1laengen/AnalyseEngine.cpp
+Begruendung: Die M1-Laengen nach vorbereiten (96000) traegt dasselbe Ordnungslambda wie M-99.
+Mutation 1: eq-copilot/plugin/src/AnalyseEngine.cpp, AnalyseEngine::vorbereiten, Ordnungslambda
+Wortlaut vorher:
+            const int n = nakama::analyse::fensterPunkte (1 << basisOrdnung, sr);
+Wortlaut nachher:
+            const int n = 1 << basisOrdnung;
+  Bau (mutation) EqCopAnalysisGoldenTest: 08:08:03 bis 08:08:06, Exit 0
+  Binary EqCopAnalysisGoldenTest 08:08:06.734 juenger als Quelle 08:08:03.585: ja
+
+== Matrixzeile M-120 (M1-Laengen nach dem Ratenwechsel)
+Lauf mit Mutation: B5 --nak380 M-120 08:08:06 bis 08:08:08, Exit 1, 6 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+    [ROT]  380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [16384/8192/4096/2048]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-120 ratenwechsel_laengen: M1 nach vorbereiten \(96000\))
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-120 ratenwechsel_laengen: nach vorbereiten \(96000\) Bass/Haupt': gruen 1, rot 0
+    Muster 'M-120 ratenwechsel_laengen: M1 - keine Stufe': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (1); Grund: die Segmentzaehlung am Band 64 folgt der M1-Laenge
+    [ROT]  380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge (floor((96 000 - 32 768)/16 384) + 1 = 4)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 10 Segmente (Soll 4)]
+Unter derselben Mutation gruen gebliebene Pruefungen: 6
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 32768/16384, Haupt 8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt  [vorher belegt ja, Segmente 0, Histogramme 0]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/AnalyseEngine.cpp, SHA-256 9CB40C34AF9F54C9C9CA6BC6197A2CDC5E4034AE85FD702391D8BF8B3DD0A68C: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 08:08:08 bis 08:08:11, Exit 0
+  Binary EqCopAnalysisGoldenTest 08:08:11.882 juenger als Quelle 08:08:08.230: ja
+Lauf nach Ruecknahme: B5 --nak380 M-120 08:08:11 bis 08:08:13, Exit 0, 8 gruen, 0 rot

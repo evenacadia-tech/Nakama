@@ -593,9 +593,12 @@ inline double FeatureEngine::summeBereich (const Stufe& s, int von, int bis) noe
     sicher fuer Delta <= N_H, fuer N_H < Delta < N_H + Hop je nach Lage im
     Hopraster. Sein Fluss ist dann um Lmax des Impulsspektrums reduziert,
     nicht null; ob er T_eff uebersteigt, haengt am Material. Frei ist der
-    Vorframe ab Delta >= N_H + Hop = 4096 + 2048 = 6144 Samples, 128,0 ms bei
-    48 kHz und 139,3 ms bei 44,1 kHz. Das ist eine Eigenschaft der
-    Hauptstufe (4096 Punkte, Hop 2048), keine Sperrzeit; gemessen im Manifest
+    Vorframe ab Delta >= N_H + Hop = 1,5*N_H: 128,0 ms in der 48-kHz-Familie
+    (6144 Samples bei 48 kHz) und 139,3 ms in der 44,1-kHz-Familie - seit
+    NAK-380 Etappe 6 (T-380-7) folgt die Laenge der Hauptstufe der
+    Fensterdauer (85,3 bzw. 92,9 ms, Hop die Haelfte), die Verdeckung ist
+    also in Zeit bei jeder Rate der Familie dieselbe. Das ist eine
+    Eigenschaft der Hauptstufe, keine Sperrzeit; gemessen im Manifest
     NAK-380 §37 (Klickpaare im Abstand 100 ms als Beobachtung, 150 ms als
     Zusage M-59).
 
@@ -662,15 +665,17 @@ inline void FeatureEngine::flussSchritt (Stufe& s) noexcept
     Gitterkante(0) <= k*df < min(Gitterkante(221), Kappe), also 30,36 Hz bis
     unter 17 959,39 Hz und nie ueber 18 kHz oder 0,95*Nyquist. Kein DC-Bin
     (das Gitter beginnt ueber 0 Hz). Bei einer Rate, fuer die kein Bin in
-    diesen Bereich faellt, ist K = 0 und der Detektor schweigt. */
+    diesen Bereich faellt, ist K = 0 und der Detektor schweigt. Δf ist die
+    Binbreite der Hauptstufe mit ihrer Laenge bei dieser Rate (NAK-380
+    T-380-7): bei 96 und 192 kHz 11,72 Hz wie bei 48 kHz, also K = 1530. */
 inline void FeatureEngine::detektorBinsBestimmen() noexcept
 {
-    const double df = sr / (double) kHauptPunkte;
+    const double df = sr / (double) haupt.punkte;
     const double oben = std::min (Gitter::evidenzKante (Gitter::evidenzBaender),
                                   std::min (kObergrenzeHz, kNyquistAnteil * sr * 0.5));
     const int von = (int) std::ceil (Gitter::evidenzKante (0) / df);
     // Groesstes k mit k*df < oben: ceil(oben/df) - 1, nie ueber Nyquist.
-    const int bis = std::min ((int) std::ceil (oben / df) - 1, kHauptPunkte / 2);
+    const int bis = std::min ((int) std::ceil (oben / df) - 1, haupt.punkte / 2);
     auto& d = detektor[0];
     d.binVon = von;
     d.binAnzahl = bis >= von ? bis - von + 1 : 0;

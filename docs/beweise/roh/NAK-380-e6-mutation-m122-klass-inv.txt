@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m122-klass-inv
+Gegenprobe M-122, Aufrufpfad Invalidierung: Riegel steht, die Klassifikation macht aus nicht vergleichbar einen Materialwechsel.
+Datei: broker/src/coordinator/invalidierung.rs; SHA-256 vor der Mutation: 4D7EFF6382AB7F8EC347B6067C1EB1500E57F2A8583C8391730EFB277F8F718D; Sicherung eq-copilot/build/nak380-sicherung/e6/m122-klass-inv/invalidierung.rs
+Begruendung: Die Zusage nie anderes Material traegt in der Invalidierung die Klassifikation nach dem Riegel; diese Einzelmutation laesst den Riegel stehen und bricht nur die Abbildung NichtVergleichbar -> Materialurteil::NichtVergleichbar.
+Mutation 1: broker/src/coordinator/invalidierung.rs, fn material_urteil, Zweig NichtVergleichbar
+Wortlaut vorher:
+                FingerprintVergleich::NichtVergleichbar => return Materialurteil::NichtVergleichbar,
+Wortlaut nachher:
+                FingerprintVergleich::NichtVergleichbar => false, // Mutation m122-klass-inv
+
+== Matrixzeile M-122: nicht vergleichbar fuehrt nie zu Materialwechsel (invalidierung.rs material_urteil)
+Lauf mit Mutation: A4 cargo test --lib nak380_m122 06:43:56 bis 06:43:59, Exit 101, 9 gruen, 3 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+      ROT M-122 Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: ROT M-122 Invalidierung, ungleiche Fassung)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'OK  M-122 ungleiche Messfassung': gruen 1, rot 0
+    Muster 'OK  M-122 Vergleichbarkeit, ungleiche Fassung': gruen 2, rot 0
+    Muster 'OK  M-122 Invalidierung, gleiche Fassung': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (2); Grund: die Summenpruefung des Falls und die Testzeile FAILED
+    thread 'telemetrie::tests::nak380_m122_fingerprint_nur_gleiche_metrics_version' (102972) panicked at src\telemetrie.rs:1346:9: | M-122 rot: ["Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)"]
+    test telemetrie::tests::nak380_m122_fingerprint_nur_gleiche_metrics_version ... FAILED
+Unter derselben Mutation gruen gebliebene Pruefungen: 9
+      OK  M-122 Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten  [1 / 1]
+      OK  M-122 gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute  [Aehnlichkeit(0.0)]
+      OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)  [Aehnlichkeit(0.0)]
+      OK  M-122 die Messfassung entscheidet, nicht Fingerprintwerte.version  [Aehnlichkeit(0.0)]
+      OK  M-122 ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert  [NichtVergleichbar / NichtVergleichbar]
+      OK  M-122 Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+      OK  M-122 Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute  [0 Schwach [MaterialVerschieden]]
+      OK  M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Unvergleichbar [MessfassungVerschieden]]
+      OK  M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)  [NaN]
+
+Ruecknahme aus der Sicherung, broker/src/coordinator/invalidierung.rs, SHA-256 4D7EFF6382AB7F8EC347B6067C1EB1500E57F2A8583C8391730EFB277F8F718D: gleich
+Lauf nach Ruecknahme: A4 cargo test --lib nak380_m122 06:43:59 bis 06:44:02, Exit 0, 11 gruen, 0 rot

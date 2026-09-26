@@ -108,6 +108,42 @@ pub fn fingerprint_aehnlichkeit(a: &Fingerprintwerte, b: &Fingerprintwerte) -> f
     c_band.min(c_chroma).min(c_onset)
 }
 
+/// Ergebnis eines an die Messfassung gebundenen Fingerprintvergleichs
+/// (NAK-380 R-380-9 aus E-380-10, E-380-15; M-122).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum FingerprintVergleich {
+    /// Beide Fingerprints stammen aus derselben `metrics_version`: die
+    /// numerische Aehnlichkeit in [0, 1] aus `fingerprint_aehnlichkeit`.
+    Aehnlichkeit(f64),
+    /// Verschiedene Messfassungen. Fail-closed: kein Zahlenwert, und der
+    /// Aufrufer darf daraus weder einen Materialwechsel noch
+    /// `MaterialVerschieden` machen — zwei Fassungen rechnen dieselben 76
+    /// Bytes aus verschiedenen Messwerken (ab NAK-380 Etappe 6 etwa aus
+    /// anderen Fensterlaengen bei 88,2 kHz und darueber), und ihr Cosinus
+    /// sagt nichts ueber das Material.
+    NichtVergleichbar,
+}
+
+/// Vergleicht zwei Fingerprints nur innerhalb DERSELBEN Messfassung
+/// (M-122, Entwurf §36.4: die Groessen gehoeren zur `metrics_version`).
+///
+/// Die Fassung ist die `metrics_version` des Messwerks, das den Fingerprint
+/// gerechnet hat, NICHT `Fingerprintwerte.version` (die Formatfassung der 76
+/// Bytes). Der Riegel steht VOR den drei Cosinusrechnungen; erst danach
+/// klassifizieren die Aufrufer (`invalidierung::material_urteil`,
+/// `vergleichbarkeit::beurteile_versioniert`).
+pub fn fingerprint_vergleich(
+    a: &Fingerprintwerte,
+    fassung_a: u32,
+    b: &Fingerprintwerte,
+    fassung_b: u32,
+) -> FingerprintVergleich {
+    if fassung_a != fassung_b {
+        return FingerprintVergleich::NichtVergleichbar;
+    }
+    FingerprintVergleich::Aehnlichkeit(fingerprint_aehnlichkeit(a, b))
+}
+
 /// Ergebnis der Broker-Eingangspruefung. Ein ausschliesslich kaputtes
 /// LUFS-I-Paar entwertet nicht die uebrigen Framefelder: die drei optionalen
 /// Lautheitsfelder werden aus einer Kopie des Puffers entfernt und genau diese
@@ -1191,5 +1227,122 @@ mod tests {
             assert!(fuer_broker(&puffer).is_ok(),
                     "Version {version} muss der produktive Broker-Leser annehmen");
         }
+    }
+
+    /// NAK-380 M-122 (R-380-9 aus E-380-10, E-380-15): Fingerprints sind nur
+    /// innerhalb derselben Messfassung (`metrics_version`) numerisch
+    /// vergleichbar. Die Fassung ist die des Messwerks, NICHT
+    /// `Fingerprintwerte.version` (Formatfassung der 76 Bytes): beide Seiten
+    /// tragen unten dieselbe Formatfassung 1, und eine abweichende
+    /// Formatfassung bei gleicher Messfassung bleibt numerisch vergleichbar.
+    ///
+    /// Die zwei Fingerprints sind absichtlich numerisch unaehnlich: Energie
+    /// je Verlauf in disjunkten Haelften, also jeder der drei Cosinus 0 und
+    /// das Minimum 0 < 0,95 (`GATE_MATERIAL_GLEICH`, `GATE_MATERIAL_COSINE`).
+    /// Gleiche Fassung: endliche Aehnlichkeit in [0, 1] wie heute, also
+    /// Materialwechsel und `MaterialVerschieden`. Ungleiche Fassung (die
+    /// Fassung der Etappe 5, 20260928, gegen die der Etappe 6, 20260929):
+    /// Ergebniszustand „nicht vergleichbar“ fail-closed, kein Zahlenwert,
+    /// nie Materialwechsel und nie `MaterialVerschieden`. Der Versionsriegel
+    /// steht in `fingerprint_vergleich` VOR den drei Cosinusrechnungen; die
+    /// zwei Aufrufpfade (`invalidierung::material_urteil`,
+    /// `vergleichbarkeit::beurteile_versioniert`) klassifizieren erst danach.
+    #[test]
+    fn nak380_m122_fingerprint_nur_gleiche_metrics_version() {
+        use crate::coordinator::invalidierung::{material_urteil, Grund, Materialurteil, Umfang};
+        use crate::coordinator::vergleichbarkeit::{
+            beurteile_versioniert, Herabstufungsgrund, Passagenbeleg, Vergleichbarkeit,
+        };
+
+        const ALT: u32 = 20_260_928;
+        const NEU: u32 = 20_260_929;
+        let mut a = Fingerprintwerte::default();
+        let mut b = Fingerprintwerte::default();
+        for i in 0..16 {
+            a.band_energie[i] = 200;
+            b.band_energie[16 + i] = 200;
+            a.onset[i] = 150;
+            b.onset[16 + i] = 150;
+        }
+        for i in 0..6 {
+            a.chroma[i] = 100;
+            b.chroma[6 + i] = 100;
+        }
+        // Jeder Satz der Zusage ist eine eigene Pruefung; alle werden
+        // gemeldet (OK/ROT), bevor der Fall faellt, damit ein Rotbeweis
+        // zeigt, welcher Satz fiel.
+        let mut rot: Vec<String> = Vec::new();
+        let mut pruefe = |ok: bool, satz: &str, wert: String| {
+            println!("{} M-122 {satz}  [{wert}]", if ok { "  OK " } else { "  ROT" });
+            if !ok {
+                rot.push(satz.to_owned());
+            }
+        };
+        pruefe(a.version == b.version,
+               "Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten",
+               format!("{} / {}", a.version, b.version));
+
+        // (1) Gleiche Messfassung: numerische Aehnlichkeit in [0, 1], hier 0.
+        let gleiche = fingerprint_vergleich(&a, NEU, &b, NEU);
+        pruefe(matches!(gleiche, FingerprintVergleich::Aehnlichkeit(c)
+                        if c.is_finite() && (0.0..=1.0).contains(&c)),
+               "gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute",
+               format!("{gleiche:?}"));
+        pruefe(matches!(gleiche, FingerprintVergleich::Aehnlichkeit(c) if c < 0.95),
+               "Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)",
+               format!("{gleiche:?}"));
+        // Formatfassung verschieden, Messfassung gleich: weiter vergleichbar.
+        let mut a_format2 = a.clone();
+        a_format2.version = 2;
+        let format2 = fingerprint_vergleich(&a_format2, NEU, &b, NEU);
+        pruefe(matches!(format2, FingerprintVergleich::Aehnlichkeit(_)),
+               "die Messfassung entscheidet, nicht Fingerprintwerte.version",
+               format!("{format2:?}"));
+
+        // (2) Ungleiche Messfassung: nicht vergleichbar, kein Zahlenwert.
+        let ungleich_ab = fingerprint_vergleich(&a, ALT, &b, NEU);
+        let ungleich_ba = fingerprint_vergleich(&a, NEU, &b, ALT);
+        pruefe(ungleich_ab == FingerprintVergleich::NichtVergleichbar
+                   && ungleich_ba == FingerprintVergleich::NichtVergleichbar,
+               "ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert",
+               format!("{ungleich_ab:?} / {ungleich_ba:?}"));
+
+        // (3) Aufrufpfad Invalidierung (`invalidierung.rs`, M-54): gleiche
+        // Fassung ergibt den Materialwechsel, ungleiche nie.
+        let inv_gleich = material_urteil(Some((&a, NEU)), Some((&b, NEU)), Umfang::GanzeSitzung);
+        pruefe(matches!(&inv_gleich, Materialurteil::Wechsel(i) if i.grund == Grund::MaterialWechsel),
+               "Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute",
+               format!("{inv_gleich:?}"));
+        let inv_ungleich = material_urteil(Some((&a, ALT)), Some((&b, NEU)), Umfang::GanzeSitzung);
+        pruefe(inv_ungleich == Materialurteil::NichtVergleichbar,
+               "Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)",
+               format!("{inv_ungleich:?}"));
+
+        // (4) Aufrufpfad Vergleichbarkeit (`vergleichbarkeit.rs`, M-28):
+        // alle uebrigen vier Belege perfekt, damit nur der Materialbeleg zaehlt.
+        let beleg = |f: &Fingerprintwerte| Passagenbeleg {
+            projekt_start: 0,
+            projekt_ende: 480_000,
+            fingerprint: Some(f.clone()),
+            aktive_quellen: vec!["a".repeat(32)],
+            samplerate: 48_000.0,
+            messpunktklassen: vec!["insert".into()],
+            abdeckung: 0.95,
+        };
+        let gleich = beurteile_versioniert(&beleg(&a), NEU, &beleg(&b), NEU);
+        pruefe(gleich.material_cosine.is_finite() && gleich.material_cosine < 0.95
+                   && gleich.gruende.contains(&Herabstufungsgrund::MaterialVerschieden),
+               "Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute",
+               format!("{} {:?} {:?}", gleich.material_cosine, gleich.klasse, gleich.gruende));
+        let ungleich = beurteile_versioniert(&beleg(&a), ALT, &beleg(&b), NEU);
+        pruefe(!ungleich.gruende.contains(&Herabstufungsgrund::MaterialVerschieden)
+                   && ungleich.gruende.contains(&Herabstufungsgrund::MessfassungVerschieden)
+                   && ungleich.klasse == Vergleichbarkeit::Unvergleichbar,
+               "Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden",
+               format!("{:?} {:?}", ungleich.klasse, ungleich.gruende));
+        pruefe(ungleich.material_cosine.is_nan(),
+               "Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)",
+               format!("{}", ungleich.material_cosine));
+        assert!(rot.is_empty(), "M-122 rot: {rot:?}");
     }
 }

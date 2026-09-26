@@ -1,0 +1,149 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m121-audio
+std::vector<float> im processBlock
+Datei: eq-copilot/plugin/src/PluginProcessor.cpp; SHA-256 vor der Mutation: 6D23AE41146030FFF0CCA8A9C3C853F13DC5E5B620E05904853C058E48D00F48; Sicherung eq-copilot/build/nak380-sicherung/e6/m121-audio/PluginProcessor.cpp
+Begruendung: Wie M-20: eine Allokation im Audiothread; B4 zaehlt die Allokationen des Audiothreads.
+Mutation 1: eq-copilot/plugin/src/PluginProcessor.cpp, EqCopilotProcessor::processBlock, Anfang
+Wortlaut vorher:
+    void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+    {
+        juce::ScopedNoDenormals rein;
+Wortlaut nachher:
+    void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+    {
+        juce::ScopedNoDenormals rein;
+        std::vector<float> nak380Mutation (64, 0.0f);
+  Bau (mutation) EqCopQueueStressTest: 07:56:37 bis 07:56:49, Exit 0
+  Binary EqCopQueueStressTest 07:56:48.944 juenger als Quelle 07:56:37.218: ja
+
+== Matrixzeile M-121 (Regressionswache wie M-20)
+Lauf mit Mutation: B4 voll 07:56:49 bis 07:56:52, Exit 1, 117 gruen, 4 rot
+Gefallene Pruefungen, die die Zusage tragen (3):
+      FEHLER  4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [4000]
+      FEHLER  2 000 Bloecke mit wechselnder Markierung, Ein- und Ausfade und Interventionsring: 0 Allokationen  [2000]
+      FEHLER  M-72: 2 000 Bloecke, waehrend Intent, Schutz und Schritt laufen: 0 Allokationen im Audiothread  [4000]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: Allokationen)
+Mitgefallene Pruefungen (1)
+      FEHLER  auch der erste Block nach prepareToPlay alloziert nicht  [40]
+Unter derselben Mutation gruen gebliebene Pruefungen: 117
+      ok      drei Bloecke, drei Deskriptoren  [3]
+      ok      jeder Frame kommt bitgleich und an derselben Stelle heraus
+      ok      Stempel: lokaler Strom und Projektzeit stimmen je Block
+      ok      nach dem Leeren ist die Queue leer
+      ok      kein Verlust bei Normallast
+      ok      der Ring ist wirklich mehrfach umgelaufen  [11 Umlaeufe]
+      ok      ueber jeden Wrap hinweg bitgleicher Inhalt
+      ok      kein Frame verloren, keiner doppelt  [12000/12000]
+      ok      vier Bloecke passen, danach ist Schluss  [4]
+      ok      beide abgewiesenen Bloecke sind gezaehlt  [2]
+      ok      verlorene Frames = 2 x 256 (keine Teilmenge)  [512]
+      ok      ein verworfener Block behauptet die noch ausstehende Luecke nicht selbst
+      ok      im Ring liegen NUR vollstaendige Bloecke  [4]
+      ok      nach dem Leeren nimmt der Ring wieder an
+      ok      die Produzentenrueckmeldung markiert genau den angenommenen Lueckenblock
+      ok      der erste Block nach dem Verlust traegt kFlagLueckeDavor
+      ok      und beginnt ein neues continuity_segment  [1]
+      ok      genau `deskriptorPlaetze` Bloecke passen  [8]
+      ok      die vier ueberzaehligen sind gezaehlt  [4]
+      ok      und genau so viele stehen zum Lesen bereit  [8]
+      ok      ein Block ueber maxBlockFrames wird als GANZES abgewiesen
+      ok      und als Oversize gezaehlt, nicht als Ueberlauf  [1/0]
+      ok      der Ueberlaufzaehler bleibt sauber
+      ok      nichts Halbes im Ring
+      ok      die verlorene Zeit ist vollstaendig gemeldet  [257]
+      ok      genau maxBlockFrames passt noch (Kante, nicht Ausschluss)
+      ok      ein Flush-Block wird nicht eingestellt
+      ok      und zaehlt NICHT als Verlust - er traegt keine Audiozeit
+      ok      der Folgeblock geht normal
+      ok      und traegt keine Luecke
+      ok      Mono: R traegt das L-Duplikat (FIFO-Vertrag der Engine)
+      ok      und der Deskriptor sagt kanaele == 1
+      ok      Drei-Tap-Layout: Block angenommen
+      ok      das Bitset meldet genau die belegten Taps  [3]
+      ok      jeder Tap liegt getrennt und richtig; der inaktive liefert false
+      ok      eine falsche Tapzahl wird abgewiesen statt halb kopiert
+      ok      ein Block ohne aktiven Tap ist ein Verlust, kein leerer Deskriptor
+      ok      5 Bloecke rein, 4 versiegelt - einer bleibt in Quarantaene  [4]
+      ok      und die Quarantaene haelt ihn wirklich
+      ok      kein Bruch bei lueckenlosem Strom
+      ok      drop_produces_counter_gap_and_boundary: der Seek ist als Bruch erkannt  [1]
+      ok      genau EIN Block faellt an der Grenze - der Strom laeuft weiter
+      ok      der Block NACH der Grenze ist schon wieder in Quarantaene
+      ok      Stopp verwirft den gehaltenen Block („bleiben sie unvollstaendig“)
+      ok      stehende Projektzeit (Teilpuffer/Stop) ist kein Bruch  [0]
+      ok      und alle bis auf den juengsten sind versiegelt  [5]
+      ok      Vorlauf ohne Bruch
+      ok      Transportkante play->stop ist ein Bruch  [1]
+      ok      ohne Hostkontext traegt der lokale monotone Strom (§53.6)
+      ok      und versiegelt normal  [3]
+      ok      Projektzeit nahe INT64_MAX: Ueberlauf ist eine Grenze, keine Fortsetzung
+      ok      negative Projektzeit ist eine gueltige, fortsetzbare Zeit (HostProbe sah sie)
+      ok      jeder gelesene Frame steht an der Stelle, die sein Stempel nennt
+      ok      es gab nie einen Block mit sampleCount 0
+      ok      die Oversize-Faelle sind aufgetreten UND vollstaendig gezaehlt  [2191]
+      ok      kein angenommener Block war je groesser als die Slotkapazitaet  [256]
+      ok      es wurde wirklich gelesen  [2288127 Frames]
+      ok      18 Blockgroessen von 1 bis 16 384: kein Sample veraendert
+      ok      0 Samples Latenz  [0]
+      ok      kein Tail
+      ok      ein Block ueber der Slotkapazitaet laeuft unveraendert durch
+      ok      und ist als Oversize-Drop der ANALYSE gezaehlt  [1]
+      ok      der abgewiesene Oversize-Block erscheint nicht im Projektfenster
+      ok      der naechste angenommene Lueckenblock beginnt das Fenster exakt neu  [16385..16449]
+      ok      der Analyseverlust wird nicht als Seek im alten Fenster ausgegeben  [0]
+      ok      als Main klassifiziert (§53.5)
+      ok      M-74: Markierungsauftrag baut
+      ok      bei Normallast kein einziger Drop
+      ok      und kein Kontinuitaetsbruch (lueckenloser Transport)
+      ok      die Engine sieht den ganzen Strom bis auf den Block in Quarantaene  [512 Frames offen]
+      ok      Kurz-LUFS steht (der fixed-memory Akku wird wirklich gefuettert)  [-8.684240]
+      ok      framesDropped im Stats-Snapshot kommt aus derselben Quelle
+      ok      ein Neuanlauf ist kein Oversize
+      ok      der Anlauf steigt sofort, nicht erst beim naechsten Audioblock  [0 -> 1]
+      ok      alle drei Bloecke des alten Anlaufs sind als veraltet erkennbar  [3/3]
+      ok      der Produzent meldet exakt den Zug, der den Neuanlauf uebernimmt
+      ok      Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell
+      ok      und er traegt die Luecke, die der Neuanlauf gerissen hat
+      ok      der Folgezug meldet keinen bereits verbrauchten Neuanlauf erneut
+      ok      zwei Neuanlaeufe hintereinander gehen beide nicht verloren  [1 -> 3]
+      ok      zwei zusammengefallene Anforderungen ergeben eine uebernommene Endgeneration
+      ok      und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste
+      ok      Nullframe konsumiert die wartende Generation nicht
+      ok      der naechste echte Block uebernimmt sie weiterhin
+      ok      Seek um 10 s bei gestopptem Transport ist EIN Bruch  [1]
+      ok      Gegenprobe: stehende Zeit bei Stopp bleibt KEIN Bruch (§4.3 Punkt 2)  [0]
+      ok      und bei laufendem Transport ist der Seek weiterhin ein Bruch  [1]
+      ok      bei Stopp ist eine LUECKENLOS fortschreitende Zeit kein Bruch  [0]
+      ok      und alle bis auf den juengsten sind versiegelt  [5]
+      ok      ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet  [0]
+      ok      nach Start ist nur die leichte Publikation sofort faellig
+      ok      10 000 Workerzuege bei gleicher Wanduhr loesen keine Schwer-Auswertung aus
+      ok      vor 250 ms bleibt Gating/Kandidaten gesperrt
+      ok      bei 250 ms ist genau die schwere Runde faellig
+      ok      dieselbe Deadline kann nicht zweimal verbraucht werden
+      ok      nach Pause genau eine Runde, kein Catch-up-Sturm
+      ok      Reset/Generation startet die 250-ms-Deadline neu
+      ok      Test hat echten Queue-Rueckstau hergestellt  [257 Bloecke bis zum ersten Drop]
+      ok      unter Rueckstau hoechstens ~1 Schwer-Auswertung je 250 ms  [1 Runden in 600 ms]
+      ok      neue Generation erbt keinen Batch-beschleunigten Schwertakt  [0 Runden in den ersten 100 ms]
+      ok      Frame-Leser wird unter Rueckstau explizit vorgelassen  [0 ms]
+      ok      Reset-Steuerer wird unter Rueckstau explizit vorgelassen  [0 ms]
+      ok      Stop/Join bleibt auch mit Queue-Rest begrenzt  [0 ms]
+      ok      Gegenprobe: erste Generation hat ihr eigenes Projektfenster
+      ok      Testbarriere liegt deterministisch im laufenden Audiocallback
+      ok      der erste Block der neuen Queue-Generation beginnt ein frisches Projektfenster  [10000..10064]
+      ok      die Generationskante ist kein Seek innerhalb des alten Fensters  [0]
+      ok      Gegenprobe: mit 48 kHz laufen M1 und FeatureEngine
+      ok      nichtendliche Hostrate wird fail-closed auf 0 gespiegelt
+      ok      M1 verarbeitet unter ungueltiger Rate keinen Block  [0]
+      ok      FeatureEngine verarbeitet unter ungueltiger Rate keinen Block  [0]
+      ok      ohne gueltige Analyserate behauptet auch das Projektfenster keine Messung
+      ok      eine folgende gueltige Generation aktiviert beide Engines wieder
+      ok      M-72: beide Prozessoren sind Main (nur dort gibt es Intent und Schritt)
+      ok      M-72: der zweite Faden hat wirklich gearbeitet  [732]
+      ok      M-72: und das Audio ist BITGLEICH zum unberuehrten Prozessor
+      ok      M-72: der Vergleich lief auf echtem Material, nicht auf Stille
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/PluginProcessor.cpp, SHA-256 6D23AE41146030FFF0CCA8A9C3C853F13DC5E5B620E05904853C058E48D00F48: gleich
+  Bau (ruecknahme) EqCopQueueStressTest: 07:56:52 bis 07:56:58, Exit 0
+  Binary EqCopQueueStressTest 07:56:58.107 juenger als Quelle 07:56:52.511: ja
+Lauf nach Ruecknahme: B4 voll 07:56:58 bis 07:57:01, Exit 0, 121 gruen, 0 rot

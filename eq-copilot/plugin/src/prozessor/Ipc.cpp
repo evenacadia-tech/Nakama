@@ -1173,7 +1173,9 @@ MessKompakt EqCopilotProcessor::messKompakt() const
         for (int b = 0; b < kLtasBaender; ++b)
         {
             const double v = m.ltasKompositDb[(size_t) b];
-            k.ltasKompositDb[(size_t) b] = std::isfinite (v)
+            // NAK-380 T-380-9: auch ein interpoliertes Band (Validity-Maske)
+            // reist als NaN, PipeClient schreibt daraus null.
+            k.ltasKompositDb[(size_t) b] = std::isfinite (v) && ! ltasBandInterpoliert (m.ltasKompositInterpoliert, b)
                 ? std::round (v * 10.0) / 10.0
                 : std::numeric_limits<double>::quiet_NaN();   // ⇒ null im JSON
         }

@@ -1,0 +1,36 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-113 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Ereigniszeit im NAK-182-Sweep bei langen Fenstern
+Zustand und Vorbedingung (§6.5, woertlich): bestehender Sweep (M-64)
+Zusage (§6.5, woertlich): zwei Hälften: je Rate über alle Blockgrößen identisch (Regressionswache); innerhalb [Impuls − N_H(fs), Impuls] mit N_H = 4 096/8 192/16 384 (die Schranke „4096 Samples“ der B5-Behauptung wird auf N_H(fs) nachgezogen)
+Test je Sprache (§6.5): C++: B5 bestehend, Schranke angepasst
+Rotbeweis-Spalte (§6.5, woertlich): identisch: Regressionswache (Mutation wie M-64); Schranke: heute nicht messbar für 88,2/96/192 kHz (heute ist N_H überall 4096); Mutation Schranke fest 4096 bei 192 kHz → rot, sobald das Ereignis mehr als 4096 Samples vorher liegt (im Etappenabschnitt gemessen)
+Etikett: Ratengleichheit Regressionswache; Schranke heute nicht messbar
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-113 Pflichterfassung: Stempel 202 752 bei allen fuenf Raten, t0 - Stempel 3 584 Samples (Rohdatei NAK-380-etappe-6-m113-sweep-basis.txt).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 7 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: je Rate ueber alle Blockgroessen identischer Stempel
+  Pruefzeile: B5 impulse_time_is_stable_over_block_sizes_and_sample_rates (a)
+  Mutation: m113-zeit: Ereigniszeit aus dem Blockanfang (Mutation wie M-64)
+  rot: JA (0 von 5 Raten)
+  Protokoll: NAK-380-e6-mutation-m113-zeit.txt
+- Zusagesatz: innerhalb [Impuls - N_H(fs), Impuls] mit N_H = 4 096/8 192/16 384
+  Pruefzeile: B5 (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0
+  Mutation: m113-schranke: Schranke fest 4096 (Matrixmutation, im Test)
+  rot: JA (10 von 25; Abstand 7 168 bei 88,2/96 kHz, 14 336 bei 192 kHz)
+  Protokoll: NAK-380-e6-mutation-m113-schranke.txt
+
+Abweichung: t0 skaliert mit dem Hop der Hauptstufe (100,75 Hops: 206 336 / 412 672 / 825 344 Samples), sonst laege der Impuls bei 192 kHz vor dem ersten Frame, der ein Ereignis tragen darf (N_H + H*Hop = 278 528); verriegelt als Vorbedingung E-0. Bei 44,1 und 48 kHz ist der Sweep unveraendert (t0 206 336, Stempel 202 752, Abstand 3 584 wie am Basisstand).
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m113-zeit: faellt an der erwarteten Pruefung: JA; mit Mutation B5 voll 07:42:04 bis 07:42:36, Exit 1, 364 gruen, 7 rot
+      [ROT]  impulse_time_is_stable_over_block_sizes_and_sample_rates (a): der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH - das Fensterraster kennt die Blockgroesse nicht  [0 von 5 Raten; erster Stempel je Rate: 44.1kHz:202860, 48kHz:206400, 88.2kHz:405720, 96kHz:412800, 192kHz:825600]
+      mitgefallen 6; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 voll 07:42:53 bis 07:43:25, Exit 0, 371 gruen, 0 rot
+  m113-schranke: faellt an der erwarteten Pruefung: JA; mit Mutation B5 voll 07:40:32 bis 07:41:04, Exit 1, 370 gruen, 1 rot
+      [ROT]  (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 (0 <= t0 - stromSample < N_H(fs) = 4096, 8192 bzw. 16384) - die Schranke kommt aus der Fensterlaenge der Hauptstufe, nicht aus dem Hop  [10 von 25; t0 - Stempel je Rate: 3584, 3584, 7168, 7168, 14336]
+      Pflicht-Gruen unter der Mutation: JA
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 voll 07:41:15 bis 07:41:48, Exit 0, 371 gruen, 0 rot

@@ -1,0 +1,31 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-118 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · Versionsschritte Etappe 6 und Referenz des Knopfwegs
+Zustand und Vorbedingung (§6.5, woertlich): `kFeatureMetricsVersion`, `METRICS_VERSION` gehoben (Fassung „NAK-380 Etappe 6“ mit N_max und den Dauern als geführte Schwellen); `kMetricsVersion` → „m4.3-JJJJ-MM-TT“; `festhalten-referenz.json` über den Erzeuger neu (48 kHz: Validity-`null`, Satz in den Karten, neue Version)
+Zusage (§6.5, woertlich): A5 grün; B30 `M-39 festhalten_bytegleich` grün mit neuer Referenz
+Test je Sprache (§6.5): Python: A5 NEU `nak380_m118_fassung_etappe_6`; C++: B30
+Rotbeweis-Spalte (§6.5, woertlich): heute rot, Golden-Klasse (ii): neuer Code gegen alte Referenz → rot (Rohdatei), danach Erzeuger; A5: Mutation N_max im Code ohne Register → rot
+Etikett: heute rot, Golden-Klasse (ii)
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-118 heute rot: A5 15 von 15 Pruefungen rot (keine Fassung 20260929, Versionen 20260928, kMetricsVersion m4.2-2026-09-25).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    A5: 0 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:16:27 ENDE=08:16:30
+    B30: 1 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:14:21 ENDE=08:15:34
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: A5 gruen: Fassung 20260929 an vier Stellen plus kMetricsVersion, jede gefuehrte Groesse mit Wert an ihrer Codestelle
+  Pruefzeile: A5 nak380_m118_fassung_etappe_6 (pruefe_v3_vertrag.py)
+  Mutation: m118-register: kFensterPunkteMax 65536 -> 131072 ohne Register (Matrixmutation)
+  rot: JA
+  Protokoll: NAK-380-e6-mutation-m118-register.txt
+- Zusagesatz: B30 M-39 festhalten_bytegleich gruen mit neuer Referenz (Klasse ii: vorher rot gegen die alte)
+  Pruefzeile: B30 M-39 festhalten_bytegleich
+  Mutation: Klasse (ii): neuer Code gegen die alte Referenz
+  rot: JA (erste Abweichung Byte 52; Felddiff null 66, Satz 2, Version 1, andere 0)
+  Protokoll: NAK-380-etappe-6-m118-referenz-alt.txt
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m118-register: faellt an der erwarteten Pruefung: JA; mit Mutation A5 pruefe_v3_vertrag.py --nak380 M-118 07:55:56 bis 07:55:57, Exit 2, 0 gruen, 1 rot
+      ROT: nak380_m118_fassung_etappe_6: kFensterPunkteMax = 65536 steht mit dem Registerwert in FeatureEngine.h — Code 131072 (FeatureEngine.h), Register 65536 ('eq-copilot/plugin/core/analysis/FeatureEngine.h'), geltend 65536
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme A5 pruefe_v3_vertrag.py --nak380 M-118 07:55:57 bis 07:55:58, Exit 0, 0 gruen, 0 rot

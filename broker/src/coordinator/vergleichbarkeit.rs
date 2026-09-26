@@ -77,6 +77,10 @@ pub enum Herabstufungsgrund {
     MesspunktVerschieden,
     /// Die gemeinsame Abdeckung reicht nicht.
     AbdeckungZuGering,
+    /// Die zwei Fingerprints stammen aus verschiedenen Messfassungen
+    /// (`metrics_version`, NAK-380 R-380-9, M-122): kein Materialvergleich,
+    /// und ausdruecklich NICHT `MaterialVerschieden`.
+    MessfassungVerschieden,
 }
 
 impl Herabstufungsgrund {
@@ -87,6 +91,7 @@ impl Herabstufungsgrund {
             Herabstufungsgrund::QuellenVerschieden => "quellen_verschieden",
             Herabstufungsgrund::MesspunktVerschieden => "messpunkt_verschieden",
             Herabstufungsgrund::AbdeckungZuGering => "abdeckung_zu_gering",
+            Herabstufungsgrund::MessfassungVerschieden => "messfassung_verschieden",
         }
     }
 }
@@ -146,7 +151,7 @@ pub struct Vergleichsurteil {
 /// A5 haelt sie gegen `aktuell` in `metriken-v1.json` (M-29) - dieselbe
 /// Bindung, die `kFeatureMetricsVersion` auf der Sondenseite hat. Wer hier
 /// eine Zahl aendert und die Fassung stehen laesst, faellt rot.
-pub const METRICS_VERSION: u32 = 20260928;
+pub const METRICS_VERSION: u32 = 20260929;
 
 /// Zeitueberdeckung fuer eine STARKE Vergleichbarkeit (§43.2: 95 %).
 pub const GATE_ZEITUEBERDECKUNG: f64 = 0.95;
@@ -313,15 +318,40 @@ fn messpunkt_wechsel(a: &Passagenbeleg, b: &Passagenbeleg) -> Option<bool> {
 /// Ein widersprochener Beleg ergibt `Unvergleichbar`; alle fuenf da, aber
 /// mindestens einer unter seinem Gate, ergibt `Schwach`. `Stark` verlangt
 /// alle fuenf ueber ihren Gates.
+///
+/// NAK-380 M-122: dieser Weg traegt keine Messfassung je Passage; er
+/// vergleicht innerhalb der Fassung, die dieser Broker anwendet
+/// (`METRICS_VERSION`), ueber denselben versionsgebundenen Pfad wie
+/// `beurteile_versioniert`.
 pub fn beurteile(a: &Passagenbeleg, b: &Passagenbeleg) -> Vergleichsurteil {
+    beurteile_versioniert(a, METRICS_VERSION, b, METRICS_VERSION)
+}
+
+/// Das Urteil mit der Messfassung (`metrics_version`) je Passage (NAK-380
+/// R-380-9, M-122). Verschiedene Fassungen machen den Materialbeleg
+/// fail-closed zu „nicht vergleichbar“: kein Zahlenwert (`material_cosine`
+/// NaN), Klasse `Unvergleichbar` mit dem Grund `MessfassungVerschieden` und
+/// nie `MaterialVerschieden`. Der Versionsriegel liegt in
+/// `telemetrie::fingerprint_vergleich`, vor den drei Cosinusrechnungen.
+pub fn beurteile_versioniert(
+    a: &Passagenbeleg,
+    fassung_a: u32,
+    b: &Passagenbeleg,
+    fassung_b: u32,
+) -> Vergleichsurteil {
     let mut gruende = Vec::new();
 
     let zeit = ueberdeckung((a.projekt_start, a.projekt_ende), (b.projekt_start, b.projekt_ende));
     let quellen = jaccard(&a.aktive_quellen, &b.aktive_quellen);
-    let material = match (&a.fingerprint, &b.fingerprint) {
-        (Some(x), Some(y)) => crate::telemetrie::fingerprint_aehnlichkeit(x, y),
+    let (material, fassung_verschieden) = match (&a.fingerprint, &b.fingerprint) {
+        (Some(x), Some(y)) => {
+            match crate::telemetrie::fingerprint_vergleich(x, fassung_a, y, fassung_b) {
+                crate::telemetrie::FingerprintVergleich::Aehnlichkeit(c) => (c, false),
+                crate::telemetrie::FingerprintVergleich::NichtVergleichbar => (f64::NAN, true),
+            }
+        }
         // Ein fehlender Fingerprint ist kein aehnlicher Fingerprint.
-        _ => 0.0,
+        _ => (0.0, false),
     };
 
     // 1. Abdeckung — auf beiden Seiten, und FAIL-CLOSED.
@@ -343,9 +373,12 @@ pub fn beurteile(a: &Passagenbeleg, b: &Passagenbeleg) -> Vergleichsurteil {
     if zeit <= 0.0 {
         gruende.push(Herabstufungsgrund::ProjektbereichVerschieden);
     }
-    // 3. Material.
+    // 3. Material. Verschiedene Messfassungen sind ein eigener, benannter
+    //    Grund und nie „anderes Material“ (M-122).
     if a.fingerprint.is_none() || b.fingerprint.is_none() {
         gruende.push(Herabstufungsgrund::MaterialVerschieden);
+    } else if fassung_verschieden {
+        gruende.push(Herabstufungsgrund::MessfassungVerschieden);
     }
     // 4. Quellen.
     if quellen <= 0.0 {

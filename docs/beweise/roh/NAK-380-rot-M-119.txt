@@ -1,0 +1,43 @@
+NAK-380 Etappe 6 — Rotbeweise der Matrixzeile M-119 (Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund: DSP-20 · begrenztes Objektgrößenbudget (NAK-175)
+Zustand und Vorbedingung (§6.5, woertlich): B5 main-Rahmen 1 001 008 B = 95,5 % des 1-MiB-Stapels (`docs/beweise/roh/NAK-175-stapelmessung.txt:16`); Etappenstartwerte beider Typen werden ausgegeben; T-380-8 fügt `double resonanzSucheAbHz` hinzu, T-380-9 zwei `std::array<std::uint8_t, 28>`-Masken, zusammen Δ₆ = 8 + 28 + 28 = 64 B
+Zusage (§6.5, woertlich): `sizeof (AnalyseEngine)` ≤ Startwert + 64 B; `sizeof (FeatureEngine)` = Etappenstartwert, weil Etappe 6 dort kein Mitglied hinzufügt; alle längenabhängigen Träger bleiben Vektoren im Heap; B5 läuft ohne `0xC00000FD`
+Test je Sprache (§6.5): C++: B5 NEU `380/M-119 objektgroessen_begrenzt`
+Rotbeweis-Spalte (§6.5, woertlich): Regressionswache: Mutation ein festes Array von 65 536 `double` als Mitglied erhöht die jeweilige Größe um 524 288 B, reißt die Obergrenze und macht den B5-Fall rot; die Mutation bleibt auch Rotbeweis der Stapelwache
+Etikett: Regressionswache
+
+== Basisstand (HEAD a4ccba93, Produktcode unveraendert, neue Faelle zuerst geschrieben; Rohdatei NAK-380-etappe-6-basisstand-gegenprobe.txt)
+    M-119 Startwerte 16 248 / 54 816 B (Rohdatei NAK-380-etappe-6-m119-sizeof-start.txt).
+
+== Endstand (Etappenstand, Endlaeufe e6end-*)
+    B5: 2 Pruefzeilen der Zeile gruen, 0 rot; Bein EXIT=0 START=08:12:47 ENDE=08:13:19
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll
+- Zusagesatz: sizeof (FeatureEngine) = Startwert 16 248 B
+  Pruefzeile: B5 380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine)
+  Mutation: m119-ersatz: std::array<double, 16> als Mitglied (formgueltiger Ersatz)
+  rot: JA (16 376 B)
+  Protokoll: NAK-380-e6-mutation-m119-ersatz.txt
+- Zusagesatz: sizeof (AnalyseEngine) <= Startwert + 64 B
+  Pruefzeile: B5 380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine)
+  Mutation: m119-ersatz: std::array<double, 16> als Mitglied
+  rot: JA (55 008 B, Delta 192 B)
+  Protokoll: NAK-380-e6-mutation-m119-ersatz.txt
+- Zusagesatz: B5 laeuft ohne 0xC00000FD (Stapelwache)
+  Pruefzeile: B5 Lauf (Exitcode)
+  Mutation: m119-matrix: festes Array von 65 536 double in FeatureEngine (Matrixmutation woertlich)
+  rot: JA (B5 bricht mit -1073741571 = 0xC00000FD ab, 0 Ausgabezeilen, beide Aufrufe)
+  Protokoll: NAK-380-e6-mutation-m119-matrix.txt
+
+Die Matrixmutation (+524 288 B) laesst B5 schon beim Start am Stapel scheitern, bevor die Groessenpruefung schreibt; sie belegt die Stapelwache. Fuer die zwei Groessensaetze ist m119-ersatz die formgueltige Mutation mit derselben Aussage (+128 B je Typ).
+
+== Mutationen dieser Zeile (Wortlaut, SHA-256 und Laeufe in den Protokollen)
+  m119-matrix: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-119, dann B5 voll (letzte drei Zeilen) 07:50:10 bis 07:50:10, Exit 1, 0 gruen, 0 rot
+      LAUFEXIT B5 --nak380 M-119: -1073741571 (0xC00000FD), 0 Ausgabezeilen
+      LAUFEXIT B5 voll: -1073741571 (0xC00000FD), 0 Ausgabezeilen
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich; nach Ruecknahme B5 --nak380 M-119, dann B5 voll (letzte drei Zeilen) 07:50:27 bis 07:51:00, Exit 0, 3 gruen, 0 rot
+      Deutung fuer M-119: JA als Stapelwache: B5 bricht mit 0xC00000FD ab, bevor eine Pruefung schreibt (LAUFEXIT-Zeilen); die Groessensaetze belegt m119-ersatz.
+  m119-ersatz: faellt an der erwarteten Pruefung: JA; mit Mutation B5 --nak380 M-119 07:45:32 bis 07:45:33, Exit 1, 0 gruen, 2 rot
+      [ROT]  380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) = Startwert 16 248 B (kein neues Mitglied)  [16376 B]
+      [ROT]  380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) <= Startwert + 64 B (double und zwei 28-B-Masken)  [55008 B, Startwert 54816 B, Delta 192 B]
+      mitgefallen 0; SHA-256 nach der Ruecknahme gleich, gleich; nach Ruecknahme B5 --nak380 M-119 07:45:53 bis 07:45:53, Exit 0, 2 gruen, 0 rot

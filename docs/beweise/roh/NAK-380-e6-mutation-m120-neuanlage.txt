@@ -1,0 +1,43 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m120-neuanlage
+Stufe::vorbereiten behaelt Ringinhalt und Fuellstand (resize statt assign, gefuellt nicht 0)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m120-neuanlage/FeatureEngine.h
+Begruendung: Gegenprobe der Doppelmutation: ohne die Neuanlage leert zuruecksetzen/Stufe::leeren die Ringe weiter - "kein Stufenring" bleibt gruen.
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, Stufe::vorbereiten, Ringe
+Wortlaut vorher:
+                ringM.assign ((std::size_t) n, 0.0);
+                ringS.assign ((std::size_t) n, 0.0);
+Wortlaut nachher:
+                ringM.resize ((std::size_t) n);
+                ringS.resize ((std::size_t) n);
+Mutation 2: eq-copilot/plugin/core/analysis/FeatureEngine.h, Stufe::vorbereiten, Fuellstand
+Wortlaut vorher:
+                bandBis.assign ((std::size_t) Gitter::evidenzBaender, 0);
+                gefuellt = 0;
+Wortlaut nachher:
+                bandBis.assign ((std::size_t) Gitter::evidenzBaender, 0);
+  Bau (mutation) EqCopAnalysisGoldenTest: 07:46:32 bis 07:46:49, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:46:49.270 juenger als Quelle 07:46:32.249: ja
+
+== Matrixzeile M-120 (Stufenring, Gegenprobe Riegel 1)
+Lauf mit Mutation: B5 --nak380 M-120 07:46:49 bis 07:46:50, Exit 0, 8 gruen, 0 rot
+Gefallene Pruefungen, die die Zusage tragen (0):
+Die Zusage faellt an der erwarteten Pruefung: NEIN (erwartet: )
+Pruefungen, die unter dieser Mutation gruen bleiben muessen:
+    Muster 'M-120 ratenwechsel_laengen: kein Stufenring': gruen 1, rot 0
+    Muster 'M-120 ratenwechsel_laengen: kein Akku': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 8
+    [ok]   380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)  [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]   380/M-120 ratenwechsel_laengen 48 kHz: Vorbedingung gespeiste Samplezahl = 1440000 (30 s * 48 000), Laeufer und Engine  [Puffer 1440000, gespeist 1440000, von der Engine verarbeitet 1440000]
+    [ok]   380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2  [Bass 32768/16384, Haupt 8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)  [vorher belegt ja, gefuellt 0/0]
+    [ok]   380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt (Riegel zuruecksetzen)  [Akkubaender 0, verarbeitet 0, Historie 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096  [32768/16384/8192/4096]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt  [vorher belegt ja, Segmente 0, Histogramme 0]
+    [ok]   380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge (floor((96 000 - 32 768)/16 384) + 1 = 4)  [Band 64 (ein Bin bei 32 768 und 16 384: ja): 4 Segmente (Soll 4)]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 07:46:50 bis 07:47:10, Exit 0
+  Binary EqCopAnalysisGoldenTest 07:47:09.950 juenger als Quelle 07:46:50.849: ja
+Lauf nach Ruecknahme: B5 --nak380 M-120 07:47:10 bis 07:47:11, Exit 0, 8 gruen, 0 rot

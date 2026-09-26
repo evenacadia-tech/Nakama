@@ -1,0 +1,26 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m114-kappe
+Obergrenze kObergrenzeHz 18 000 -> 17 000 Hz
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h; SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6/m114-kappe/FeatureEngine.h
+Begruendung: Die Kappe min(18 kHz, 0,95*fs/2) = 18 kHz bei beiden Raten traegt kObergrenzeHz; mit 17 kHz liegt ein Band ueber der Kappe.
+Mutation 1: eq-copilot/plugin/core/analysis/FeatureEngine.h, kObergrenzeHz
+Wortlaut vorher:
+        static constexpr double kObergrenzeHz = 18000.0;
+Wortlaut nachher:
+        static constexpr double kObergrenzeHz = 17000.0;
+  Bau (mutation) EqCopAnalysisGoldenTest: 08:06:52 bis 08:07:09, Exit 0
+  Binary EqCopAnalysisGoldenTest 08:07:09.609 juenger als Quelle 08:06:52.837: ja
+
+== Matrixzeile M-114 (Kappe 18 kHz)
+Lauf mit Mutation: B5 --nak380 M-114 08:07:09 bis 08:07:09, Exit 1, 2 gruen, 1 rot
+Gefallene Pruefungen, die die Zusage tragen (1):
+    [ROT]  380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten (kein Band ueber der Kappe)  [219 / 219]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten)
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]   380/M-114 zuordnung_96k_gleich_48k (Bass): bandVon/bandBis je Band identisch, gleiches Δf  [221 von 221 gleich, Δf 2.9297 / 2.9297 Hz (N 16384 / 32768)]
+    [ok]   380/M-114 zuordnung_96k_gleich_48k (Haupt): bandVon/bandBis je Band identisch, gleiches Δf  [221 von 221 gleich, Δf 11.7188 / 11.7188 Hz (N 4096 / 8192)]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/core/analysis/FeatureEngine.h, SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau (ruecknahme) EqCopAnalysisGoldenTest: 08:07:09 bis 08:07:25, Exit 0
+  Binary EqCopAnalysisGoldenTest 08:07:25.794 juenger als Quelle 08:07:09.815: ja
+Lauf nach Ruecknahme: B5 --nak380 M-114 08:07:25 bis 08:07:25, Exit 0, 3 gruen, 0 rot

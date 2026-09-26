@@ -1,0 +1,34 @@
+NAK-380 Etappe 6 - Mutationsprotokoll m109-maske
+Validity-Maske in snapshotObjekt ignoriert (komposit_db und referenz_8192_db)
+Datei: eq-copilot/plugin/src/DiagnoseAntwort.cpp; SHA-256 vor der Mutation: 36B74321BCB2B9D0E95B423F5A1681E38665690397EFAAED6EE6C61624B68F50; Sicherung eq-copilot/build/nak380-sicherung/e6/m109-maske/DiagnoseAntwort.cpp
+Begruendung: Das null fuer interpolierte Baender in Datei und Briefkasten traegt allein die Maskenbedingung je Feld in snapshotObjekt (Matrixmutation, beide Felder).
+Mutation 1: eq-copilot/plugin/src/DiagnoseAntwort.cpp, snapshotObjekt, komposit_db
+Wortlaut vorher:
+                komposit.add (ltasBandInterpoliert (m.ltasKompositInterpoliert, b)
+                                  ? juce::var() : zahl (m.ltasKompositDb[(size_t) b], m.ltasGueltig));
+Wortlaut nachher:
+                komposit.add (zahl (m.ltasKompositDb[(size_t) b], m.ltasGueltig));
+Mutation 2: eq-copilot/plugin/src/DiagnoseAntwort.cpp, snapshotObjekt, referenz_8192_db
+Wortlaut vorher:
+                referenzKurve.add (ltasBandInterpoliert (m.ltasReferenzInterpoliert, b)
+                                       ? juce::var() : zahl (m.ltasReferenzDb[(size_t) b], m.ltasGueltig));
+Wortlaut nachher:
+                referenzKurve.add (zahl (m.ltasReferenzDb[(size_t) b], m.ltasGueltig));
+  Bau (mutation) EqCopBriefkastenTest: 07:55:37 bis 07:55:50, Exit 0
+  Binary EqCopBriefkastenTest 07:55:50.627 juenger als Quelle 07:55:37.385: ja
+
+== Matrixzeile M-109
+Lauf mit Mutation: B30 --nak380 M-109 07:55:50 bis 07:55:52, Exit 1, 2 gruen, 2 rot
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT] 380/M-109 interpolierte_baender_null: komposit_db ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl [0 von 29 null, 192 Zahlen, 0 null ohne Maske, 29 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+    [ROT] 380/M-109 interpolierte_baender_null: referenz_8192_db ist null genau fuer die Maskenbaender, jedes andere Band eine Zahl [0 von 37 null, 184 Zahlen, 0 null ohne Maske, 37 Zahl trotz Maske; Band 0 Zahl trotz Maske]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: M-109 interpolierte_baender_null: komposit_db | M-109 interpolierte_baender_null: referenz_8192_db)
+Mitgefallene Pruefungen (0)
+Unter derselben Mutation gruen gebliebene Pruefungen: 2
+    [ok]  380/M-109 interpolierte_baender_null: Vorbedingung rosa_selbstpruefung_E-380-13 [groesste Nachbardifferenz 0.051 dB (Soll <= 1,0), Oktaven 57.66/57.70/57.71/57.76/57.75/57.77/57.79/57.75/57.74/57.77 dB; RMS 0.09897 gegen 0.10000 (-0.090 dB), 1440000 Samples]
+    [ok]  380/M-109 interpolierte_baender_null: Vorbedingung 30 s verarbeitet, LTAS gueltig, 221 Baender je Kurve, Maske mindestens 25 Baender [1440000 Samples, Maske Komposit 29, Referenz 37, Laengen 16384/8192/4096/2048]
+
+Ruecknahme aus der Sicherung, eq-copilot/plugin/src/DiagnoseAntwort.cpp, SHA-256 36B74321BCB2B9D0E95B423F5A1681E38665690397EFAAED6EE6C61624B68F50: gleich
+  Bau (ruecknahme) EqCopBriefkastenTest: 07:55:52 bis 07:55:55, Exit 0
+  Binary EqCopBriefkastenTest 07:55:55.784 juenger als Quelle 07:55:52.229: ja
+Lauf nach Ruecknahme: B30 --nak380 M-109 07:55:55 bis 07:55:56, Exit 0, 4 gruen, 0 rot

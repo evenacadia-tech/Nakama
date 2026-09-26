@@ -37,9 +37,13 @@
 #include <complex>
 #include <cstdint>
 #include <cstring>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <new>
+#include <thread>
+#include <utility>
 #include <vector>
 
 using namespace nakama::analyse;
@@ -47,6 +51,53 @@ namespace rt = nakama::echtzeit;
 // Nur der Prozessor, kein `using namespace eqcop` — sonst stuenden zwei
 // `Biquad` und zwei `AnalyseEngine`-nahe Namen nebeneinander.
 using eqcop::EqCopilotProcessor;
+
+// NAK-380 Etappe 6 (M-100): Heapbytes zaehlen, nur solange ein Fall es auf
+// SEINEM Thread einschaltet (Muster BriefkastenTestMain.cpp M-51,
+// Sonde013DynamicsTest.cpp). Gezaehlt werden die angeforderten Bytes; der
+// Zaehler misst so, was `FeatureEngine::Stufe::vorbereiten` wirklich anlegt,
+// statt es aus den Traegern abzuschreiben.
+namespace
+{
+thread_local bool nak380ZaehleBytes = false;
+thread_local std::uint64_t nak380Bytes = 0;
+// Die angeforderten Groessen einzeln (hoechstens 64 je Messung, ohne
+// Allokation im Zaehler): die MSVC-STL fordert fuer einen Vektorpuffer ab
+// 4096 B Nutzdaten 39 B mehr an (32-B-Ausrichtung und ein Rohzeiger,
+// `_Allocate_manually_vector_aligned`); so lassen sich Nutzdaten und
+// Verwaltungsanteil trennen.
+thread_local std::size_t nak380Groessen[64] {};
+thread_local int nak380Anforderungen = 0;
+
+void nak380Zaehle (std::size_t groesse) noexcept
+{
+    if (! nak380ZaehleBytes)
+        return;
+    nak380Bytes += (std::uint64_t) groesse;
+    if (nak380Anforderungen < 64)
+        nak380Groessen[nak380Anforderungen] = groesse;
+    ++nak380Anforderungen;
+}
+}
+
+void* operator new (std::size_t groesse)
+{
+    nak380Zaehle (groesse);
+    if (groesse == 0) groesse = 1;
+    if (void* p = std::malloc (groesse)) return p;
+    throw std::bad_alloc();
+}
+void operator delete (void* p) noexcept { std::free (p); }
+void operator delete (void* p, std::size_t) noexcept { std::free (p); }
+void* operator new[] (std::size_t groesse)
+{
+    nak380Zaehle (groesse);
+    if (groesse == 0) groesse = 1;
+    if (void* p = std::malloc (groesse)) return p;
+    throw std::bad_alloc();
+}
+void operator delete[] (void* p) noexcept { std::free (p); }
+void operator delete[] (void* p, std::size_t) noexcept { std::free (p); }
 
 #if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
 namespace nakama::analyse
@@ -145,9 +196,160 @@ struct FeatureEngineTestzugang
         return std::max (std::max (med + kFlussKappa * mad, (1.0 + kFlussRho) * med),
                          kFlussTminDbJeBin * (double) d.binAnzahl);
     }
+
+    // ── NAK-380 Etappe 6 (T-380-11), nur lesend ─────────────────────────────
+    // M-98, M-120: Punktzahl, Hop und FFT-Groesse je Stufe.
+    struct StufenLaenge { int punkte { 0 }, hop { 0 }, fftM { 0 }, fftS { 0 }; };
+    static StufenLaenge laenge (const FeatureEngine& e, bool bass) noexcept
+    {
+        const auto& s = bass ? e.bass : e.haupt;
+        return { s.punkte, s.hop, s.fftM.groesse(), s.fftS.groesse() };
+    }
+
+    // M-114: das Bin-Fenster [von, bis) eines Bandes in EINER Stufe, ohne
+    // Rueckgriff auf die Zustaendigkeit.
+    static std::pair<int, int> binfenster (const FeatureEngine& e, bool bass, int band) noexcept
+    {
+        const auto& s = bass ? e.bass : e.haupt;
+        if (band < 0 || (std::size_t) band >= s.bandVon.size())
+            return { -1, -1 };
+        return { s.bandVon[(std::size_t) band], s.bandBis[(std::size_t) band] };
+    }
+
+    static int erstesBandUeberKappe (const FeatureEngine& e) noexcept { return e.kappeBand; }
+    static int trennIndex (const FeatureEngine& e) noexcept { return e.trennIndex(); }
+
+    // M-100: der Heap, den `Stufe::vorbereiten` fuer n Punkte bei fs WIRKLICH
+    // anlegt, am Allokationszaehler dieses Programms gemessen (Ringe, Zeitringe,
+    // Fenster, Arbeit, PSD, beide FFT samt Tafeln, Bin-Fenster). Das
+    // Stufenobjekt selbst entsteht vor dem Zaehlen. Getrennt ausgewiesen:
+    // Nutzdaten und der Verwaltungsanteil der STL (39 B je Anforderung ab
+    // 4096 B Nutzdaten; angefordert ist dann mindestens 4135 B, darunter
+    // liegt jede Anforderung unter 4096 B).
+    struct StufenHeap { std::uint64_t gesamt { 0 }, nutzdaten { 0 }; int anforderungen { 0 }, grosse { 0 }; };
+    static StufenHeap stufeHeapGemessen (int n, double fs)
+    {
+        auto s = std::make_unique<FeatureEngine::Stufe>();
+        nak380Bytes = 0;
+        nak380Anforderungen = 0;
+        nak380ZaehleBytes = true;
+        s->vorbereiten (n, fs);
+        nak380ZaehleBytes = false;
+        StufenHeap h;
+        h.gesamt = nak380Bytes;
+        h.anforderungen = nak380Anforderungen;
+        for (int i = 0; i < std::min (nak380Anforderungen, 64); ++i)
+        {
+            const bool gross = nak380Groessen[i] >= 4096u + 39u;
+            h.nutzdaten += (std::uint64_t) (gross ? nak380Groessen[i] - 39u : nak380Groessen[i]);
+            h.grosse += gross ? 1 : 0;
+        }
+        nak380Bytes = 0;
+        nak380Anforderungen = 0;
+        return h;
+    }
+
+    // M-100: die uebrigen laengen- und binabhaengigen Traeger der Engine
+    // (Stereoring M-85, Detektor M-43), Kapazitaet mal Elementgroesse.
+    static std::uint64_t stereoRingBytes (const FeatureEngine& e) noexcept
+    {
+        return (std::uint64_t) e.stereoRing.capacity() * sizeof (e.stereoRing[0]);
+    }
+    static std::uint64_t detektorBytes (const FeatureEngine& e) noexcept
+    {
+        if (e.detektor.empty())
+            return 0u;
+        const auto& d = e.detektor[0];
+        return (std::uint64_t) (d.historie.capacity() * sizeof (double) + d.sortiert.capacity() * sizeof (double)
+                                + d.vorframe.capacity() * sizeof (double) + d.filter.capacity() * sizeof (double)
+                                + d.schlange.capacity() * sizeof (d.schlange[0]));
+    }
+
+    // M-102: Baender unter der Kappe, deren ZUSTAENDIGE Stufe keinen Bin hat.
+    static int baenderOhneBin (const FeatureEngine& e) noexcept
+    {
+        int n = 0;
+        for (int b = 0; b < e.kappeBand; ++b)
+        {
+            const auto& s = b < e.trennIndex() ? e.bass : e.haupt;
+            if (s.bandBis[(std::size_t) b] <= s.bandVon[(std::size_t) b])
+                ++n;
+        }
+        return n;
+    }
+
+    // M-120: Zustand der Stufenringe und Akkus unmittelbar nach `vorbereiten`.
+    static int stufeGefuellt (const FeatureEngine& e, bool bass) noexcept
+    {
+        return (bass ? e.bass : e.haupt).gefuellt;
+    }
+    static bool stufenringLeer (const FeatureEngine& e, bool bass) noexcept
+    {
+        const auto& s = bass ? e.bass : e.haupt;
+        for (const double v : s.ringM) if (v != 0.0) return false;
+        for (const double v : s.ringS) if (v != 0.0) return false;
+        return true;
+    }
+    static int akkuBaenderBelegt (const FeatureEngine& e) noexcept
+    {
+        int n = 0;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+            if (e.liveAkku[b].n != 0 || e.evidenzAkku[b].n != 0)
+                ++n;
+        return n;
+    }
+    static int historieGefuelltWert (const FeatureEngine& e) noexcept
+    {
+        return e.detektor.empty() ? -1 : e.detektor[0].gefuellt;
+    }
 };
 } // namespace nakama::analyse
 #endif
+
+namespace eqcop
+{
+/** NAK-380 Etappe 6 (M-120, T-380-11): nur lesender Zugang des B5-Programms
+    zu den M1-Stufen. Eigene Definition in diesem Programm (getrennte
+    Programme, keine ODR-Kollision mit `GoldenTestMain.cpp`); das Produkt
+    definiert und ruft die Struktur nie. */
+struct AnalyseEngineTestzugang
+{
+    static int punkte (const AnalyseEngine& e, int stufe) noexcept
+    {
+        const AnalyseEngine::WelchStufe* s[4] = { &e.bass, &e.referenz, &e.mitten, &e.hoehen };
+        return stufe >= 0 && stufe < 4 ? s[stufe]->n : -1;
+    }
+    static bool stufenLeer (const AnalyseEngine& e) noexcept
+    {
+        for (const auto* s : { &e.bass, &e.referenz, &e.mitten, &e.hoehen })
+        {
+            if (s->gefuellt != 0 || s->aktiveSegmente != 0)
+                return false;
+            for (const double v : s->summePsd) if (v != 0.0) return false;
+        }
+        return true;
+    }
+    static std::uint64_t akkuSegmente (const AnalyseEngine& e) noexcept
+    {
+        std::uint64_t n = 0;
+        for (const auto* a : { &e.bassAkku, &e.mittenAkku, &e.hoehenAkku, &e.referenzAkku })
+            for (const auto v : a->segmente)
+                n += v;
+        return n;
+    }
+    static std::uint64_t histogrammSumme (const AnalyseEngine& e) noexcept
+    {
+        std::uint64_t n = 0;
+        for (const auto v : e.pegelHistogramm) n += v;
+        for (const auto v : e.teilblockHistogramm) n += v;
+        return n;
+    }
+    static std::uint64_t bassSegmente (const AnalyseEngine& e, int band) noexcept
+    {
+        return e.bassAkku.segmente[(std::size_t) band];
+    }
+};
+} // namespace eqcop
 
 namespace
 {
@@ -1323,9 +1525,10 @@ using Nak380Beobachter = std::function<void (FeatureEngine&, std::uint64_t block
     entnommen (§7.3), am Ende noch einmal. */
 __declspec(noinline) std::unique_ptr<Nak380Korpus> nak380Korpuslauf (
     const std::vector<float>& mono, std::uint64_t seekBei = 0, std::int64_t seekSprung = 0,
-    const Nak380Beobachter& beobachter = {})
+    const Nak380Beobachter& beobachter = {}, double fs = 48000.0)
 {
-    constexpr double fs = 48000.0;
+    // NAK-380 Etappe 6 (M-115): die Rate ist ein Parameter; ohne Angabe 48 kHz
+    // wie bisher (alle Faelle der Etappen 4 und 5 laufen unveraendert).
     constexpr int block = 512;
     auto aus = std::make_unique<Nak380Korpus>();
     aus->engine = std::make_unique<FeatureEngine>();
@@ -1917,6 +2120,489 @@ __declspec(noinline) void nak380Objektbudget()
             juce::String ((juce::int64) ist) + " B, Delta "
                 + juce::String ((juce::int64) ist - (juce::int64) kNak380M97Startwert) + " B");
 }
+
+//==============================================================================
+// NAK-380 Etappe 6 (DSP-20; R-380-5, T-380-7 bis T-380-9; Matrix §6.5).
+// Alle Sollwerte kommen aus Nachrechnungen im Test (`Nak380Pruefsignale.h`:
+// `referenzPunkte` mit std::log2/std::round, das Gitter aus `BandGrid.h`), nie
+// aus der Engine (R-380-8). Engines und Prozessoren im Heap (NAK-175), jeder
+// Fall in einer eigenen, nicht eingebetteten Funktion (T-380-11).
+
+/** Die sechs Raten der Zusage R-380-5 (44,1 bis 192 kHz). */
+constexpr double kNak380E6Raten[] = { 44100.0, 48000.0, 88200.0, 96000.0, 176400.0, 192000.0 };
+
+juce::String nak380KHz (double fs) { return juce::String (fs / 1000.0, 1) + " kHz"; }
+
+/** M-98: Laengentafel der FeatureEngine je Rate und Stufe. Zwei Referenzen je
+    Zeile: die Formel T-380-7 (`referenzPunkte`) und die Tafel der Matrix §6.5
+    (16 384/4 096, 32 768/8 192, 65 536/16 384); Hop = N/2, beide FFT mit N
+    Punkten. Die Fensterdauer 1000*N/fs liegt in der 44,1-kHz-Familie bei
+    371,5/92,9 ms, in der 48-kHz-Familie bei 341,3/85,3 ms; Toleranz 0,05 ms =
+    die halbe letzte Stelle der Matrixangabe (Rechnung: 371,52; 92,88;
+    341,33; 85,33 ms). */
+__declspec(noinline) void nak380M98()
+{
+    namespace sig = nakama::test::nak380;
+    struct Zeile { double fs; int bass, haupt; double dauerBassMs, dauerHauptMs; };
+    const Zeile tafel[] = { { 44100.0, 16384, 4096, 371.5, 92.9 }, { 48000.0, 16384, 4096, 341.3, 85.3 },
+                            { 88200.0, 32768, 8192, 371.5, 92.9 }, { 96000.0, 32768, 8192, 341.3, 85.3 },
+                            { 176400.0, 65536, 16384, 371.5, 92.9 }, { 192000.0, 65536, 16384, 341.3, 85.3 } };
+    for (const auto& z : tafel)
+    {
+        auto e = std::make_unique<FeatureEngine>();
+        e->vorbereiten (z.fs);
+        for (const bool bass : { true, false })
+        {
+            const auto l = FeatureEngineTestzugang::laenge (*e, bass);
+            const int formel = sig::referenzPunkte (bass ? 16384 : 4096, z.fs);
+            const int matrix = bass ? z.bass : z.haupt;
+            const double dauer = 1000.0 * (double) l.punkte / z.fs;
+            const double dauerSoll = bass ? z.dauerBassMs : z.dauerHauptMs;
+            pruefe (l.punkte == formel && formel == matrix && l.hop == l.punkte / 2
+                        && l.fftM == l.punkte && l.fftS == l.punkte
+                        && std::abs (dauer - dauerSoll) <= 0.05,
+                    "380/M-98 laengentafel_featureengine (" + nak380KHz (z.fs) + (bass ? ", Bass" : ", Haupt")
+                        + "): N = 2^round(log2(T*fs)) gekappt auf [N(48 kHz), 65 536] = Matrix, Hop N/2, "
+                          "FFT N, Dauer wie die Familie",
+                    "N " + juce::String (l.punkte) + " (Formel " + juce::String (formel) + ", Matrix "
+                        + juce::String (matrix) + "), Hop " + juce::String (l.hop) + ", FFT "
+                        + juce::String (l.fftM) + "/" + juce::String (l.fftS) + ", Dauer "
+                        + juce::String (dauer, 2) + " ms (Soll " + juce::String (dauerSoll, 1) + ")");
+        }
+    }
+}
+
+/** M-100: Speicher der FeatureEngine je Rate. Der Heap einer Stufe mit n
+    Punkten ist GEMESSEN (Allokationszaehler um `Stufe::vorbereiten`) und
+    wird gegen die Herleitung aus den Traegern gehalten
+    (`FeatureEngine.h` Stufe, `Fft.h`): je Punkt ringM, ringS, ringProjekt,
+    ringContinuous, fenster, arbeit je 8 B, die zwei Gueltigkeitsringe je 1 B,
+    psd 8*(n/2 + 1) = 4 B je Punkt + 8 B, zwei FFT je 28 B (cosTab und sinTab
+    je 4, umkehr 4, re und im je 8), also 110 B je Punkt + 8 B; dazu je Stufe
+    die Bin-Fenster bandVon und bandBis mit 2 * 221 * 4 = 1 768 B. Soll je
+    Stufe 110*n + 1 776 B Nutzdaten; die Matrixzahlen 2 252 800 / 4 505 600
+    / 9 011 200 B sind der Punktanteil 110*(N_B + N_H). Gemessen wird dazu der
+    Verwaltungsanteil der STL: 19 Anforderungen je Stufe liegen ab 4096 B
+    (9 Stufenvektoren und je 5 Tafeln der zwei FFT) und tragen je 39 B mehr,
+    741 B je Stufe; die zwei Bin-Fenster (884 B) liegen darunter. Budget der
+    laengen- und binabhaengigen Traeger (beide Stufen gesamt einschliesslich
+    Verwaltungsanteil, Stereoring M-85, Detektor M-43) je Rate <= 9,3 MB =
+    9 300 000 B (§6.5). Die benannte Obergrenze haelt bei 384 kHz (keine
+    Zusagerate, Auftrag: die Kappe haelt, kein Absturz): die Bassstufe traegt
+    dort N_max = 65 536 Punkte, ihre Nutzdaten bleiben 110*65 536 + 1 776 =
+    7 210 736 B. */
+__declspec(noinline) void nak380M100()
+{
+    namespace sig = nakama::test::nak380;
+    const auto sollStufe = [] (int n) { return (std::uint64_t) 110u * (std::uint64_t) n + 1776u; };
+    const auto stufeRichtig = [&] (const FeatureEngineTestzugang::StufenHeap& h, int n)
+    {
+        return h.nutzdaten == sollStufe (n) && h.grosse == 19 && h.gesamt == h.nutzdaten + 19u * 39u;
+    };
+    const auto text = [&] (const char* name, const FeatureEngineTestzugang::StufenHeap& h, int n)
+    {
+        return juce::String (name) + " " + juce::String ((juce::int64) h.nutzdaten) + " B Nutzdaten (Soll "
+             + juce::String ((juce::int64) sollStufe (n)) + ", N " + juce::String (n) + "), gesamt "
+             + juce::String ((juce::int64) h.gesamt) + " B bei " + juce::String (h.anforderungen)
+             + " Anforderungen, davon " + juce::String (h.grosse) + " ab 4 KiB";
+    };
+    for (const double fs : kNak380E6Raten)
+    {
+        auto e = std::make_unique<FeatureEngine>();
+        e->vorbereiten (fs);
+        const int nb = FeatureEngineTestzugang::laenge (*e, true).punkte;
+        const int nh = FeatureEngineTestzugang::laenge (*e, false).punkte;
+        const auto hb = FeatureEngineTestzugang::stufeHeapGemessen (nb, fs);
+        const auto hh = FeatureEngineTestzugang::stufeHeapGemessen (nh, fs);
+        const bool laengenRichtig = nb == sig::referenzPunkte (16384, fs) && nh == sig::referenzPunkte (4096, fs);
+        pruefe (laengenRichtig && stufeRichtig (hb, nb) && stufeRichtig (hh, nh),
+                "380/M-100 speicher_featureengine (" + nak380KHz (fs) + "): Heap der zwei Stufen gemessen = "
+                    "110 B je Punkt + 1 776 B je Stufe Nutzdaten (+ 19 * 39 B Verwaltungsanteil)",
+                text ("Bass", hb, nb) + "; " + text ("Haupt", hh, nh) + "; Punktanteil 110*(N_B+N_H) = "
+                    + juce::String ((juce::int64) (110 * ((juce::int64) nb + nh))) + " B");
+        const auto ring = FeatureEngineTestzugang::stereoRingBytes (*e);
+        const auto det = FeatureEngineTestzugang::detektorBytes (*e);
+        const auto summe = hb.gesamt + hh.gesamt + ring + det;
+        pruefe (laengenRichtig && summe <= 9300000u,
+                "380/M-100 speicher_featureengine (" + nak380KHz (fs) + "): laengen- und binabhaengige Traeger "
+                    "<= 9,3 MB (Stufen, Stereoring, Detektor)",
+                juce::String ((juce::int64) summe) + " B = Stufen " + juce::String ((juce::int64) (hb.gesamt + hh.gesamt))
+                    + " + Stereoring " + juce::String ((juce::int64) ring) + " + Detektor "
+                    + juce::String ((juce::int64) det));
+    }
+    {
+        constexpr double fs384 = 384000.0;
+        auto e = std::make_unique<FeatureEngine>();
+        e->vorbereiten (fs384);
+        const int nb = FeatureEngineTestzugang::laenge (*e, true).punkte;
+        const auto hb = nb > 0 ? FeatureEngineTestzugang::stufeHeapGemessen (nb, fs384)
+                               : FeatureEngineTestzugang::StufenHeap {};
+        pruefe (nb == 65536 && hb.nutzdaten == sollStufe (65536) && e->samplerate() == fs384,
+                "380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt - "
+                    "Bassstufe N_max = 65 536, Nutzdaten 7 210 736 B, kein Absturz",
+                text ("Bass", hb, nb));
+    }
+}
+
+/** M-102: Baender ohne Bin in der zustaendigen Stufe je Rate. Referenz aus
+    dem Gitter (`Gitter::evidenzKante`, `evidenzMitte`) und N(fs) der Regel:
+    Baender unter der Kappe min(18 kHz, 0,95*fs/2), zustaendig die Bassstufe
+    bei Bandmitte unter 200 Hz, sonst die Hauptstufe; kein Bin, wenn
+    min(ceil(hi*N/fs), N/2 + 1) <= ceil(lo*N/fs). Dazu die Zahlen der Matrix:
+    22 (44,1-kHz-Familie) und 25 (48-kHz-Familie), weil N/fs in der Familie
+    gleich ist. */
+__declspec(noinline) void nak380M102()
+{
+    namespace sig = nakama::test::nak380;
+    for (const double fs : kNak380E6Raten)
+    {
+        auto e = std::make_unique<FeatureEngine>();
+        e->vorbereiten (fs);
+        const double kappe = std::min (18000.0, 0.95 * fs * 0.5);
+        int soll = 0;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            if (Gitter::evidenzKante (b + 1) > kappe)
+                break;
+            const int n = sig::referenzPunkte (Gitter::evidenzMitte (b) < 200.0 ? 16384 : 4096, fs);
+            const int von = (int) std::ceil (Gitter::evidenzKante (b) * (double) n / fs);
+            const int bis = std::min ((int) std::ceil (Gitter::evidenzKante (b + 1) * (double) n / fs), n / 2 + 1);
+            if (bis <= von)
+                ++soll;
+        }
+        const int matrix = std::fmod (fs, 44100.0) == 0.0 ? 22 : 25;
+        const int ist = FeatureEngineTestzugang::baenderOhneBin (*e);
+        pruefe (ist == soll && soll == matrix,
+                "380/M-102 baender_ohne_bin_je_rate (" + nak380KHz (fs) + "): Baender ohne Bin der zustaendigen "
+                    "Stufe = Gitterreferenz = Matrix",
+                "Engine " + juce::String (ist) + ", Gitterreferenz " + juce::String (soll) + ", Matrix "
+                    + juce::String (matrix));
+    }
+}
+
+/** M-114: die Bin-Zuordnung bei 96 kHz (32 768/8 192) ist je Band und Stufe
+    dieselbe wie bei 48 kHz (16 384/4 096): Δf = 2,9297 bzw. 11,7188 Hz in
+    beiden Faellen; Kappe min(18 kHz, 0,95*fs/2) = 18 kHz in beiden (erstes
+    Band ueber der Kappe gleich). Alle 221 Baender beider Stufen. */
+__declspec(noinline) void nak380M114()
+{
+    auto e48 = std::make_unique<FeatureEngine>();
+    auto e96 = std::make_unique<FeatureEngine>();
+    e48->vorbereiten (48000.0);
+    e96->vorbereiten (96000.0);
+    for (const bool bass : { true, false })
+    {
+        int gleich = 0, abweichend = -1;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+        {
+            const auto a = FeatureEngineTestzugang::binfenster (*e48, bass, b);
+            const auto c = FeatureEngineTestzugang::binfenster (*e96, bass, b);
+            if (a == c && a.first >= 0)
+                ++gleich;
+            else if (abweichend < 0)
+                abweichend = b;
+        }
+        const auto l48 = FeatureEngineTestzugang::laenge (*e48, bass);
+        const auto l96 = FeatureEngineTestzugang::laenge (*e96, bass);
+        const double df48 = 48000.0 / (double) l48.punkte, df96 = 96000.0 / (double) l96.punkte;
+        pruefe (gleich == Gitter::evidenzBaender && df48 == df96,
+                juce::String ("380/M-114 zuordnung_96k_gleich_48k (") + (bass ? "Bass" : "Haupt")
+                    + "): bandVon/bandBis je Band identisch, gleiches Δf",
+                juce::String (gleich) + " von 221 gleich" + (abweichend >= 0 ? ", erste Abweichung Band "
+                    + juce::String (abweichend) : juce::String()) + ", Δf " + juce::String (df48, 4) + " / "
+                    + juce::String (df96, 4) + " Hz (N " + juce::String (l48.punkte) + " / " + juce::String (l96.punkte) + ")");
+    }
+    pruefe (FeatureEngineTestzugang::erstesBandUeberKappe (*e48) == FeatureEngineTestzugang::erstesBandUeberKappe (*e96)
+                && FeatureEngineTestzugang::erstesBandUeberKappe (*e48) == Gitter::evidenzBaender,
+            "380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten (kein Band ueber der Kappe)",
+            juce::String (FeatureEngineTestzugang::erstesBandUeberKappe (*e48)) + " / "
+                + juce::String (FeatureEngineTestzugang::erstesBandUeberKappe (*e96)));
+}
+
+/** M-115: Nullkorpus W1 (Gauss-Weiss, sigma 0,1, Saat 0x3800003, 30 s) bei 96
+    und 192 kHz. Vorbedingungen je Rate als eigene Pruefungen: gespeiste
+    Samplezahl = 30*fs (Laeufer und Engine), Verlustzaehler 0, Detektor-Bins
+    K = 1530 wie bei 48 kHz (Δf der Hauptstufe gleich, Gitterbereich 30,36 Hz
+    bis 17 959 Hz), Hop 1000*N_H/2/fs = 42,667 ms (2048/48 000 s; exakter
+    Vergleich mit Rechenbudget 1e-9 ms). Zusage: hoechstens 1 Ereignis in
+    30 s, exakt der Golden (feste Saat, §7.3). */
+// Am Etappenstand gemessen (Lauf umbau1, 26.09.2026): 96 kHz ein Ereignis bei
+// 21,504 s, 192 kHz keines.
+constexpr int kNak380M115Golden96 = 1;
+constexpr int kNak380M115Golden192 = 0;
+
+__declspec(noinline) void nak380M115()
+{
+    namespace sig = nakama::test::nak380;
+    for (const double fs : { 96000.0, 192000.0 })
+    {
+        const auto samples = (std::uint64_t) std::llround (30.0 * fs);
+        const auto w1 = sig::weissMono (sig::kW1Saat, 0.1, samples);
+        const auto lauf = nak380Korpuslauf (w1, 0, 0, {}, fs);
+        const juce::String name = "nullkorpus_W1_hohe_raten " + nak380KHz (fs);
+        nak380SamplesGeprueft ("M-115", name.toRawUTF8(), *lauf, w1.size(), samples, "30 s * fs");
+        nak380VerlustGeprueft ("M-115", name.toRawUTF8(), lauf->verworfen);
+        const int k = lauf->engine->detektorBinAnzahl();
+        const auto l = FeatureEngineTestzugang::laenge (*lauf->engine, false);
+        const double hopMs = 1000.0 * (double) l.hop / fs;
+        pruefe (k == 1530 && std::abs (hopMs - 1000.0 * 2048.0 / 48000.0) <= 1e-9,
+                "380/M-115 " + name + ": Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms wie bei 48 kHz",
+                "K " + juce::String (k) + ", Hop " + juce::String (hopMs, 4) + " ms (N_H " + juce::String (l.punkte) + ")");
+        const int n = (int) lauf->ereignisse.size();
+        const int golden = fs == 96000.0 ? kNak380M115Golden96 : kNak380M115Golden192;
+        pruefe (n <= 1 && n == golden,
+                "380/M-115 " + name + ": hoechstens 1 Ereignis in 30 s, exakt der Golden",
+                "Ereignisse " + juce::String (n) + ", Golden " + juce::String (golden)
+                    + (n > 0 ? "; " + nak380Zeiten (lauf->ereignisse) : juce::String()));
+    }
+}
+
+/** M-119: begrenztes Objektgroessenbudget (NAK-175, E-380-14). Etappe 6 fuegt
+    `FeatureEngine` kein Mitglied hinzu (die Stufe kennt ihre Punktzahl), also
+    bleibt `sizeof (FeatureEngine)` der Startwert 16 248 B; `AnalyseEngine`
+    waechst um hoechstens Delta_6 = 8 + 28 + 28 = 64 B (`double
+    resonanzSucheAbHz` und zwei `std::array<std::uint8_t, 28>`-Masken im
+    `MessSnapshot fertig`). Startwerte am unveraenderten Code aus diesem Bein
+    ausgegeben (Rohdatei `docs/beweise/roh/NAK-380-etappe-6-m119-sizeof-start.txt`). */
+constexpr std::size_t kNak380M119StartFeature = 16248u;
+constexpr std::size_t kNak380M119StartAnalyse = 54816u;   // am Basisstand a4ccba93 aus B5 ausgegeben
+
+__declspec(noinline) void nak380M119()
+{
+    const std::size_t fe = sizeof (FeatureEngine);
+    const std::size_t ae = sizeof (eqcop::AnalyseEngine);
+    std::cout << "380/M-119 sizeof (FeatureEngine) = " << fe << " B, sizeof (AnalyseEngine) = " << ae << " B" << std::endl;
+    pruefe (fe == kNak380M119StartFeature,
+            "380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) = Startwert 16 248 B (kein neues Mitglied)",
+            juce::String ((juce::int64) fe) + " B");
+    pruefe (kNak380M119StartAnalyse > 0u && ae <= kNak380M119StartAnalyse + 64u,
+            "380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) <= Startwert + 64 B (double und zwei 28-B-Masken)",
+            juce::String ((juce::int64) ae) + " B, Startwert " + juce::String ((juce::int64) kNak380M119StartAnalyse)
+                + " B, Delta " + juce::String ((juce::int64) ae - (juce::int64) kNak380M119StartAnalyse) + " B");
+}
+
+/** M-120: Ratenwechsel im Lauf (starten <-> stoppen, §32.3). 30 s P2 bei
+    48 kHz, dann `vorbereiten (96000)`, dann 1 s bei 96 kHz.
+    - Laengen: FeatureEngine 32 768/8 192, M1 32 768/16 384/8 192/4 096
+      (`referenzPunkte`).
+    - Stufenringe leer (gefuellt 0, jeder Ringwert 0): diese Zusage tragen
+      ZWEI Riegel - die Neuanlage `Stufe::vorbereiten` mit der neuen Laenge
+      (legt die Ringe neu an und setzt gefuellt 0) und `zuruecksetzen` am Ende
+      von `vorbereiten` (`Stufe::leeren`).
+    - Akkus leer (keine Band-Akkus belegt, verarbeitete Samples 0, Historie 0;
+      M1: Segmente 0, Histogramme 0, Stufen leer): Riegel `zuruecksetzen`.
+    - Danach traegt die Engine nur neue Samples: nach 1 s bei 96 kHz 96 000
+      verarbeitete; die M1-Bassstufe hat floor((96 000 - 32 768)/16 384) + 1
+      = 4 Segmente je Bassband (P2 ist durchgehend aktiv).
+    Die Allokation liegt in `vorbereiten` (Worker unter der Steuersperre; das
+    belegen A16 und B4 mit dem Allokationszaehler des Audiothreads). */
+void nak380M120M1 (const std::vector<float>& p48, const std::vector<float>& p96);
+
+__declspec(noinline) void nak380M120()
+{
+    namespace sig = nakama::test::nak380;
+    const auto p48 = sig::rosaMono (sig::kP2Saat, 0.1, 1440000u);
+    const auto r48 = sig::rosaSelbstpruefung (p48, 0.1, 48000.0);
+    pruefe (r48.ok, "380/M-120 rosa_selbstpruefung_E-380-13 (48 kHz)", juce::String (r48.meldung));
+    const auto p96 = sig::rosaMono (sig::kP2Saat, 0.1, 96000u);
+
+    // FeatureEngine: 30 s bei 48 kHz ueber den gemeinsamen Laeufer, dann Wechsel.
+    auto lauf = nak380Korpuslauf (p48);
+    nak380SamplesGeprueft ("M-120", "ratenwechsel_laengen 48 kHz", *lauf, p48.size(), 1440000u, "30 s * 48 000");
+    auto& e = *lauf->engine;
+    const bool vorherBelegt = FeatureEngineTestzugang::akkuBaenderBelegt (e) > 0
+                           || FeatureEngineTestzugang::stufeGefuellt (e, true) > 0;
+    e.vorbereiten (96000.0);
+    const auto lb = FeatureEngineTestzugang::laenge (e, true);
+    const auto lh = FeatureEngineTestzugang::laenge (e, false);
+    pruefe (lb.punkte == sig::referenzPunkte (16384, 96000.0) && lh.punkte == sig::referenzPunkte (4096, 96000.0)
+                && lb.hop == lb.punkte / 2 && lh.hop == lh.punkte / 2 && lb.punkte == 32768 && lh.punkte == 8192,
+            "380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192, Hop N/2",
+            "Bass " + juce::String (lb.punkte) + "/" + juce::String (lb.hop) + ", Haupt " + juce::String (lh.punkte)
+                + "/" + juce::String (lh.hop));
+    const bool ringeLeer = FeatureEngineTestzugang::stufeGefuellt (e, true) == 0
+                        && FeatureEngineTestzugang::stufeGefuellt (e, false) == 0
+                        && FeatureEngineTestzugang::stufenringLeer (e, true)
+                        && FeatureEngineTestzugang::stufenringLeer (e, false);
+    pruefe (vorherBelegt && ringeLeer,
+            "380/M-120 ratenwechsel_laengen: kein Stufenring der alten Rate ueberlebt (zwei Riegel: Neuanlage "
+                "Stufe::vorbereiten, zuruecksetzen/Stufe::leeren)",
+            "vorher belegt " + juce::String (vorherBelegt ? "ja" : "NEIN") + ", gefuellt "
+                + juce::String (FeatureEngineTestzugang::stufeGefuellt (e, true)) + "/"
+                + juce::String (FeatureEngineTestzugang::stufeGefuellt (e, false)));
+    const bool akkusLeer = FeatureEngineTestzugang::akkuBaenderBelegt (e) == 0
+                        && FeatureEngineTestzugang::verarbeitet (e) == 0u
+                        && FeatureEngineTestzugang::historieGefuelltWert (e) == 0;
+    pruefe (vorherBelegt && akkusLeer,
+            "380/M-120 ratenwechsel_laengen: kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt "
+                "(Riegel zuruecksetzen)",
+            "Akkubaender " + juce::String (FeatureEngineTestzugang::akkuBaenderBelegt (e)) + ", verarbeitet "
+                + juce::String ((juce::int64) FeatureEngineTestzugang::verarbeitet (e)) + ", Historie "
+                + juce::String (FeatureEngineTestzugang::historieGefuelltWert (e)));
+
+    // AnalyseEngine (M1): dieselbe Folge, auf einem EIGENEN Thread. Der
+    // Stapelrahmen von `main` belegt 1 002 752 von 1 048 576 B (NAK-175,
+    // NAK-406); `AnalyseEngine::vorbereiten` und `verarbeite` legen
+    // MessSnapshot- und Bandtemporaere von zusammen mehr als dem Rest an
+    // (gemessen: 0xC00000FD am Basisstand). Ein Thread traegt einen frischen
+    // Stapel; die Engine bleibt im Heap, der Ablauf ist derselbe.
+    std::thread m1Lauf (nak380M120M1, std::cref (p48), std::cref (p96));
+    m1Lauf.join();
+}
+
+__declspec(noinline) void nak380M120M1 (const std::vector<float>& p48, const std::vector<float>& p96)
+{
+    namespace sig = nakama::test::nak380;
+    auto m1 = std::make_unique<eqcop::AnalyseEngine>();
+    m1->vorbereiten (48000.0);
+    std::vector<float> inter (1024u);
+    const auto speise = [&] (eqcop::AnalyseEngine& a, const std::vector<float>& x)
+    {
+        std::size_t i = 0;
+        while (i < x.size())
+        {
+            const int n = (int) std::min<std::size_t> (512u, x.size() - i);
+            for (int k = 0; k < n; ++k)
+                inter[(std::size_t) k * 2u] = inter[(std::size_t) k * 2u + 1u] = x[i + (std::size_t) k];
+            a.verarbeite (inter.data(), n, 2);
+            i += (std::size_t) n;
+        }
+    };
+    speise (*m1, p48);
+    const bool m1Vorher = eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1) > 0u;
+    m1->vorbereiten (96000.0);
+    const int m1Soll[4] = { sig::referenzPunkte (16384, 96000.0), sig::referenzPunkte (8192, 96000.0),
+                            sig::referenzPunkte (4096, 96000.0), sig::referenzPunkte (2048, 96000.0) };
+    bool m1Laengen = true;
+    juce::String m1Text;
+    for (int s = 0; s < 4; ++s)
+    {
+        const int n = eqcop::AnalyseEngineTestzugang::punkte (*m1, s);
+        m1Laengen = m1Laengen && n == m1Soll[s];
+        m1Text << (s ? "/" : "") << n;
+    }
+    pruefe (m1Laengen && m1Soll[0] == 32768 && m1Soll[3] == 4096,
+            "380/M-120 ratenwechsel_laengen: M1 nach vorbereiten (96000) 32 768/16 384/8 192/4 096",
+            m1Text);
+    const bool m1Leer = eqcop::AnalyseEngineTestzugang::stufenLeer (*m1)
+                     && eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1) == 0u
+                     && eqcop::AnalyseEngineTestzugang::histogrammSumme (*m1) == 0u;
+    pruefe (m1Vorher && m1Leer,
+            "380/M-120 ratenwechsel_laengen: M1 - keine Stufe, kein Akku, kein Histogramm der alten Rate ueberlebt",
+            "vorher belegt " + juce::String (m1Vorher ? "ja" : "NEIN") + ", Segmente "
+                + juce::String ((juce::int64) eqcop::AnalyseEngineTestzugang::akkuSegmente (*m1)) + ", Histogramme "
+                + juce::String ((juce::int64) eqcop::AnalyseEngineTestzugang::histogrammSumme (*m1)));
+    // Nach dem Wechsel nur neue Samples: 1 s bei 96 kHz. Band 64 (Zentrum
+    // 193,3 Hz, Bassstufe, Akkubereich bis Naht 250 Hz) hat bei 96 kHz mit
+    // 32 768 wie mit 16 384 Punkten genau einen Bin (Vorbedingung, aus dem
+    // Gitter gezaehlt); am Basisstand zaehlte es floor((96 000 - 16 384)/8 192)
+    // + 1 = 10 Segmente der alten Laenge.
+    speise (*m1, p96);
+    const int bassBand = 64;
+    const auto seg = eqcop::AnalyseEngineTestzugang::bassSegmente (*m1, bassBand);
+    const std::uint64_t segSoll = (96000u - 32768u) / 16384u + 1u;
+    const bool einBin = sig::m1Binfenster (bassBand, 32768, 96000.0).bins() == 1
+                     && sig::m1Binfenster (bassBand, 16384, 96000.0).bins() == 1;
+    pruefe (einBin && seg == segSoll,
+            "380/M-120 ratenwechsel_laengen: M1 traegt nach dem Wechsel nur Segmente der neuen Rate und Laenge "
+                "(floor((96 000 - 32 768)/16 384) + 1 = 4)",
+            "Band 64 (ein Bin bei 32 768 und 16 384: " + juce::String (einBin ? "ja" : "NEIN") + "): "
+                + juce::String ((juce::int64) seg) + " Segmente (Soll " + juce::String ((juce::int64) segSoll) + ")");
+}
+
+/** M-110: Validity im v2-Heartbeat (T-380-9). Gen 48 kHz nach einem
+    Schwerlauf mit P2 (-20 dBFS, selbstgeprueft): `messKompakt()` traegt in
+    `ltasKompositDb` NaN (im JSON `null`, `PipeClient.cpp`) GENAU fuer die
+    Maskenbaender aus M-109 (`m1MaskenReferenz`, im Test aus Bin-Zuordnung und
+    Naehten gezaehlt), jedes andere Band ist eine Zahl. Der Speiser folgt der
+    Referenzbuehne von B30 (Zuege zu 40 Bloecken, Worker verbraucht, dann die
+    naechste schwere Auswertung). */
+__declspec(noinline) void nak380M110()
+{
+    namespace sig = nakama::test::nak380;
+    constexpr double fs = 48000.0;
+    constexpr int block = 512;
+    const auto x = sig::rosaMono (sig::kP2Saat, 0.1, 960000u);   // 20 s
+    const auto r = sig::rosaSelbstpruefung (x, 0.1, fs);
+    pruefe (r.ok, "380/M-110 rosa_selbstpruefung_E-380-13", juce::String (r.meldung));
+    auto p = std::make_unique<EqCopilotProcessor>();
+    p->setPlayConfigDetails (2, 2, fs, block);
+    p->prepareToPlay (fs, block);
+    juce::AudioBuffer<float> puffer (2, block);
+    juce::MidiBuffer midi;
+    std::int64_t zeit = 0;
+    std::uint64_t gefuettert = 0;
+    std::size_t pos = 0;
+    bool verbraucht = true;
+    while (pos + (std::size_t) block <= x.size() && verbraucht)
+    {
+        for (int b = 0; b < 40 && pos + (std::size_t) block <= x.size(); ++b)
+        {
+            eqcop::hostbruecke::Blockbefund befund;
+            befund.kontext.processContextPresent = true;
+            befund.kontext.projectTimeSamples.setze (zeit);
+            befund.kontext.playing.setze (true);
+            befund.kontext.recording.setze (false);
+            befund.kontext.sampleRate.setze (fs);
+            befund.blockGroesse = (std::uint32_t) block;
+            p->nakamaBlockEmpfangen (befund);
+            for (int i = 0; i < block; ++i)
+            {
+                puffer.setSample (0, i, x[pos + (std::size_t) i]);
+                puffer.setSample (1, i, x[pos + (std::size_t) i]);
+            }
+            p->processBlock (puffer, midi);
+            pos += (std::size_t) block;
+            zeit += block;
+            ++gefuettert;
+        }
+        const auto frist = juce::Time::getMillisecondCounter() + 10000u;
+        while (p->merkmaleBloecke() + 1u < gefuettert && juce::Time::getMillisecondCounter() < frist)
+            juce::Thread::sleep (1);
+        verbraucht = p->merkmaleBloecke() + 1u >= gefuettert;
+    }
+    const auto schwer = p->analyseSchwereAuswertungen();
+    const auto frist = juce::Time::getMillisecondCounter() + 10000u;
+    while (p->analyseSchwereAuswertungen() < schwer + 2u && juce::Time::getMillisecondCounter() < frist)
+        juce::Thread::sleep (5);
+    const auto k = p->messKompakt();
+    const auto maske = sig::m1MaskenReferenz (fs);
+    int nanGenau = 0, falschNull = 0, falschZahl = 0;
+    juce::String erste;
+    for (int b = 0; b < (int) k.ltasKompositDb.size() && b < 221; ++b)
+    {
+        const bool nan = ! std::isfinite (k.ltasKompositDb[(std::size_t) b]);
+        const bool soll = maske.komposit[(std::size_t) b];
+        if (nan && soll) ++nanGenau;
+        else if (nan) { ++falschNull; if (erste.isEmpty()) erste = "Band " + juce::String (b) + " null ohne Maske"; }
+        else if (soll) { ++falschZahl; if (erste.isEmpty()) erste = "Band " + juce::String (b) + " Zahl trotz Maske"; }
+    }
+    pruefe (verbraucht && k.ltasKompositDb.size() == 221u && maske.anzahlKomposit > 0,
+            "380/M-110 heartbeat_null_interpoliert: Vorbedingung 20 s verbraucht, Heartbeat traegt 221 Baender, "
+                "Maske der Referenz nicht leer",
+            juce::String ((juce::int64) gefuettert) + " Bloecke, " + juce::String ((int) k.ltasKompositDb.size())
+                + " Baender, Maske " + juce::String (maske.anzahlKomposit));
+    pruefe (falschNull == 0 && falschZahl == 0 && nanGenau == maske.anzahlKomposit,
+            "380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN (JSON null) genau fuer die Maskenbaender, "
+                "sonst Zahl",
+            juce::String (nanGenau) + " von " + juce::String (maske.anzahlKomposit) + " Maskenbaendern NaN, "
+                + juce::String (falschNull) + " NaN ohne Maske, " + juce::String (falschZahl) + " Zahl trotz Maske"
+                + (erste.isNotEmpty() ? "; " + erste : juce::String()));
+}
+
+__declspec(noinline) void nak380Etappe6 (const char* nur)
+{
+    if (nur == nullptr)
+        std::cout << "\n== NAK-380 Etappe 6 - Fensterdauer statt Samplezahl (DSP-20) ==" << std::endl;
+    if (nak380Waehlt (nur, "M-98"))  nak380M98();
+    if (nak380Waehlt (nur, "M-100")) nak380M100();
+    if (nak380Waehlt (nur, "M-102")) nak380M102();
+    if (nak380Waehlt (nur, "M-110")) nak380M110();
+    if (nak380Waehlt (nur, "M-114")) nak380M114();
+    if (nak380Waehlt (nur, "M-115")) nak380M115();
+    if (nak380Waehlt (nur, "M-119")) nak380M119();
+    if (nak380Waehlt (nur, "M-120")) nak380M120();
+}
 } // namespace
 
 //==============================================================================
@@ -1930,6 +2616,7 @@ int main (int argc, char* argv[])
         nak380Detektor (argv[2]);
         if (nak380Waehlt (argv[2], "M-97"))
             nak380Objektbudget();
+        nak380Etappe6 (argv[2]);
         std::cout << "\n-----------------------------------------" << std::endl;
         std::cout << bestanden << " bestanden, " << fehler << " gescheitert" << std::endl;
         return fehler == 0 ? 0 : 1;
@@ -1964,6 +2651,7 @@ int main (int argc, char* argv[])
     nak380DichteUndBandleistung();
     nak380Detektor (nullptr);
     nak380Objektbudget();
+    nak380Etappe6 (nullptr);
 
     //==========================================================================
     std::cout << "== A - Bandgitter: die einkompilierten Zahlen gegen die Fixtures ==" << std::endl;
@@ -2754,6 +3442,49 @@ int main (int argc, char* argv[])
                    s.senden (b);
                });
 
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+    // G7, Laengenhaelfte (NAK-380 Etappe 6, M-120, T-380-7): ein Block mit
+    // anderer Rate zieht im Audiopfad nur die Grenze - er allokiert nicht und
+    // aendert keine Laenge; die Laengen der neuen Rate setzt erst
+    // `vorbereiten` im Worker. 96 kHz statt 44,1 kHz, weil sich dort die
+    // Laengen unterscheiden (32 768/8 192 gegen 16 384/4 096).
+    {
+        namespace sig = nakama::test::nak380;
+        auto halter = std::make_unique<FeatureEngine>();
+        auto& e = *halter;
+        e.vorbereiten (48000.0);
+        Speiser s { e };
+        s.bisAllesOffen();
+        const auto grundVorher = e.grenzenMitGrund (Grenzgrund::sampleratewechsel);
+        auto b = s.bauen();
+        b.sampleRate = 96000.0;
+        const std::vector<float> roh ((std::size_t) b.sampleCount * 2u, 0.0f);
+        nak380Bytes = 0;
+        nak380Anforderungen = 0;
+        nak380ZaehleBytes = true;
+        s.sendenRoh (b, roh);
+        nak380ZaehleBytes = false;
+        const int anforderungen = nak380Anforderungen;
+        const auto lb = FeatureEngineTestzugang::laenge (e, true);
+        const auto lh = FeatureEngineTestzugang::laenge (e, false);
+        pruefe (e.grenzenMitGrund (Grenzgrund::sampleratewechsel) == grundVorher + 1 && anforderungen == 0
+                    && lb.punkte == 16384 && lh.punkte == 4096,
+                "G7 Sampleratewechsel, Laengenhaelfte: ein Block mit 96 kHz zieht die Grenze, allokiert nicht und "
+                "laesst die Laengen 16 384/4 096 - der Audiopfad baut nichts um",
+                "Grenzen +" + juce::String ((int) (e.grenzenMitGrund (Grenzgrund::sampleratewechsel) - grundVorher))
+                    + ", Anforderungen " + juce::String (anforderungen) + ", Bass/Haupt "
+                    + juce::String (lb.punkte) + "/" + juce::String (lh.punkte));
+        e.vorbereiten (96000.0);
+        const auto lb2 = FeatureEngineTestzugang::laenge (e, true);
+        const auto lh2 = FeatureEngineTestzugang::laenge (e, false);
+        pruefe (lb2.punkte == sig::referenzPunkte (16384, 96000.0) && lh2.punkte == sig::referenzPunkte (4096, 96000.0)
+                    && lb2.hop == lb2.punkte / 2 && lh2.hop == lh2.punkte / 2,
+                "G7 Sampleratewechsel, Laengenhaelfte: erst vorbereiten (96000) setzt Bass/Haupt 32 768/8 192, Hop N/2",
+                "Bass " + juce::String (lb2.punkte) + "/" + juce::String (lb2.hop) + ", Haupt "
+                    + juce::String (lh2.punkte) + "/" + juce::String (lh2.hop));
+    }
+#endif
+
     // G8 - Neuanlauf (prepareToPlay -> hoehere startFolge).
     grenzfall ("G8 Neuanlauf (prepareToPlay)", Grenzgrund::neuanlauf,
                [] (Speiser& s) { ++s.startFolge; s.senden (s.bauen()); });
@@ -3522,6 +4253,16 @@ int main (int argc, char* argv[])
         // dahinter, und die 1536 setzen den Impuls in die ERSTE Haelfte des
         // spaeteren der beiden enthaltenden Fenster (Hann-Gewicht 0,854
         // gegen 0,146).
+        //
+        // ⚠️ SEIT NAK-380 ETAPPE 6 (M-113, T-380-7) hat die Hauptstufe
+        // N_H(fs) = 4096/8192/16384 Punkte (44,1 und 48 / 88,2 und 96 /
+        // 192 kHz) und Hop N_H/2. Raster, Historie und Schranke skalieren mit
+        // N_H: t0(fs) = 100,75 * Hop(fs) (bei 44,1 und 48 kHz unveraendert
+        // 206336, bei 88,2/96 kHz 412672, bei 192 kHz 825344), der Lauf endet
+        // bei t0 + 4 * N_H(fs), und die Schranke ist N_H(fs). Mit dem festen
+        // t0 = 206336 laege der Impuls bei 192 kHz vor dem ersten Frame, der
+        // ein Ereignis tragen darf (N_H + H * Hop = 278528); das verriegelt
+        // die Vorbedingung E-0 je Rate.
         {
             static constexpr int kZeitBlockgroessen[] = { 1, 333, 512, 2048, 16384 };
             constexpr int kZeitBlockN = (int) (sizeof (kZeitBlockgroessen)
@@ -3530,9 +4271,13 @@ int main (int argc, char* argv[])
                 { 44100.0, 48000.0, 88200.0, 96000.0, 192000.0 };
             constexpr int kZeitRatenN = (int) (sizeof (kZeitRaten)
                                                / sizeof (kZeitRaten[0]));
-            constexpr std::uint64_t kT0 = 100ull * 2048ull + 1536ull;   // 206336
             constexpr std::uint64_t kImpulsLaenge = 64;
-            constexpr std::uint64_t kHauptPunkte = 4096;
+            // N_H(fs) aus der Laengenregel des Tests (T-380-7), nicht aus dem Produkt.
+            const auto nHaupt = [] (double fsLauf)
+            { return (std::uint64_t) nakama::test::nak380::referenzPunkte (4096, fsLauf); };
+            // t0(fs) = 100 * Hop + 3/4 Hop; bei 48 kHz 100 * 2048 + 1536 = 206336.
+            const auto t0Fuer = [&] (double fsLauf)
+            { return 100ull * (nHaupt (fsLauf) / 2ull) + 3ull * (nHaupt (fsLauf) / 8ull); };
 
             struct Zeitlauf
             {
@@ -3550,7 +4295,8 @@ int main (int argc, char* argv[])
                 Speiser sp { e };
                 sp.sr = fsLauf;
                 sp.frames = frames;
-                const std::uint64_t bis = kT0 + 4ull * kHauptPunkte;
+                const std::uint64_t kT0 = t0Fuer (fsLauf);
+                const std::uint64_t bis = kT0 + 4ull * nHaupt (fsLauf);
                 while (sp.strom < bis)
                 {
                     sp.sendenMit (sp.bauen(), [&] (std::uint32_t i)
@@ -3627,11 +4373,24 @@ int main (int argc, char* argv[])
             };
 
             int laeufe = 0, mitEreignis = 0, ohneUeberlauf = 0, mitFluss = 0;
-            int eindeutig = 0, inDerSchranke = 0, gleichJeRate = 0;
+            int eindeutig = 0, inDerSchranke = 0, gleichJeRate = 0, bewaffnet = 0;
             double kleinsterAbstand = 1e30;
-            juce::String bericht, schrankenText;
+            juce::String bericht, schrankenText, lageText;
             for (int r = 0; r < kZeitRatenN; ++r)
             {
+                // E-0: der erste Frame, der ein Ereignis tragen darf (Index H),
+                // schliesst vor dem Anfang des frueheren der beiden Fenster, die
+                // den Impuls enthalten - sonst misst der Lauf die Historie, nicht
+                // den Impuls.
+                const std::uint64_t nH = nHaupt (kZeitRaten[r]), hop = nH / 2ull;
+                const std::uint64_t kT0 = t0Fuer (kZeitRaten[r]);
+                const std::uint64_t ersterMoeglicher
+                    = nH + (std::uint64_t) nakama::analyse::kFlussHistorie * hop;
+                if (ersterMoeglicher <= (kT0 / hop - 1ull) * hop && kT0 % hop < nH / 2ull)
+                    ++bewaffnet;
+                lageText << (r ? ", " : "") << (int) (kZeitRaten[r] / 100.0) / 10.0 << "kHz: N_H "
+                         << (int) nH << ", t0 " << (int) kT0 << ", erster Ereignisframe schliesst "
+                         << (int) ersterMoeglicher;
                 std::uint64_t erster = 0;
                 bool alleGleich = true;
                 for (int b = 0; b < kZeitBlockN; ++b)
@@ -3653,7 +4412,7 @@ int main (int argc, char* argv[])
                                                      (double) z.staerke
                                                          / (double) z.zweitstaerke);
                     if (z.fluss && z.stempel <= kT0
-                        && kT0 - z.stempel < kHauptPunkte)
+                        && kT0 - z.stempel < nH)
                         ++inDerSchranke;                                        // (b)
                     if (b == 0) erster = z.stempel;
                     else if (z.stempel != erster) alleGleich = false;
@@ -3665,6 +4424,12 @@ int main (int argc, char* argv[])
                               << (int) (kT0 - erster);
             }
 
+            pruefe (bewaffnet == kZeitRatenN,
+                    "impulse_time_is_stable_over_block_sizes_and_sample_rates E-0: "
+                    "Vorbedingung je Rate liegt der Impuls hinter der Historie der "
+                    "adaptiven Schwelle und in der ersten Haelfte des spaeteren Fensters "
+                    "(Raster N_H(fs), T-380-7)",
+                    juce::String (bewaffnet) + " von " + juce::String (kZeitRatenN) + "; " + lageText);
             pruefe (mitEreignis == laeufe,
                     "impulse_time_is_stable_over_block_sizes_and_sample_rates E-a: "
                     "jeder der 25 Laeufe erzeugt ueberhaupt ein Ereignis - die "
@@ -3696,8 +4461,9 @@ int main (int argc, char* argv[])
                         + " Raten; erster Stempel je Rate: " + bericht);
             pruefe (inDerSchranke == laeufe,
                     "(b): und er liegt bei jeder Kombination innerhalb EINER "
-                    "Fensterlaenge vor t0 (0 <= t0 - stromSample < 4096) - die "
-                    "Schranke kommt aus kHauptPunkte, nicht aus dem Hop",
+                    "Fensterlaenge vor t0 (0 <= t0 - stromSample < N_H(fs) = 4096, "
+                    "8192 bzw. 16384) - die Schranke kommt aus der Fensterlaenge der "
+                    "Hauptstufe, nicht aus dem Hop",
                     juce::String (inDerSchranke) + " von " + juce::String (laeufe)
                         + "; t0 - Stempel je Rate: " + schrankenText);
         }

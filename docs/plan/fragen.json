@@ -270,6 +270,19 @@
    "status": "geparkt",
    "geparkt_seit": "2026-09-12",
    "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026: „der gesamte design part ist geparkt , für wenn alles technische erledigt ist und die 2 plugins reibungslos funktionieren wie sie sollen“; design/abnahmen/2026-09-12-designteil-geparkt.md); wird von /fragen nicht gestellt, bis der User den Designteil wieder oeffnet."
+  },
+  {
+   "id": "U66",
+   "dringlichkeit": "bei Wiederaufnahme des Designteils (vor S31b)",
+   "art": "Produktentscheid (Anzeige)",
+   "titel": "Wo steht der Hinweis „unter X Hz nicht gesucht“, wenn die Befundliste nur Zonenkarten zeigt?",
+   "was": "Seit NAK-380 sagt Gen ehrlich, unter welcher Frequenz die Resonanzsuche bei der aktuellen Abtastrate nicht sucht. Der Satz steht heute an zwei Orten: in jeder Resonanzkarte und im Leertext, wenn es gar keine Befunde gibt. Zeigt die Liste nur Zonenkarten (Mittenloch, Mulm, Härte, Höhen-Hype) und keine Resonanzkarte, fehlt der Hinweis. Offen ist, ob er dann als eigene Zeile über der Liste, in einer Fußzeile der Messung oder gar nicht erscheinen soll.",
+   "warum": "Zusage im Ticket NAK-380 (Matrixzeile M-106, Regel R-380-5): genau die zwei Orte. Ein dritter Ort ist Anzeigearbeit und gehört zum geparkten Designteil; die Abschlussprüfung T2 hat den Fall als Lücke benannt (Register NAK-417).",
+   "wo": "docs/offene-punkte.md NAK-417; docs/beweise/NAK-380.md §62.3; eq-copilot/plugin/src/Diagnose.cpp (suchgrenzeSatz), PluginEditor.cpp (Leertext)",
+   "seit": "26.09.",
+   "status": "geparkt",
+   "geparkt_seit": "2026-09-26",
+   "geparkt_grund": "Designteil geparkt (User-Wort 12.09.2026, design/abnahmen/2026-09-12-designteil-geparkt.md); Anzeigeort ist Designarbeit."
   }
  ],
  "beantwortet": {

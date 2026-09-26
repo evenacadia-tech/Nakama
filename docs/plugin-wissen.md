@@ -2,9 +2,12 @@
 
 > **Stand: 31.08.2026** (S16–17/SONDE-011 Phase B: Coordinator, SQLite-Store,
 > Snapshot-Outbox und Broker-Lifecycle; Modulpfade und Zahlen am 12.09.2026
+> nachgezogen; Messkern nach NAK-380 am 26.09.2026 an HEAD `3e5d3660`
 > nachgezogen) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
 > `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
-> metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC v2-Legacy plus
+> metrics/diagnose `m4.3-2026-09-26` (seit NAK-380 (26.09.2026), vorher
+> `m4.1-2026-08-15`; `src/AnalyseEngine.h:65`) · FeatureEngine und Broker
+> `metrics_version` 20260929 (§1.3b, §4) · Snapshot-Datei v3 · IPC v2-Legacy plus
 > produktiver SID-gebundener v3-Control-/Sessionpfad ·
 > **Host-State Schema 2** (`NakamaState`, seit SONDE-006 am 22.08.; liest Schema 1).
 > **Installiert in FL ist das Bundle vom 16.08.** (moduleinfo „0.1.0", Hash
@@ -139,7 +142,9 @@ Samples kamen; sonst `auswertenLeicht()` (~20 Hz). Beide publizieren über
 publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
 
 - Welch: Bass 16384 (< 200 Hz) · Referenz 8192 (Kreuzvalidierungs-Achse) ·
-  Mitten 4096 · Höhen 2048; Hann, Hop n/2; PSD = Kanalenergie-Mittel
+  Mitten 4096 · Höhen 2048 — seit NAK-380 (26.09.2026) die Längen bei 44,1
+  und 48 kHz; bei anderen Raten gilt die Fensterdauer (unten, „Messkern nach
+  NAK-380“); Hann, Hop n/2; PSD = Kanalenergie-Mittel
   (L²+R²)/2. LTAS 1/24 Oktave, 221 Bänder 30 Hz…< 18 kHz,
   Nyquist-Kappe min(18 kHz, 0,95·Nyquist), darüber NaN.
 - Schwellen versioniert in `AnalyseEngine.cpp:18-27`. NaN-Riegel:
@@ -150,6 +155,63 @@ publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
   jetzt in `plugin/core/analysis/KGewichtung.h`, weil die FeatureEngine v2
   dieselbe Kette braucht. Dass es dieselbe Rechnung geblieben ist, misst
   `EqCopGoldenTest` — die Lautheit ist Teil seiner Kreuzvalidierung.
+
+**Messkern nach NAK-380 (26.09.2026, `m4.3-2026-09-26`).** Der Kommentar zu
+`kMetricsVersion` (`src/AnalyseEngine.h:60-65`) nennt die drei Änderungen der
+Etappe 6; die M1-Teilblöcke der Etappe 3 kamen mit der Zwischenfassung
+`m4.2-2026-09-25` (Commit `f8942067`), die dort nicht aufgeführt ist. Das
+Register `eq-copilot/schemas/v3/metriken-v1.json` führt die Konstanten in der
+Fassung 20260929.
+
+- **Fensterdauer statt Samplezahl (DSP-20, R-380-5).** Die Ordnungen
+  `kM1OrdnungBass`, `kM1OrdnungReferenz`, `kM1OrdnungMitten`,
+  `kM1OrdnungHoehen` = 14/13/12/11 (`AnalyseEngine.h:73-76`) sind die Längen
+  bei 48 kHz und zugleich Untergrenze und Dauerbasis (341,3/170,7/85,3/42,7
+  ms). `vorbereiten` bildet die Ordnung über dieselbe Längenregel wie die
+  FeatureEngine (`nakama::analyse::fensterPunkte`, §1.3b;
+  `AnalyseEngine.cpp:220-231`): 16 384/8 192/4 096/2 048 Punkte bei 44,1 und
+  48 kHz, das Doppelte bei 88,2 und 96 kHz, das Vierfache bei 176,4 und
+  192 kHz, Kappe 65 536. Nähte (160–250 Hz, 1,6–2,5 kHz), Zuständigkeiten und
+  Zonen bleiben. `scratchPsd` wächst in `vorbereiten` auf die größte Stufe
+  (`:235`). Eine neue Rate endet in `zuruecksetzen()` (`:296`); dieselbe Rate
+  (Abstand unter 0,5 Hz) lässt die Messung stehen (`:176-178`). A2 misst
+  24 B je Punkt und die Kappe bei 384 kHz.
+- **M1-Teilblöcke (DSP-21, R-380-6).** P10/P50/P95 kommen aus
+  `teilblockHistogramm`: je Band entsteht erst nach
+  `kM1TeilblockSegmente` = 8 aktiven Segmenten der zuständigen Stufe ein
+  Wert, das lineare Mittel ihrer acht Dichten in 1-dB-Stufen
+  (`AnalyseEngine.cpp:30`, `:531-547`, `berechnePerzentile` `:890-898`); ein
+  Rest unter acht bleibt im Akku und verfällt mit `zuruecksetzen`. Unter acht
+  aktiven Segmenten bleibt das Perzentil NaN. Die Abdeckungsklasse liest
+  weiter jedes einzelne Segment aus `pegelHistogramm` (`berechneAbdeckung`
+  `:1018`). A2 hält: Rauschen steht in jedem Band ruhig, eine bekannte Pegelbewegung wird
+  innerhalb −0,5/+2,0 dB gelesen; Textwirkung in §1.4.
+- **Suchgrenze der Resonanzkarten (T-380-8).** `resonanzSucheAbHz` =
+  `kResonanzSucheFaktor` · fs/N_Bass mit 17,30 (`AnalyseEngine.h:83`,
+  `suchgrenzeHz()` `AnalyseEngine.cpp:823`): bei dieser Frequenz ist die
+  −6-dB-Breite des Hann-Hauptlappens (2 Bins) 1/6 Oktave
+  (`kBreiteMaxOktaven`). Weil N_Bass mit der Rate wächst, gilt je
+  Ratenfamilie eine Zahl: 50,68 Hz bei 48, 96 und 192 kHz, 46,57 Hz bei 44,1,
+  88,2 und 176,4 kHz. `findeResonanzen` nimmt keinen Kandidaten mit Bandmitte
+  darunter (`:1083`); ohne vorbereitete Rate ist die Grenze NaN und es gibt
+  keinen Kandidaten. Das Feld steht im `MessSnapshot`
+  (`AnalyseEngine.h:124`), gesetzt in `fuelleBasis` und nach `zuruecksetzen`
+  (`AnalyseEngine.cpp:832`, `:353`), und reist nicht in Datei, Briefkasten
+  und Heartbeat (Register NAK-400). Die Meldung „nicht gesucht“ steht in §1.4.
+- **Validity-Masken der LTAS (T-380-9).** Der `MessSnapshot` trägt je Kurve
+  eine Maske, `ltasKompositInterpoliert` und `ltasReferenzInterpoliert`
+  (`kLtasMaskenBytes` = 28 B, Bit b in Byte b/8, Bit b%8, Füllbits 0;
+  `AnalyseEngine.h:92`, `:163-164`, Abfrage `ltasBandInterpoliert` `:211`).
+  Das Bit steht für jedes Band, dessen Wert aus der Lückenfüllung (Band ohne
+  FFT-Bin) oder der Randklemmung stammt, und für ein Nahtband, in das ein
+  solcher Wert mit Gewicht > 0 eingeht (`finalisiereLtas`
+  `AnalyseEngine.cpp:672-767`). Die Zahlen bleiben im Snapshot; Diagnose,
+  Resonanzsuche, Konvergenz und Editor lesen sie unverändert. Nur die
+  Schreiber machen daraus „keine Aussage“: `snapshotObjekt`
+  (`DiagnoseAntwort.cpp:124-127`; Festhalten-Datei und Briefkasten) schreibt
+  `null`, `messKompakt` (`prozessor/Ipc.cpp:1178`, v2-Heartbeat) NaN, das der
+  PipeClient als `null` schreibt. Der Editor zeichnet interpolierte Bänder
+  wie gemessene (Register NAK-399).
 
 ### 1.3b FeatureEngine v2 — die zweite Analyseschicht (SONDE-009, 23.08.)
 
@@ -165,14 +227,19 @@ nach IEC 61260-1 bei 1000 Hz. Gemessen **1,2 % Versatz**, rund ein Fünftel
 Bandbreite. M1 auf das v3-Gitter zu ziehen hieße, `EqCopGoldenTest` aufzugeben.
 Der Vermerk steht im Kopf von `BandGrid.h`.
 
-- **Zwei Auflösungsstufen** (16384 unter 200 Hz, 4096 darüber) — nicht nur
-  Genauigkeit: zwei gleichzeitig offene Fenster verschiedener Länge (341 ms und
-  85 ms) sind die Beweisfläche für die Fenstertrennung.
+- **Zwei Auflösungsstufen** (16384 unter 200 Hz, 4096 darüber; seit NAK-380
+  (26.09.2026) die Längen bei 44,1 und 48 kHz, bei anderen Raten gilt die
+  Fensterdauer, unten) — nicht nur Genauigkeit: zwei gleichzeitig offene
+  Fenster verschiedener Länge (bei 48 kHz 341 ms und 85 ms) sind die
+  Beweisfläche für die Fenstertrennung.
 - **Neun Grenzarten** mit je eigener Ursache (`Grenzgrund`). Drop zählt als
   `continuity_segment`, alles andere als `transport_epoch` (§32.3 — „die
   Host-Zeitachse wird dadurch nicht fälschlich als Seek bezeichnet").
 - **An jeder Grenze fällt alles Offene:** FFT-Fenster beider Stufen,
-  Loudness-Zelle, 3-s-Historie, Korrelationsfenster, Fluss-Vorgänger **und der
+  Loudness-Zelle, 3-s-Historie, Korrelationsfenster, Fluss-Vorgänger (seit
+  NAK-380 (26.09.2026) Vorframe, Historie, SF(n−1) und Sperrzeit des
+  Ereignisdetektors, `detektorLeeren` in `featureengine/Zeit.h:501`, und der
+  ganze Stereoring, `stereoLeeren` `:389`) **und der
   K-Filterzustand**. 🔑 Der Filterzustand ist die subtilste Form der
   Überbrückung — er trägt Audio über die Grenze, ohne dass ein Puffer wächst.
 - **Möglicher Straddle** (§32.3): liegt die Schleifengrenze rechnerisch im
@@ -219,6 +286,170 @@ gemessen 24.08. an 18–21 abweichenden Bytes ohne einen einzigen
 Feldunterschied. Wer ihn serialisiert, hasht oder als Golden einfriert, muss
 das **feldweise** tun.
 
+**Messkern nach NAK-380 (26.09.2026, `kFeatureMetricsVersion` 20260929).**
+So rechnet die FeatureEngine seit den Etappen 2 bis 6 von NAK-380; wie es dazu
+kam und was es beweist, steht im Manifest `docs/beweise/NAK-380.md`.
+
+- **Dichte und Bandleistung (Etappe 2, DSP-17, R-380-1).** Die 221
+  Feinbänder der Evidenz sind ein Dichtemaß: je Band das Mittel der
+  einseitigen Leistungsdichte über seine Bins, in dBFS/Hz
+  (`featureengine/Spektrum.h:428-431`, Bandmittel `:499-506`). Die 64
+  Livegruppen sind Bandleistungen in dBFS: `fuelleLive`
+  (`featureengine/Frame.h:336-377`) integriert jede belegte Feindichte mit der
+  Breite ihres Feinbands aus dem eingefrorenen Gitter
+  (`Gitter::evidenzKante (b + 1) − Gitter::evidenzKante (b)`); Feinbänder ohne
+  Bin innerhalb einer belegten Gruppe gehen mit der mittleren Dichte der
+  belegten Feinbänder derselben Gruppe über ihre Breite ein (`:371-376`), eine
+  Gruppe ohne belegtes Feinband bleibt ohne Bit. `band_stereo` bleibt ein
+  dimensionsloser Seitenanteil in [0, 1], Zähler und Nenner sind
+  leistungsgewichtet. Der Entwurfssatz, den das erfüllt (§35.1,
+  `docs/FL-Nakama-Sonden-Design-Entwurf.md:2298-2299`): „Leistungen werden
+  erst linear integriert und danach logarithmiert; `dBFS/Hz` und integrierte
+  `dBFS`-Bandleistung bleiben unterschiedliche Einheiten.“ Die Verträge
+  benennen die Größen je Feld (§3.3), die Brokerleser stehen in §4.
+- **Ereignisdetektor (Etappe 4, DSP-22, R-380-2, R-380-12).** Je aktivem
+  Hauptstufen-Frame rechnet `flussSchritt` (`Spektrum.h:614-662`) den
+  SuperFlux-Fluss auf den Bins der Hauptstufe: K Detektor-Bins mit 30,36 Hz
+  ≤ k·Δf < min(17 959,39 Hz, Kappe) (`detektorBinsBestimmen` `:671-682`; K =
+  1666 bei 44,1 kHz, 1530 bei 48, 96 und 192 kHz), L = 10·log10(p + P0) mit P0
+  = `kFlussP0Db` = −100 dBFS je Bin, SF(n) = Σ max(0, L(n,k) − Lmax(n−1,k))
+  mit einem Maximumfilter über ±w_k Bins des Vorframes, w_k = max(1,
+  ⌈k·(2^(`kFlussFilterCent`/1200) − 1)⌉) mit 125 Cent (`binFlussSchritt`
+  `:712-748`, `flussFilterRechnen` `:759-788`, monotone Warteschlange, O(K)).
+  Schwelle T_eff = max(Median + κ·MAD, (1 + ρ)·Median, T_min) aus Median und
+  echter MAD (Median der Absolutabweichungen, `medianUndMad` `:902-914`) über
+  `kFlussHistorie` = 32 aktive Frames, κ = `kFlussKappa` = 3, ρ = `kFlussRho`
+  = 1, absolute Mindestschwelle T_min = `kFlussTminDbJeBin` · K mit 0,10 dB
+  je Bin (153,0 dB bei 48 kHz). Ein Flussereignis braucht SF(n) > T_eff,
+  SF(n) ≥ SF(n−1) (Spitzenwahl) und `kSperrzeitMs` = 50 ms seit dem letzten
+  Ereignis (`detektorSchritt` `:794-895`). Die Sperrzeit rechnet in ms·fs
+  (`:851-853`) und gilt damit in Zeit bei jeder Rate; die Historie zählt 32
+  Frames, bei 48 kHz 1,37 s — Sperrzeit und Historie in ms je Rate misst B5
+  nicht eigens (Register NAK-412). Die ersten 32 aktiven Frames nach Start
+  oder Grenze tragen kein Ereignis, auch keines des Peakpfads. Der Vorframe
+  läuft über alle Hauptstufen-Frames, die Historie nur über aktive
+  (`rechneFenster` `:484-489`). Die sieben Werte stehen in
+  `FeatureEngine.h:239-288`. Der Peakpfad (Peaksteigung und Crest je über
+  12 dB, `kPeakSteigungSchwelleDb`,
+  `kPeakCrestSchwelleDb`) bleibt als Gegenbeleg; lösen beide im selben
+  Schritt aus, entsteht genau ein Ereignis mit beiden Bits. `staerke` (Wire
+  `staerke_mad`) ist für ein Flussereignis κ·(SF − Median)/(T_eff − Median),
+  bei Auslösung mindestens 3, geklemmt auf 1000 (`kFlussStaerkeMax`); ein
+  reines Peakereignis trägt den Crest über der Schwelle in dB
+  (`featureengine/Vertrag.h:284`). Frei ist der Vorframe für einen zweiten
+  Impuls erst ab N_H + Hop (128,0 ms in der 48-kHz-, 139,3 ms in der
+  44,1-kHz-Familie; Kommentar `Spektrum.h:590-603`); darunter ist sein Fluss
+  um das Spektrum des ersten Impulses verdeckt, nicht null. Der Bandfluss
+  (log10 der Bandmittel) bleibt nur für den Onsetverlauf des Fingerprints,
+  dessen 76 Bytes bytegleich geblieben sind (B22). Entwurf §39.1
+  (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2638-2640`) ist damit erfüllt,
+  nicht berichtigt: „Für den spektralen Fluss wird ein SuperFlux-artiger
+  Maximumfilter über Nachbarbins mit positivem Log-Magnitude-Delta und
+  adaptiver Median/MAD-Schwelle genutzt. Das reduziert Vibrato-Fehltrigger;
+  ein einfacher Peakpfad bleibt als Gegenbeleg für sehr kurze Impulse
+  erhalten.“ Fehlalarmrate, gemessen in B5 (`tests/AnalysisGoldenTestMain.cpp`
+  `nak380Detektor`, `:2007-2043`, je 30 s bei 48 kHz): Weißrauschen bei −20,
+  −40 und −50 dBFS, rosa Rauschen −20 dBFS, float32-Sinus 440 Hz, Sägezahn
+  110 Hz und Vibrato ±50 Cent (5,5 Hz) erzeugen je 0 Ereignisse (Zusage
+  höchstens 1, der Golden hält 0); 112 Klicks genau 112 Ereignisse, 56
+  Klickpaare im Abstand 20 ms genau 56 (Sperrzeit), 56 Paare im Abstand
+  150 ms genau 112. 30 s Weißrauschen −20 dBFS ergeben bei 96 kHz ein und bei
+  192 kHz kein Ereignis (M-115, `:2362-2363`); B16 misst die Onsetsumme jedes
+  der 93 Evidenzfenster von 30 s Weißrauschen mit 0.
+- **Stereoring und Kohärenz je Bin (Etappe 5, DSP-23, R-380-3, R-380-13).**
+  Auto- und Kreuzspektren je Bin (Sxx = |L|², Syy = |R|², Sxy = L·conj(R),
+  linear aus der M/S-FFT) laufen in einen Ring über die letzten W
+  Evidenzfenster, W_H = `kStereoRingHaupt` = 3 für die Hauptstufe, W_B =
+  `kStereoRingBass` = 7 für die Bassstufe (`FeatureEngine.h:321`, `:330`),
+  dazu je Bin das Kurzfenster der Persistenz (Aufbau
+  `featureengine/Stereo.h:37-52`, `stereoSchritt` `:161-319`). Der Ring ist
+  ein flacher Vektor im Heap, angelegt in `vorbereiten` für genau die Bins
+  der Zuordnung dieser Rate: 32 B je Bin und Slot plus 8 B je Band und Slot,
+  236 224 B bei 44,1 kHz und 217 792 B bei 48, 96 und 192 kHz (B19, Schranke
+  245 760 B). `evidenzLeeren` schiebt ihn um einen Slot weiter
+  (`stereoRingVorschub` `Stereo.h:599-620`, Aufruf `Frame.h:167`); nur eine
+  Grenze, `zuruecksetzen` oder ein Ratenwechsel leeren ihn ganz
+  (`stereoLeeren` `:625-631`). Die Kohärenz (Stufe 1) entsteht je Bin als
+  MSC |Sxy|²/(Sxx·Syy) aus den über die belegten Slots summierten Spektren
+  und wird erst danach über die Bins mit Energie im Band gemittelt; unter
+  `kWelchMindestFrames` = 8 gültigen Frames im Ring oder ohne Bin mit Energie
+  bleibt sie ohne Bit (`stereoAuswerten` `:363-560`). Über
+  `kKohaerenzSchwellePhase` = 0,8 (Stufe 2) folgen die Phase am Bin der geometrischen Bandmitte und die
+  Gruppenlaufzeit als Steigung der kleinsten Quadrate über die sequenziell
+  entwickelten Binphasen, τ = s/(2π·Δf), nur mit mindestens zwei genutzten
+  Bins; die Laufzeit ist ein Engine-Ergebnis und geht nicht auf die Leitung
+  (`laufzeitGesetzt`, `Vertrag.h:496`). `freiheitsgrade` zählt die gültigen
+  Frames im Ring, `fenster_dauer_ms` die Summe ihrer Hopdauern
+  (`Stereo.h:384-387`). Korrelation, Mid/Side, Seitenanteil, Zeitperzentile
+  und Folddown bleiben je Evidenzfenster. Entwurf §40.1
+  (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2683-2685`): „Auto- und
+  Cross-Spektren werden über mindestens acht gültige, überlappende
+  Welch-Frames gemittelt; Fensterdauer und Freiheitsgrade werden Teil der
+  Evidenz.“ Bass nach NAK-177: die Bänder unter 200 Hz erreichen acht Frames
+  über den Ring aus sieben Evidenzfenstern, bei 48 kHz und 0,25 s
+  Evidenzintervall nach spätestens sechs Snapshots, bei 1 s nach zwei
+  (`FeatureEngine.h:307-309`); bei 44,1 kHz mit Blöcken bis 512 erreicht auch
+  die Hauptstufe acht Frames. Laufzeit-Golden (B19, §40.3 „bekannte
+  Laufzeit“): ein breitbandiges Paar mit 1 ms Versatz trägt bei 44,1, 48,
+  88,2, 96, 176,4 und 192 kHz (bei 48 kHz über 18 Blockgrößen) in jedem Band
+  mit Energie ein Kohärenzbit mit Kohärenz ≥ 0,95, die Phase liegt ±0,25 rad
+  um die Referenz, die Gruppenlaufzeit trifft 1000·d/fs innerhalb einer aus
+  Binzahl, Framezahl und Kohärenz hergeleiteten Toleranz (bei 48 kHz und
+  vollem Ring ab 20 Bins ±0,02 ms); Einbinbänder tragen keine Laufzeit.
+- **LRA mit 10 Hz (Etappe 3, DSP-25, R-380-4).** `kLraHopZellen` = 1
+  (`FeatureEngine.h:600`): jede 100-ms-Zelle gibt einen Kurzzeitwert ins
+  LRA-Histogramm, zehn je Sekunde, sofern das volle 3-s-Fenster steht, die
+  Zelle bei markierter Passage ganz in ihr lag und der Wert das absolute Gate
+  −70 LUFS nimmt
+  (`featureengine/Lautheit.h:65-87`). Die 60-s-Regel zählt gegatetes Material,
+  jetzt bei 10 Hz (`:257-260`); Histogramm 0,1 LU, relatives Gate −20 LU,
+  Perzentile 10 und 95 (`:288-289`). Normzitat EBU Tech 3342 (2023) §3.1: „A
+  minimum block overlap of 2.9 s between consecutive analysis windows (i.e.
+  ≥10 Hz sampling of the loudness level) is required“. B9 fährt die Fälle 1
+  bis 4 aus Tech 3342 Tabelle 1 (10/5/20/15 LU, Normtoleranz ±1 LU, gegen den
+  §5-Referenzalgorithmus ±0,1 LU; `tests/LoudnessGoldenTestMain.cpp:317-329`),
+  B18 zehn Kurzzeitwerte je Sekunde und die Spanne gegen die §5-Referenz
+  (±0,2 LU).
+- **Fensterdauer statt Samplezahl (Etappe 6, DSP-20, R-380-5, R-380-14
+  (i)).** `fensterPunkte (basisPunkte, fs)` (`FeatureEngine.h:164-176`):
+  N(fs) = 2^round(log2(T·fs)), T = Länge bei 48 kHz durch 48 000
+  (`kBassBasisPunkte` = 16 384, 341,3 ms; `kHauptBasisPunkte` = 4 096,
+  85,3 ms; `:149-150`), gekappt auf [N(48 kHz), `kFensterPunkteMax` = 65 536]
+  (`:154`). Bass/Haupt: 16 384/4 096 bei 44,1 und 48 kHz, 32 768/8 192 bei
+  88,2 und 96 kHz, 65 536/16 384 bei 176,4 und 192 kHz; Hop N/2, also in Zeit
+  je Ratenfamilie gleich (371,5/92,9 ms in der 44,1-kHz-, 341,3/85,3 ms in der
+  48-kHz-Familie). Folgen: bei 96 kHz dieselbe Bin-Zuordnung wie bei 48 kHz,
+  je Familie dieselben Bänder ohne Bin (22 in der 44,1-kHz-, 25 in der
+  48-kHz-Familie), Detektor K = 1530 bei 96 und 192 kHz (Warteschlange 232
+  Plätze, Vorframe und Filter 2·K·8 = 24 480 B; bei 44,1 kHz K = 1666,
+  26 656 B, 252 Plätze). Speicher: der Heap einer Stufe trägt 110 B je Punkt
+  plus 1 776 B Nutzdaten (B5); Stufen, Stereoring und Detektor bleiben je
+  Rate von 44,1 bis 192 kHz unter 9,3 MB. Die Kappe begrenzt je Stufe, nicht die Summe:
+  bei 384 und 768 kHz, die `vorbereiten` noch annimmt (`:642`), liegt die
+  Summe darüber (Register NAK-408). `sizeof (FeatureEngine)` ist 16 248 B
+  (B5, `tests/AnalysisGoldenTestMain.cpp:2398`); alle längen- und
+  binabhängigen Träger liegen als Vektornutzdaten im Heap. Ratenwechsel:
+  `vorbereiten` mit neuer Rate legt beide Stufen mit der neuen Länge,
+  Zuordnung, Stereoring und Detektor neu an und ruft `zuruecksetzen()`
+  (`:656-746`); eine ungültige Rate (nicht endlich, ≤ 0, über 768 kHz) setzt
+  zurück und nimmt die Betriebsfreigabe (`:642-652`); dieselbe Rate lässt
+  alles stehen (`:653-654`). Im Audiopfad zieht ein Block mit anderer Rate nur
+  die Grenze `sampleratewechsel` (`featureengine/Zeit.h:191-192`), ohne
+  Allokation und ohne Längenänderung. Nach einem Wechsel auf 96 kHz trägt der
+  erste Snapshot 6 Frames (Kohärenz ohne Bit), der zweite 13 (B19). Entwurf
+  §35.1 trägt dazu das Erratum (s)
+  (`docs/FL-Nakama-Sonden-Design-Entwurf.md:2305-2310`).
+- **Versionsschritte (R-380-7).** `kFeatureMetricsVersion` = 20260929
+  (`FeatureEngine.h:91`); je Etappe ein Schritt: 20260925 (Bandleistung),
+  20260926 (LRA 10 Hz, M1-Teilblöcke), 20260927 (Detektor), 20260928
+  (Stereoring), 20260929 (Fensterdauer). Das Register
+  `eq-copilot/schemas/v3/metriken-v1.json` (`aktuell` 20260929) führt jede
+  Fassung mit ihren Schwellen; A5 (`metrics_version_bindet_schwellen`) hält
+  Register, `kFeatureMetricsVersion`, die zwei Broker-Konstanten (§4) und
+  `kMetricsVersion` der M1 gegeneinander. Kein Leser prüft den Versionswert;
+  alte Frames bleiben lesbar (A4 `nak380_m18_alte_und_neue_version_gelesen`
+  mit 20260904, 20260925 und 20260926; die C++-Seite: Register NAK-402).
+
 ### 1.4 Diagnose und Snapshot-Datei
 
 `Diagnose.cpp` — pur, zustandslos, auf der Snapshot-KOPIE; dieselbe Funktion
@@ -242,6 +473,28 @@ Schreiben, Spülen, Größenprüfung und Umbenennen ohne Ersetzen; Ergebnis `neu
 Vorgänger bleibt bytegleich) oder `fehler` mit dem tatsächlichen Pfad; `ersetzt`
 erzeugt heute kein Weg. Die Statusmeldung nennt die entstandene Datei. Kein
 Befundarchiv im Plugin.
+
+**Seit NAK-380 (26.09.2026).** Der Charaktersatz der Resonanzkarte liest
+P95−P50 der Acht-Segment-Teilblöcke des Trägerbands (§1.3): bis 6 dB
+gerundet „Der Pegel dort steht ruhig“, darüber „kommt in Wellen“; über 10 dB
+empfiehlt eine Dauerton-Karte das dynamische Werkzeug statt des festen
+Absenkers (`Diagnose.cpp:184-244`). Texte und Schwellen blieben,
+Weißrauschen steht in jedem Band ruhig. Wo nicht nach Tönen gesucht
+wurde, sagt `suchgrenzeSatz` (`Diagnose.cpp:525-534`, Deklaration
+`Diagnose.h:89`): „Unter 51 Hz wurde nicht nach Tönen gesucht – das
+Messfenster ist dort zu grob.“ mit der gerundeten Suchgrenze (51 Hz in der
+48-kHz-, 47 Hz in der 44,1-kHz-Familie); ohne endliche Grenze kein Satz. Der
+Satz ist der einzige Text dafür und steht in zwei vorhandenen Wegen, ohne
+neue Fläche (Design geparkt): am Ende von `gemessen` jeder Resonanzkarte
+(`Diagnose.cpp:220-221`), damit auch in Festhalten-Datei und
+Briefkasten-Antwort, und als zweiter Satz im Leertext der Befundliste
+(`PluginEditor.cpp:465-472`, am echten Editor gemessen in B15). Das Feld
+`resonanzSucheAbHz` selbst reist in keiner Datei; ohne Karte liest ein Leser
+der Datei „keine Resonanz“, nicht „nicht gesucht“ (Register NAK-400). In
+`snapshotObjekt` stehen interpolierte LTAS-Bänder als `null`
+(Validity-Masken, §1.3); die Vergleichslinie behält den Wert desselben
+Snapshots (B15), die Referenzdatei des Knopfwegs ist mit dem Erzeuger neu
+geschrieben (B30, `eq-copilot/fixtures/diagnose/festhalten-referenz.json`).
 
 ### 1.4b Host-State — Schema 2 (SONDE-006, 22.08.)
 
@@ -1846,6 +2099,12 @@ Namen) · `quantisierung-v1.json` (3 Kodierungen, 61 Testvektoren) ·
 `nakama_log64_v1.json` (64 Gruppen, exakte Partition der 221). **Textriegel**
 = acht Regeln auf dem Rohtext VOR dem Parser (Liste in `schemas/v3/README.md`),
 Fälle in EINER Datei `fixtures/v3/TEXTRIEGEL-FAELLE.json` (59, hex-kodiert).
+`metriken-v1.json` ist das Register der Messfassungen: `aktuell` 20260929,
+seit NAK-380 (26.09.2026) je Etappe eine Fassung 20260925 bis 20260929 mit
+ihren geführten Schwellen und ganzzahligen Größen (in 20260929 auch
+`kFensterPunkteMax`, die zwei Basislängen, die vier M1-Ordnungen und
+`kResonanzSucheFaktor`); normfeste Zahlen wie `kLraHopZellen` = 1 stehen
+unter `nicht_gefuehrt` (§1.3b „Versionsschritte“).
 
 ### 3.3 FlatBuffers (SONDE-005b)
 
@@ -1859,6 +2118,20 @@ und ruft `pruefe_fbs_feldids.py` — das seit T2-Runde 4 als Prüfung 7 auch
 hält, dass **jedes** Offsetfeld im `strukturriegel` des Rust-Beins steht
 (`broker/src/telemetrie.rs`; Rusts Verifier kennt C++' „May not point to
 itself" nicht).
+
+**Größen je Feld (seit NAK-380 (26.09.2026), R-380-1).** Der Kommentar an
+`table Bandwerte` und an `Frame.baender`/`Frame.band_stereo`
+(`eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs`, in beide
+generierten Dateien übernommen, A9), das FB-README (Zeile
+„`Bandwerte`-Groesse“), `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`
+(`bandwerte`, `bandwerte_fein`, `bandwerte_grob`) und das v3-README nennen
+die Größe: 221 spektrale Feinbänder sind mittlere einseitige
+Leistungsdichte in dBFS/Hz, `Frame.baender` (64 Livegruppen) Bandleistung in
+dBFS, `Frame.band_stereo` ein dimensionsloser float32-Seitenanteil in [0, 1]
+ohne q_db-Kodierung. Dazu nennt das Schema die Stärke eines Flussereignisses
+(`dynamics_ereignis`, §1.3b) und für `fenster_dauer_ms` und `freiheitsgrade`
+den Ring über die letzten W Evidenzfenster. Kein Feld, keine Vertragsversion
+und kein v3-Fixture hat sich geändert; A5 hält die Benennung.
 
 ### 3.4 Drei Leser, handgeschriebene Manifeste
 
@@ -2009,6 +2282,28 @@ Snapshotstand. Nach vollständigem Write darf die Schuld kompaktieren; jeder
 Re-Subscribe rekonstruiert den aktuellen Stand aus der Projektion, sodass ein
 Kill vor/nach Push oder Kompaktierung keine committete Wirkung verliert.
 
+**Ursachenfinder: Dichte und Bandleistung (seit NAK-380 (26.09.2026),
+R-380-1).** Die Feinbandwerte erreichen den Broker als P50 der Fensterdichten
+in dB. Wer daraus eine Leistung, einen Leistungsanteil oder einen Rang
+rechnet, integriert jede Dichte zuerst mit der Breite ihres Feinbands:
+`broker/src/coordinator/hypothese/bandbreite.rs` liest die 222 Kanten aus
+`kanten_hz.hex64` des eingefrorenen Gitters (`include_str!`, einmal geparst
+über `OnceLock`, keine zweite Zahlenbank, kein Dateizugriff zur Laufzeit) und
+liefert `breite(index)` (`:37`). `bandpassung` (`zusammenhang.rs:193`,
+Gewicht `:201`; eine der sechs Rangkomponenten, damit auch in
+`confidence.score` über den Rang, `befund.rs:321`) und der Maskierungspegel
+`bandpegel` (`maskierung.rs:142`) rechnen 10^(dB/10)·Breite; das Screening
+erbt es, `gruppenenergie` ist `bandpassung` auf dem Gruppenintervall
+(`screening.rs:148`). Dichtevergleiche in dB bleiben: `masteranomalie`
+(`rechnung.rs:334`) und `bandmittel` (`messung.rs:64`), ebenso Verhältnisse
+je Band (Experiment-Deltas, PRE/POST), bei denen sich die Breite kürzt. Die
+Bandbreitentafel gehört zur `metrics_version` (Kopf von `determinismus.rs`).
+Die Broker-Fassung ist `METRICS_VERSION` = 20260929 in
+`coordinator/vergleichbarkeit.rs:160` und `coordinator/prepost.rs:206`; A5
+bindet beide an `aktuell` in `metriken-v1.json`. Die Transient-Guardrail des
+Experiments bleibt `GUARDRAIL_TRANSIENT` = 2,0 (`experiment.rs:587`), ihre
+Größe ist die Summe der Ereignisstärken des neuen Detektors (§1.3b).
+
 - Pipes: Produktion `\\.\pipe\evenacadia.eq-copilot.v1` (`lib.rs:29` ==
   `EqCopilotIds.h:18`), Probe `…m2probe`. Erste Instanz mit
   `FILE_FLAG_FIRST_PIPE_INSTANCE` (`server.rs:242`): fremder Besitzer ⇒ Start
@@ -2112,9 +2407,67 @@ HostProbeTest (ohne Argument) · B3c SchemaTest · **B4 `EqCopQueueStressTest`**
 Manifest (`docs/beweise/SONDE-009.md`: 28/28). Geplant, nicht gebaut:
 B6 `EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
 
+**NAK-380 (26.09.2026): kein neues Bein, erweiterte Behauptungen**
+(`git diff c58a2714...HEAD -- tools/beweise.ps1`, Tabelle `$kanon`). Die
+Prüfungen tragen die Zeile der Verhaltensmatrix im Manifest
+`docs/beweise/NAK-380.md` §6 im Namen (C++ `380/M-nn`, Rust `nak380_mnn_…`);
+A5 bekam fünf Prüfblöcke
+`pruefe_nak380_etappe_2` bis `_6` in `tools/eq-copilot/pruefe_v3_vertrag.py`.
+
+- **A2** `EqCopGoldenTest`: M1-Perzentile aus Teilblöcken zu acht Segmenten;
+  die vier M1-Stufen folgen der Fensterdauer (Kappe 65 536 bei 384 kHz
+  gemessen, 24 B je Punkt); die Resonanzsuche findet 300 Hz bei 96 kHz sowie
+  500 und 60 Hz bei 192 kHz, meldet unter der Suchgrenze keinen Kandidaten
+  und nennt sie im Satz jeder Karte; Zonen-Ticks bleiben 30 in 30 s bei 48
+  und 96 kHz.
+- **A4** `cargo test`: Bandpassung, Screening und Maskierungspegel
+  integrieren mit der Gitterbreite, Dichtevergleiche bleiben; alte und neue
+  `metrics_version` werden gelesen; Fingerprints sind nur innerhalb derselben
+  Fassung vergleichbar, und die Fassung reist mit dem gespeicherten
+  Fingerprint (§7).
+- **A5** `pruefe_v3_vertrag.py`: Größen je Feld im Vertrag; die Fassungen
+  20260925 bis 20260929 binden `kFeatureMetricsVersion`, beide
+  Broker-Konstanten, `m4.3-2026-09-26` und die geführten Werte je mit Wert an
+  ihrer Codestelle; Flussstärke und Ring für `fenster_dauer_ms` und
+  `freiheitsgrade` im Schema benannt.
+- **B5** `EqCopAnalysisGoldenTest`: Feinbänder Dichte, Livegruppen
+  Bandleistung (Parseval, Sinus, Trägerrand, leere Feinbänder); Detektor mit
+  Null- und Impulskorpus (§1.3b); `sizeof (FeatureEngine)` 16 248 B; beide
+  Stufen nach der Fensterdauer, Heap 110 B je Punkt plus 1 776 B je Stufe,
+  Träger je Rate unter 9,3 MB, Bänder ohne Bin 22/25, Zuordnung bei 96 wie
+  bei 48 kHz, W1 bei 96/192 kHz ein/kein Ereignis, Ratenwechsel; der
+  Heartbeat trägt für interpolierte LTAS-Bänder `null`; der Impulsfall über
+  fünf Blockgrößen und fünf Raten mit der Fensterlänge der Hauptstufe je Rate.
+- **B9** `EqCopLoudnessGoldenTest`: LRA-Fälle 1 bis 4 aus EBU Tech 3342
+  Tabelle 1.
+- **B15** `EqCopShot`: der Leertext der Befundliste nennt am echten Editor
+  die Suchgrenze (51 Hz bei 48 kHz, 47 Hz bei 44,1 kHz); die Festhalten-Datei
+  schreibt interpolierte Bänder als `null`, die Vergleichslinie behält den
+  Wert desselben Snapshots.
+- **B16** `EqCopSonde013EventWireTest`: jede Flussstärke ist endlich in
+  [3, 1000] durch Serialisierer, Textriegel und Schemaengine; bei 30 s
+  Weißrauschen ist die Onsetsumme jedes der 93 Evidenzfenster 0.
+- **B18** `EqCopSonde013DynamicsTest`: zehn LRA-Kurzzeitwerte je Sekunde
+  gegen die §5-Referenz; der Detektor über den Testzugang (Maximumfilter,
+  K = 1666/1530/1530 bei 44,1/48/96 kHz, Warteschlange 252/232/232 Plätze,
+  echte MAD, T_min, Rauschbodenbezug, P0, Spitzenwahl, Sperrzeit); ein nicht
+  endliches Kreuzspektrum an einem Bin zählt nur für sein Band nicht.
+- **B19** `EqCopSonde013StereoGoldenTest`: Kohärenz je Bin über den Ring,
+  Laufzeitpaar 1 ms bei sechs Raten, Bassbänder mit acht Frames,
+  Ringbytes, Leerung an Grenze, Rücksetzen und Ratenwechsel (§1.3b).
+- **B22** `EqCopSonde013FingerprintGoldenTest`: die 76 Ausgangsbytes des
+  Akkords F1 (220 Hz, 30 s) bytegleich zur Referenz vom Start der Etappe 4.
+- **B30** `EqCopBriefkastenTest`: `komposit_db` und `referenz_8192_db` stehen
+  für interpolierte Bänder als `null`; die Referenz des Knopfwegs ist mit dem
+  Erzeuger neu geschrieben.
+
+`tools/plan/gesundheit.py` ordnet `broker/src/coordinator/experiment_verdrahtung.rs`
+(über der Schwelle von 2 000 Zeilen) dem Pflegeticket NAK-413 zu.
+
 **A33 `tools/plan/tidy.py` (NAK-288, 12.09.2026) — C++-Statikanalyse als
 Ratsche.** Bis dahin übersetzte der Kanon das Plugin nur unter `/W4`. Das Bein
-konfiguriert einen eigenen Ninja-Baum `eq-copilot/build-tidy` mit `cl.exe`
+konfiguriert einen eigenen Ninja-Baum `eq-copilot/build-tidy` (Bauartefakt,
+gitignoriert, nicht ins Repo) mit `cl.exe`
 (nie gebaut; nur der Visual-Studio-Generator des Kanons schreibt keine
 `compile_commands.json`), filtert je Quelldatei unter `eq-copilot/plugin`
 ohne `tests/` und ohne den flatc-Codegen `vertrag/generiert/` (A9 hält ihn
@@ -2225,6 +2578,53 @@ JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
   `tests/ShotTestMain.cpp:7` und `probe/PipeProbeMain.cpp:1` (Hub-App bzw.
   „Tauri-Broker" — gibt es nicht mehr). `PipeClient.cpp:252` (v1-Zweig) ist
   unerreichbar, weil `:219` nur ein v2-`welcome` annimmt.
+- **Offen aus NAK-380 (Register `docs/offene-punkte.md`, 25./26.09.2026):**
+  - NAK-398 [Widerspruch · Messkern · Broker ↔ Gitter]: die Screening-Gruppen
+    des Brokers (`bandintervall_der_gruppe`, `screening.rs`) runden auf, die
+    eingefrorene Partition und C++ runden ab; Befundzonen,
+    Maskierungsintervall und Proposal-Zielbereich hängen daran.
+  - NAK-399 [Anzeige · geparkt]: der Editor zeichnet interpolierte
+    LTAS-Bänder wie gemessene; nur die Schreiber tragen `null`.
+  - NAK-400 [Härtung · Snapshot-Schema]: `resonanzSucheAbHz` reist nicht in
+    Festhalten-Datei und Briefkasten-Antwort; ein Leser der Datei sieht
+    „keine Resonanz“, nicht „nicht gesucht“.
+  - NAK-402 [Härtung · Vertrag · C++-Leser]: der C++-P2-Weg belegt alte und
+    aktuelle Metrikfassung nicht am echten Writer und Reader; beide Fassungen
+    prüft nur Rust.
+  - NAK-403 [Härtung · Messkern · Snapshot]: nach `zuruecksetzen()` trägt der
+    Snapshot bis zum nächsten `auswerten()` Perzentile 0,0 statt NaN; beide
+    Leser gaten auf `perzentileGueltig`.
+  - NAK-405 [Härtung · Messkern · Ereignisdetektor]: Null- und Impulskorpus
+    halten nur in einem schmalen Korridor (125 Cent, T_min 0,095 bis 0,10 dB
+    je Bin); Einsätze mit Binfluss unter T_min bleiben ohne Flussereignis,
+    wenn der Peakpfad sie nicht fängt.
+  - NAK-406 [Planarbeit · Pflegeschritt]: die Stapelreserve von B5 ist fast
+    aufgebraucht (1 002 752 von 1 048 576 B); die Engines in B5 gehören auf den
+    Heap.
+  - NAK-407 [Härtung · Messkern · Testzugang]: der Testhaken `nanKreuzBin` an
+    `stereoSchritt` liegt im Produktrechenpfad (das Produkt ruft mit −1).
+  - NAK-408 [Härtung · Messkern · Speicher]: die Längenkappe begrenzt je
+    Stufe, nicht die Summe; bei 384 und 768 kHz liegen die Nutzdaten über
+    9,3 MB.
+  - NAK-409 [Härtung · Vertrag · v2-Snapshot]: der Beschreibungstext von
+    `komposit_db` in `eq-copilot/schemas/eq-snapshot.schema.json` nennt die
+    48-kHz-Längen.
+  - NAK-410 [Beobachtung · Installer · Vertrag]: ein Fingerprint von der
+    Leitung trägt keine Messfassung, der Broker stempelt seine eigene; ein
+    Plugin anderer Fassung wäre dort nicht erkennbar (Plugin und Broker
+    kommen als Bundle).
+  - NAK-411 [Pflege · Broker]: `vergleichbarkeit::beurteile` und
+    `invalidierung::material_wechsel` haben im Produktfluss keinen Aufrufer
+    mehr.
+  - NAK-412 [Härtung · Messkern · Test]: B5 prüft bei 96 und 192 kHz Detektor-Bins
+    und Hop, nicht Sperrzeit und Historie in ms je Rate.
+  - NAK-413 [Planarbeit · Pflegeschritt · S31c]:
+    `broker/src/coordinator/experiment_verdrahtung.rs` reißt mit 2 463 Zeilen
+    die Schwelle von 2 000 Zeilen.
+  - NAK-414 [Härtung · Messkern · Test]: das Lautheitshistogramm der M1 ist
+    beim Ratenwechsel nicht als eigene Prüfzeile gemessen.
+  - NAK-415 [Werkzeug · Runner]: `tools/beweise.ps1 -Anhaengen` schreibt in
+    ein LF-Manifest eine CRLF-Leerzeile.
 
 ## 7 · SONDE-013 (P4): Passage, Experiment, PRE/POST, Invalidierung — Stand 05.09.2026
 
@@ -2256,6 +2656,39 @@ Verlauf in `SONDE-013-verlauf.md`). Was seitdem gilt:
   gescheiterter Append bleibt unbeantwortet, der Link ist danach tot, E-13),
   `mod.rs::mit_store` (Restore von Passagen, Experimenten, Ereignissen und
   Evidenz samt Folge).
+- **Messfassung im Fingerprint (seit NAK-380 (26.09.2026), R-380-9,
+  R-380-14 (ii), M-122):** zwei Fingerprints sind nur innerhalb derselben
+  `metrics_version` numerisch vergleichbar. `fingerprint_vergleich`
+  (`broker/src/telemetrie.rs:141`) liefert bei verschiedenen Fassungen
+  `NichtVergleichbar` vor jeder Cosinusrechnung; die Fassung ist die des
+  Messwerks, nicht `Fingerprintwerte.version` (Formatfassung der 76 Bytes).
+  Die gespeicherte Projektion trägt `metrics_version` additiv im
+  Fingerprintobjekt neben `version`, bei `passage.fingerprint` und den zwei
+  Referenzfingerprints (Schreiber `fingerprint_json`,
+  `experiment_verdrahtung.rs:699`; Felder `fingerprint_messfassung`,
+  `passage_messfassung`, `upstream_messfassung`, `experiment.rs:151`,
+  `:208-209`). Der Leser `fingerprint_aus_gespeichertem` (`:1672`) liefert
+  ohne Rückfall: fehlt das Feld (Altstand) oder ist es keine Ganzzahl in
+  1..u32::MAX, ist die Fassung `None`, die Zeile lädt trotzdem, und beim
+  Neuschreiben entfällt das Feld statt die Fassung dieses Brokers
+  anzunehmen. Ein frisch gemeldeter Fingerprint trägt die Fassung dieses
+  Brokers (`:1354`, `:1365-1366`); die Leitung trägt keine Fassung
+  (v3-Schema `$defs/fingerprint`, Register NAK-410). Vergleichbarkeit
+  (`beurteile_mit_messfassung`, `vergleichbarkeit.rs:363`, Aufruf aus
+  `resultatmessung` `experiment_verdrahtung.rs:1281`) und Invalidierung
+  (`material_urteil_mit_messfassung`, `invalidierung.rs:272`) sind
+  fail-closed: eine unbekannte Fassung ergibt `MessfassungUnbekannt`, zwei
+  bekannte verschiedene `MessfassungVerschieden` (`vergleichbarkeit.rs:83`,
+  `:88`), die Klasse `Unvergleichbar`, nie `MaterialVerschieden` und nie
+  einen Materialwechsel; ohne Vergleich ist `material_cosine` NaN statt einer
+  Zahl (`:378`, `:381`). Ein fehlender Fingerprint bleibt der fehlende Beleg
+  (invalidieren, M-54). Die Hüllen `beurteile` und `material_wechsel`
+  vergleichen innerhalb der laufenden Fassung und haben im Produktfluss keinen
+  Aufrufer mehr (Register NAK-411). A4 misst die vier Fälle
+  `nak380_m122_gespeicherte_fassung_*` (Modul ab
+  `experiment_verdrahtung.rs:1996`) und
+  `nak380_m122_fingerprint_nur_gleiche_metrics_version`
+  (`telemetrie.rs:1257`).
 - **Verträge** (`eq-copilot/schemas/v3/`): Fassung 2 der Wirefamilien (Stand in
   `reservierte-nachrichten-v1.json`); `experiment_begin` trägt ein
   Referenzobjekt (Passage- und Upstream-Fingerprint sind beim Ein-Punkt-Messer

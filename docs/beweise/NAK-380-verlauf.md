@@ -1,6 +1,6 @@
-# NAK-380 — Verlauf der Etappen 1 bis 5 bis zur Erstprüfung 5 (ausgelagert aus `docs/beweise/NAK-380.md` am 26.09.2026 in zwei Blöcken)
+# NAK-380 — Verlauf der Etappen 1 bis 6 bis zur Nacharbeit 0 der Etappe 6 (ausgelagert aus `docs/beweise/NAK-380.md` am 26.09.2026 in drei Blöcken)
 
-Unverändert übernommen (Skill §3.5, Manifest über 7 000 Zeilen): die Abschnitte §10 bis §34 — Messung der Etappe 1, Matrixprüfungen 1 bis 4 mit Nacharbeiten, Etappe 2 (Bau, Kanon, Erstprüfung 2, Nacharbeit 1, Wiederprüfung 1 PASS), Etappe 3 (Bau, Nacharbeit 0, Kanon, Erstprüfung 3, Nacharbeit 1, Wiederprüfung 1 PASS, Übergabe). Der lebende Kopf, §0 bis §9 (Übernahme, Einordnung, Regeln, Zusagen, Matrix, Korpus, Bauplan, Prüfliste) und der Verlauf ab §35 (Etappe 4) stehen im Manifest. Zeilenangaben in diesen Abschnitten gelten zum Stand des Abschnitts, der sie trägt.
+Unverändert übernommen (Skill §3.5, Manifest über 7 000 Zeilen): die Abschnitte §10 bis §34 — Messung der Etappe 1, Matrixprüfungen 1 bis 4 mit Nacharbeiten, Etappe 2 (Bau, Kanon, Erstprüfung 2, Nacharbeit 1, Wiederprüfung 1 PASS), Etappe 3 (Bau, Nacharbeit 0, Kanon, Erstprüfung 3, Nacharbeit 1, Wiederprüfung 1 PASS, Übergabe). Der lebende Kopf, §0 bis §9 (Übernahme, Einordnung, Regeln, Zusagen, Matrix, Korpus, Bauplan, Prüfliste) und der Verlauf ab §58 (Etappe 6: Kanon nachher an `f893c57e`, Erstprüfung 6, Nacharbeit 1, Wiederprüfung 1 PASS, Etappe 7) stehen im Manifest. Zeilenangaben in diesen Abschnitten gelten zum Stand des Abschnitts, der sie trägt.
 
 ---
 
@@ -6454,3 +6454,1785 @@ Nacharbeit 0 §48), Auftrag `docs/beweise/roh/NAK-380-erstpruefung-5-auftrag.txt
 gefahren über `tools/dirigent/codex-lauf.ps1` mit Monitor auf der
 `-start.log`; parallel zum Kanon (HEAD bleibt; Bauartefakte, Broker-Pin und
 Kanon-Anhang sind kein Prüfgegenstand, im Auftrag benannt). Urteil in §50.
+
+---
+
+# Dritter Block (ausgelagert 26.09.2026 nach der Wiederprüfung 1 der Etappe 6, Manifest §61): der Kanon-Lauf der Etappe 5 (an `8e81885e`, 03:55 Uhr) und die Abschnitte §50 bis §57 — Etappe 5 ab Kanon nachher (Erstprüfung 5 mit Validierung und Regel R-380-13 (v), Nacharbeit 1, Messung, Wiederprüfung 1 PASS und Abschluss §53) und Etappe 6 bis zur Messung der Nacharbeit 0 (Bau §54, Messung und Regel R-380-14 §55, Nacharbeit 0 §56, Messung und Zwischenstand §57). Unverändert übernommen; Zeilenangaben in den Abschnitten gelten zum Stand des Abschnitts, der sie trägt.
+
+## Kanon-Lauf - NAK-380
+
+**Lauf:** 2026-09-26 03:55 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 70/70 Kanon-Laeufe bestanden | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/NAK-380-8e81885-dirty.md](roh/NAK-380-8e81885-dirty.md)
+
+### Kopf - woran gemessen wurde
+
+| Feld | Wert |
+|---|---|
+| Zeitpunkt | 2026-09-26 03:55:05 +02:00 |
+| Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
+| Zweig | master |
+| Commit | 8e81885e NAK-380 Etappe 5 Nacharbeit 0 nach R-380-13 (Opus 5.5 xhigh, Worker 343fcc2c, 03:17 bis 03:46 Uhr): Gruppenlaufzeit je Band als Phasensteigung der kleinsten Quadrate über die entwickelten Binphasen statt Lag-1-Produkt (Stereo.h, Vertrag.h-Kommentar), Toleranz T_B je Band aus den Vorbedingungen (K_eff aus dem Gitter, F aus dem Kadenzmodell, C = ρ_w(d)², Δf; Bendat/Piersol-Phasenvarianz, Welch-Überlappungsfaktor, OLS-Varianz, 5σ), Wache ± 0,02 ms für K ≥ 20 bei 48 kHz, Einbinbänder ohne Bit, ohne Kohärenzbit keine Laufzeit; Nachbau-2 (numpy, 40 Läufe je Rate, Haupt- und Bassstufe) belegt T_B ≥ 3·SD + \|Bias\| in allen 38 Klassen (≤ 0,879); Endstand kein Band außerhalb T_B (größtes Verhältnis 0,670), mittlere Abweichung −0,011 bis +0,005 ms (vorher −0,031 bis +0,003); Rotbeweise M-74 bis M-80 neu gefasst (17 Zeilen JA), B19 809/0, B18, B5, A1, A16, B1, B4, A26, A5 grün; Runnerzeilen B19 und A5; kein Versionsschritt (Laufzeit Engine-Ergebnis, A-3); Messung des Dirigenten §49 (Einordnung, Matrixfassung §49.2 mit der Wache „ohne Kohärenzbit keine Laufzeit“ in M-80), Prüfauftrag Erstprüfung 5 abgelegt; Codex seit 03:48 Uhr wieder erreichbar, One-Shot 9:07 gelöscht; Kanon nachher und Erstprüfung 5 laufen ab diesem Stand |
+| Commit (voll) | 8e81885e588d26dfd552735a5f8716468c09bc14 |
+| Arbeitsbaum | 7 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| JUCE gepinnt | 8.0.9 |
+| JUCE auf Platte | 8.0.9-dirty |
+| FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
+| cargo | cargo 1.93.1 (083ac5135 2025-12-15) |
+| rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
+| PowerShell | 7.6.6 |
+| cmake | cmake version 3.31.6-msvc6 |
+
+### Uebersicht
+
+| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
+|---|---|---|---|---|---|
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,14 s | [A1](roh/NAK-380-8e81885-dirty.md#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). Seit NAK-380 Etappe 3: M1-Perzentile aus Teilbloecken zu acht Segmenten; Rauschen steht in jedem Band ruhig, eine bekannte Pegelbewegung wird innerhalb -0,5/+2,0 dB gelesen. | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 46,88 s | [A2](roh/NAK-380-8e81885-dirty.md#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). Seit NAK-283 (F12) erzeugt ein endlicher Eingang keinen nicht endlichen Wet-Ausgang: im Puls auf 1 kHz mit einem Ton der Amplitude 0,8 x FLT_MAX ist jedes Ausgangssample endlich, und nach dem Einblenden steigt der Wet-Zaehler um genau die verriegelten Samples. Seit NAK-312 Etappe 6a (R-312-8): ein Rollenwechsel zu Main nimmt einen in Legacy eingereichten Auftrag zurueck, bevor die Klassifikation wirkt - 40 Bloecke danach bitgleich ohne Ereignis im Ring, ebenso nach dem Rueckwechsel; in Legacy reicht SOLO nichts ein, zeigt keinen Aus-Knopf, und der Status nennt die Lage; ein Wechsel weg von Main schliesst das Intervall mit genau einem begin und einem end ueber einen weichen Ausfade (Nachbarsprung innerhalb der E-31-Schranke) und blendet beim zweiten Wechsel nicht wieder ein, auch mitten im Ausfade; Freilaufmeldung, Sampleratenwechsel und 10-Minuten-Totmann beenden die Markierung auch in der Main-Flaeche. Seit Etappe 6a (R-312-5): reset() bei angehaltenem Transport beendet Klang und Intervall (40 Bloecke bitgleich, genau ein end ohne Projektzeit, 0 Allokationen), laesst den Oversize-Riegel bis zum naechsten prepareToPlay stehen und den Auftrag bestehen (laeuft der Transport weiter, ein neues begin); ueber reset, Bloecke ohne und mit Erlaubnis und prepareToPlay hat jedes begin genau ein end; bei vollem Ring bleibt reset fail-closed (Ueberlaufbit, keine Sequenz); releaseResources schliesst wie reset und gibt die Blockpuffer frei, prepareToPlay wie bisher; ohne Auftrag entsteht kein Ereignis und kein Host-Dirty. Seit NAK-312 Etappe 7b (U56, 312/M-130): releaseResources laesst den Auftrag bestehen, nach prepareToPlay beginnt er mit genau einem neuen begin - seit der Nacharbeit 1 (R-312-33) am ersten erlaubten Block allein gemessen: dieser Block faerbt, ist hoerbar und meldet das neue begin, die uebrigen 39 bleiben hoerbar ohne weiteres Ereignis. Seit Etappe 7b, Satz 3 (U49, 312/M-118): der Rollenwechsel nimmt den Auftrag zurueck und laesst den Bestand stehen. Seit Etappe 7b, Satz 2 (312/M-109, Grenzzeile, nicht Gegenstand der Antwort U48): Gens Hostbypass bleibt die JUCE-Basis - kein Quelltext unter eq-copilot/plugin/src/ nennt processBlockBypassed oder getBypassParameter, getBypassParameter liefert nullptr, und mit hoerbarem Auftrag in Main geht der Puffer ueber 20 Bloecke processBlockBypassed unveraendert durch, ohne Ereignis; danach faerbt der Auftrag in 40 Bloecken processBlock weiter, ohne neues begin und ohne end. Seit NAK-313 Etappe 7 (R-313-9, 313/M-128): die Byteinstanz heartbeat-wire-v1.json traegt binary_telemetry supported, und der Heartbeat-Schreiber erzeugt ihre drei Wiretexte bytegleich. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 32,50 s | [A3](roh/NAK-380-8e81885-dirty.md#a3) |
+| A4 | Broker-Vertragstests: eingefrorene v2/v3-Vertraege sowie SONDE-011 Phase B mit Coordinator/Session, monotoner Liveness/Eviction, SQLite-Migration 1, Single-Writer, Projektionen, Snapshot-Outbox, dauerhaften Konfliktriegeln, produktiver v2+v3-Verdrahtung und der nicht isolationspflichtigen Killmatrix. Seit SONDE-013 zusaetzlich die Fassungsleiter (jede Minorfassung wird aus der committeten zurueckgebaut, der Leser der Fassung 1 lehnt jede Neuerung der Fassung 2 ab, Fassung 0 erbt den Rueckbau) und der Empfaenger des evidence_snapshot: fremde Adresse verworfen, offene Intervention sperrt statt abzuschwaechen, nach Ende und Nachlauf nimmt er wieder an. Seit SONDE-014 zusaetzlich der Intent- und Assistentenspiegel (Koaleszierung je Quelle/Scope, keine Rechnung vor der Vollstaendigkeitsmarke) und der URSACHENPFAD: aus paralleler Telemetrie entsteht nie Aussageklasse 2 oder 3, das Screening reicht hoechstens fuenf Kandidaten weiter, fehlende Coverage und falsches Alignment sind ein GATE vor der Gewichtung und tragen einen Grund aus der geschlossenen Achtermenge, eine Passage unter GATE_MINDEST_FENSTER traegt keine starke Aussage (mit Gegenprobe an der Kante 7/8), eine Ruecknahme invalidiert die abhaengigen Hypothesen deterministisch, und hundert Laeufe ueber dieselben Bytes liefern bytegleich dieselbe Rangfolge. Seit Etappe F dazu die Proposal-Policy: ein Vorschlag entsteht MIT seinem Befund und traegt die fuenfzehn Felder aus 42.1 plus revert, der Rueckweg ist ein FELD mit drei Werten (dsp_revert faellt), in P5 ist jede Aktion manual, keine Aenderung und mehr Daten sind vollstaendige Objekte, der Zielbereich kommt aus dem Band des Befunds statt aus dem groessten Banddelta, ein geschuetztes Band ist eine HARTE Constraint mit Gegenprobe, ein stop_if auf einem nicht messbaren Guardrail meldet MORE DATA, und ueber fuenfhundert zufaellige Eingaenge wird kein Hard Cap und keine engere Usergrenze ueberschritten. Der Guardrail-Rechner LIEST seit E-05 den Zielbereich aus experiment_begin.ziel; ohne ihn bleibt die Heuristik und das Resultat traegt ziel_geraten - beide Pfade mit verschiedener Zahl gemessen. Fehlt einem Test eine Voraussetzung (das Junction-Recht fuer store_weist_reparse_punkt_im_pfad_ab), meldet er NOT RUN mit Grund: das Bein steht dann als [NOT RUN] in der Uebersicht und der Lauf ist UNVOLLSTAENDIG, nie gruen (NAK-309 R-309-4). Seit NAK-313 Etappe 4 (R-313-6, R-313-7; 313/M-43 bis M-45, M-48, M-49, M-52, M-53): die Produkteingaenge P0 und P1 (gemeinsame Lesefunktion samt P1-Weiche) und das Bootstrap-Hello lesen ueber genau einen strengen Lauf json_streng (broker/src/vertrag.rs): Nachspann, zweites Dokument, Schlusskomma, unbekannte Escapes, doppelte dekodierte Namen im selben Objekt samt Escape-Alias und eine Verschachtelung ueber 64 Ebenen sind abgelehnt, derselbe Name in zwei Objekten bleibt gueltig (Raender einzeln gemessen), und die Lesefunktion nennt die Stufe der Ablehnung. Je Eintrag der Eingaenge rust_p0, rust_p1 und rust_bootstrap der Tabelle PRODUKTEINGAENGE-FAELLE.json werden Urteil, Stufe und Wirkung gegen produkt geprueft, jede Abweichung mit PE-nnn gemeldet und die gefahrenen Eintraege gegen den Kopf gezaehlt: P0 sendet kein heartbeat_ack und markiert keinen ersten Heartbeat; die P1-Weiche lehnt vor dem Schema ab, ohne Evidenz- oder Intenteffekt, und liest je Nachricht genau einmal streng (Laufzaehler nur im Testbau); der Bootstrap meldet KeinJson mit der Duplikatmarke statt eines Hellos; 64 Ebenen sind gueltig, 65 fallen an parser. Die Korpusschleife erwartet fuer parser_lehnt_ab die Ablehnung am strengen Lauf und fuer das Negativfixture mit project_sample_start null die Verletzung an der gemeinsamen Eigenschaft; der echte Empfaenger nimmt den wire_snapshot der Byteinstanz evidenz-lokal-wire-v1.json an, und die Evidenzsicht traegt keinen Startwert. Seit NAK-313 Etappe 5a (R-313-4, R-313-5; 313/M-63 bis M-72, M-90, M-96): die Rust-Produktleser lesen Ganzzahlen ueber den Helfer crate::vertrag::ganzzahl (as_i64, sonst as_u64 im Bereich, sonst ein endliches f64 ohne Nachkommateil im Bereich, sonst None und nie 0; die Zahlenraender einzeln gemessen). P0 liest die sequence des Heartbeats vor den Seiteneffekten: 91.0 wird mit sequence 91 beantwortet, und der Resync laeuft genau dann, wenn eine Antwort entsteht. Der Deskriptor traegt host_mixer_index als Ganzzahl: 3.0 nach 3 ist kein Kanalwechsel, und der Snapshot traegt 3. evidenzstand_aus_wert liest Transport-, Ereignis- und Konfidenzzahlen in .0-Form und lehnt ein vorhandenes, nicht lesbares Feld ab, statt 0 zu setzen; 3.0 nach 3 ist kein Epochwechsel. Intervention (Beginn, Ende und genau der Bereich), Befehlskopf und Experimentziel, state_report, Intent und Assistent nehmen die .0-Formen wie Zifferntext an. Eine state_revision von 2^53 faellt im Heartbeat und im state_report am Textriegel: der Heartbeat bleibt ohne Antwort und ohne Liveness-Aenderung, der state_report laesst die gemeldete Revision unveraendert. Das Bootstrap-Hello waehlt das Protokoll ueber denselben Helfer (3.0 und 3e0 sind 3, 3.5 und 4 sind KeinHello, v2 bleibt V2), und die typisierte Uebernahme liest block_size 256.0, channels 2.0 und pid 1234.0 nach einer Normalisierung ueber denselben Helfer. Je Eintrag von rust_p0, rust_p1 und rust_bootstrap wird bei Urteil gueltig der Wert am Feld verglichen; NaN, Infinity, -Infinity und 1e999 enden fuer P0 und P1 am Textriegel. Seit NAK-313 Etappe 5b (R-313-4, 313/M-89): der Wiretext der Handinstanz intent-wire-v1.json passiert die P1-Weiche, und der Intentspiegel uebernimmt die Bestandsrevision 2^53-1 unveraendert. Seit NAK-313 Etappe 6 (R-313-7, R-313-8; 313/M-98 bis M-105, M-115, M-116, M-118): das Bootstrap-Tor rechnet das Urteil des Textriegels ueber die Hello-Bytes vor dem einen strengen Lauf, waehlt danach das Protokoll (ein v2-Hello geht ohne Textriegel und v3-Schema als V2 mit den Rohbytes durch, auch mit samplerate 48000.0000000000001 oder einem NUL-Escape in sensor.label) und wendet fuer v3 erst das gehaltene Urteil an, dann die Hello-Pruefung des v3-Schemas (hello_control, hello_telemetry) vor der typisierten Uebernahme: ohne host ein V3Control mit host None; host null, host.name null und host.version null enden als KeinHello mit dem Schemagrund und dem Zeiger des Feldes, ebenso 121 Zeichen in host.name und 65 in host.version; ein NUL-Escape in plugin_version und die samplerate 1e-308 enden am Textriegel, 1e-307 und 48000 verbinden, 768000.5 endet am Schema, und ein Hello mit NUL-Escape und host null endet am Textriegel. Je Hello laeuft json_streng genau einmal (Laufzaehler nur im Testbau; v2, Control, Telemetry und das am Schema abgewiesene Hello). Der FlatBuffers-Leser meldet einen belegten Adressslot jenseits von Feld-ID 4 als adresse_zusatzfeld wie das MANIFEST, ein laengerer VTable-Eintrag mit 0 bleibt gueltig, und die Senke reicht einen solchen Batch nicht weiter: kein Frame an Gen, der naechste session_snapshot traegt p2_reject mit feature_batch_ungueltig. Seit NAK-313 Etappe 7 (R-313-9; 313/M-128 bis M-130): binary_telemetry ist keine Transportzulassung - meldet eine Quelle im Heartbeat der Tabelle unsupported oder supported, wird ihr P2 in beiden Faellen angenommen und genau einmal an das abonnierte Main weitergereicht, und der Deskriptor traegt den gemeldeten Wert; nach einem Reconnect mit anderem Capabilitysatz traegt der session_snapshot bis zum ersten Heartbeat keinen Deskriptor und danach den neuen Wert; die Byteinstanz mit supported wird beantwortet. Seit NAK-380 Etappe 2 integrieren Bandpassung, Screening und Maskierungspegel die Feinband-Dichten mit der eingefrorenen Gitterbreite; Dichtevergleiche bleiben unveraendert, Zahlenraender und alte/neue Metrikversion werden eigens bewacht. | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 1.209,85 s | [A4](roh/NAK-380-8e81885-dirty.md#a4) |
+| A4-SI | SONDE-011 Phase-B-Systemintegration auf Probe-Pipenamen: echter C++-ControlClient wiederholt persistenzpflichtige Befehle ueber Brokerkills mit derselben command_id; Store/Coordinator liefern nur absolute session_snapshot-Pushes, koaleszieren Snapshot-Schuld, halten Locks aus externer Arbeit heraus und bereinigen Eviction/Nonce vor spaeterem Push. Fehlt das Junction-Recht fuer volumenentscheidung_haengt_am_sqlite_handle_nicht_am_namen, meldet der Test NOT RUN mit Grund: das Bein steht dann als [NOT RUN] in der Uebersicht und der Lauf ist UNVOLLSTAENDIG, nie gruen (NAK-309 R-309-4). | `cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1` | [OK] Exit 0 | 12,89 s | [A4-SI](roh/NAK-380-8e81885-dirty.md#a4-si) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. Seit NAK-309 (M-18 bis M-28) die Regeln des Probewerkzeugs: ohne Argument waehlt es den v2-Probenamen, ein leeres Argument bleibt leer; der Produktionsname (auch gross oder gemischt geschrieben), Namen mit \ oder / hinter \\.\pipe\, fremde Namen und ungueltige v2-Suffixe werden abgelehnt, v2- und v3-Probenamen zugelassen; ein PipeClient ohne Namen startet keinen Verbindungsversuch; ein Konfliktende gilt nur mit einem neuen Broker-ACK ohne Konflikt auf derselben stehenden Verbindung, nicht nach Abbau oder Neuaufbau. Quelltextwachen: PipeProbeMain entscheidet den Namen vor Servererwartung und erstem Client (abgelehnt Exit 64) und wartet auf dieses Konfliktende-Praedikat; das Produkt nennt seine v2-Pipe ausdruecklich. Seit NAK-313 Etappe 4 (R-313-6, 313/M-42, M-49): der v2-Client faehrt nach der UTF-8-Pruefung eines Frames genau einen strengen Lauf kanon::lies, bevor JUCE ihn liest. Je Eintrag des Eingangs cpp_v2_client der Tabelle PRODUKTEINGAENGE-FAELLE.json ein Fall mit PE-nnn im Namen: ein Peer auf einem Probenamen antwortet mit den Bytes des Eintrags, und jeder Fall endet getrennt, mit letzterFehler "eingehender Pipe-Frame: " und dem Grund des strengen Laufs (Stufe parser oder duplikat). Ein welcome mit Nachspann, Schlusskomma, unbekanntem Escape oder doppeltem type beziehungsweise protocol_version (passender und fremder letzter Wert) hinterlaesst keinen gesendeten Heartbeat, kein Sitzungstoken und keine Protokollversion; ein heartbeat_ack mit doppeltem seq nach gueltigem welcome bestaetigt keinen Heartbeat und meldet keinen Konflikt. Die Zaehlpruefung verlangt genau so viele Faelle, wie der Kopf der Tabelle nennt. Seit NAK-313 Etappe 5a (R-313-5, 313/M-91, M-93, M-94, M-96): nach der UTF-8-Pruefung und vor dem strengen Lauf prueft der Zahlriegel zahlriegelBytes jede Zahl lexikalisch gegen die v2-Grenze INT64_MAX (Stellenzahl, dann Ziffernfolge; Exponent hoechstens drei Ziffern; ein Bruch hoechstens 15 signifikante Ziffern). Ein welcome mit protocol_version 9223372036854775808, 18446744073709551618, 2e4294967296 oder 2.0000000000000001, ein heartbeat_ack mit seq 18446744073709551616 oder 1.0000000000000001 und ein reject mit min_protocol 9223372036854775808 oder 2.0000000000000001 oder max_protocol 2e4294967296 enden getrennt mit letzterFehler "Zahlriegel: " und bestaetigen nichts; 9223372036854775807 passiert den Riegel und endet an der Feldregel, 2.0 verbindet mit Version 2, und 1e999 endet am Zahlriegel statt am strengen Lauf. Die Riegeleinheit faehrt zahlriegelBytes je Vektor direkt. Der Schalter --ohne-ueberlaufvektoren laesst die ub_bei_juce-Eintraege aus (nur fuer den Rotlauf am Riegelaufruf); der Kanon faehrt alle. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 67,81 s | [A4b](roh/NAK-380-8e81885-dirty.md#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. Seit SONDE-013 zusaetzlich der Fassungsschritt: der aus dem Register zurueckgebaute Leser der Fassung 1 LEHNT jede Neuerung der Fassung 2 ab (drei Experimentfamilien, evidence_snapshot.ereignisse/.stereo, zwei neue Invalidierungsgruende), und die Summe der registrierten Familien stimmt mit dem oneOf ueberein. Seit NAK-313 Etappe 4 (R-313-6, 313/M-46, M-48, M-49): json_laden_strikt lehnt doppelte dekodierte Namen im selben Objekt (auch als Escape-Alias) ueber einen object_pairs_hook mit eigener Ausnahmeklasse ab und eine Verschachtelung ueber 64 Ebenen nach dem Laden; die Stufe folgt der Ausnahmeklasse (Hook duplikat, jede andere parser). Jedes Fixture der Manifestklasse parser_lehnt_ab faellt beim Laden und traegt keine Verletzungsmenge, und je v3-Eintrag der Tabelle PRODUKTEINGAENGE-FAELLE.json liefert ein Fall mit PE-nnn im Namen Urteil und Stufe wie vertrag; die Zaehlpruefung verlangt genau so viele v3-Faelle, wie der Kopf der Tabelle nennt. Seit NAK-313 Etappe 5a (R-313-5, 313/M-73): bei eigenem Urteil gueltig vergleicht der Fall den Wert am Zeiger feld exakt mit wert - eine Ganzzahl gleich, eine Gleitkommazahl nur ganzzahlig und im Betrag bis 2^53-1. Seit NAK-313 Etappe 6 (R-313-7; 313/M-98 bis M-102, M-106 bis M-113, M-121): die gemeinsame Falltabelle des Textriegels traegt die Untergrenze (1e-307 gueltig; 1e-308, 2e-308 und 9.9e-308 nicht), und die v3-Eintraege der Etappe (Bootstrap-Hellos, Handschlag, ACK) liefern Urteil und Stufe wie vertrag. Seit NAK-313 Etappe 7 (313/M-129): die zwei Heartbeats der Tabelle mit binary_telemetry supported und unsupported sind gueltig wie vertrag. Seit NAK-380 Etappe 2 benennt der Vertrag Feinband-Leistungsdichte, Livegruppen-Bandleistung und dimensionsloses band_stereo je Feld und bindet Version 20260925 bei unveraenderten Konfidenzschwellen. Seit NAK-380 Etappe 3 (380/M-30, M-40) bindet das Register die Fassung 20260926 (LRA mit 10 Hz, M1-Perzentile aus Teilbloecken) in kFeatureMetricsVersion UND beiden Broker-Konstanten METRICS_VERSION bei unveraenderten Schwellen, und Kommentar (FeatureEngine.h, Lautheit.h) und Register nennen EBU Tech 3342 §3.1 fuer kLraHopZellen = 1. Seit NAK-380 Etappe 4 (380/M-69, M-70) nennt das Schema die Staerke eines Flussereignisses in Vielfachen der auf kappa = 3 normierten Schwellendistanz (hoechstens 1000; ein reines Peakereignis traegt den Crest ueber der Schwelle in dB) ohne neues Feld und ohne Versionsschritt, und die Fassung 20260927 bleibt registriert mit den sieben Detektorschwellen (P0 -100 dBFS je Bin, Filterbreite 125 Cent, H = 32, kappa = 3, rho = 1, T_min 0,10 dB je Bin, Sperrzeit 50 ms) je einzeln mit Wert an ihrer Codestelle in FeatureEngine.h. Seit NAK-380 Etappe 5 (380/M-94, M-96) nennt das Schema fuer fenster_dauer_ms und freiheitsgrade den Ring ueber die letzten W Evidenzfenster (Hauptstufe 3, Bassstufe 7) ohne Feldaenderung, und die Fassung 20260928 bindet kFeatureMetricsVersion und beide Broker-Konstanten METRICS_VERSION sowie die Ringlaengen kStereoRingHaupt = 3 und kStereoRingBass = 7 mit Wert an ihrer Codestelle; die Eintraege der Fassung 20260927 sind unveraendert uebernommen. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 3,41 s | [A5](roh/NAK-380-8e81885-dirty.md#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,14 s | [A6](roh/NAK-380-8e81885-dirty.md#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,33 s | [A7](roh/NAK-380-8e81885-dirty.md#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. Seit NAK-313 Etappe 4 (R-313-6, R-313-7; 313/M-48, M-53) gehoeren dazu die Tabelle PRODUKTEINGAENGE-FAELLE.json, deren Kennungen, Stufen, Wirkungen und Kopfzahlen der Erzeuger bei jedem Lauf auf Widerspruchsfreiheit prueft, die Byteinstanz evidenz-lokal-wire-v1.json, die Fixtures der Manifestklasse parser_lehnt_ab als Rohbytes (nicht ueber den Serialisierer, der das Duplikat verloere) und das Negativfixture mit project_sample_start null. Seit NAK-313 Etappe 6 (R-313-7; 313/M-98 bis M-104, M-106 bis M-113, M-121): die Tabelle traegt die Eintraege der Etappe fuer rust_bootstrap, cpp_control_handshake, cpp_telemetrie_handshake und cpp_control_ack, dazu die aus Etappe 5 an das Tor verschobenen Negativen mit den Stufen der Etappe 6; der Erzeuger prueft jede Stufe gegen die Leserkette der anlegenden Etappe, und die Falltabelle des Textriegels traegt die vier Faelle der Untergrenze. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,39 s | [A8](roh/NAK-380-8e81885-dirty.md#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID, keine ist verbrannt oder wiederverwendet, und jedes Offsetfeld steht im Rust-Strukturriegel. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,29 s | [A9](roh/NAK-380-8e81885-dirty.md#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen, band_stereo ID 10 samt saturated-/Grenzfaellen, integration_samples ID 14 (voller Rahmen, duenner Rahmen, gesendete 0 als Senderfehler) und seit SONDE-015 band_dynamic_gain_db ID 22 (acht Werte, leerer Vektor, Altsender ohne Feld, vier falsche Laengen, NaN und Inf) sind in beiden Lesern gedeckt. Seit NAK-313 Etappe 6 (R-313-8; 313/M-119): dazu das Negativfixture adresse-zusatzfeld-id5.bin, uebersetzt aus einer Schemavariante mit zusatz:string (id: 5) mit demselben gepinnten flatc, und das Positivfixture adresse-vtable-slot5-leer.bin als gueltige Bytemutation (byte_mutation_von) mit einer 16 Bytes langen Adress-VTable, deren Slot 14 null ist. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 3,40 s | [A10](roh/NAK-380-8e81885-dirty.md#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. Seit NAK-313 Etappe 4 (R-313-6, 313/M-42, M-49): je v2-Eintrag der Tabelle PRODUKTEINGAENGE-FAELLE.json ein Fall mit PE-nnn im Namen durch den strengen Lauf json_laden_strikt und die v2-Definition der Nachricht, verglichen mit vertrag (Urteil und Stufe); die Zaehlpruefung verlangt genau so viele v2-Faelle, wie der Kopf der Tabelle nennt. Seit NAK-313 Etappe 5a (R-313-5, 313/M-95): der Lauf liest Zahlen mit Bruch oder Exponent als decimal.Decimal, und der Typpruefer nimmt integer als int oder ganzzahligen Decimal, number samt Decimal (draft 2020-12): 2.0000000000000001 und 1.0000000000000001 sind keine Ganzzahlen, 2.0 ist die 2; bei Urteil gueltig wird der Wert am Feld exakt verglichen. Seit NAK-313 Etappe 6 (R-313-7; 313/M-104): dazu die zwei v2-gueltigen Hellos der Tabelle mit einer verletzten v3-Textriegelregel (samplerate 48000.0000000000001, NUL-Escape in sensor.label), beide gueltig gegen den v2-Vertrag. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,26 s | [A11](roh/NAK-380-8e81885-dirty.md#a11) |
+| A12 | Parameterbestand Layout v2 (120 Kennungen, 112 Host-Parameter als Praefix) haelt den Vertrag, und die 109 v1-Kennungen sind aus der eingefrorenen v1-Datei woertlich abgeleitet; Zonen-, Preset- und Ablehnungsregeln stimmen mit dem Vertrag ueberein; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State- und Presetkorpus samt MANIFEST bytegleich zur Neuerzeugung, keine verwaiste Datei. Seit NAK-313 Etappe 3 gehoert das Negativ-Golden schema2/doppelte-eigenschaft-v1.bin (R-313-2) mit SHA-256 und Erwartung nurLesen zum MANIFEST; geladen wird es in B2. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,29 s | [A12](roh/NAK-380-8e81885-dirty.md#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B und die benannten Kanonbeweise sie tragen; jedes supported hat einen Termin oder, nur ohne Hostanteil, einen Kanonbeweis, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,23 s | [A13](roh/NAK-380-8e81885-dirty.md#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103). | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 8,72 s | [A14](roh/NAK-380-8e81885-dirty.md#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID, kein Produkt- oder Bundlename ausser im Pfad), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete Bundle-Ordner, `art` ist eine geschlossene Menge, jedes aktive Ziel genau einmal und jedes stillgelegte benannt mit lesbarer Marke, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile ehrlich, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede der 15 Regeln faellt an einem verdorbenen Manifest, die konkreten Umgehungen fallen einzeln. [4] vergleicht Artefakthashes im Kanon weich und mit --release hart; [4b] berichtet den installierten Stand; [5] kreuzprueft den Ordner-Hash; [6] faehrt die produktive C++-WinVerifyTrust-/Thumbprint-Kette mit dem OS-vertrauenswuerdigen Signerzertifikat einer signierten Windows-Fixture fuer gueltig und falsch sowie einer unsigned Temp-Kopie fuer fehlend, ohne den Zertifikatsspeicher zu aendern. Jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft; unerwartete Ausnahmen enden kontrolliert. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,26 s | [A17](roh/NAK-380-8e81885-dirty.md#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 34,43 s | [A18](roh/NAK-380-8e81885-dirty.md#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,34 s | [A19](roh/NAK-380-8e81885-dirty.md#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,30 s | [A20](roh/NAK-380-8e81885-dirty.md#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,88 s | [A21](roh/NAK-380-8e81885-dirty.md#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 11,05 s | [A22](roh/NAK-380-8e81885-dirty.md#a22) |
+| A24 | G3-SOAK Dauerlauf ueber eine ausschliessliche Probe-Pipe: 1 Main mit subscribe_session und echtem SourcesModel plus 16 Sondenpaare und 16 echte SondeProcessor am Ganzblockpfad laufen gegen den echten Rust-Coordinator, waehrend ein Viertel der Sonden langsam liest und der Broker mitten im Lauf getoetet und neu gestartet wird. Gemessen: Mitgliedschaft und fuehrendes_main driften nie, kein P0 geht ausserhalb der Neustartfenster verloren und seine ACK-p95 bleibt unter 1.000 ms, kein Mitglied wird ausserhalb der Fenster stale oder evicted, der Snapshot ist nach jedem Neustart binnen 60 s wieder vollstaendig und die alte broker_epoch kommt nie wieder, Working Set beider Prozesse waechst je Generation um hoechstens max(10 %, 16 MiB), und der Sondenpfad verliert keinen Ganzblock. Beide Programme verweigern Produktions- und Golden-Pipename mit Exit 3, gefahren vor dem Lauf. Seit SONDE-013 laeuft dabei der Evidenzpfad mit: jede Sonde baut oberhalb einer kleinen P1-Fuellstandsschwelle GAR KEINEN evidence_snapshot mehr und zaehlt den verworfenen Analyseframe, statt die in EINTRAEGEN gedeckelte P1-Queue mit 10-KiB-Nachrichten zu fuellen. Eine fehlende Messung ist kein PASS (NAK-283 F13): jeder Speicherpunkt traegt das Gueltigkeitsmerkmal seiner Windows-Abfrage, und fehlt ausserhalb der Neustartfenster eine gueltige Messung, endet S07 mit dem eigenen Status MESSUNG FEHLT (Exit 3) statt im Budget. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --sonden 16 --minuten 2 --neustarts 1` | [OK] Exit 0 | 149,13 s | [A24](roh/NAK-380-8e81885-dirty.md#a24) |
+| A34 | Der Selbsttest des Soak-Orakels (NAK-283 F13, Muster A27). Er laeuft OHNE Repo-Fixture und ohne Lauf: vier Faelle bauen ihre Berichte im Speicher und laufen durch dieselben Funktionen wie A24 - Messstelle, Speicherpunkt, Urteil. Eine fehlende RSS-Messung endet mit MESSUNG FEHLT und Exit 3, nie im Budget; ein nicht abfragbarer Prozess und ein Prozess mit 0 Bytes Working Set sind im Bericht verschieden; ein Fehlerpunkt direkt vor oder nach dem Neustartfenster faellt, obwohl das Fenster die Kurve filtert; ein Altbericht ohne Gueltigkeitsmerkmal bleibt ueber --bericht auswertbar, derselbe Bericht als Livelauf ist rot. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_session_soak.py --selbsttest` | [OK] Exit 0 | 0,16 s | [A34](roh/NAK-380-8e81885-dirty.md#a34) |
+| A35 | Der Selbsttest des Laufzeit-Arms (Plan S25e, NAK-286, NAK-309) laeuft ohne FL, ohne Installation und ohne MCP-Repo gegen Attrappen: der Runner haelt Exitcodes, Urteilswoerter und Kopfzeile der ersten Fassung, beendet nie ein fremdes FL (eigen ist nur ein selbst gestarteter Prozess, dessen PID, Startzeit und Befehlszeile in der Besitzliste stehen, auch bei gleichem Fenstertitel), faehrt nur den gepinnten MCP-Stand, startet keinen FL-Lauf gegen einen nicht aktuellen Bau und meldet ein veraendertes Diagnoseprojekt; eine Szenario-Voraussetzung (Exit 5) laesst die Folge weiterlaufen, nur ABWEICHUNG loest den Rueckweg aus. Eine MCP-Antwort misst nur mit der Anforderungskennung ihres Versuchs, jede andere heisst UNGEMESSEN; dass der Importweg fl_trigger nie laedt, ist ueber ein Attrappenpaket gemessen. Antworten des Briefkastens werden an Name und Groesse ausgewaehlt, bevor eine Datei geoeffnet wird; der Nulltest trennt Format, Versatz beider Vorzeichen, Kettenfaktor, Abweichung und Nullvorzeichen und urteilt BITIDENTISCH nur bei gleichen Bytes des Bereichs (NAK-311: +0 gegen -0 heisst NULLVORZEICHEN, Szenario-Exit 5); Baender entstehen nur mit Rechnung aus F-28. Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\fl\selbsttest.py` | [OK] Exit 0 | 32,15 s | [A35](roh/NAK-380-8e81885-dirty.md#a35) |
+| A36 | Die Frischepruefung des Runners leitet je Pruefbinary den Frischebaum aus den MSBuild-Tracking-Logs, den Kernbibliotheken und dem Konfigurationsstand ab: an einem Attrappen-Baubaum verweigert eine geaenderte DSP-Quelle ohne Bau die Beglaubigung, ein frischer Bau wird angenommen, Gleichstand ist frisch, ein nicht ableitbarer Baum ist nie gruen, und jedes gebaute gebundene Kernziel ist gedeckt. Dasselbe Urteil trifft jedes Ziel aus $gemesseneZiele, das der Runner baut (NAK-309 R-309-9; die Uebergabe misst eine Quelltextwache): eine juengere Eingabe nur des gemessenen Ziels verweigert die Beglaubigung, auch wenn jedes Pruefbinary frisch ist, und ein nicht ableitbares oder im CMake-Export fehlendes Ziel ist nie gruen. Verglichen werden Zeitstempel, keine Inhalte. Die NOT-RUN-Meldung der cargo-Beine (R-309-4): ein leerer Meldeordner heisst gelaufen, eine Marke NOT RUN mit Test und Grund, ein unlesbarer Ordner nie leer; im Urteilsblock des Runners geht ROT der fehlenden Voraussetzung vor, und NOT RUN zaehlt nie als gruen (Quelltextwache). Jede Erwartung laeuft mit ihrem Gegenteil. | `py -3.13 tools\eq-copilot\pruefe_beweisrunner.py --selbsttest` | [OK] Exit 0 | 5,90 s | [A36](roh/NAK-380-8e81885-dirty.md#a36) |
+| A28 | Der P5-Evaluationskorpus ist reproduzierbar (Muster A25): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt SHA-256 im Manifest, und eine verwaiste Datei faellt. Zusaetzlich der Hygieneriegel aus NAK-182 R2: der Bezeichner des Kettenbeins steht WOERTLICH in seiner Datei, sonst waere der Name ein Etikett. | `py -3.13 tools\eq-copilot\erzeuge_p5_korpus.py --pruefen` | [OK] Exit 0 | 0,13 s | [A28](roh/NAK-380-8e81885-dirty.md#a28) |
+| A29 | Das Sammelbein des P5-Exit-Gates (59 Punkt 6, 36.4, M-64 bis M-70, R2). Es ist das dritte Glied einer KETTE: der Korpus traegt die Wahrheit, broker/tests/sonde014_p5_korpus.rs faehrt jede Sitzung durch p1 und schreibt die TATSAECHLICH ausgegebene Hypothese, und dieses Bein haelt beides gegeneinander - eine falsche starke Produktbehauptung aendert den Korpus nicht, sie faellt am Vergleich. Precision und Recall stehen JE URSACHENKLASSE, dazu Brier, Kalibrierung, Coverage und Enthaltungsrate; die vier Riegel (falsche_starke, falsche_schwache, precision und recall in [0,1]) laufen je Klasse und ueber die Gesamtmenge. Die Schwelle aus M-31 ist AUSGABE: gesucht wird die niedrigste Sicherheitsstufe, deren Riegel halten. Der Startwert von GATE_MINDEST_FENSTER wird an den zwei Passagensitzungen kalibriert. Ohne frische Ergebnisdatei meldet das Bein Voraussetzung-fehlt (Exit 3) statt gruen. Die Frischepruefung zaehlt das Rechenmodul broker/src/coordinator/hypothese/ zur LAUFZEIT auf (rekursiv), und eine genannte, aber fehlende Quelle ist ebenfalls Exit 3 mit Nennung des Pfads - kein stilles Ueberspringen (NAK-224 D1). | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py` | [OK] Exit 0 | 0,14 s | [A29](roh/NAK-380-8e81885-dirty.md#a29) |
+| A30 | Der Selbsttest des P5-Sammelbeins (M-68, Muster A27). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch DIESELBEN Funktionen, die das Sammelbein fuehrt. Jede Erwartung laeuft mit ihrem GEGENTEIL - eine falsche starke Behauptung und die richtige daneben, eine Enthaltung und dieselbe Menge ohne sie, ein leerer Satz und ein voller. Die vier Riegel werden synthetisch gefuettert und muessen fallen: precision > 1, recall > 1 und brier > 1 sind ueber den Korpusweg strukturell unerreichbar, und eine Wache ohne ausfuehrbaren Negativtest ist keine gemessene Zusage. Zuletzt die Schwellensuche in beide Richtungen. | `py -3.13 tools\eq-copilot\pruefe_p5_korpus.py --selbsttest` | [OK] Exit 0 | 0,13 s | [A30](roh/NAK-380-8e81885-dirty.md#a30) |
+| A31 | Die adversarialen Gegenbeispiele des Phasengates G5 am PRODUKTPFAD - genau die Faelle, die das Korpusformat nicht ausdruecken kann. Eine Intent-Rolle trennt zwei messtechnisch identische Kandidaten NICHT, auch nicht bei rolle=fuehrt, und bei drei sichtbaren Kandidaten wird der Fuehrende gegen JEDEN geprueft, nicht nur gegen den Zweitplatzierten. Eine Quelle, die ihre Energie in einem ganz anderen Band traegt als der Masterbefund, erreicht keine starke Aussage. Zwei Kandidaten, deren Raenge sich nur durch ein Band WEIT ausserhalb des Befundintervalls unterscheiden, sind ungetrennt. Umklammernde und disjunkte Fensterspannen fallen am Alignment mit Grund, obwohl die Ueberdeckung ihrer SPANNEN 1,0 meldet. Und die Passage laeuft ueber den echten Produktpfad samt Store: zwoelf und acht Fensterlaengen tragen die Aussage, sieben nicht, und eine Passage ohne ein einziges Masterfenster ergibt eine ENTHALTUNG mit ungueltiger Beobachtung statt Schweigen (M-27). Seit der Nacharbeit 1 (07.09.2026) faehrt das Bein ALLE 15 vereinbarten Ketteneingaben durch denselben Produktpfad und DRUCKT je Eingabe ihr Ergebnis: vier Passagenrandwerte (12, 11, 8 und 7 Fensterlaengen), den zweiten experiment_begin mit gleicher passage_id, zwei Master, den Master ohne Fenster, den Kanalwechsel vor und nach dem Deskriptorwechsel, drei Sonden auf einem Kanal, die antikorrelierte Quelle allein und neben der korrelierten, dazu die Masteranomalie in einem Fenster HINTER der Passage. Seit NAK-213 (08.09.2026) traegt KEINE der sieben frueher gedruckten NAK-213-Luecken mehr eine Luecke: zwei Master ergeben eine Enthaltung OHNE ORT statt eines stillen Gewinners, ein Master ohne Fenster ebenfalls statt Schweigen, der Kanalwechsel nimmt die Belege GENAU DER wechselnden Quelle zurueck und entfernt ihren Befund, drei Sonden auf einem Kanal werden ueber ALLE Quellen der Sitzung erkannt - eine vierte, stumme Sonde desselben Kanals setzt die Duplikatmarke mit. Seit NAK-214 (08.09.2026) fahren drei Faelle dieses Tickets mit: zwei bestaetigte Mains erzeugen KEINEN Vorschlag (Vorschlaege 0, keine proposal-Zeile im Store), ein PRE/POST-Paar unterhalb der Alignmentschwelle bleibt Aussageklasse 1 mit next_test prepost_paar_messen, und eine zurueckgenommene juengste Passage laesst die AELTERE rechnen - jeder druckt sein Ergebnis. Keine Luecke bleibt gedruckt, und der aufruferlose Helfer `luecke()` ist mit seinem letzten Aufrufer gegangen. | `cargo test --manifest-path broker/Cargo.toml --test sonde014_gegenbeispiele --color never -- --nocapture --test-threads=1` | [OK] Exit 0 | 106,68 s | [A31](roh/NAK-380-8e81885-dirty.md#a31) |
+| A25 | Der P4-Referenzkorpus ist reproduzierbar (M-80): der Erzeuger baut jede Datei BYTEGLEICH neu, --pruefen vergleicht den committeten Bestand gegen die Neuerzeugung samt MANIFEST und meldet jede verwaiste Datei. Dasselbe Muster wie A6, A7, A8, A10, A12 und A20; die gitattributes-Regel haelt die Zeilenenden. Seit NAK-182 weist der Erzeuger ausserdem ab, was der Korpus nicht tragen darf: eine Wahrheit ausserhalb der geschlossenen Menge, eine fehlende `quelle` und einen Bezeichner, der in der genannten Datei nicht woertlich steht. Die zwei Mengen KEINE_BEHAUPTUNG und KEINE_STARKE sowie die Zeile `nicht_gemessen` reisen im MANIFEST mit, damit der Pruefer sie von dort liest statt aus einer zweiten Kopie. | `py -3.13 tools\eq-copilot\erzeuge_p4_korpus.py --pruefen` | [OK] Exit 0 | 0,15 s | [A25](roh/NAK-380-8e81885-dirty.md#a25) |
+| A26 | Das Sammelbein des P4-Exit-Gates (§58, §49.4, M-79/M-81 bis M-85): vier Klassen - Referenzkorpus, Loop-/Seek-/PDC-Goldens, adversariale Vergleichsfixtures und Stereo-Goldens -, alle muessen bestehen, und jedes genannte Bein steht wirklich im Kanon-Runner. Neben Precision und Recall zaehlen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und die Zahl FALSCHER Behauptungen; die muss null sein. Eine Enthaltung ist dabei kein Fehler - §49.4 woertlich: ein konservatives unsicher ist besser als eine ueberzeugende falsche Ursache. Seit NAK-182 liest das Bein zwei geschlossene Wahrheitsmengen AUS DEM MANIFEST: auf KEINE_BEHAUPTUNG (unbekannt, unvergleichbar, zeitvariabel) ist jede Aussage falsch, auch die schwache; auf den zwei Werten, die nur in KEINE_STARKE stehen (nicht_kausal, nicht_exakt), ist es die starke. Zaehler und Nenner von Recall lesen dieselbe Menge, Precision und Recall sind als Quoten geriegelt, jeder Korpusfall nennt eine Quelldatei samt woertlichem Bezeichner und wird dort gesucht, die fuenf geschlossenen Mengen des v3-Vertrags werden auf kausale Bezeichner geprueft (Entscheid G4 §8), und die in P4 NICHT gemessene Zusage M-85 Ziel 1 wird im Kopf gedruckt statt still zu fehlen. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py` | [OK] Exit 0 | 0,14 s | [A26](roh/NAK-380-8e81885-dirty.md#a26) |
+| A27 | Der Selbsttest des Exit-Gate-Beins (NAK-182 R1, MP1-6). Er laeuft OHNE Repo-Fixture: die Faelle entstehen im Speicher und laufen durch dieselben Funktionen, die A26 fuehrt. Auf dem Korpusweg fallen eine STARKE Aussage auf jedem Wert aus KEINE_STARKE und eine SCHWACHE auf jedem Wert aus KEINE_BEHAUPTUNG; eine schwache Aussage auf nicht_kausal oder nicht_exakt bleibt gruen - genau das trennt die zwei Mengen. Auf dem Kennzahlweg bekommt die Riegelfunktion synthetische Kennzahlen direkt eingespeist, weil Recall und Precision ueber 1 nach der Zweimengenlogik strukturell unerreichbar sind und die Wachen trotzdem einen Weg zu fallen brauchen. Dazu ein erfundener Bezeichner, ein Pfad ins Leere, eine fehlende Vertragsmenge und ein kausaler Enumwert. Seit Nacharbeit 1 laeuft auch S-07 durch die echte Validierung: ein synthetischer Fall mit einer Wahrheit ausserhalb ERLAUBTE_WAHRHEITEN geht durch dieselbe Funktion _pruefe_wahrheiten, die A26 auf den geladenen Korpus anwendet, und muss genau eine rote Zeile mit dem Fallnamen ergeben; sein Gegenteil keine. Jede Erwartung laeuft MIT ihrem Gegenteil - sonst waere der Selbsttest auch dann gruen, wenn ein Riegel immer rot meldete. | `py -3.13 tools\eq-copilot\pruefe_p4_korpus.py --selbsttest` | [OK] Exit 0 | 0,13 s | [A27](roh/NAK-380-8e81885-dirty.md#a27) |
+| A23 | SONDE-012 E-L06 integriert ueber eine ausschliessliche Probe-Pipe: synthetische C++-Quellen senden vollstaendige Messfenster durch den echten Rust-Coordinator an das echte Main-SourcesModel. Der Endpunkt ist dessen Revision samt Anzeige-Invalidierung. Bei 16 und 32 verbundenen Quellen, davon hoechstens 20 angenommen (seit NAK-312 Etappe 7b, U51: bei 32 sind 20 angenommen und 12 nicht), liegt p95 fuer die angenommenen Quellen fuer 2048/4096 Samples unter 300 ms und fuer 16384 Samples unter 750 ms, jeweils ab dem ersten Sample des Fensters. | `py -3.13 tools\eq-copilot\pruefe_sonde012_sources_latency.py` | [OK] Exit 0 | 5,65 s | [A23](roh/NAK-380-8e81885-dirty.md#a23) |
+| A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
+| A16 | Nakama Probeeq (NkAc) mit dem aktiven DSP-Kern: im Default (eq_enabled aus) bitgleich ueber 1000 Bloecke von 1 bis 2048 Samples bei 44,1 / 48 / 96 / 192 kHz ohne belegte Bank; eq_enabled an mit bypass aus und sonst neutralen Defaults bitgleich; eq_enabled an mit bypass an bitgleich trotz hoerbarem Band dahinter; nach eq_enabled aus nach dem Fade wieder bitgleich; Mix 0 mit Output-Trim 0 dB bitgleich; der Passthrough sanitisiert kein NaN/Inf; 0 Samples Latenz und kein Tail im Passthrough und im Hard-Bypass; speichern-laden-speichern bytegleich im Layout v2 mit Kind Dsp. Seit NAK-283 (F04, F05) bleibt der Nulltest bitgleich, wenn reset() vor jedem dritten Block laeuft - ausgeschaltet bei 44,1 / 48 / 96 / 192 kHz, ohne dass die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen, und im Hard-Bypass auch mit NaN, +Inf und -Inf zwischen zwei reset(); Mono und Stereo mit gleichem Ein- und Ausgang werden angenommen (im Monobus bleibt der Passthrough bitgleich, und das Band rechnet endlich), Quadrophonie, 5.1, vier diskrete Kanaele, Mono->Stereo, Stereo->Mono und jeder deaktivierte Hauptbus bekommen ein Nein, setBusesLayout auf Quadrophonie scheitert, und der Prozessor bleibt bei zwei Kanaelen. Das Bundle meldet 112 Host-Parameter, und sein Bundlevertrag laesst nur active_probe zu. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. Seit NAK-311 Etappe 2 (Neutralpruefung) schreibt der Kern engagiert-neutral (eq_enabled an, sonst Default) keinen Sample: ab Sample 512 kommen das Bitmuster aus Subnormals, +-0 und kleinsten Normalen, die Wachmarke 0x7F800001 (signalisierender NaN), ein ruhiger NaN und +-Inf bytegleich heraus, bei 44,1 / 48 / 96 kHz und im Monobus; der Riegel zaehlt die nicht endlichen Werte (6, im Monobus 12), der Tap post_committed traegt dort 0,0 und an jedem Rauschsample ab Sample 0 den Eingang als double. Bei Mix 0 mit Output-Trim 0 dB kommt dasselbe Material in den Bloecken ab Sample 512 bytegleich heraus, und der Tap traegt ab Sample 512 den Eingang als double. Ausgeschaltet und im Hard-Bypass bleibt das Material bytegleich ohne Zaehler; mit hoerbarem Band schreibt der Kern und gibt die Wachmarke nie aus. Die Messung 311/M-01 gibt die Bits unter FTZ/DAZ aus und prueft nur, dass alle 18 Kombinationen liefen. Seit NAK-311 Etappe 4 (R-311-3) rechnet der Ausgleich nur mit dem ausgegebenen Kanal: im Monobus melden Kern UND dspBericht fuer ein Band im Modus right exakt +0,0 dB, und der Ausgang mit Auto-Gain ist bytegleich zum Lauf ohne; nach dem Layoutwechsel auf Stereo tragen beide den Zweikanalwert, bitgleich zu einem Stereokern mit demselben Zustand, zurueck in Mono wieder +0,0 - waehrend channel_mode `right` im bestaetigten Zustand und in den Statebytes stehen bleibt, ohne Revision und ohne Host-Dirty. Seit NAK-311 Etappe 5 Satz A (F08, R-311-16, Abnahme U47) ist der EQ unter 44,1 kHz nicht unterstuetzt: bei 32 und 22,05 kHz bereitet der Kern nichts vor, und ueber 1000 Bloecke von 1 bis 2048 Samples kommen Rauschen, Bitmuster, Wachmarke, NaN und +-Inf im Stereo- wie im Monobus bytegleich heraus, ohne dass die Zaehler fuer nicht endliche Eingaenge, geheilte Filterzustaende und verworfene Analyseframes steigen; der Kern meldet die abgelehnte Rate, exakt +0,0 dB Ausgleich und die Kanalzahl 2, und die Blockgroessen 1, 255, 256, 257, 2048 und 4096 kommen ebenso bytegleich heraus, ohne gefuellten Tap, mit 0 Samples Latenz und Tail 0,0 s. Genau 44 100 Hz und der naechste double darueber bleiben unterstuetzt - das Band ist hoerbar, und der Fingerabdruck des Ausgangs ist bei 44,1 / 48 / 96 / 192 kHz gleich dem Golden, das dieselbe Messung am unveraenderten Kern des Basisstands der Etappe (5ee8318c) erzeugt hat -, waehrend 44 100 minus 1 ULP, 44 099, 32 000, 22 050, 8 000, 0, negativ, NaN und +-Inf abgelehnt werden. Rate 0, nicht endlich, 1e300 und maxBlock 0 bleiben das verriegelte Fenster: die letzte Vorbereitung steht, der dspBericht meldet sie weiter, und ABGELEHNT ist dort nichts. v3Samplerate, v3BlockSize und v3Channels tragen im abgelehnten Fenster weiter die gemessenen Werte des Hosts. Seit NAK-312 Etappe 7b (U48, U58) ueber den Hostbypass-Eintritt processBlockBypassed: Probeeq blendet in 256 Samples nach trocken und zurueck, linear und am Nachbarsprung innerhalb der E-31-Schranke, auch wenn der Wunsch in der Blende umkehrt; danach bytegleich zum Eingang auch fuer Rauschen, Subnormals, die Wachmarke, NaN und +-Inf, und nach dem Austritt bitgleich zu einem Prozessor ohne Hostbypass; die Analyse bekommt je Block genau einen Analyseblock, auch im Hostbypass, der Tap post_committed ist dort bitgleich zu dem ohne Hostbypass, und der Riegel zaehlt wie ohne ihn; nach reset und prepareToPlay, auch beim Projektladen mit gebypasstem Slot, uebernimmt der erste Block seinen Eintritt ohne Blende; mit EQ aus, im Hard-Bypass und unvorbereitet schreibt kein Eintritt, und die Analyse laeuft in beiden wie in processBlock. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,71 s | [A16](roh/NAK-380-8e81885-dirty.md#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,20 s | [B1](roh/NAK-380-8e81885-dirty.md#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend. Seit SONDE-015 zusaetzlich das Kind Dsp: 120 Werte bit-exakt durch den Roundtrip, flache Arrays statt Kindknoten, voller Undo-Ring aus 32 Schnappschuessen bytegleich und unter 16 MiB, der 33. Eintrag read-only; die Layoutmigration v1 nach v2 setzt occupied bitgenau aus enabled und den Werten; das Preset traegt zwei getrennte Versionen, weist jedes der sechs verbotenen Identitaetsfelder ab, ignoriert unbekannte Top-Level-Felder und laesst eq_enabled beim Laden unberuehrt. Seit NAK-312 Etappe 5 (312/M-49): die eingefrorenen Statebytes des Parametergoldens vom Basis-SHA 12300f1e passen zu ihrer Zeile im Golden (Laenge und SHA-256), laden normal und kommen aus dem Schreiber bytegleich zurueck. Seit NAK-312 Etappe 7b (U49): der Bestand des Hauptprogramms - Mitglieder samt Labels, Passagen, Intent mit Revision, Schutzangaben, Beziehungen, Assistent - uebersteht hub, sensor, hub live und ueber Speichern und Laden gleich, im Kind RetainedMainProject (Writer-Golden legacy-retained-v1.bin); unbekannte Eigenschaften wandern mit; Altstaende laden wie bisher und kommen bytegleich zurueck; jedes unzulaessige Bestandskind ist read-only mit Originalbytes; je Wechsel ein Host-Dirty. Seit NAK-313 Etappe 2 (R-313-3): setzeBindung prueft 120/60 nur fuer geaenderte Werte - an einem geladenen Stand mit Label 121 und Paarnamen 61 Zeichen gelingt die Rollenwahl mit genau einem Host-Dirty, und beide Texte bleiben; derselbe Aufruf ohne Aenderung gibt false zurueck, ohne Host-Dirty und ohne Reconnect-Anforderung, und der Save bleibt bytegleich. Seit NAK-313 Etappe 3 (R-313-1, R-313-2): ein schreibbar geladener Stand besteht mit seinem groessten Folgezustand den Byte-Riegel verlustfrei, sonst bleibt er read-only mit Originalbytes und wird nie ignoriert - gemessen an Common mit 65 533 (schreibbar samt pre und hub) bis 65 536 Eintraegen und an der nachgerechneten Gesamtgrenze G und G+1; Tiefe 64, 63 geschachtelte Arrays und 72 Knoten bleiben rueckschreibbar. Ein doppelter Eigenschaftsname in einem Knoten, auch tief und am Sammlungsrand, macht eine bekannte Wurzel read-only mit Originalbytes, ohne einen der Werte zu lesen und ohne Schema-1-Migration; eine fremde Wurzel bleibt ignoriert; die Writer-Goldens laden wie bisher, das Negativ-Golden doppelte-eigenschaft-v1.bin read-only. Seit NAK-313 Etappe 5b (R-313-4; 313/M-74 bis M-79): jede persistente Revision - Bestands-, Eintrags- und Assistentenrevision im MainProject wie im RetainedMainProject, Dsp.state_revision und die Undo-Revision - laedt bei 2^53-1 schreibbar und kommt bytegleich zurueck; 2^53 und int64max bleiben read-only mit Originalbytes, und der Grund nennt das Feld. Der NAK-283-Fall M-11 steht am Rand 2^53-1: Assistentenhandgriff und entferneIntent werden dort abgewiesen, die Bytes bleiben gleich, und eine neue Instanz laedt schreibbar mit 2^53-1. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 18,49 s | [B2](roh/NAK-380-8e81885-dirty.md#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,07 s | [B3](roh/NAK-380-8e81885-dirty.md#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,11 s | [B3b](roh/NAK-380-8e81885-dirty.md#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich. Seit SONDE-013 misst dasselbe Bein integration_samples ID 14 ueber Encoder und Leser: gesetzt kommt Bit UND Wert zurueck, Abwesenheit bleibt gueltig und ist KEINE 0, und eine gesendete 0 faellt als Senderfehler. Seit SONDE-015 zusaetzlich der Fassungsschritt P1 5: der aus der committeten Fassung zurueckgebaute Leser der Fassung 4 lehnt state_report.dsp ab, ein Bericht ohne dsp bleibt in beiden Fassungen gueltig, und der Empfaenger rechnet SHA-256(dsp.jcs) gegen state_hash nach - ein schemagueltiger Bericht mit abweichendem Hash wird GANZ abgewiesen. Seit NAK-311 Etappe 4 Teil b (R-311-5) klemmt der Bericht `auto_gain_db` auf die Vertragsgrenze, statt sie zu reissen: acht Low-Shelves 1 kHz +12 dB Q 8 sind abgeleitet -199,77 dB, gemeldet werden exakt -120, und der aus dem echten Transaktionskern gebaute state_report ist gueltig; acht Shelves Q 0,707 bleiben mit -92,29 dB bitgleich zum abgeleiteten Wert. Die Klemmgrenze im C++ ist dieselbe Zahl wie minimum und maximum des GELADENEN Schemas; +/-120 kommen unveraendert zurueck, der naechste double darueber und darunter sowie 120,5 werden geklemmt, NaN wird +0,0 (nicht -0,0) und +/-Inf werden +/-120. Geklemmt wird NUR der Bericht: DspKern::autoGainDb() und der lineare Faktor des gefahrenen Programms bleiben beim ungeklemmten Wert, und klemmungen bleibt leer. Seit NAK-311 Etappe 5 Satz A (F08, R-311-16, R-311-20) meldet der Bericht bei einer Rate unter 44,1 kHz wie ohne Samplerate: bei 32 kHz haelt der Transaktionskern fs = 0, auto_gain_db ist exakt +0,0 und klemmungen leer, waehrend derselbe Zustand bei 48 kHz -92,29 dB meldet; Kern und Bericht tragen die abgelehnte Rate, und der daraus gebaute state_report bleibt gueltig gegen $defs/dsp_bericht. Der Grund bleibt C++-lokal: dasselbe Dokument MIT dem Feld im dsp-Block wird von additionalProperties: false abgewiesen, ohne das Feld ist es gueltig - der v3-Vertrag bleibt unberuehrt. Seit NAK-311 Etappe 5 Satz B (R-311-14, Karte U54) melden Bericht und Kern DENSELBEN gedeckelten Wert: acht High-Cuts 20 Hz Q 0,15 sind abgeleitet +150,46 dB und ueber DspKern::autoGainRohDb() lesbar, gefahren und gemeldet werden bitgleich kAutoGainDeckelDb, weil der Deckel vor baueBericht sitzt; die Berichtsklemmung laesst den Wert unveraendert durch, und der Zustand steht in Kern und Bericht. Mit ausgeschaltetem Auto-Gain ist er in beiden falsch, auf der Absenkungsseite ebenso (-199,77 dB abgeleitet, exakt -120 gemeldet, klemmungen leer). Der Zustand geht nicht auf den Draht: derselbe Bericht MIT dem Feld im dsp-Block wird von additionalProperties: false abgewiesen. Seit NAK-313 Etappe 4 (R-313-6, R-313-7; 313/M-47, M-53): die Korpusschleife faehrt nach dem Textriegel ueber dieselben Rohbytes genau einen strengen Lauf kanon::lies als Tor vor der Engine; jedes Fixture der Manifestklasse parser_lehnt_ab (Nachspann, zweites Dokument, Schlusskomma, unbekanntes Escape, doppelter Name, Escape-Alias) faellt dort mit Grund und erreicht die Engine nie, alle uebrigen Urteile und Verletzungsmengen bleiben wie im Manifest - auch das Negativfixture mit project_sample_start null, dessen Verletzung an der gemeinsamen Eigenschaft liegt. Seit NAK-313 Etappe 5a (R-313-5, 313/M-62): die Engine liest die Werte aus DIESEM strengen Lauf ueber nakama::vertrag::wertAlsVar statt ueber juce::JSON::parse; alle Urteile und Verletzungsmengen bleiben wie im Manifest, auch das Bruchzahl-Fixture mit nicht_endliche_samples 2.5 (type-Verletzung). Seit NAK-313 Etappe 6 (R-313-7, R-313-8; 313/M-101, M-114, M-118, M-119, M-121): der FlatBuffers-Leser meldet einen belegten Adressslot jenseits von Feld-ID 4 als genau einen Verstoss adresse_zusatzfeld am Pfad /eintraege/0/quelle (Fixture adresse-zusatzfeld-id5.bin aus einer Schemavariante mit Feld-ID 5); ein laengerer VTable-Eintrag mit Offset 0 (adresse-vtable-slot5-leer.bin) bleibt gueltig, und der ganze Gueltigkorpus bleibt gueltig. audioGueltig nimmt 1e-307 an und lehnt 768000.5 ab, wie das Tor des Brokers; die Falltabelle des Textriegels traegt die Untergrenze (1e-308, 2e-308 und 9.9e-308 abgelehnt). | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,45 s | [B3c](roh/NAK-380-8e81885-dirty.md#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten UND ueber 2000 weitere mit wechselnder Hoer-Markierung, Ein- und Ausfade und Interventionsring (SONDE-013 M-74), und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,88 s | [B4](roh/NAK-380-8e81885-dirty.md#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. Seit NAK-380 Etappe 3 die LRA-Faelle 1 bis 4 aus EBU Tech 3342 Tabelle 1 (10/5/20/15 LU ± 1, gleich der §5-Referenz ± 0,1 LU). | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 4,80 s | [B9](roh/NAK-380-8e81885-dirty.md#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen -, waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, und ein Drop zaehlt als Segment, nicht als Epoche. Seit NAK-182 misst ein Sweep zusaetzlich die ZEITLAGE: ein bekannter Impuls bei Stromsample 206336 laeuft ueber die fuenf Blockgroessen 1, 333, 512, 2048 und 16384 mal die fuenf Sampleraten 44,1 / 48 / 88,2 / 96 und 192 kHz, und der gemeldete stromSample ist je Samplerate ueber alle fuenf Blockgroessen IDENTISCH und liegt innerhalb einer Fensterlaenge (4096 Samples) vor dem Impuls. Die Auswahl des Ereignisses kennt die Sollzeit NICHT - gemessen wird das staerkste Flussereignis des Laufs, und dass es unzweifelhaft das staerkste ist, ist eine eigene Zusage. Seit NAK-380 Etappe 2 bleiben 221 Feinbaender Leistungsdichte in dBFS/Hz; 64 Livegruppen sind bandbreitenintegrierte Bandleistung in dBFS, einschliesslich leerer Feinbaender innerhalb einer belegten Gruppe, Parseval, Sinus und Traegerrand. Seit NAK-380 Etappe 4 (380/M-50 bis M-62): der Ereignisdetektor rechnet den SuperFlux-Fluss auf den Bins der Hauptstufe (Maximumfilter +-125 Cent ueber den Vorframe, an die Hopzeit gebunden, echte MAD ueber 32 aktive Frames, T_min = 0,10 dB je Detektor-Bin, Rauschbodenbezug, Spitzenwahl, Sperrzeit 50 ms); je 30 s Weissrauschen bei -20/-40/-50 dBFS, rosa Rauschen, float32-Sinus, Saegezahn und Vibrato +-50 Cent erzeugen hoechstens ein Ereignis (gemessen jeweils 0, als Golden verriegelt), 112 Klicks auf rosa Rauschen -40 dBFS genau 112 Ereignisse, 56 Klickpaare im Abstand 20 ms genau 56 und 56 Klickpaare im Abstand 150 ms - ueber der Vorframe-Verdeckung der Hauptstufe (N_H + Hop = 6144 Samples, 128 ms) - genau 112, je Klick beziehungsweise Paar eines im Fenster [Klick - 4096, Klick]; ein Wiederbeginn nach 2 s digitaler Stille ist genau ein Ereignis; eine Grenze leert Vorframe und Historie. Seit NAK-380 Etappe 4 Nacharbeit 1 und 2: jeder Detektorlaeufer (Nullfaelle, Impulsfaelle, Wiederbeginn, Grenze, Beobachtung) faehrt ueber einen gemeinsamen Blocklaeufer mit Restblock und verriegelt gespeiste Samplezahl = Signallaenge und ereignisseVerworfen() = 0 als eigene Pruefungen; rosa Rauschen wird vor jedem Nutzer nach E-380-13 selbstgeprueft; Ereigniszeiten werden geprueft, wo die Zusage sie nennt; jede Gleichheitstoleranz traegt ihr Rechenbudget. Seit NAK-380 Etappe 5 (380/M-97): sizeof (FeatureEngine) bleibt beim Startwert 16 208 B plus hoechstens 40 B (ein Vektorkopf und vier Ringstaende); der Stereoring je Bin liegt im Heap. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 13,52 s | [B5](roh/NAK-380-8e81885-dirty.md#b5) |
+| B6 | Aktiver DSP-Kern (plugin/dsp/) als Bibliothek: alle sechs RBJ-Filtertypen liegen ueber einem 1/24-Oktav-Gitter von 20 Hz bis min(20 kHz, 0,45 fs) bei 44,1 / 48 / 96 / 192 kHz innerhalb 0,05 dB typisch und 0,1 dB an den Raendern an der analytischen Antwort - gemessen als Impulsantwort AM TAP post_committed, also durch den Audiopfad, gegen eine im Test eigenstaendig ausgeschriebene Formel. Ausgeschaltet und hard-bypassed wird bei jeder Hoermatrix-Auswahl kein Sample geschrieben (bitgleich); bei Mix 0 mit Output-Trim 0 dB ist der Ausgang wertgleich zum Eingang; nach dem Ausschaltfade ist der Passthrough wieder bitgleich, und er sanitisiert kein NaN. Die acht Slots wirken als Kaskade von Slot 0 nach 7 gegen ein unabhaengig gerechnetes geordnetes Golden, das ein Rueckwaertslauf reisst. Auto-Gain ergibt bei flacher Kurve exakt 0 dB und bei einem +6-dB-Shelf ueber dem Gitter -6 dB, ein identisches Mid/Side-Paar faellt exakt auf den Stereo-Fall zusammen, und die Dynamik bewegt ihn nicht. Der Bankpool faehrt jeden der sechs Ownership-Uebergaenge einzeln, gibt busy_retry statt eine aktive Bank zu verdraengen, wird erst nach dem Audio-ACK frei und haelt seine Invarianten unter zwei echten Threads ueber tausende Bloecke; im Callback zaehlt der thread-lokale Zaehler ueber 4000 Bloecke wechselnder Groesse 0 Allokationen und 0 Sperren, waehrend derselbe Zaehler die Allokationen des Workers NICHT sieht; B6 baut keine Sonde, sein Zaehler misst ab DspKern::verarbeite (NAK-312 R-312-1). Ein Block ueber maxBlock (1024 Samples bei 256) verwirft den Analyse-Tap und gleicht auf beiden Kanaelen sample-exakt dem Lauf ohne Ueberlast in 4 x 256. Seit NAK-283 (F12) die float-Kante des Ausgangs: ein endlicher double ueber FLT_MAX (Output-Trim +6 dB auf 0,75 und 0,25 x FLT_MAX) kommt auf 0 verriegelt und im Eingangszaehler gezaehlt heraus, und kein Ausgangswert ist nicht endlich; auf endlichem Material in +/-1,0 (Bell +9 dB und Output-Trim +6 dB, 204 800 Werte, auch mit Betrag >= 1) ist jeder float bitgleich die Verengung des double-Taps, und der Zaehler bleibt stehen. Seit NAK-311 Etappe 2 (Neutralpruefung) schreibt der engagiert-neutrale Kern (Merkmal neutral, alle fuenf Rampen in Ruhe auf 1,0) keinen Sample: die Wachmarke 0x7F800001, NaN, +-Inf und das Bitmuster kommen bytegleich heraus, der Riegel zaehlt, der Tap post_committed traegt dort 0,0. Das Schreibende liegt exakt am ersten Sample nach Crossfade, Rampe und Hoermatrix-Fade, auch mitten im Teilstueck, bei Blockgroessen 1, 180, 255, 256, 257 und 4096 (maxBlock 512), und das Schreiben setzt am ersten Sample eines neuen Uebergangs wieder ein; bei Delta und Candidate, bei Mix 1e-9 und mit einem 0-dB-Bell schreibt der Kern. Wo er nicht mehr schreibt, misst der Tap post_committed die Rechnung: am Ende einer Width-Rampe auf 1,0 und bei Mix 0 exakt den Eingang als double. Der Allokationslauf mit neutralem Schritt bleibt bei 0 Allokationen. Seit NAK-311 Etappe 3 (W01) schaltet ein Pfad aus der Ruhe wie ein frischer Kern ein: nach Ausschalten, Ausblenden und einer Aenderung in der Ruhe (Output- oder Input-Trim +24 dB, Mix 0, Width 2,0, Auto-Gain; ebenso nach beendeAudiohistorie im Ausblenden und fuer den Candidate nach Ende und Hoerhalt am Tap post_candidate) ist der Ausgang ab dem Umschaltblock bytegleich zu einem frischen Kern mit demselben Programm, bei Blockgroessen 1 bis 4096 und 44,1 / 48 / 96 kHz; mit Ziel 0 dB bleibt Ausgang/Eingang an jedem Sample 1,0. Seit NAK-311 Etappe 3 (W03) traegt jeder aktive Slot eine Lebenszykluskennung: ein Slot, dessen Belegung und Topologie ueber jede Publikation seit dem gefahrenen Programm gleich blieben, behaelt beim Wechsel an einem ANDEREN Slot seinen Filter-, Detektor- und Huellkurvenzustand - sein Perioden-RMS (volle Periode des Prueftons, beide Kanaele, 100 Perioden ab dem Umschaltblock) liegt hoechstens 0,5 dB neben einem Referenzkern mit gleicher Vorgeschichte ohne Wechsel, bei 44,1 / 48 / 96 kHz und Blockgroessen 1 bis 4096 ueber maxBlock, am Candidate-Pfad ebenso; ein geaenderter Slot, ein zwischendurch entfernter und neu belegter und nach einem globalen Wechsel (Samplerate, Mono-Bass-Stufe) jeder Slot startet kalt und meldet 0,0, waehrend acht Slots zugleich ihre Auslenkungen bitgleich behalten oder alle acht kalt starten. Aendert der uebertragene Slot in derselben Publikation seinen Wert, bleibt der Quadraturbetrag am Umschaltsample innerhalb der Fadeschrittweite, ueber 100 Perioden hoechstens 0,5 dB ueber der groesseren eingeschwungenen Spitze und nach Fade-Ende plus Einschwingzeit hoechstens 0,5 dB neben dem Rampenlauf ohne Fremdslotwechsel; der Mono-Bass-Zustand wandert unter gleicher Pfadkennung mit, und der Allokationslauf bleibt mit einem Committed-Fremdslotwechsel im Zyklus bei 0 Allokationen. Seit NAK-311 Etappe 4 (R-311-3) rechnet die Auto-Gain-Ableitung im Monobus (Kanalzahl 1) die geordnete Kaskade in Slotreihenfolge und wertet nur den ausgegebenen Kanal aus: ein Band im Modus right oder side ergibt exakt +0,0 dB (kein -0,0), und der Ausgang ist ueber 48 000 Samples bytegleich zum Lauf ohne Auto-Gain; left und mid kompensieren voll wie derselbe Kern im Modus stereo; zwei vertauschte Slotreihenfolgen ergeben verschiedene Werte, und zwei und acht Baender treffen die im Test eigenstaendig ausgeschriebene Formel auf 1e-9 dB. Kanalzahl 0, 2 und 3 rechnen weiter die Zweikanalformel, deren vierzehn Werte bitgleich (memcmp) zum Basisstand der Etappe bleiben, und auch im Monokern laeuft die Ableitung nie im Audiopfad. Seit NAK-311 Etappe 4 Teil b (T3-15-11) ist die Steuerrate gemessen statt begruendet: gegen einen Referenzkern mit Range 0 (derselbe SVF-Weg) bleibt der Tap post_committed nach dem Einsatz eines Quadraturtons bis einschliesslich des BEZUGSPUNKTS bitgleich und weicht genau 1 Sample danach ab; Bezugspunkt ist der erste Steuerschritt mit einer Auslenkung ungleich 0, im Test aus schrittRest und der Auslenkung gelesen statt aus dem Toneinsatz, und er liegt im Raster auf der Phase d = (8 - p) mod 8 zum Toneinsatz; genau 8 Samples nach ihm liegt wieder ein Steuerschritt, an dem der dort entworfene Satz mit Gewicht 1 wirkt - dort traegt svfVon genau den am Bezugspunkt entworfenen Satz -, in jeder gefahrenen Steuerphase und bei jeder Rate. Die Spanne 1 bis 8 Samples bis zur ersten und 8 bis 15 Samples bis zur vollen Wirkung des ersten Entwurfs ist dagegen die RASTERZAEHLUNG 1 + d und 8 + d ueber die vier gefahrenen Steuerphasen, gezaehlt ab dem Sample Bezugspunkt - d und nicht als Abstand zum Bezugspunkt; in Zeit sind die 8 bis 15 Samples der vollen Wirkung 0,167 bis 0,3125 ms bei 48 kHz, 0,181 bis 0,340 ms bei 44,1 kHz und 0,083 bis 0,156 ms bei 96 kHz, also bei 48 und 44,1 kHz GROEBER als die kuerzeste Attack von 0,1 ms. Seit dem festgelegten Pegelbegriff (Satz D, R-311-15) liegt der Bezugspunkt bei manchen Steuerphasen einen ganzen Rasterschritt nach dem Toneinsatz; dieser Rasterschritt ist das Einschwingen des Pegelbegriffs und steckt nicht in den Zahlen 1 bis 8 und 8 bis 15. Das Verhalten aendert sich dabei nicht, kDynamikSchritt bleibt 8. Seit NAK-311 Etappe 5 Satz B (T3-15-09 Teil b, R-311-14, Karte U54) ist der ANGEWANDTE Auto-Gain nach oben einseitig gedeckelt: acht High-Cuts 20 Hz Q 0,15 bei 48 kHz sind abgeleitet +150,46 dB und ueber DspKern::autoGainRohDb() weiter lesbar, angewandt wird bitgenau kAutoGainDeckelDb = 24,0 dB, und am Tap post_committed liegt der Ausgang damit um den Faktor 15,849 ueber demselben Lauf ohne Auto-Gain statt um 3,3e7 - der Zustand ist dabei gesetzt. Die Deckelfunktion laesst den naechsten double unter der Grenze und die Grenze selbst bitgleich durch und setzt erst den naechsten darueber auf die Grenze; -0,0, +0,0 und das kleinste Subnormal kommen bitgleich zurueck. Die Absenkungsseite bleibt ungedeckelt (-199,77 und -92,29 dB bitgleich, Zustand falsch), Mono- und Zweikanalzweig deckeln an ihrer eigenen Rueckgabezeile auf denselben Wert, bei ausgeschaltetem Auto-Gain wird nichts angewandt und nichts gemeldet, und nach einem Programm unter dem Deckel faellt der Zustand zurueck, waehrend der angewandte Faktor ueber kRampeSamples auf das neue Ziel laeuft statt zu springen. Alle vierzehn Hexgolden von 311/M-61 liegen zwischen -6,00 und +0,23 dB, also auf der ungedeckelten Seite, und bleiben bitgleich. Seit NAK-311 Etappe 5 Satz C (T3-15-07, R-311-13, Karte U44) kennt die Kennungsvergabe auch WERTE: reisst ein Slot bei sonst gleicher Topologie eines der drei Kriterien - Frequenzverhaeltnis 2,0, Gueteverhaeltnis 4,0, Gaindifferenz 20,0 dB, richtungsfrei und strikt groesser -, bekommt NUR dieser Slot eine neue Lebenszykluskennung, der Blockrand blendet ueber statt zu rampen, und nur dieser Slot startet kalt. Gemessen am Mass von R-311-13 (groesster Ausgangsbetrag im Fenster von 0,5 s ab dem Umschaltsample gegen die groessere der beiden eingeschwungenen Spitzen, hoechstens 1 dB): der Sprung freq_hz 5000 -> 50 Hz an einem Low-Shelf +6 dB Q 0,707 faellt von +17,41 auf -0,22 dB, derselbe Sprung am Low-Cut 2000 -> 20 Hz von +22,20 auf +0,13 dB, die Gegenrichtung 50 -> 5000 Hz von +1,91 auf 0,00 dB, und ein dynamisches Band mit Range 0 haelt das Mass ebenso. Dieselbe Strecke in zwanzig Stufen zu je 1,2589 bleibt dagegen auf dem Rampenweg, behaelt ihre Kennung und ist ueber alle 40 960 Samples bitgleich zum Basisstand. Strikt groesser entscheidet an allen sechs Kanten je Kriterium (eine ULP darunter, genau auf der Grenze, eine ULP darueber, in beiden Richtungen), nicht endliche und nicht positive Werte erzwingen IMMER eine neue Kennung, acht gleichzeitig springende Slots ergeben genau EINEN Crossfade, ein zweiter Sprung im laufenden Fade wird erst am Blockrand nach dessen Ende genommen, und der Fade dauert bei Blockgroesse 1, 255, 256, 257 und 4096 genau kFadeSamples SAMPLES. Im Callback bleibt der Zaehler dabei bei 0 Allokationen und 0 Sperren, auch wenn eine Publikation ueber dem Kriterium im selben Zyklus liegt. Seit NAK-311 Etappe 5 Satz D (T3-15-06, R-311-15, Karte U45) vergleicht die Dynamikschwelle einen FESTGELEGTEN Pegelbegriff mit dem Threshold: zwischen Detektor und Huellkurve liegt ein symmetrisches Ein-Pol-Leistungsmittel mit dem festen Fenster kPegelFensterMs = 10 ms (durchschnitt); Fenster 0 (spitze) schliesst die Stufe kurz. Aktiv ist durchschnitt - baueProgramm setzt ihn unbedingt ohne Eingabe aus dem Vertrag, im Produktcode steht genau eine Setzstelle, und Pegelbegriff::spitze kommt dort nur in der Abbildung auf die Fensterlaenge vor. Gemessen bei 48 kHz, Bell Q 0,707, Range -12 dB, Threshold im Knie: drei Materialien gleicher Leistung (Quadraturton, L = R-Sinus, Rauschen) liegen um hoechstens 0,02 dB bei 1 kHz, 0,06 dB bei 341 Hz, 0,21 dB bei 100 Hz und 0,90 dB bei 20 Hz auseinander, das Rauschen um 0,32 dB - vorher 2,12 bis 4,01 dB. Neun Einstellungen aus Attack 0,1/10/500 ms mal Hold 0/30/500 ms spannen je Bandmitte 0,05 / 0,15 / 0,50 / 2,20 dB statt 5,78 dB; die Restwelligkeit eines FESTEN Fensters waechst mit fallender Bandmitte und steht als Zahl in der Schranke. Mit Fenster 0 ist der dynamische Weg ueber 76 096 Samples bitgleich zum Basisstand des Aenderungssatzes, und der Kurzschluss gibt den Eingang auch bei nicht endlichem oder denormalem Zustand bitgleich zurueck. Der Pegelzustand liegt im BandZustand: er wandert am Blockrand mit dem uebrigen Bandzustand, wird mit dem abgeschalteten Detektor gliedweise genullt, am Blockrand geheilt und denormalgeriegelt, ist bei Stille bitgenau +0,0 und ergibt bei 44,1 / 48 / 96 / 192 kHz dieselbe Zeit. Der Pegelbegriff ist topologisch: rampenKompatibel und die Kennungsvergabe tragen ihn, zwischen zwei Begriffen wird nie interpoliert. Die Sprungantwort misst gegen eine im Test ausgeschriebene Referenz der GANZEN Kette (Bandpass, Pegelbegriff, Huellkurve, Steuerraster): bei Attack 20 ms und Fenster 10 ms liegt der 63-%-Punkt bei 32,04 bis 32,17 ms statt bei 20 ms, die Toleranz von 1 ms je Stufe bleibt. Im Callback bleiben die Zaehler mit acht dynamischen Baendern bei 0 Allokationen und 0 Sperren; im Quelltext von verarbeiteBand steht der Aufruf der Pegelstufe genau einmal, und huellkurvePol, huellkurveEntwurf, std::exp, std::pow, std::log10, new und malloc stehen dort buchstaeblich nicht - der Pol entsteht im Worker (baueProgramm). Die Wortsuche liest nur den Text dieser einen Funktion und folgt keinem Aufruf; ueber den Steuerratenschritt, der alle kDynamikSchritt Samples Kennlinie und SVF-Satz neu rechnet (leistungInDb mit log10, svfEntwurf mit pow), sagt sie nichts. Seit NAK-312 Etappe 7b (U48, U58) die Hostbypass-Stufe hinter Taps und Hoermatrix: mit dem Wunsch Hostbypass blendet sie genau 256 Samples, gezaehlt in Samples bei jeder Blockgroesse (1, 64, 256 und 4096 bei maxBlock 256, 4096 bei maxBlock 100), linear mit dem Anteil n/256 und am Nachbarsprung innerhalb der E-31-Schranke, und schreibt danach keinen Sample (Wachmarke, NaN, +-Inf, Subnormals und -0 bytegleich); kehrt der Wunsch in der Blende um, laeuft sie vom Mischstand zurueck, ohne Sprung am Umkehrsample; mit dem Wunsch nein ist verarbeite bitgleich zum Aufruf ohne das Argument. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [OK] Exit 0 | 6,38 s | [B6](roh/NAK-380-8e81885-dirty.md#b6) |
+| B7 | Lokaler Transaktionskern der aktiven Sonde mit dem echten DSP-Kern: die Falltabelle T1-T17 aus Manifest SONDE-015 §5.11.4 laeuft tabellengetrieben mit den Invarianten I1, I2 und I4 als Wachen nach jeder Eingabe; ein Fehler in jeder Stufe S1-S7 laesst bestaetigten Zustand, Hash, Undo-Ring und Register unveraendert, und weder der Nachschlag S0 noch der Commit-Punkt allozieren; Apply, Revert, Neutralisieren, Remove, Undo, Redo und Preset-Laden erzeugen je genau eine Revision, 10.000 doppelte, vertauschte und veraltete Eingaben einer Transaktion hoechstens eine. Belegung, Remove und Undo als ein Objekt, Schutz-Zonen mit Verletzungsmeldung, Undo-Ring der Tiefe 32 und Preset halten ihre Matrixzeilen. Am echten SondeProcessor: 112 Host-Parameter in Vertragsreihenfolge ohne occupied; Hostautomation ohne Revision mit zwei Epochenwechseln je Geste, auf einem freien Slot bitgleich im Klang; ein abgeschlossener Gestus ist eine Revision; Host-Dirty nur bei einem Commit; das Kind Dsp reist durch Speichern und Laden, und ein Reload rekonstruiert Hash und Ausgang. Seit NAK-283 (F05, F09, F12) am echten SondeProcessor: reset() beendet die Audiohistorie - nach einem Impuls in den Resonator (1 kHz, +12 dB, Q 10) ist der erste Block Stille auf beiden Kanaelen exakt 0, ohne reset() klingt er nach - und laesst getStateInformation bytegleich, die Revision, das bestaetigte eq_enabled und die engagierte Bank im Kern stehen (1 kHz danach mehr als 6 dB lauter); releaseResources->prepareToPlay, reset() und prepareToPlay allein enden in derselben Audiohistorie (Stille exakt 0, untereinander bitgleich). Ein Block ueber maxBlock bei rechnendem Kern hinterlaesst in der Analysequeue eine Luecke (der naechste Block beginnt bei 192 mit kFlagLueckeDavor, Segment +1), und Kern und Queue beschreiben dieselbe verworfene Zeitspanne (ein verworfener Tap, ein Block ohne Audio mit 128 Frames, oversize und Ueberlauf +0); ruht der Committed-Pfad im Hard-Bypass, wird derselbe Block ohne Luecke angenommen. Endliche double ueber FLT_MAX am Tap kommen in der Analysekopie als endliche floats an, und der Kernzaehler steigt um genau diese 1024 Werte. Seit NAK-311 Etappe 3 (W01): reset() im laufenden Ausblenden (Output-Trim +24 dB, ein Block nach eq aus), danach Output-Trim 0 dB in der Ruhe und eq an - Ausgang/Eingang bleibt an jedem Sample des Wiedereinschaltens hoechstens 1 + 1e-6. Seit W03: Remove und Neubelegung desselben Slots mit derselben Konfiguration ohne Audioblock dazwischen - beide committet, die zweite Publikation verdraengt die erste - starten kalt; der Uebergang ist ein Crossfade, die gemeldete Auslenkung ist ab dem ersten Block exakt 0,0 und der Ausgang bei Stille ab kFadeSamples exakt 0,0. Seit NAK-311 Etappe 4 Teil b (F12, R-311-4) hat die Toleranz von M-84 ihre Zahl samt Referenzbeginn und Geltungsbereich: t = 0 ist das erste Sample des ersten Blocks der geladenen oder neu vorbereiteten Instanz, der Vergleichskern laeuft ununterbrochen weiter und bekommt ab dort denselben Eingang. Fuer ein dynamisches Bell (Kanalmodus stereo, Sidechain internal) mit Quadraturton auf der Bandmitte im Teilraum Q >= 1, Q*A_min >= 0,5 und f0 bis min(20 kHz, fs/4) weicht der Quadraturbetrag je Sample ab t_E = max(kFadeSamples, 5*tau_a*fs + 10*Q*A_max*fs/(pi*f0) + 16) hoechstens 0,1 dB ab - gemessen hoechstens 0,03 dB ueber drei Prueflinge (Q 2 bei Attack 0,1 / 10 / 500 ms, Q 1,0, f0 = fs/4 mit Q 24) je in Knie und Plateau -, davor im Betrag hoechstens \|g0\| + \|Range\| + 0,1 dB; dasselbe gilt fuer prepareToPlay auf der laufenden Instanz. Der Same-Instance-Ladestart bleibt dagegen in Ausgang UND Tap bitgleich zum ununterbrochenen Kern, und zwei Sekunden eingeschwungenes Audio lassen die Statebytes unveraendert: die Huellkurvenleistung ist Audiohistorie, kein persistenter Wert. Seit NAK-311 Etappe 5 Satz A (F08, R-311-16, R-311-20) nimmt ein Ratenwechsel den Zustand zurueck: ueber 48 -> 32 -> 48 kHz ist der Ausgang im 32-kHz-Fenster bytegleich zum Eingang und der Kern meldet 32 000 als abgelehnte Rate, nach dem dritten prepareToPlay ist der Melder wieder exakt +0,0, das Band hoerbar und der Ausgang bitgleich zu einem Kern, der nie abgelehnt hat - waehrend eq_enabled, Statebytes, Revision und Host-Dirty ueber die ganze Folge unveraendert bleiben. Mit einem High-Cut 20 Hz Q 0,707 und Auto-Gain an sind Kern UND Bericht im Fenster exakt +0,0 dB, klemmungen leer, die Zaehler des alten Fensters genullt und die Kanalzahl auf 2, beide tragen die abgelehnte Rate, jcs, Revision und Undo-Tiefe bleiben die des bestaetigten Zustands, und nach dem Rueckweg tragen beide wieder bitgleich denselben abgeleiteten Wert. Im 32-kHz-Fenster zaehlt der thread-lokale Zaehler ueber 200 Bloecke 0 Allokationen im Callback, die Echtzeitwache (seit NAK-312 ab dem Eintritt processBlock oder processBlockBypassed) 0 gemeldete Sperren, getLatencySamples bleibt 0 und getTailLengthSeconds 0,0. Seit NAK-311 Etappe 5 Satz D (T3-15-06, R-311-15) traegt t_E den festgelegten Pegelbegriff: der Huellkurventerm rechnet 5*(tau_a + kPegelFensterMs)*fs statt 5*tau_a*fs, also hoechstens 5*kPegelFensterMs*fs Samples mehr, und die drei Prueflinge weichen ab t_E in Knie und Plateau hoechstens 0,027 dB ab - die Toleranz von 0,1 dB bleibt unveraendert. Zwei Sekunden eingeschwungenes Audio bewegen den Pegelzustand nachweislich auf einen endlichen Wert ueber 0, der Slot faehrt dabei den Begriff durchschnitt, und die Statebytes bleiben bytegleich: der Pegelbegriff ist Laufzeit wie die Kanalzahl und steht in keinem Statefeld. Seit NAK-312 Etappe 2 (R-312-1, E-312-11) misst die Echtzeitwache ab dem Eintritt processBlock oder processBlockBypassed, und B7 meldet jede eingeschaltete Allokation zusaetzlich an sie: mit einem Testplayhead, der je Aufruf eine gemeldete Sperre nimmt, zaehlt sie ueber 200 Bloecke genau 200 Sperren vor dspKern->verarbeite und 0 Allokationen; ein Workerzug mit Programmbau zwischen zwei Bloecken bewegt beide Zaehler nicht; legt das Bein den Bereich wie der Wrapper um setNonRealtime und processBlock, zaehlt sie seit Etappe 5 ueber 200 Bloecke je Aufruf setNonRealtime (true) wie je Aufruf setNonRealtime (false) 0 gemeldete Sperren (bis Etappe 4 je Aufruf setNonRealtime (true) genau eine). Sperren, die JUCE vor dem Plugincode nimmt, sieht der Zaehler bauartbedingt nicht. Seit NAK-312 Etappe 3a (W02) quittiert ein Ladestart die Hostwert-Mailbox: ein Hostwert, der vor dem Laden derselben Bytes in dieselbe Instanz eintraf, bleibt wirkungslos - auch ueber prepareToPlay, eine spaetere Wiederoeffnung der Mailbox und den Zaehlerueberlauf hinweg -, der Hash bleibt der der Quelle, und ein Hostwert nach der Quittierung wirkt, auch einer zwischen Quittierung und Abgleich, dessen Regler danach denselben Wert zeigt; reset() bewahrt die Mailbox. Ein read-only geladener Stand bleibt unter Hostautomation (eq_enabled und Output-Trim) ueber 512 Samples bitgleich zum Eingang, seine Regler springen auf neutral, die Originalbytes bleiben, kein Dirty, und ein gueltiger Stand danach laesst die Automation wieder wirken; NaN und +-Inf bleiben wirkungslos. Seit NAK-312 Etappe 3b (T3-01-05 Teil a, E-312-5, E-312-6) uebernimmt der Kern Input-Trim, Output-Trim, Width und Mix am Blockrand: ein Lauf unter der Taktsperre ohne Kontrolltakt ist bitgleich zu einem mit Takt nach jedem Block - fuer alle vier in beiden Staenden (neutral und mit Band) bei Blockgroesse 1, 64, 185, 240, 256 und 512 in Echtzeit und bei 64 offline; fuer Output-Trim im neutralen Stand zusaetzlich bei 4096 (dort wirkt der Wert im Block seines Randes), ueber eine Rampe von 200 Bloecken und ueber den Zaehlerueberlauf; ohne Ereignis setzt der Blockrand kein Ziel, NaN und +-Inf erreichen ihn als bestaetigter Wert, ein Ladestart mitten in der Fahrt macht einen alten Mailboxwert auch am Blockrand wirkungslos, und die Abdeckung ist genau diese vier. Epoche und Ruhegrenze bleiben beim Worker (genau zwei Epochenwechsel je Geste, Ruhegrenze in verarbeiteten Samples), und eine blockgebundene Fahrt erzeugt keine Revision, kein Dirty und bytegleiche Statebytes; ueber 4000 Bloecke wechselnder Groesse mit Automation zaehlt die Echtzeitwache 0 Sperren und 0 Allokationen. Ein Bandwert und eq_enabled bleiben taktgebunden: ohne Takt weicht der Lauf ab, mit Takt ist er bitgleich. Seit der Nacharbeit 1 der Etappe 3 (L-1, R-312-16) nimmt der Blockrand nach einem read-only-Ladestart keinen Hostwert: laedt ein Stand mit eq an und Output-Trim +3 dB das fremde Major und kommen danach Input-Trim +24 dB, Output-Trim +24 dB, Width 2 und Mix 0 als Hostwerte, ist der Ausgang ab dem ersten Sample nach dem Laden bitgleich zu dem ohne diese Hostwerte, und die Blockrandziele steigen um 0 - bei Bloecken zu 256 und, wenn beim Laden ein Uebergang laeuft, bei 185 und 512; ein eigener schreibbarer Stand danach laesst Output-Trim +6 dB ohne Kontrolltakt wieder am Blockrand wirken (bitgleich zu einem Lauf mit Takt nach jedem Block, Ausgang/Eingang am Ende bei 10^(6/20)). Seit NAK-312 Etappe 4 (312/M-38): ueber mindestens 4000 Bloecke wechselnder Groesse, waehrend beide v3-Clients der Sonde ueber einen Testserver auf der Probe-Pipe verbunden sind und ihre Provider nachweislich durch die Besitzschleuse laufen, bleiben RtWache::sperren() und RtWache::allokationen() ab Callback-Eintritt 0. Seit NAK-312 Etappe 5 (T3-01-03, T3-01-04, R-312-3) der Offline-Uebergang: mit hoerbarer Vorschau zaehlt die Wache im Bereich wie der Wrapper ueber 200 Bloecke 0 Sperren und (seit Etappe 6a gemessen) 0 Allokationen; unmittelbar nach dem ersten Aufruf setNonRealtime (true) ist die gewuenschte Hoermatrix Processed, und der Ausgang ist ab Sample 0 bitgleich zum Lauf ohne Vorschau - bei Blockgroesse 1, 64 und 256 und auch, wenn beim Wechsel ein Hoermatrix-Fade in Gegenrichtung oder ein Hoerhalt laeuft; nach einem ausdruecklichen Kontrolltakt ist keine Vorschau mehr aktiv, nach ceil(kFadeSamples/Blockgroesse)+1 Bloecken und einem zweiten Takt die Candidate-Bank frei; der Rueckweg in die Echtzeit blendet weich (Nachbarsprung hoechstens Fadeschritt plus 2^-23) und belebt die Vorschau nicht, und ohne Vorschau aendert das Offlineflag am Ausgang nichts. Seit NAK-312 Etappe 6a (R-312-20, R-312-22), unter der Taktsperre bei stehender Vorschau: ein im Render gesetzter Hoerwunsch Dry, Delta oder Candidate wirkt als Processed - jeder Offlineblock ist bei Blockgroesse 1, 64 und 256 ab Sample 0 bitgleich zum bestaetigten Lauf; nach setNonRealtime (true) und sofort setNonRealtime (false) ohne Block dazwischen schaltet der erste Echtzeitblock beim Wechsel auf Candidate nicht hart (Nachbarsprung hoechstens Fadeschritt plus 2^-23). Seit dem zweiten Aenderungssatz der Etappe 5 (T3-01-02, R-312-4) haengen die 112 Hostparameter ohne APVTS direkt am Prozessor: Zahl, Reihenfolge, IDs, Namen, Klassen, Bereiche, Defaults und Hostsicht (convertTo0to1 an Minimum, Default und Maximum; convertFrom0to1, getText und getValueForText an 0, 0,37 und 1), die Statebytes ueber speichern, laden, speichern und die Epochenfolge einer Automationsfahrt sind gleich dem Golden des Basis-SHA 12300f1e; kein Quelltext unter eq-copilot/plugin/sonde/ nennt die APVTS-Klasse; nach dem Laden traegt jeder Hostparameter den geladenen Wert; am Ende des Destruktorrumpfs erreicht ein Hostwert den Prozessor nicht mehr; Index -1 und 112 bleiben ohne Wirkung, und der eigene Abgleich meldet kein Hostereignis; ueber 4000 Bloecke mit Hostautomation aus einem zweiten Thread zaehlt die Wache ab processBlock 0 Sperren und 0 Allokationen - die Sperre, die JUCE vor dem Plugincode in sendValueChangedMessageToListeners nimmt, sieht sie bauartbedingt nicht. Seit der Nacharbeit 1 der Etappe 5 (R-312-19, Kanonteil von 312/M-88) ruft kein Quelltext unter src, sonde, dsp, state, vertrag, core und hostbridge von eq-copilot/plugin ExitProcess, TerminateProcess, PostQuitMessage, FatalAppExit, exit, _exit, quick_exit, _Exit, Process::terminate oder systemRequestedQuit und keiner nennt WM_CLOSE, WM_QUIT, SC_CLOSE oder JUCEApplicationBase (Textriegel); ob der Host im Betrieb lebt, misst das nicht - das misst der Laufzeit-Arm. Seit NAK-312 Etappe 7b (U48, U58) der Hostbypass-Eintritt processBlockBypassed: die Wache beginnt auch dort vor der Stempelbildung (200 gemeldete Sperren ueber 200 Bloecke mit Testplayhead); ueber 4000 Bloecke wechselnder Groesse mit Eintrittswechseln, Hostautomation aus einem zweiten Thread, Programmwechseln, reset, releaseResources und prepareToPlay bleiben Sperren und Allokationen 0, die Latenz 0 und der Tail 0,0; getBypassParameter bleibt nullptr bei 112 Hostparametern; State, Hash, Revision, Undo-Ring und Dirty bleiben unberuehrt, und die Ruhegrenze der Automationsepoche zaehlt auch im Hostbypass verarbeitete Samples - sie schliesst am selben Block wie ohne ihn; der Blockrand des Bypasseintritts nimmt Hostpunkte ueber den Ueberlauf der Ereigniszaehler (M-132); Echtzeit und Offline sind bitgleich, auch wenn der Wechsel nach offline mitten in die Blende faellt, und der Bypasseintritt setzt weder den Offline-Riegel noch das harte Schalten; im Hostbypass haengt keine Bank, und nach dem Austritt klingt der zuletzt bestaetigte Stand. Seit NAK-313 Etappe 5b (R-313-4, 313/M-83): der Kern bildet seine Grenze aus derselben Konstante wie der State-Leser - bei 2^53-2 committet genau eine Transaktion auf 2^53-1, die naechste scheitert in S4 mit revision_erschoepft ohne Nebenwirkung an Zustand, Hash, Undo-Ring, Register und Revision, und ein Ladestart mit 2^53 wird mit state_revision abgewiesen. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [OK] Exit 0 | 2,25 s | [B7](roh/NAK-380-8e81885-dirty.md#b7) |
+| B10 | C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess. Seit SONDE-013 nimmt die C++-Vertragsengine die drei Experimentfamilien aus den committeten Fixtures an, lehnt einen fremden execution_mode an derselben Engine ab, und ein experiment_manual_result laeuft als persistenzpflichtiger P0-Befehl durch das In-Flight-Register wie jede andere steuernde Nachricht. Seit NAK-313 Etappe 5a (R-313-4, R-313-5; 313/M-55 bis M-60, M-73, M-96): der flache Leser liest Ganzzahlen mit nakama::wire::ganzzahlAusLiteral ohne Gleitkommaschritt, je Literal ein Fall (0, -0, 1, 1.0, 1e0, 10E-1, 91.0, 1.00e2 und 2^53-1 in Ziffern- und e-Form gelten; 1.5, 1e, 01, -1, +1, 1., 1e400, 2^53 auch als Bruchform, 2^64, NaN, Infinity, -Infinity, 1e999 und leer nicht). state_revision im command_ack gilt von 0 bis 2^53-1 in jeder Schreibweise; 2^53 und ein Ueberlauftext (2^64) sind keinAck: der Auftrag bleibt im Register, der Konflikthaken wird nicht gerufen, kein Kopf mit 0 entsteht, und erst nach dem Reconnect gibt ein gueltiges ACK ihn frei; der Konfliktkopf traegt die gelesene Revision (5 wie 5.0). welcome.protocol gilt in Control und Telemetrie mit dem Wert 3 (3, 3.0, 3e0), 4 und 3.5 verbinden nicht. Je Eintrag der Eingaenge cpp_control_ack, cpp_control_handshake und cpp_telemetrie_handshake der Tabelle PRODUKTEINGAENGE-FAELLE.json ein Fall mit PE-nnn im Namen ueber die Testserver-Schalter fuer rohe welcome- und ACK-Bytes, verglichen mit produkt samt Wert, mit Zaehlpruefung je Eingang. Seit NAK-313 Etappe 5b (R-313-4, 313/M-88): heartbeatAlsJson und stateReportJson schreiben state_revision unveraendert - 2^53-1 als 9007199254740991 und ein Testaufbau mit 2^53 als 9007199254740992, nie gekappt. Seit NAK-313 Etappe 6 (R-313-7; 313/M-106 bis M-113): der flache Leser prueft UTF-8 vor dem ersten Zeichen, dekodiert Escapes nach RFC 8259 (ein Surrogatpaar wird ein Codepunkt; NUL-Escape, einsames Surrogat, unbekanntes Escape, ein u-Escape ohne vier Hexziffern und rohe Steuerzeichen sind ungueltig) und vergleicht Namen dekodiert; eine Ablehnung nennt einen von acht festen Gruenden ohne die Teilwoerter, an denen Gen eine Inkompatibilitaet erkennt. Nur die beiden welcome-Aufrufer schreiben welcome: plus Grund, ein gelesenes Objekt ohne Text in type meldet welcome: kein type. broker_version zaehlt hoechstens 64 und reject.reason hoechstens 500 Codepunkte (64 und 500 mal e-Akut gelten, 65 und 501 nicht, 499 a plus Surrogatpaar gilt, 500 a plus Paar nicht); eine leere broker_version verbindet nicht, ein leerer reason ist Broker lehnt ab. Control und Telemetrie melden dieselben Gruende; ein reject mit Escapes endet mit genau den dekodierten Bytes. Am ACK-Weg ist ein konflikt mit escaptem Code gelesen und beendet den Auftrag, ein ACK mit FF im code oder mit ergebnis als Escape-Alias und roh ist keinAck, und der Auftrag bleibt im Register. Im Tabellenlauf gilt seit Etappe 6 ein reject als gelesen, wenn es als Broker lehnt ab erscheint, und ein ACK, wenn es den Auftrag beendet. Seit NAK-313 Etappe 7 (R-313-9; 313/M-123, M-124): capabilitiesJson meldet binary_telemetry supported - zwei Hostmessungen, eine Build-Tatsache, sieben feste Fallbacks, zehn Schluessel in der bisherigen Reihenfolge -, und der Capabilitybericht traegt Schluessel fuer Schluessel dasselbe Objekt. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 314,33 s | [B10](roh/NAK-380-8e81885-dirty.md#b10) |
+| B11 | Probeeq uebernimmt JUCE updateTrackProperties ausschliesslich auf dem Message-Thread; gueltige Hostnamen reisen codepointgetreu in heartbeat.runtime, leer/Whitespace/121 Codepoints/C0/C1 gelten als Fehlen; Hostvorrang veraendert das gespeicherte User-Label nicht, Clear stellt dessen Rueckfall her. Persistierte Messpunkte insert/pre/post und Betrieb active/suspended/offline reisen ohne Synthese; der lokale C++-Pfad behauptet nicht, dass FL den Callback liefert. | `eq-copilot\build\plugin\EqCopSonde012HostChannelContextTest_artefacts\Release\EqCopSonde012HostChannelContextTest.exe` | [OK] Exit 0 | 1,02 s | [B11](roh/NAK-380-8e81885-dirty.md#b11) |
+| B12 | Probeeq fuehrt Audio ueber die vorallokierte Ganzblockqueue zum Analyseworker und P2: LUFS-I reist nur atomar mit endlicher unsicherheitLu und ohne Status; collecting/gated reisen ohne Zahlenpaar; halbe, nichtendliche oder statusbehaftete Paare werden nicht serialisiert. Seek, Loop, Oversize-Drop und Kontinuitaetsbruch starten eine leere Reihe; der gemessene Audiopfad alloziert dabei 0-mal und verwirft bei Ueberlast nur Analyse. | `eq-copilot\build\plugin\EqCopSonde012LoudnessSourceTest_artefacts\Release\EqCopSonde012LoudnessSourceTest.exe` | [OK] Exit 0 | 1,63 s | [B12](roh/NAK-380-8e81885-dirty.md#b12) |
+| B31 | Sonde-Lebenslaufbein (NAK-312 R-312-7): der Testkonstruktor der Sonde uebernimmt einen Probe-Pipenamen unveraendert und einen Namen ausserhalb des Probe-Namensraums fail-closed als leeren Pipenamen; ohne die Starthaken macht im Testbau kein v3-Client einen Verbindungsversuch, mit ihnen meldet der ControlClient binnen 8 s verbunden ueber die Probe-Pipe eines Testservers, und die Telemetrie koppelt nach dessen welcome; die Sonde wird mit beiden laufenden Clients auf dem Heap abgebaut. Jeder Name, mit dem ein Client startet, liegt vor dem Start im Probe-Namensraum. Seit Etappe 4 (R-312-7, R-312-12) die Besitzschleuse der Sonde, gemessen an einem gehaltenen Statusprovider und einer gezaehlten Marke vor dem ersten Besitzerzugriff: nach dem Ende des Eigentuemers erreicht ihn kein Provider (0 in jedem Fall und in 20 Gegenzyklen, nach denen Handles und Threads nicht hoeher stehen als nach dem ersten); gehalten hinter dem Betreten wird er zu Ende gewartet, gehalten davor und nach dem Destruktor freigegeben abgewiesen, vor dem Abbau freigegeben laeuft er durch; stop() loest den gehaltenen ControlClient nach der 2-s-Frist ab, controlV3.stop() gemessen vor dem Schliessen, telemetryV3.stop() nach Zeilenfolge; ein Reconnect laesst dieselbe offene Schleuse stehen. Eine Sonde aus dem Produktkonstruktor traegt im Testbau genau pipeNameV3 (aktuelleLogonSid()), ohne dass ein Client startet. | `eq-copilot\build\plugin\EqCopSondeLebenslaufTest_artefacts\Release\EqCopSondeLebenslaufTest.exe` | [OK] Exit 0 | 72,67 s | [B31](roh/NAK-380-8e81885-dirty.md#b31) |
+| B13 | Gen/Main ersetzt sein Quellenmodell durch absolute session_snapshot-Sichten und haelt Mitgliedschaft, Control, Messung, Namensherkunft und Capability-Evidenz getrennt; Frischegrenzen, Messpunkte, Betrieb, Fehlerkanal, Lautheitspaar, Hostvorrang, Sortierung und Hauptziel werden einzeln gemessen. Die integrierte 16-/32-Quellen-Zeitmessung gehoert A23. Seit NAK-312 Etappe 7b (U51): hoechstens 20 Quellen werden angenommen; bei 21, 32 und 64 Sonden stehen 20 Zeilen und die Zahl der nicht angenommenen in der Sicht, eine gegangene Quelle macht Platz ohne Verdraengung, und Messungen nicht angenommener Quellen erreichen die Sicht nicht; die Zeitmessung mit 16 und 32 Snapshot-Quellen erwartet min(n, 20) Zeilen, bei 32 also 20 und 12 nicht angenommene, p95 weiter unter 300 ms. Seit der Nacharbeit 1 der Etappe 7b (R-312-32): rueckt eine wartende Sonde ueber den lokalen Eintritt nach (Publikation der gespeicherten Mitglieder ohne ein entferntes, ohne neuen Snapshot), zaehlt ihre Zeile den offenen Befund aus dem juengsten Snapshot (findingsOffen 1, jede andere Zeile 0), und nach controlEnde ist er stale und die Zeile zaehlt 0. Seit NAK-313 Etappe 4 (R-313-6, 313/M-39 bis M-41, M-49): beide v3-Leser des Quellenmodells fahren nach dem Textriegel genau einen strengen Lauf kanon::lies, bevor sie ein Feld lesen. Je Eintrag der Eingaenge cpp_sources_snapshot und cpp_sources_ruecknahme der Tabelle PRODUKTEINGAENGE-FAELLE.json ein Fall mit PE-nnn im Namen, direkt am Leser in einer abonnierten Sitzung mit uebernommenem Basis-Snapshot: Nachspann, zweites Dokument, Schlusskomma, unbekanntes Escape, doppelte Namen (type, session_epoch, logon_sid in einer Mitgliedsadresse, grund, art in umfang; je mit passendem und mit fremdem letzten Wert) und der Escape-Alias fuer type sind ungueltig mit dem Praefix "session_snapshot parser: " beziehungsweise "evidence_invalidate parser: " an der Stufe parser oder duplikat, und die Sicht bleibt dieselbe (Revision, Quellen mit Mitgliedschaft und Namen, Abonnement, fuehrendes Main, Diagnose, Ruecknahmezaehler, -grund und -umfang); derselbe Name logon_sid in zwei Mitgliedsadressen bleibt gueltig, beide Mitglieder stehen in der Sicht. Je Eingang verlangt die Zaehlpruefung genau so viele Faelle, wie der Kopf der Tabelle nennt. Seit NAK-313 Etappe 5a (R-313-5, 313/M-61, M-73, M-96): beide Leser lesen die Felder aus DEMSELBEN strengen Lauf (nakama::vertrag::wertAlsVar statt juce::JSON::parse): letzter_kontakt_ms 1500.0 und 1.5e3 sowie host_mixer_index 3.0 werden als 1500 und 3 uebernommen, eine Ruecknahme von 1024.0 bis 2048e0 wie mit Zifferntext, die vertauschte Ordnung, 1.5 und -1 bleiben ungueltig, 2^53, NaN, Infinity, -Infinity und 1e999 fallen am Textriegel; bei Urteil gueltig wird der Wert am Feld verglichen. Seit NAK-313 Etappe 6 (R-313-8, R-313-15; 313/M-108, M-117): Gen ordnet Broker lehnt ab als incompatible ohne Handgriff ein und die Lesegruende welcome: plus Grund (die acht Wortlaute und welcome: kein type) als brokerUnavailable mit Handgriff; in einem Modell, das die Quelle kennt, verwirft uebernehmeP2 einen Batch mit belegtem Adressslot jenseits von Feld-ID 4 mit /eintraege/0/quelle:adresse_zusatzfeld, und die Zeile bleibt ohne neue Messung und Lautheit. | `eq-copilot\build\plugin\EqCopSonde012SourcesModelTest_artefacts\Release\EqCopSonde012SourcesModelTest.exe` | [OK] Exit 0 | 0,15 s | [B13](roh/NAK-380-8e81885-dirty.md#b13) |
+| B14 | MainProject Save/Load erhaelt bestaetigte Quellidentitaet und User-Label, aber weder Control-Liveness noch Runtime-Nonce oder Messframe; Join, Benennen und Unbind melden je echte persistente Aenderung Host-Dirty, No-op, Save und Load nicht; Reload baut einen frischen subscribe_session-Auftrag. Seit NAK-312 Etappe 6b (312/M-72) reisen die Namen nach dem Labelentwurf-Fall am echten Editor (Entwurf der Startquelle A beim Klick auf B bestaetigt, danach Tick und Enter) durch Speichern und Laden in eine frische Instanz unveraendert und mit derselben Zuordnung Name zu instance_id; das Laden meldet kein Dirty. Seit Etappe 6b (312/M-76) behaelt ein geladener Stand mit 40 bestaetigten Mitgliedern und einer unbekannten additiven MainProject-Eigenschaft ueber die Folge mit 20 gezeichneten Zeilen und Ersatzziel alle 40 Mitglieder im State, im Modell und nach dem Laden in eine frische Instanz; die Eigenschaft reist unveraendert, kein Host-Dirty. Seit NAK-312 Etappe 7b (312/M-126, U51) behaelt ein geladener Stand mit 21 und 40 bestaetigten Mitgliedern alle in State und Modell, 20 davon - die 20 kleinsten instance_id - sind Zeilen, auch nach einem Snapshot mit zwei weiteren Sonden; Speichern bytegleich, kein Host-Dirty. Seit Etappe 7b, Satz 3 (U49): in Legacy ist die Live-Sicht des Quellenmodells stillgelegt - keine Zeile, keine Subscription, ein verspaeteter Snapshot traegt nichts ein -, nach der Rueckkehr stehen die Mitglieder wieder; ein nach dem Wechsel quittierter Beitritt wirkt auf den ruhenden Bestand. | `eq-copilot\build\plugin\EqCopSonde012ProjectReloadTest_artefacts\Release\EqCopSonde012ProjectReloadTest.exe` | [OK] Exit 0 | 9,49 s | [B14](roh/NAK-380-8e81885-dirty.md#b14) |
+| B15 | EqCopShot rendert den deklarierten SONDE-012-Sichtsatz bei exakt 760x430: 0/1/16 Quellen, fresh/partial/stale/disconnected/invalid, Namens- und Lautheitsgegenpfade, alle Diagnosezustaende, Label-/Unnamed-Rueckfall, Findings, genau ein Hauptziel mit Referenzen sowie das deaktivierte Label-Feld eines nicht fuehrenden Main. Seit NAK-312 Etappe 4 (R-312-2) faehrt dasselbe Bein das Messpunkt-Popover am echten Editor: baut die Nachrichtenschleife es erst nach Editor und Prozessor ab, fasst sein Destruktor keinen von beiden an (gezaehlte Marke 0, Bindung bis zum Prozessorende unveraendert, 0 Host-Dirty); schliesst es, solange der Editor lebt, wird eine Aenderung mit genau einer Host-Dirty-Meldung uebernommen, ohne Aenderung mit keiner. Seit NAK-312 Etappe 6b (R-312-9) dazu der Labelentwurf der Main-Flaeche am echten Editor auf einem echten Main (Namen im Prozessorzustand): ein Entwurf der Startquelle A wird beim Klick auf die Zeile B auf A bestaetigt, und weder Enter noch Fokusverlust danach schreiben ihn auf B; ein leerer Entwurf loescht Bs Namen nicht; nach Escape zeigt das Feld wieder As Label, und der naechste Auswahlwechsel schreibt nichts; faellt A weg oder kommt A mit neuer Runtime-Nonce zurueck, verfaellt der Entwurf ohne Mutation, auch mit Enter vor dem naechsten Tick; unveraenderter Text schreibt nichts; im Feld werden 121 Codepoints ausserhalb der BMP auf 120 beschraenkt und beim Bestaetigen auf 120 gekappt, 0 und 120 werden angenommen, 121 am Prozessor abgewiesen; Host-Dirty je geaendertem Namen genau einmal. Seit Etappe 6b (R-312-6) dazu Ersatzziel und Aktionssteuerung: mit 16, 20, 21, 32 und 64 Quellen ohne Hauptziel ist das Ersatz-Hauptziel die erste angezeigte Quelle (vier Bilder 20/21/32/64 im Sichtsatz), ab 20 Quellen zeichnet die Flaeche 20 Zeilen; rueckt ein per Handgriff gewaehltes Hauptziel durch Beitritt oder Hostbusnamen hinter Zeile 20, sind Knopf, Labelfeld und dessen Beschriftung unsichtbar, das Aktionsziel ist leer, das Hauptziel im Modell unveraendert ohne Schreibversuch, und der Status sagt es; ein offener Entwurf wird davor auf der Startquelle bestaetigt (genau 1 Host-Dirty); ohne Quelle gibt es keine Aktionssteuerung, bei 1 und 16 Quellen ist jede Zeile gezeichnet und per Klick erreichbar. Seit Etappe 6b (NAK-349, R-312-2) dazu das Kennungskonflikt-Panel: stellt die Nachrichtenschleife einen geposteten Klick (triggerClick, der Weg von Enter) erst nach dem Ende des Editors zu, mit lebendem und mit danach zerstoertem Prozessor, fasst der Rueckruf weder Editor noch Prozessor an (gezaehlte Marke 0, Kennung unveraendert, 0 Host-Dirty); bei lebendem Editor vergibt derselbe Klick eine neue Kennung mit genau einer Host-Dirty-Meldung und Statusmeldung, und die Box schliesst. Seit der Nacharbeit 1 der Etappe 6 (L-5, R-312-2 Satz 2) dazu: beginnt der Klick bei lebendem Editor und baut ein Listener in audioProcessorChanged den Editor ab, waehrend der Rueckruf in neueSensorId steht (nach seinem Eintritt, die Kennung schon neu), wechselt die Kennung mit genau einer Host-Dirty-Meldung, der Rueckruf erreicht danach keinen Zugriff auf den Editor (zweite Lebendpruefung, gezaehlte Marke 0), und die Box wird abgebaut. Seit NAK-312 Etappe 7b (U51) dazu die Annahmegrenze am echten Pfad (abonnierte Sitzung, echte Snapshots): bei 0, 1, 19 und 20 Quellen ist jede angenommen, gezeichnet und per Klick erreichbar; bei 21, 32 und 64 Quellen sind 20 angenommen, jede davon gezeichnet und erreichbar, und das vorhandene Diagnosefeld meldet die volle Liste mit der Zahl der nicht angenommenen, allein oder als Zusatz hinter einer anstehenden Diagnose. Seit NAK-313 Etappe 2 (R-313-3) schreibt das Messpunkt-Popover nur, was der User geaendert hat: mit geladenem Label von 121 und Paarnamen von 61 Zeichen ruft das unveraendert geschlossene Popover die Bindungs-API nicht (0 Aufrufe, 0 Host-Dirty, 0 Reconnect-Anforderungen, Save bytegleich), und auch Fokusverlust und Rollenrueckruf ohne Wechsel rufen sie nicht und melden kein Host-Dirty; eine Rollenwahl mit unveraendert langem Label gelingt mit genau einem Aufruf und einem Host-Dirty, und beide Texte bleiben; die Felder begrenzen die Eingabe auf 120 und 60 Codepunkte (das Paarfeld gemessen bei eingerichteter Paarrolle pre); ein geaendertes, weiter zu langes Label oder ein solcher Paarname wird ohne Host-Dirty abgewiesen, und die vorhandene Statuszeile nennt die Grenze; traegt der abgewiesene Aufruf eine Rollenwahl (E-313-18), faellt die Rollenauswahl ohne zweiten Aufruf auf die gespeicherte Rolle zurueck, und die Meldung nennt es. Seit NAK-313 Etappe 7 (R-313-10; 313/M-141, M-142): der Festhalten-Handgriff am echten Editor meldet die entstandene Datei, bei einem Namen derselben Sekunde die vorhandene Datei und dass nichts gespeichert ist, bei einem Schreibfehler den Grund samt Rest der eigenen Temp-Datei; Datei und Vergleichslinie tragen denselben Snapshot, auch wenn sich die Messdaten der Engine direkt danach aendern. | `eq-copilot\build\plugin\EqCopShot_artefacts\Release\EqCopShot.exe --sonde012-suite eq-copilot/build/sonde012-shots` | [OK] Exit 0 | 8,06 s | [B15](roh/NAK-380-8e81885-dirty.md#b15) |
+| B20 | Gesamtklasse nach §34.3 (M-06): die vier Klassen sind geordnet, und `deckeln` ist ein Minimum, kein Mittelwert. Jeder der vier harten Maengel deckelt EINZELN auf schwach, ohne gegen die drei guten Nachbarquellen verrechnet zu werden; zwei Maengel ergeben in allen zwoelf Paarungen unbrauchbar. Was ein Erzeuger nicht beurteilen kann, deckelt ebenso auf mittel - eine Sonde mit PERFEKTER Abdeckung kommt deshalb nur auf mittel, weil sie Session, Passage und Alignment nicht sieht; das ist die Regel hinter dem Literal, das Etappe B an einer Stelle gesetzt hatte. Die zwei Abdeckungsschwellen und die Fensterschwelle fallen je an ihrer Kante und knapp darunter (Muster C-09). Die tragende Zusage ist eine INVARIANTE ueber den ganzen Raum: in 1536 Uebergaengen ueber alle 256 Bitkombinationen in drei Basislagen hebt ein zusaetzlicher harter Mangel die Klasse NIE - und alle vier Klassen kommen darin wirklich vor, die Invariante ist also nicht trivial erfuellt. Ein Mittelwert koennte diese Zusage nicht halten. | `eq-copilot\build\plugin\EqCopSonde013QualityClassTest_artefacts\Release\EqCopSonde013QualityClassTest.exe` | [OK] Exit 0 | 0,06 s | [B20](roh/NAK-380-8e81885-dirty.md#b20) |
+| B22 | Content-Fingerprint einer Passage (§32.4, M-26/M-27/M-31): er entsteht erst ab genug Material und traegt die Zahl seiner Fenster mit; dasselbe Material zweimal ergibt BITGLEICH denselben Fingerprint, derselbe Akkord in zwei Lautstaerken bleibt ueber 0,95 aehnlich (jeder Verlauf ist auf sein eigenes Maximum normiert), ein anderer Akkord ist messbar unaehnlicher und Rauschen deutlich. Die adversariale Rueckrechenprobe zeigt nicht, dass eine Rueckrechnung schwer waere, sondern dass die Information nicht da ist: 76 Byte fuer 204800 Samples, und ein Sinus und ein Dreieck derselben Grundfrequenz sind sich AEHNLICH, obwohl sie voellig anders klingen - der Fingerprint ist bewusst nicht injektiv, und der Fingerprint ist unter Vorzeichenumkehr des Signals bytegleich. Das Fingerprintfenster ueberbrueckt keine Epochengrenze: nach einer Stromluecke traegt die Engine den Fingerprint des NEUEN Materials (Aehnlichkeit 1,00 zur neuen Referenz, 0,00 zur alten), und der Fensterzaehler faellt mit - bei einer Ueberbrueckung waeren es doppelt so viele. Die Aehnlichkeit selbst ist ein MINIMUM ueber die drei Verlaeufe und kein Mittelwert; zwei Fingerprints ohne Bit sind nicht aehnlich, sondern gar nichts. Seit NAK-380 Etappe 4 (380/M-68) sind die 76 Ausgangsbytes des Akkords F1 (220 Hz, 30 s) bytegleich zur am Etappenstart erfassten Referenz: der Fingerprint behaelt den Bandfluss. | `eq-copilot\build\plugin\EqCopSonde013FingerprintGoldenTest_artefacts\Release\EqCopSonde013FingerprintGoldenTest.exe` | [OK] Exit 0 | 1,70 s | [B22](roh/NAK-380-8e81885-dirty.md#b22) |
+| B23 | Die manuelle Passage als Projektintent im MainProjectState (§33.5, M-25/M-69). Das neue persistente Feld `manual_passages_v1` traegt seine Fassung im Namen; ein Altstand ohne das Feld laedt normal, ein unbekanntes Zusatzfeld aus einer spaeteren Fassung zerstoert den Leser nicht und steht unveraendert im naechsten Save, und Save/Load ist ueber zwei Runden bytegleich - auch am oberen int64-Rand und mit leerer Liste (die Eigenschaft entfaellt dann, statt als leeres Array zu reisen). Jede persistente Aenderung meldet GENAU einmal Host-Dirty, das Vergessen wie das Merken; ein read-only-Stand verweigert beides und gibt seine Originalbytes zurueck. Was hier NICHT reist, ist Absicht: Fingerprint, Quellenset, Abdeckung und Epoche sind Messergebnisse und bleiben im Store, sonst behauptete ein Projekt nach dem Loeschen der Datenbank weiter, es gebe Evidenz. Jede Grenze wird von beiden Seiten gefahren - was die Produkt-API ablehnt, lehnt auch der Leser ab, und zwar fail-closed als read-only statt still korrigiert. | `eq-copilot\build\plugin\EqCopSonde013PassageStateTest_artefacts\Release\EqCopSonde013PassageStateTest.exe` | [OK] Exit 0 | 12,19 s | [B23](roh/NAK-380-8e81885-dirty.md#b23) |
+| B24 | PRE/POST auf der Audioseite (§38.3/§38.4, M-18/M-20/M-24). Die Magnitude-Squared Coherence ist 1 fuer JEDE lineare zeitinvariante Kette und faellt genau dann, wenn die Kette nichtlinear oder zeitvariabel ist: identische Kette, reiner Gain von +15 dB und ein linearer Tiefpass bleiben fast ueberall ueber der 0,8-Schwelle aus §38.3 - Kompression, Modulation, Saturation und wechselnde Latenz fallen darunter, und die beiden Gruppen ueberlappen nicht. Deshalb traegt keine der vier adversarialen Ketten eine statische EQ-Behauptung. Der Vergleichspegel wird vorab gemessen und eingefroren: sechs Sekunden mit +18 dB und zwei Sekunden Stille aendern ihn um kein Tausendstel, denn eine mitlaufende Regelung wuerde selbst zum hoerbaren Prozessor; ohne genug Material friert er gar nicht erst ein, und NaN/Inf verriegeln statt ihn zu vergiften. Hoerbares Delta ist ohne nachgewiesenes Compare-Routing gesperrt - der Raum aus drei binaeren Nachweisen wird VOLLSTAENDIG abgefahren, genau eine der acht Kombinationen ist frei, und in P4 gibt es kein Compare-Routing. | `eq-copilot\build\plugin\EqCopSonde013PrePostGoldenTest_artefacts\Release\EqCopSonde013PrePostGoldenTest.exe` | [OK] Exit 0 | 1,10 s | [B24](roh/NAK-380-8e81885-dirty.md#b24) |
+| B25 | Unsicherheit und Mehrfachtestung (§43.2, M-45). Der Block-Bootstrap ist deterministisch, enthaelt den Mittelwert und liefert bei bloeckigem Material ein BREITERES Intervall als ein Bootstrap ueber Einzelwerte - benachbarte Deltas sind korreliert, und wer Unabhaengigkeit annimmt, macht aus Rauschen eine belastbare Aenderung. Leere oder unmoegliche Eingaben ergeben KEIN Intervall statt eines um null. Bei 221 gleichverteilten p-Werten meldet der naive Scan zweistellig viele Baender und die FDR-Korrektur kein einziges, waehrend 20 klare Treffer durchkommen; die Grenze p_(k) = k/m*q faellt inklusiv an ihrem Wert. Cluster verlangen zusammenhaengende Baender - drei verstreute ergeben keinen, vier benachbarte schon, und auch am linken und rechten Rand. | `eq-copilot\build\plugin\EqCopSonde013ExperimentGoldenTest_artefacts\Release\EqCopSonde013ExperimentGoldenTest.exe` | [OK] Exit 0 | 0,46 s | [B25](roh/NAK-380-8e81885-dirty.md#b25) |
+| B26 | Die zwei Kanten des Blindvergleichs (§43.1, §15, M-43/M-44). Ohne eingefrorenen Vergleichspegel wird KEIN Klangurteil angenommen - lauter klingt besser, und ein A/B ohne Pegelabgleich misst genau das; ein noch laufender Pegel zaehlt nicht als Abgleich. Die Blindreihenfolge wird vor dem Urteil gebunden und laesst sich nicht drehen; vor dem Urteil gibt der Typ sie GAR NICHT heraus, und der Ausgabeparameter bleibt unberuehrt statt still einen lesbaren Wert zu tragen. Erst das Urteil deckt genau die gebundene Reihenfolge auf, in beide Richtungen geprueft. Ein zweites Urteil und ein spaeterer Pegel aendern nichts mehr; jede Sperre traegt ein Wort, und der Passagenwechsel raeumt Urteil, Abgleich und Bindung gemeinsam ab. | `eq-copilot\build\plugin\EqCopSonde013ExperimentUiTest_artefacts\Release\EqCopSonde013ExperimentUiTest.exe` | [OK] Exit 0 | 0,63 s | [B26](roh/NAK-380-8e81885-dirty.md#b26) |
+| B21 | RT→Control-Ring fuer hoerbare Eingriffe (M-37 bis M-39, §34.2): ein Begin steht SOFORT zur Abholung bereit, ohne Kadenzfenster - der Unterschied zum 1-Hz-Heartbeat-Bit, das ein 380-Sample-Ereignispaar nie gesehen haette. Ein Ende traegt einen Nachlauf, der mindestens so lang ist wie der Eingriff selbst, UND dessen Dauer, damit ein Empfaenger die Konservativitaet pruefen statt sie glauben kann. Der Ueberlauf ist die schaerfste Zusage: dieser Ring verwendet KEIN drop-oldest, das aelteste Ereignis steht unveraendert an erster Stelle, der Ueberlauf ist sticky gemeldet und gezaehlt, der Rest kommt lueckenlos aufsteigend heraus, und das Sticky-Bit heilt nicht von selbst - nur resync() loescht es. 200 Runden Schreiben, Lesen und Abfragen erzeugen NULL Allokationen, mit Zaehler gemessen statt behauptet (M-74). Sequenzen am u64-Rand kommen unveraendert zurueck, und zuruecksetzen() leert Ring, Sticky-Bit und Zaehler gemeinsam. | `eq-copilot\build\plugin\EqCopSonde013InterventionRingTest_artefacts\Release\EqCopSonde013InterventionRingTest.exe` | [OK] Exit 0 | 0,08 s | [B21](roh/NAK-380-8e81885-dirty.md#b21) |
+| B19 | Bandweise Stereoevidenz (§40.1, §40.3, M-08/M-10/M-11/M-12): die fuenf Klassen aus §40.3 treffen ihre ANALYTISCH bekannte Antwort - Mono ergibt Korrelation 1, Kohaerenz 1, Phase 0 und Folddown 0 dB innerhalb der 0,25 dB aus §40.3; Polaritaetsinvertierung ergibt Korrelation -1 bei Kohaerenz 1 (die Kohaerenz misst den Zusammenhang, nicht das Vorzeichen) und eine Monosumme, die an die Vertragsgrenze laeuft statt zu schweigen; eine bekannte Laufzeit ergibt eine Phase, die der Formel +2*pi*f*tau folgt, an drei Traegerfrequenzen gemessen; unkorrelierte Kanaele fallen in Korrelation und Kohaerenz, und bei niedriger Kohaerenz entsteht keine Lag- oder Polaritaetsempfehlung. Seit NAK-182 faehrt ein Sweep dieselben fuenf Klassen und den Folddown ueber die 18 Blockgroessen 1, 2, 3, 7, 15, 16, 31, 64, 127, 128, 333, 512, 1024, 2048, 4096, 8192, 12345 und 16384 - je Blockgroesse dieselbe Antwort, je Blockgroesse ein wirklich entstandenes Evidenzfenster und vergleichbar viele gemittelte Fenster (Freiheitsgrade innerhalb 20 Prozent des Medians). Das ist eine AUSWAHL aus 1 bis 16384 und keine Erschoepfung: die Obergrenze ist die Slotkapazitaet des Layouts, 256 zum Beispiel bleibt ungemessen. Seit Nacharbeit 1 wertet der Sweep bei bekannter Laufzeit ALLE DREI Traeger aus - 300, 900 und 2000 Hz, je Blockgroesse mit Praesenzbit und Phasenfehler gegen +2*pi*f*tau innerhalb 0,25 rad -, und der Unkorreliert-Fall misst je Blockgroesse zusaetzlich, dass KEIN Band mit Basis eine Phase traegt; das sind dieselben Felder, die der 512er-Abschnitt fuer M-12 nutzt. Seit NAK-380 Etappe 5 (380/M-73 bis M-93): die Kohaerenz entsteht je Bin ueber einen Ring aus den letzten drei (Hauptstufe) bzw. sieben (Bassstufe) Evidenzfenstern und wird erst danach im Band gemittelt; ein breitbandiges Laufzeitpaar mit 1 ms traegt bei 44,1, 48, 88,2, 96, 176,4 und 192 kHz (bei 48 kHz ueber die 18 Blockgroessen) in jedem Band mit Energie ein Bit und Kohaerenz >= 0,95, im Mittel gegen rho_w(d)^2; die Phase steht am Bin der geometrischen Bandmitte (+-0,25 rad); 44,1 kHz mit Bloecken bis 512 und die Bassbaender unter 200 Hz erreichen acht Frames; Freiheitsgrade, Fensterdauer, Persistenz und die Leerung an Grenze, Ruecksetzen und Ratenwechsel folgen dem Kadenzmodell; der Ring belegt 236 224 B bei 44,1 kHz (Schranke 245 760 B). Seit Nacharbeit 0 (R-380-13) ist die Gruppenlaufzeit je Band die Steigung der kleinsten Quadrate ueber die entwickelten Binphasen der genutzten Bins und trifft 1000*d/fs in jedem Band mit mindestens zwei Bins innerhalb einer Toleranz T_B, die aus Binzahl, Framezahl des Kadenzmodells, Referenzkohaerenz und Binabstand hergeleitet ist (5 sigma), nie aus dem Lauf; bei 48 kHz und vollem Ring haelt jedes Band ab 20 Bins +-0,02 ms, und Einbinbaender tragen keine Laufzeit. | `eq-copilot\build\plugin\EqCopSonde013StereoGoldenTest_artefacts\Release\EqCopSonde013StereoGoldenTest.exe` | [OK] Exit 0 | 10,23 s | [B19](roh/NAK-380-8e81885-dirty.md#b19) |
+| B17 | True Peak nach ITU-R BS.1770-5 (M-02): der 8-fach-Polyphaseninterpolator trifft die fuenf True-Peak-Testfaelle aus EBU Tech 3341 (15 bis 19) innerhalb der SCHAERFEREN Toleranz aus §49.3, also +/-0,1 dB statt der +0,2/-0,4 der Norm; gemessen wird gegen die ANALYTISCHE Referenz - die Signale sind Sinus mit definierter Frequenz, Amplitude und Phase, und der wahre Scheitel eines Sinus IST seine Amplitude, also steht fuer 15 bis 19 keine zweite eigene Implementierung als Vergleich dahinter. Der Gegenbeleg zeigt, dass ein Detektor ohne Ueberabtastung bei Testfall 16 um 3,01 dB zu optimistisch waere. Der Sampleraten-Sweep ueber 44,1/48/88,2/96/192 kHz haelt dieselbe Zusage, weil die EBU-Frequenzen an fs gebunden sind. Die 8-fach-Entscheidung wird als ZAHL getroffen: die geschlossene Fehlerschranke der Ueberabtastung haelt bei fs/4 mit Faktor 8 (-0,042 dB) und reisst mit Faktor 4 (-0,169 dB). Raender: Stille ergibt exakt 0, ein NaN bleibt nicht im Filterzustand, ein Gleichanteil bleibt auf 1e-9 genau er selbst (jede der acht Phasen hat DC-Verstaerkung 1, nicht nur die Gesamtsumme 8), und ohne vorbereiten() misst der Detektor gar nicht, statt zu raten. Seit NAK-283 (N01) zusaetzlich die vier transienten Faelle 20 bis 23 aus EBU Tech 3341 (Versatz 0 bis 3): jeder trifft eine im Test gerechnete, vorher an 15 bis 19 auf +/-0,01 dB validierte 64-fach-Referenz innerhalb +/-0,1 dB und liegt zusaetzlich in der Normtoleranz 0,0 +0,2/-0,4 dBTP. Insgesamt 43 Pruefungen. | `eq-copilot\build\plugin\EqCopSonde013TruePeakGoldenTest_artefacts\Release\EqCopSonde013TruePeakGoldenTest.exe` | [OK] Exit 0 | 0,34 s | [B17](roh/NAK-380-8e81885-dirty.md#b17) |
+| B18 | Loudnessfenster, Headroom und Dynamik (M-01, M-03, M-04, M-07, M-09): Momentary (400 ms) und Short-term (3 s) sind wirklich zwei Fenster - bei stehendem Pegel gleich, 0,8 s nach einem Pegelsprung mehr als 5 LU auseinander, danach wieder beieinander; nach 0,6 s traegt der Frame Momentary und KEIN Short-term. integration_samples passt im Dauerbetrieb zur 10-Hz-Kadenz und faellt beim ersten Rahmen nach einer Grenze messbar kleiner aus. PSR rechnet gegen das True-Peak-Maximum DESSELBEN 3-s-Fensters, nicht gegen den Sample-Peak des 100-ms-Rahmens; die Engine setzt selbst kein PLR, weil LUFS-I erst im Sondenprozessor zugemischt wird. Headroom ist eine Verteilung: zwei Signale mit gleichem Maximum trennen sich um mehr als 10 dB im P50. Crest steht in zwei Fenstern und trennt dichte kleine Spitzen von einer einzelnen grossen. LRA gibt es nach 30 s NICHT, nach 75 s mit der Spanne der §5-Referenz (± 0,2 LU); zehn Kurzzeitwerte je Sekunde (EBU Tech 3342 §3.1), die 60-s-Schwelle zaehlt gegatetes Material bei 10 Hz. Bei Material ohne Dynamik bleibt sie nahe null und nach 90 s Stille gibt es gar keinen Wert. NaN und Inf im Eingang erzeugen in keiner der neun neuen Metrikstellen einen nichtendlichen Wert. Ein verworfener Analyseblock schliesst auch die neuen Fenster, und keines von ihnen ueberbrueckt eine Transportgrenze. Seit NAK-380 Etappe 4 (380/M-42 bis M-49) misst der Testzugang den Detektor nach T-380-5: Maximumfilter +-125 Cent (w_101 = 8; ein Teilton, der um 1 bis 9 Bins wandert, ergibt Fluss 0, um 10 Bins 79,96 dB), Detektor-Bins K = 1666/1530/765 bei 44,1/48/96 kHz mit 2*K*8 B im Heap, ein Ring der Warteschlange mit 2*w_max + 2 Plaetzen aus der Filterbreite (252/232/118), der ueber einen streng fallenden Vorframe in jedem Bin das direkte Maximum trifft, und ohne Allokation im Lauf, echte MAD (28 x 1 und 4 x 11 ergeben 0), absolute Mindestschwelle, Rauschbodenbezug und P0 je beiderseits der Schwelle, lokale Spitze und 50 ms Sperrzeit bei 1 und 2 Hops. Seit Nacharbeit 1 der Etappe 4: die Spitzenwahl prueft den Frame der Ausloesung (stromSample 2048) und die Sperrzeit die Ereignisse an den erwarteten Hops; der Pegelbezug laeuft auf abschnittsweise energienormiertem Weissrauschen mit gemessener Abschnittsenergie, Samplezahl und Verlust als eigene Pruefungen; eine M-63-Einheit prueft die Staerke gegen die unabhaengige Referenz bei Median 180 und die Klammer 1000; jede Gleichheitstoleranz traegt ihr Rechenbudget. Seit NAK-380 Etappe 5 (380/M-95): ein Frame, dessen Kreuzspektrum an einem Bin nicht endlich ist, zaehlt ueber den Testzugang fuer sein Band nicht, jedes andere Hauptstufenband zaehlt ihn, und keine Kohaerenz, Phase oder Laufzeit wird nicht endlich. | `eq-copilot\build\plugin\EqCopSonde013DynamicsTest_artefacts\Release\EqCopSonde013DynamicsTest.exe` | [OK] Exit 0 | 12,47 s | [B18](roh/NAK-380-8e81885-dirty.md#b18) |
+| B16 | Evidenzpfad (§33.2): der aus einem echten FeatureFrame erzeugte evidence_snapshot passiert Textriegel und dieselbe Vertragsengine wie B3c; P10/P50/P95 trennen ein springendes von einem ruhigen Signal gleicher mittlerer Lautheit (Spanne P95-P10 um mehr als 6 dB verschieden) und halten in JEDEM Band mit Bit die Ordnung P10<=P50<=P95; die Abdeckung faellt messbar, sobald ganze Analysefenster in Stille liegen, und die Konvergenz faellt bei wanderndem Pegel; der Ereignisstrom traegt Fluss- und Peakbit getrennt samt Verlustzaehler, ein Ereignis fremder Epoche oder ohne Anker entsteht gar nicht. Seit NAK-182 misst dasselbe Bein die C++-Haelfte der fokussierten 0,01-dB-Evidenz (M-83 Satz 2), seit Nacharbeit 1 vollstaendig am SERIALISIERTEN Snapshot: PRE und POST laufen durch den echten Serialisierer, und jede Zahl kommt aus verteilung.p50 des eigenen Wire-Textes - Encoding-Wort, Ganzzahlen und Praesenzbits. Daraus kommt ein bekannter Gain von 3,00 dB je Band mit Bit innerhalb 0,1 dB zurueck, und eine Leiter aus 20 Pegeln im Abstand 0,01 dB - je ein eigener Enginelauf samt Serialisierung - ergibt 20 streng monotone Ganzzahlen, deren Nachbarn sich um genau 1 unterscheiden. Material (Frequenz, Samplerate, Amplitude, Blockgroesse, Laufbegrenzung), Pegel, Gain und Aufloesung kommen aus den ZAHLEN der Fixture evidenz-0p01-paar-wire-v1.json, nicht aus ihren Bytes und nicht aus lokalen Konstanten. Seit NAK-313 Etappe 4 (R-313-7, 313/M-51): ein echter FeatureFrame ohne gueltige Projektzeit (Transport local_monotonic) ergibt mit den Transportzahlen aus eingabe der Byteinstanz evidenz-lokal-wire-v1.json einen Transportblock OHNE project_sample_start, bytegleich zu wire_transport, und der ganze Snapshot passiert Textriegel und dieselbe Engine wie B3c. Seit Etappe 4 (R-313-6, 313/M-49) ausserdem der C++-Vertragsweg an der Tabelle PRODUKTEINGAENGE-FAELLE.json: je evidence_snapshot-Eintrag ein Fall mit PE-nnn im Namen durch Textriegel, genau einen strengen Lauf kanon::lies und die Engine, verglichen mit vertrag - doppeltes type faellt an der Stufe duplikat, eine Verschachtelung von 65 Ebenen an parser, project_sample_start null am Schema, und 64 Ebenen sowie der wire_snapshot der Byteinstanz sind gueltig; die Zaehlpruefung verlangt genau so viele Faelle, wie der Kopf der Tabelle fuer evidence_snapshot nennt. Seit NAK-313 Etappe 5a (R-313-5, 313/M-73): die Werte kommen aus demselben strengen Lauf (nakama::vertrag::wertAlsVar), und bei Urteil gueltig wird der Wert am Feld als Ganzzahl verglichen (transport.sequence 8241.0 und 8.241e3 sind 8241). Seit NAK-380 Etappe 4 (380/M-63, M-65): jedes Flussereignis traegt eine endliche staerke in [3, 1000] - fuer Klicks auf digitaler Stille (bis 40 dB ueber Vollaussteuerung, dort auf 1000 geklemmt), einen Klick auf einem stehenden Sinus und den Korpus I1 - und reist so durch den echten Serialisierer, den Textriegel und dieselbe Schemaengine; bei 30 s Weissrauschen ist die Onsetsumme jedes der 93 Evidenzfenster 0. Seit Nacharbeit 1 der Etappe 4: jeder Staerkewert der Engine wird gegen eine im Test unabhaengig aus SF, Median und echter MAD gerechnete Referenz geprueft (mindestens ein Fall mit Median > 0), jeder Drahtwert gegen den Engine-Wert desselben Fensters; gespeiste Samplezahl, Engine-Verlust und Draht-Verlust sind eigene Pruefungen; rosa Rauschen wird vor jedem Nutzer selbstgeprueft; Textriegel und Schema sind fuer die Staerke eine Regressionswache, keine Rotzusage. | `eq-copilot\build\plugin\EqCopSonde013EventWireTest_artefacts\Release\EqCopSonde013EventWireTest.exe` | [OK] Exit 0 | 3,44 s | [B16](roh/NAK-380-8e81885-dirty.md#b16) |
+| B27 | Der musikalische Intent als Projektintent im MainProjectState (§37.1, U22, M-01 bis M-09/M-11). Die Rollenmenge ist GESCHLOSSEN und hat genau fuenf Werte; ein sechster faellt in der Produkt-API UND im Leser, statt still auf einen bekannten Zweig abgebildet zu werden. Die §37.1-Belegung ist ABGELEITET und damit total und injektiv: alle fuenf Rollen kommen ueber den Roundtrip zurueck, keine zwei teilen sich eine Belegung (alle zwanzig geordneten Paare), und eine fremde Belegung gehoert zu keiner Rolle. Schutzangaben sind ORTHOGONAL zur Rolle - eine Quelle ohne Rolle kann Attack geschuetzt haben, und keiner der fuenf Rollenwechsel loescht einen Schutzbereich. Die Rolle bewusst-verschmolzen ist ein globales Veto gegen Entmaskierung; eine ausdrueckliche gerichtete Beziehung hebt es NUR fuer dieses Paar auf, nicht fuer ein drittes. Die Konfliktregeln sind eine geordnete Liste, kein Score: alle zehn Paarungen der fuenf Stufen fallen in beiden Leserichtungen, hundert Vermutungen schlagen die Schutzgrenze nie, und innerhalb Stufe 2 gewinnt das Spezifischere. Ein Zyklus im fuehrt_vor-Graphen erreicht die Persistenz NIE unmarkiert - die Pruefung laeuft beim Speichern, der Leser weist einen von Hand gebauten Zyklus als read-only ab, und derselbe Schluss als gleichrangig gespeichert laedt und kommt als gleichrangig zurueck. Eine abgeleitete Vermutung ueberschreibt einen Userwert nie, der umgekehrte Weg gilt. Derselbe Bus traegt verschiedene Rollen in zwei Passagen ohne Datenverlust, passagespezifisch vor global. Dazu die fuenf Teile der State-Invariante: Fassung im Namen, Altstand ohne die Felder laedt bytegleich, eine unbekannte Eigenschaft ueberlebt, Save/Load ueber zwei Runden bytegleich, und jede echte Aenderung meldet GENAU einmal Host-Dirty, waehrend No-op, abgewiesener Wert, Laden und read-only schweigen. Jede Grenze faellt von BEIDEN Seiten (17 Leserfaelle samt NaN/Inf-Konfidenz, Revision 0, Bandrand 0/221 und Selbstbeziehung), und die volle 256er-Liste, die die API erzeugt, laedt der eigene Leser. Zuletzt M-11 am Produktpfad: zwei echte Prozessoren mit demselben Strom, einer mit vollem Intent, liefern bitgleiche Evidenzbaender, Perzentile, Livebaender, metrics_version und NaN-Zaehler - mit Gegenprobe, dass die Baender wirklich Werte tragen. Seit NAK-313 Etappe 5b (R-313-4; 313/M-80, M-81, M-89): die Revisionsraender der NAK-283-Faelle M-07 bis M-10 und M-12 stehen bei 2^53-1 (assistentenrevision_laeuft_nicht_ueber misst den neuen Rand); Bestands- und Eintragsrevision gehen bei 2^53-2 genau einen Schritt mit genau einem Host-Dirty und weisen am Rand ab, bevor sie etwas zuweisen (Prozessor ohne Host-Dirty, Bibliothek mit Grund und gleichen Bytes); der Intentwriter schreibt bestand_revision 2^53-1 ab bestand_revision bytegleich zur Handinstanz intent-wire-v1.json. | `eq-copilot\build\plugin\EqCopSonde014IntentTest_artefacts\Release\EqCopSonde014IntentTest.exe` | [OK] Exit 0 | 0,69 s | [B27](roh/NAK-380-8e81885-dirty.md#b27) |
+| B29 | Die Zustandsmaschine des AssistantStep im Main (46.1, E-07/E-08, M-55 bis M-62). Die Zustandsmenge hat ACHT Werte, jeder kommt ueber seinen eigenen Rueckweg zurueck, ein neunter faellt. Nach preview fuehrt KEINE Kante - weder hin noch zurueck -, ein gespeicherter preview-Schritt ist ein Lesefehler statt eines stillen Sprungs, und die Produkt-API setzt ihn nicht; die Gegenprobe mit proposal laedt normal. Jeder der acht Zustaende traegt fuenf Angaben (Eintritt, Evidenz, Useraktion, Timeout ueber 0, sichere Rueckkante), auch preview - der erste Zustand ist seine eigene Rueckkante. Der Deckel ist STRUKTURELL: ein zweiter Startversuch bei offenem Schritt wird abgewiesen, nicht eingereiht, und erst nach dem terminalen Abbruch beginnt ein neuer. Die vier Gegenpfade laufen einzeln: Zurueck geht auf die Rueckkante, Ueberspringen auf den naechsten Zustand, Resume ist eine FRAGE ohne Revisionssprung, und Verwerfen ist terminal statt geloescht - danach gibt es kein Resume mehr. Die drei benannten Ergebnisse aus 46.2 sind eigene Ergebnisse mit Objekt; dasselbe zweimal hebt keine Revision. Die harten Gates greifen VOR der Gewichtung: drei Kandidaten mit perfektem Rang und je einem gerissenen Gate verlassen die Liste, ein bescheidener bleibt. Verdrahtet am echten Prozessor mit Host-Dirty genau einmal je echter Aenderung, Rekonstruktion aus dem gespeicherten MainProject und bytegleichem Save/Load; jede Grenze faellt von beiden Seiten, und ein Altstand ohne die Eigenschaft laedt normal und schreibt sie nicht. Seit NAK-313 Etappe 5b (R-313-4; 313/M-82, M-84 bis M-87): an der Revision 2^53-1 weisen Weiter, Antwort und ein neuer Lauf ab, ohne etwas zu aendern und ohne Host-Dirty; assistentVersuchStarten prueft die Grenze vor dem Versuchsbeginn - am Probe-Server kein experiment_begin, kein belegter Slot, kein eingefrorener Pegel, 0 Host-Dirty, und der gespeicherte Stand traegt keine Versuchskennung -, startet unter der Grenze wie bisher mit genau einem experiment_begin und einem Host-Dirty, und faellt die Grenze erst nach dem Versuchsbeginn (Testhaken), weist die Bibliotheksfunktion ab und der Versuch endet mit genau einem experiment_abort (user_abbruch). | `eq-copilot\build\plugin\EqCopSonde014AssistentTest_artefacts\Release\EqCopSonde014AssistentTest.exe` | [OK] Exit 0 | 2,35 s | [B29](roh/NAK-380-8e81885-dirty.md#b29) |
+| B30 | Diagnose-Briefkasten im Plugin (Plan S25e (3), R-286-1 und R-286-2): ohne anfrage.json nur eine Existenzpruefung je Takt (hoechstens 1 Hz, Message-Thread) und nichts Messbares - Audio, State, Parameter und der Snapshot des Knopfwegs bleiben bytegleich. Eine gueltige Anfrage beantworten Gen und Probeeq je Kennung genau einmal, solange sie im Ring der letzten 256 steht, ueber den eigenen Schreibweg (exklusive Temp-Datei, Groessenpruefung, Umbenennen ohne Ersetzen, nie Ordneranlage oder Loeschung) mit einem Umschlag nach nakama.diagnose.antwort.v1; fremde oder zu grosse Anfragen und solche hinter einer Junction bleiben ohne Antwort, eine beim Lesen gesperrte wird im naechsten Takt beantwortet. Seit NAK-313 Etappe 7 (R-313-10; 313/M-132 bis M-144) der Festhalten-Export, jeder Fall in einem Testordner unter %TEMP%: er legt die Ordnerebenen an und veroeffentlicht exklusiv (Temp-Datei, Spuelen, Groesse, Umbenennen ohne Ersetzen), ersetzt eine Datei gleichen Namens nie (Doppelklick, zwei Instanzen, leeres Label, Schreibweise und Bereinigung, Uhrrueckstellung: abgelehnt, die erste Datei bytegleich), meldet Teil-Schreibfehler als Fehler und entfernt die eigene Temp-Datei oder nennt sie als Rest; er liest je Export genau eine Uhrablesung und nur den uebergebenen Snapshot, der Testbau verweigert ohne Testordner vor jedem Dateizugriff, und die Referenz des Knopfwegs bleibt bytegleich. | `eq-copilot\build\plugin\EqCopBriefkastenTest_artefacts\Release\EqCopBriefkastenTest.exe` | [OK] Exit 0 | 77,01 s | [B30](roh/NAK-380-8e81885-dirty.md#b30) |
+| B28 | Die Befundzustaende auf der Gen-Seite (Abnahme U21, M-29 bis M-35). Die drei Sicherheitsstufen sind auf GENAU DREI Zustaende abgebildet, und die Abbildung ist ein FELD: ein vierter Wert macht den ganzen Snapshot ungueltig, statt still auf einen bekannten zu fallen. Nur READY TO SEND erlaubt HOLD TO AUDITION und SEND DRAFT - die Sperre liegt am Befund im Modell, nicht an einer ausgegrauten Schaltflaeche. Messqualitaet der Passage und Sicherheit des Befunds bleiben zwei Felder aus zwei Quellen: ein Befund mit confidence.class hoch, dessen Zustand more_data sagt, bleibt nicht handelbar. Alternativen sind EIGENE Befunde mit eigenem Zustand und reisen als IDs; ein Freitext faellt. Der Beleg ist die markierte Zone - Bandrand 0 und 221 gueltig, leeres Intervall und 222 nicht -, und ein Belegtextfeld gibt es nicht. Die drei Anzeigezeilen sind drei eigene Felder; eine vierte oder eine leere faellt. Die acht Ausschlussgruende kommen mit ihrem Grund an, ein neunter faellt. Jede Zahl faellt an ihrer Grenze und nicht erst danach. Zuletzt die Fassungsleiter: ein Leser der Fassung 2 lehnt findings ab, Abwesenheit heisst keine Befunde, und ein Sitzungswechsel raeumt sie ab. Seit Etappe E dazu der Maskierungswert AM Befund: er benennt Frequenzbereich und beide Quellen, gueltig und herabgesetzt sind zwei eigene Bits, Abwesenheit ist etwas anderes als ein ungueltiger Wert, und ein Objekt beliebiger Form faellt - sechs Formen einzeln geprueft. Eine Zeichenanweisung (Achse, Zoom, Farbe) faellt am Vertrag, auch im Maskierungswert. | `eq-copilot\build\plugin\EqCopSonde014BefundTest_artefacts\Release\EqCopSonde014BefundTest.exe` | [OK] Exit 0 | 0,15 s | [B28](roh/NAK-380-8e81885-dirty.md#b28) |
+| B8 | Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread. Seit NAK-309 (M-74) zuerst, vor dem ersten Prozessor: im Testbau nennt der Prozessor seinem v2-Client einen Probe-Namen, nie die Produktions-Pipe, nach Produkt- und Testkonstruktor denselben, und jedes Ziel mit den Prozessorquellen ausser dem Produkt traegt den Testschalter. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,32 s | [B8](roh/NAK-380-8e81885-dirty.md#b8) |
+| A32 | Codebase- und Kontextgesundheit gegen die Schwellen aus Plan S25b und dem Kontext-Hygiene-Playbook. Der Quellumfang kommt seit NAK-283 (M-69) aus einem pruefbaren Inventar: jede Datei mit Endung .rs, .cpp, .h oder .hpp unter broker/src und eq-copilot/plugin samt allen Unterbaeumen, mit Grund ausgenommen nur der flatc-Codegen (broker/src/generiert, eq-copilot/plugin/vertrag/generiert) und der Testbaum eq-copilot/plugin/tests; der Bericht druckt das Inventar, und eine Quelldatei, die weder gemessen noch ausgenommen ist, beendet den Lauf als WERKZEUGFEHLER (Inventarriegel, Exit 2). Gemessen werden Zeilen je Quelldatei (Grenze 2 000, Ziel 1 500), Anzahl Funktionen ueber 200 Zeilen, aufruferlose allow(dead_code)-Helfer, Backtick-Bezeichner in Kommentaren ohne Entsprechung im Repo, sowie Bytes von MEMORY.md, CLAUDE.md und Dirigenten-Skill, Index-Zeilen ueber 250 Zeichen und Memory-Dateien ohne Index-Link. Die Ratschen (Funktionen 28, Kommentar-Bezeichner 30, clippy 91) stehen auf dem Iststand vom 09.09.2026 nach NAK-225 und reissen bei der ersten Verschlechterung; sie werden nur gesenkt, nie erhoeht. Die Grenzen - Zeilen je Datei, Funktionen ueber 200 Zeilen, Kommentar-Bezeichner - werden ehrlich gemeldet, auch wenn sie reissen (Pflegeticket NAK-292). Jeder neue Treffer ueber der Zeilengrenze meldet sich als OHNE PFLEGETICKET; ein Zuordnungseintrag, dessen Datei die Grenze nicht mehr reisst, beendet den Lauf als WERKZEUGFEHLER (Exit 2), damit die Liste nicht still veraltet. Vorangestellt laeuft der Selbsttest: 129 Faelle im Speicher durch dieselben Funktionen, jede Erwartung mit ihrem Gegenteil (Zahlenraender 2 000/2 001, 200/201, 250/251, CRLF, BOM, fehlender Schlussumbruch, Rust-Lebensdauer und C++-Ziffernstrenner gegen die Literalmaskierung; das Inventar mit neuem Unterbaum, Codegen, Tests und einer Ableitung, die still einen Unterbaum verliert). Der clippy-Teil laeuft NICHT mit (Schalter --clippy, er baut) und meldet sich als nicht messbar. Nicht blockierend: Exit 4 heisst gerissen und ist ein Hinweis. Exit 2 ist ROT und heisst, dass das WERKZEUG nicht mehr misst - roter Selbsttest, eine fehlende Inventarwurzel oder der Inventarriegel, denn ein verschobener Pfad wuerde sonst still 0 messen und die halbe Codebase unbemerkt aus dem Mass nehmen, und ein ungemessener Unterbaum machte jedes andere Mass falsch. | `py -3.13 tools\plan\gesundheit.py --mit-selbsttest` | [HINWEIS] Exit 4 - Befund, nicht blockierend (siehe Rohausgabe) | 13,28 s | [A32](roh/NAK-380-8e81885-dirty.md#a32) |
+| A33 | clang-tidy ueber alle Uebersetzungseinheiten von eq-copilot/plugin ohne tests/ und ohne den flatc-Codegen vertrag/generiert/ (Bein A9 haelt ihn bytegleich; Regelsatz eq-copilot/plugin/.clang-tidy: bugprone, clang-analyzer, concurrency, performance sowie eine cert-, cppcoreguidelines- und misc-Auswahl; keine Stilregeln, Ausnahmen dort mit Grund) in einem eigenen Ninja-Baum eq-copilot/build-tidy mit denselben cl.exe-Schaltern wie der Produktbau. Gezaehlt werden eindeutige Fundstellen (Datei, Zeile, Spalte, Check) gegen die Ratsche in tools/plan/tidy.py: Grenze = Iststand der Erstmessung NAK-288, Ziel 0, nur gesenkt, nie erhoeht; eine Aenderung des Regelsatzes zieht die Ratsche im selben Commit nach. Vorangestellt der Selbsttest (Einordnung in den Quellort, Datenbankfilter, Diagnoseparser, Deduplizierung, Ratschenrand, Umgebungsleser). Nicht blockierend: Exit 4 ist ein Hinweis. ROT ist Exit 2: eine Uebersetzungseinheit mit error-Diagnose oder ein abgestuerzter clang-tidy heisst NICHT gemessen, denn eine halb geparste Einheit meldet weniger Funde und saehe wie Fortschritt aus. FEHLT (Exit 3) ohne Visual Studio 2022 mit C++-Werkzeugen und Clang-Komponente, cmake oder ninja. | `py -3.13 tools\plan\tidy.py --mit-selbsttest` | [OK] Exit 0 | 109,94 s | [A33](roh/NAK-380-8e81885-dirty.md#a33) |
+
+
+## 50. Kanon nachher, Erstprüfung 5: Urteil, Validierung, Einordnung, Regel R-380-13 (v) und Nacharbeitsauftrag 1 (Dirigent, 26.09.2026, 05:16 Uhr)
+
+**Kanon nachher der Etappe 5 (Bau und Nacharbeit 0):** GRUEN 70/70 an
+`8e81885e`, 26.09.2026, 03:55:04 bis 05:12:55 Uhr (abgekoppelt nach Skill
+§3.5, Log `nakama-nak380-e5-kanon.log`, EXIT=0),
+`docs/beweise/roh/NAK-380-8e81885-dirty.md` (dirty: Broker-Pin des Runners in
+`eq-copilot/install/nakama-installer-v1.json`); ein stillgelegtes Bein
+(EqCopSunaNullTest, seit S9b); A32 `gesundheit.py` Exit 4 als Hinweis, nicht
+blockierend (vorbestehende Maße 3/33/39; Kontextfläche OK, CLAUDE.md 20 463 B
+nach der Kürzung in §47); A33 `tidy.py` Exit 0. Der Kanon-Abschnitt des
+Runners steht unmittelbar über diesem Abschnitt.
+
+**Rundenbilanz** (`py -3.13 tools/dirigent/rundenbilanz.py`, nach den
+Commits gemessen): Bau `c43c1646..80cd0274` Produkt 9 Dateien +647/−72,
+Tests 4 +1 676/−33, Prüfwerkzeug 2 +183/−22, Doku 91 +7 174/−13; Nacharbeit 0
+`80cd0274..8e81885e` Produkt 2 +56/−32, Tests 1 +197/−30, Prüfwerkzeug 1
++2/−2, Doku 19 +2 875/−699; kumuliert `--runden c43c1646 80cd0274 8e81885e`:
+kein Konvergenzsignal (maximal eine Runde in Folge ohne Produktfortschritt).
+
+**Erstprüfung 5 (Vorlage A, Codex).** Frischer lesender Codex-Thread
+`gpt-6-astra`, Effort xhigh (NAK-362), `read-only`, Thread
+`01a0db6c-6bf5-7cf3-9e23-14272eb0f30e`, 03:55:10 bis 04:05:51 Uhr über
+`tools/dirigent/codex-lauf.ps1` (Kennung `nak380-e5-p1`), HEAD vor und nach
+dem Lauf `8e81885e`; Auftrag
+`docs/beweise/roh/NAK-380-erstpruefung-5-auftrag.txt` (Prüfbereich
+`c43c1646...8e81885e` über die fünfzehn Ticketpfade), Urteil
+`docs/beweise/roh/NAK-380-erstpruefung-5-urteil.md`. **URTEIL: NEEDS_WORK —
+drei Defekte, keine Lücke, keine Härtung:** D1 M-75 bis M-79 prüfen Kohärenz
+und Laufzeit nur am letzten Snapshot statt „jeder Evidenzsnapshot ab dem
+siebten“ (Ereignisspalte „wie M-73“); D2 der Rotbeweis der M-95-Endlichkeit
+fällt am Bitverlust von Band 216, nicht an einer nicht endlichen Ausgabe
+(zweite Sperre `std::isfinite (koh)` in `stereoAuswerten`); D3 der Rotbeweis
+von M-87 (c) fällt an der Vektorgröße, nicht an der Binzuordnung (die
+Ersatzmutation `m87-rate` lässt die `zuordnung`-Aufrufe unberührt). Geprüft:
+Diff lesend, Produkt- und Vertragspfade unverändert; nicht geprüft: keine
+Läufe.
+
+**Validierung an der Quelle.** Lesender Opus-5.5-Worker `1e7078f9`
+(`nakama-nak380-8e81885-val1`, Effort xhigh, `dontAsk`), 04:08 bis 04:23
+Uhr, HEAD vor und nach dem Lauf `8e81885e`; Auftrag
+`docs/beweise/roh/NAK-380-erstpruefung-5-validierung-auftrag.txt`, Bericht
+`docs/beweise/roh/NAK-380-erstpruefung-5-validierung.md`: 2 bestätigt (D2,
+D3), 1 präzisiert (D1: Kohärenzhälfte DEFEKT, Laufzeithälfte LÜCKE), 0
+widerlegt, 1 weitere Stelle (Z1: M-87 (a) Seek — die Prüfung „Kohärenz null“
+ist ohne Trennschärfe, weil der erste Snapshot nach dem Seek 512 Samples
+nach der Grenze 0 neue Frames trägt und das Bit schon durch `frames == 0`
+ausgeschlossen ist; `m87-seek` lässt sie grün). Gemeinsame Wurzel: (A)
+Abdeckung je Element (D1) und (B) Rotbeweis an einem Nebeneffekt bei doppelt
+getragener Zusage (D2, D3, Z1); Durchsicht aller Ereignisspalten und
+Strukturmutationen ohne weitere Stelle.
+
+### 50.1 Einordnung je Befund
+
+| Befund | Quelle (HEAD `8e81885e`) | Validierung | Einordnung | Regel |
+|---|---|---|---|---|
+| D1 Kohärenzhälfte M-75 bis M-79 nur am letzten Snapshot | `Sonde013StereoGoldenTest.cpp:822-848` (`nak380LaufzeitKohaerenz` übergibt `L.schnapp.size()`), `:934-943`; Matrix `:984-988` Ereignis „wie M-73“ = „jeder Evidenzsnapshot ab dem siebten“; §47.3 ließ die Kohärenzhälfte unverändert | PRÄZISIERT | **DEFEKT** — Ereignis und „Zusage je Element“ nicht abgebildet (derselbe Helfer wie M-74 „letzter Snapshot“); M-73 prüft 7 bis n, M-80 trägt die Lücke nicht | Kohärenzhälfte an jedem Snapshot ab dem siebten wie M-73, Vorbedingung „Snapshots 7 bis n“ verriegelt; Rotbeweis an einem Snapshot vor dem letzten |
+| D1 Laufzeithälfte M-75 bis M-79 | dieselbe Ereignisspalte gegen R-380-13 (iii) (5σ für rund 4 200 Bandprüfungen je Etappe); je Snapshot ab dem siebten wären es rund 37 000 abhängige Prüfungen | PRÄZISIERT | **LÜCKE** — die Regel sagt nicht, welcher Snapshot gilt | **R-380-13 (v)** unten: letzter Snapshot |
+| D2 M-95 Endlichkeit fällt am Bitverlust | `Sonde013DynamicsTest.cpp:948-963` (kombinierte Prüfung); `Stereo.h:199-202` Riegel, `:465` zweite Sperre (seit Etappe 1 vorhanden); `m95-riegel` „nicht endlich 0, Band 216 ohne Bit“ | BESTÄTIGT | **DEFEKT** — Rotbeweis an einem Nebeneffekt (Regel §2, Lehre Z1); die Matrixkette „Riegel weg → NaN“ traf am Code nie zu, die Präzisierung verlangte dann eine Mutation mit derselben Aussage | zwei getrennte Prüfungen; Rotbeweis der Endlichkeit als Doppelmutation (Riegel weg und Sperre `:465` weg); beide Riegel im Kommentar benannt |
+| D3 M-87 (c) Rotbeweis an der Vektorgröße | `Sonde013StereoGoldenTest.cpp:1345-1350`, `:1369` (Ringbytes gegen Soll, kombiniert); `FeatureEngine.h:599-603` Zuordnung, `:646` `assign`, `:698` `stereoLeeren`; kein Testzugang für die Binzuordnung je Band | BESTÄTIGT | **DEFEKT** — die Zusage „Binzuordnung für 96 kHz neu, kein Wert der alten Rate überlebt“ wird nicht an der Binzuordnung gemessen; der Rotbeweis fällt am Nebeneffekt | Binzuordnung je Band gegen `nak380Binfenster (b, 96000)`; Ringframes und Ringbytes getrennt; Rotbeweise: Zuordnung ausgelassen (alte überlebt) und `m87-rate` plus `stereoLeeren` ausgelassen |
+| Z1 M-87 (a) Seek „Kohärenz null“ ohne Trennschärfe (Validierer) | `Sonde013StereoGoldenTest.cpp:1407-1410`, Seek-Lage `:1319-1329`, `:1360-1367`; `NAK-380-e5-mutation-m87-seek.txt:37` grün | weitere Stelle | **DEFEKT (schwach)** — Wache ohne Trennschärfe (Lehre Z1); der Satz „(a) Kohärenz `null`“ ist nie gebrochen | Seek so, dass der erste Snapshot danach 1 bis 7 neue Frames trägt (wie Bein `reset`); `m87-seek` macht die Prüfung rot |
+
+Kein Befund fällt unter einen Ausschluss (NAK-406, NAK-407, angenommene
+Abweichungen §46.9/§48.9 betreffen andere Stellen). Alle vier Defekte sind
+Testdefekte; der Produktpfad der Etappe (Ring, MSC, Phase, Laufzeit) trägt
+keinen Befund; der Kanon nachher ist GRUEN.
+
+### 50.2 Regel R-380-13 (v) und Matrix in der Fassung §50
+
+**R-380-13 (v) (Dirigent, 26.09.2026; Technik innerhalb von R-380-13 (iii)).**
+Die Laufzeithälfte von M-74 bis M-80 gilt am letzten Snapshot jedes Laufs
+(wie M-74 und M-80 schon zusagen): T_B ist mit 5σ für rund 4 200
+Bandprüfungen je Etappe bemessen; eine Prüfung an jedem Snapshot ab dem
+siebten vervielfachte die abhängigen Prüfungen (Ringe aufeinanderfolgender
+Snapshots teilen zwei Drittel bzw. sechs Siebtel ihrer Daten) ohne
+Produktwirkung. Die Kohärenzhälfte von M-75 bis M-79 gilt wie M-73 an jedem
+Evidenzsnapshot ab dem siebten (Kohärenz ≥ 0,95 hat gegen die Referenzen
+0,9715 bis 0,9985 Reserve, keine Multiplizitätsfrage).
+
+| ID | Änderung gegenüber §49.2 |
+|---|---|
+| M-75 bis M-79 | Ereignisspalte geteilt: Kohärenzhälfte „jeder Evidenzsnapshot ab dem siebten (wie M-73)“, Laufzeithälfte „letzter Snapshot nach 10 s (R-380-13 (v))“; Rotbeweis der Kohärenzhälfte: Bandsumme (wie M-73) und eine Mutation, die nur frühe Snapshots trifft |
+| M-87 (a) | Vorbedingung: Seek unmittelbar nach einem Snapshot, erster Snapshot danach mit 1 bis 7 neuen Frames (Kadenzmodell); Rotbeweis `m87-seek` fällt an „Kohärenz `null`“ |
+| M-87 (c) | Zusage gemessen an der Binzuordnung je Band beider Stufen gegen die Gitterreferenz, Ringframes = 0 und Ringbytes = Soll getrennt; Rotbeweise: Zuordnung beim Ratenwechsel ausgelassen; Ring nicht neu angelegt plus `stereoLeeren` ausgelassen |
+| M-95 | Zusage geteilt: (i) keine nicht endliche Kohärenz, Phase oder Laufzeit; (ii) Band 216 behält sein Bit aus den gültigen Frames; Rotbeweis (i) Doppelmutation Riegel weg und Sperre weg, (ii) Riegel weg |
+| übrige Zeilen | wie §49.2, §47.3 und §6.4 |
+
+### 50.3 Nacharbeitsauftrag 1 (Runde 1 von 3)
+
+Auftrag `docs/beweise/roh/NAK-380-etappe-5-nacharbeit-1-auftrag.txt`: nur
+die vier bestätigten Defekte wörtlich mit ihrer schließenden Regel und die
+Regel R-380-13 (v); Ticketpfade `Sonde013StereoGoldenTest.cpp`,
+`Sonde013DynamicsTest.cpp`, `FeatureEngine.h` (nur eine Testzugangs-Auskunft
+für die Binzuordnung je Band unter dem Define, T-380-11, `sizeof` unverändert),
+B19-Runnerzeile bei Bedarf, Rotbeweise M-75 bis M-79, M-87, M-95 append-only,
+Mutationsprotokolle `NAK-380-e5n1-mutation-*`, Manifest §51; kein Produktcode,
+kein Versionsschritt. Bauer: frischer Opus-5.5-Worker `--effort xhigh`
+(NAK-404), Aufsicht ENG, gestartet nach dem Ende des Kanons (kein zweiter
+Bau parallel, NAK-290). Beine: B19, B18, B5, A1, A16, B1, B4, A26. Die
+Wiederprüfung 1 sieht nur `8e81885e...HEAD`, die Befundliste D1, D2, D3, Z1
+und das Gate (Vorlage B, Codex `gpt-6-astra` xhigh, Codex-Woche 90 %).
+Lehre dieser Runde für die nächsten Etappen: eine Zusage, die zwei Riegel
+tragen, bekommt eine Doppelmutation als Rotbeweis; ein Helfer, der für
+mehrere Matrixzeilen wiederverwendet wird, muss die Ereignisspalte jeder
+Zeile tragen. Der Zwischenstand (Kanon-Rohdatei, Broker-Pin, Urteil,
+Validierung, Aufträge, dieser Abschnitt) wird mit Pathspec committet und
+gepusht; die Nacharbeit 1 läuft ab diesem Stand.
+
+## 51. Nacharbeit 1 der Etappe 5 (Bauer Opus 5.5 xhigh, 26.09.2026)
+
+Gebaut nach dem Auftrag `docs/beweise/roh/NAK-380-etappe-5-nacharbeit-1-auftrag.txt`
+(Runde 1 von 3; vier bestätigte Testdefekte D1, D2, D3, Z1 und Regel
+R-380-13 (v), Matrixfassung §50.2). **Ergebnis:** alle vier Defekte
+geschlossen, jeder neu gefasste Zusagesatz mit Rotbeweis an seiner eigenen
+Prüfzeile (13 Mutationsprotokolle, alle JA; drei davon Gegenproben zu den
+zwei Doppelmutationen). Kein Produktcode: `Stereo.h`, `FeatureEngine.h` und
+`Zeit.h` sind am Endstand ohne Diff (die Auskunft über die Binzuordnung liegt
+im Testzugang des B19-Programms und liest über die vorhandene Freundschaft),
+`sizeof (FeatureEngine)` unverändert 16 248 B. B19 **845/0** (vorher 809/0),
+B18 **127/0** (vorher 126/0), B5 313/0, A1, A16, B1, B4, A26 grün. Die 773
+nicht neu gefassten Prüfzeilen von B19 sind samt Messwerten zeichengleich zum
+Endstand der Nacharbeit 0. Nichts gestagt, nichts committet.
+
+### 51.1 Startmessung
+
+- `Get-Date` 26.09.2026 05:21:33 Uhr; `git rev-parse HEAD` =
+  `11ad06ba7bfdc828024000de2b5a80d125a0daba`; `git status --short` nur
+  `briefing-hub/` und `nimbalyst-local/` (fremd, nicht angefasst); der
+  Broker-Pin stand nicht im Status.
+- Prozessprobe (cmake, MSBuild, cl, link, cargo, rustc, EqCop*,
+  eqcop-broker, FL64, vctip) um 05:21:33 Uhr leer; vor dem Endbau um
+  05:43 Uhr ebenfalls leer. Nach dem letzten Bau (05:54 Uhr) lag ein
+  übrig gebliebener MSVC-Telemetrieprozess `vctip.exe` (PID 102124) aus den
+  eigenen Bauten ohne Bauschritt; beendet (NAK-300), kein Bau hing daran.
+- Kein FL Studio, keine Installation, kein Laufzeit-Arm, kein voller Kanon,
+  kein zweiter Kanon (NAK-290).
+
+### 51.2 Schließung je Defekt
+
+**D1 (Kohärenzhälfte M-75 bis M-79 nur am letzten Snapshot).** Regel: die
+Kohärenzhälfte gilt wie M-73 an jedem Evidenzsnapshot ab dem siebten, die
+Laufzeithälfte nach R-380-13 (v) am letzten Snapshot. Umsetzung: neuer
+Helfer `nak380RateKohaerenz` (`Sonde013StereoGoldenTest.cpp:908`), den
+`nak380Rate` (`:1036`) für M-75 bis M-79 je Block 64, 512, 16 384 statt des
+M-74-Helfers ruft; er prüft jeden Snapshot 7 bis n mit `nak380KohPruefen`
+(Freiheitsgrade je Snapshot aus dem Kadenzmodell) und trägt je Satz eine
+eigene Prüfung wie M-73: Vorbedingung „Snapshots 7 bis n, n aus dem
+Kadenzmodell, Freiheitsgrade je Snapshot, Basis“ (`:926`, verriegelt über
+`geprueft + 6 == snapSoll.size()`), „jedes Band mit Energie trägt an jedem
+Snapshot ab dem siebten ein Bit“ (`:933`), „jedes Band mit Bit ≥ 0,95“
+(`:937`), Referenzmittel über alle Bandbefunde der Snapshots 7 bis n (`:942`).
+Jede Prüfung meldet, an welchen Snapshots ihr Satz verletzt ist (Anzahl,
+erster, letzter, und ob der letzte verletzt ist). `nak380LaufzeitKohaerenz`
+(`:844`) trägt nur noch M-74 (Kommentar berichtigt); die Laufzeithälfte
+(`nak380LaufzeitWert`, `:952`) ist unverändert. Rotbeweise: `m75-bandsumme`
+(Kohärenz aus der über Bins summierten Kreuzleistung, `Stereo.h:437`, `:451`,
+`:464`) fällt an `:937` und `:942` in allen 15 Läufen an **jedem** Snapshot 7
+bis n; `m75-frueh` (Kohärenzbit erst ab 5 s verarbeiteter Samples,
+`Stereo.h:427`) fällt an `:933` in allen 15 Läufen an den Snapshots 7 bis 13,
+14, 15 oder 16, **der letzte Snapshot ist nicht verletzt**, und M-74
+(Ereignis „letzter Snapshot“) bleibt unter derselben Mutation in allen 18
+Läufen grün — genau der Unterschied, den D1 schließt; `m75-vorbedingung`
+(Schleife ab Snapshot 8, Test) fällt an `:926` in allen 15 Läufen.
+
+**D2 (M-95 Endlichkeit fiel am Bitverlust).** Regel: zwei Prüfungen, (i)
+„keine nicht endliche Kohärenz, Phase oder Laufzeit“ und (ii) „Band 216
+behält sein Kohärenzbit mit dem Wert aus den gültigen Frames“; Rotbeweis (i)
+als Doppelmutation. Umsetzung in `Sonde013DynamicsTest.cpp`: (i) `:974`
+(`nichtEndlich == 0 && kohBits > 0`), (ii) `:979`; (ii) vergleicht den Wert
+von Band 216 bitgleich mit einer Auswertung **vor** dem NaN-Frame (`:922-923`,
+`stereoAuswerten` über den Testzugang; der Riegel lässt Ring und Akku des
+Bandes unberührt), damit „mit dem Wert aus den gültigen Frames“ gemessen ist
+und nicht nur „endlich“. Beide Riegel sind im Testkommentar benannt
+(`:965-973`: NaN-Riegel beim Erzeugen `Stereo.h:199-202`, Endlichkeitssperre
+der Auswertung `Stereo.h:465`). Rotbeweise: `m95-nan-doppel` (`Stereo.h:202`
+`continue;` → `(void) 0;` und `:465` `std::isfinite (koh)` → `true`) fällt an
+(i) mit „nicht endlich 1“ (Band 216 trägt NaN; `std::clamp` reicht NaN
+durch); `m95-riegel` allein fällt an (ii) (Band 216 ohne Bit) und am
+Zählsatz, (i) bleibt grün; Gegenprobe `m95-sperre-allein` (nur `:465`) lässt
+alle Sätze grün — die Zusage (i) tragen zwei Riegel.
+
+**D3 (M-87 (c) Rotbeweis an der Vektorgröße).** Regel: Binzuordnung je Band
+beider Stufen gegen `nak380Binfenster (b, 96000)`, Ringframes und Ringbytes
+getrennt; Rotbeweise c1 und c2. Umsetzung: Testzugang `binfenster`
+(`Sonde013StereoGoldenTest.cpp:241`, liest `bandVon`/`bandBis` einer Stufe
+über die vorhandene Freundschaft, kein Mitglied, keine Produktfunktion);
+`nak380ZuordnungPruefen` (`:1407`) vergleicht je Band in der zuständigen
+Stufe erster Bin `von` und Ende `bis` (letzter Bin `bis − 1`) mit der
+Gitterreferenz und verlangt in der anderen Stufe `[0, 0)`; Prüfung nach dem
+Ratenwechsel `:1570`; Vorbedingung `:1561` (vor dem Wechsel folgt die
+Zuordnung der Referenz bei 44,1 kHz, die Referenzen beider Raten
+unterscheiden sich, Trennschärfe); die kombinierte Ringprüfung ist in
+„Ringframes 0 — kein Wert von davor überlebt“ (`:1550`) und „Ringbytes = Soll
+der geltenden Rate (M-85)“ (`:1554`) getrennt, in allen drei Beinen.
+Rotbeweise: **c1** `m87-c1-zuordnung` (`FeatureEngine.h:598-603`: Stufen für
+96 kHz vorbereitet, Zuordnung der alten Rate übernommen, wenn schon eine
+besteht) fällt an `:1570` mit 221 von 221 abweichenden Bändern, Vorbedingung
+und Ringframes bleiben grün; **c2** `m87-c2-ring-doppel`
+(`FeatureEngine.h:646` Ring beim Ratenwechsel nicht neu angelegt und
+`:596`, `:683-684` `stereoLeeren` wirkt beim Ratenwechsel nicht auf den Ring)
+fällt an `:1550` (Ringframes 4488) und `:1616` (erster Snapshot 19 statt 13
+Frames), die Binzuordnung bleibt grün; Gegenproben: `m87-rate-allein` bricht
+nur die Bemessung `:1554` (so fiel die Erstprüfung 5), `m87-leeren-allein`
+bricht nichts — die Zusage „kein Wert überlebt“ tragen zwei Riegel (im
+Testkommentar von `nak380M87` benannt); Vorbedingung `m87-vor-44k1`
+(Test) fällt an `:1561`.
+
+**Z1 (M-87 (a) „Kohärenz null“ ohne Trennschärfe).** Regel: der Seek liegt
+unmittelbar hinter einem Snapshot, der erste Snapshot danach trägt 1 bis 7
+neue Frames. Umsetzung: `vorherSeek` (`:1481`) ist der letzte Snapshot bis
+5 s aus dem Kadenzmodell (`nak380Snapshots`, 15 · 13 824 = 207 360 Samples);
+das Bein seek speist genau so viele Samples, der erste Snapshot danach fällt
+nach 13 824 Samples mit 5 Frames, der zweite nach 27 648 mit 12; neue
+Vorbedingung `:1604` (letzter Snapshot vor der Grenze auf der letzten Sample,
+Snapshots vor und nach der Grenze an den Samplezahlen des Kadenzmodells,
+1 bis 7 neue Frames); Kommentar der Kadenz berichtigt (die falsche Angabe
+„684 Samples“ ist ersetzt). Rotbeweise: `m87-seek` (`Zeit.h:389`, neu
+gefahren) fällt jetzt an „Kohärenz null“ `:1631` (Bit mit 1,0000 bei 12
+Frames), dazu an `:1550` und `:1616`; `m87-seek-lage` (Seek 512 Samples
+hinter dem Snapshot, Test) fällt an `:1604`.
+
+### 51.3 Änderungen je Datei
+
+- **`eq-copilot/plugin/tests/Sonde013StereoGoldenTest.cpp`** (2843 → 3066
+  Zeilen, CRLF): Testzugang `binfenster` (`:235-248`); Kommentar von
+  `nak380LaufzeitKohaerenz` (nur M-74); `Nak380SnapVerletzt` (`:867-886`) und
+  `nak380RateKohaerenz` (`:888-950`); `nak380Rate` ruft ihn (`:1042`);
+  `Nak380ZuordnungBefund`, `nak380ZuordnungPruefen`,
+  `nak380ZuordnungUnterschiede` (`:1395-1445`); `nak380M87` mit Kadenzkommentar,
+  Seek-Lage aus dem Kadenzmodell, getrennten Ringprüfungen, Zuordnungsprüfung
+  und Seek-Vorbedingung (`:1447-1635`). M-74, M-80, Laufzeithälfte,
+  Vorbedingungen der Rauschläufe, übrige Fälle unverändert.
+- **`eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp`** (2472 → 2493, CRLF):
+  Auswertung vor dem NaN-Frame, getrennte Prüfungen (i) und (ii), Kommentar
+  mit beiden Riegeln.
+- **`eq-copilot/plugin/core/analysis/FeatureEngine.h`**: unverändert (kein
+  Diff). Die Testzugangs-Auskunft über die Binzuordnung brauchte keine
+  Funktion im Produktkopf: die Freundschaft `friend struct
+  FeatureEngineTestzugang;` (`FeatureEngine.h:500`, unter dem Define `:489`)
+  reicht für den lesenden Zugriff aus dem Testprogramm. `sizeof
+  (FeatureEngine)` 16 248 B (B5 M-97).
+- **`tools/beweise.ps1`**: unverändert. Die Behauptung B19 (`:764`) nennt
+  keine Snapshotwahl und für M-87 nur „die Leerung an Grenze, Rücksetzen und
+  Ratenwechsel folgen dem Kadenzmodell“; beides bleibt wahr. Die Behauptung
+  B18 (`:766`) zu M-95 („keine Kohärenz, Phase oder Laufzeit wird nicht
+  endlich“) bleibt wahr (außerhalb der Grenze, nur gelesen).
+- **Rohdateien (LF):** `NAK-380-rot-M-75.txt` bis `NAK-380-rot-M-79.txt`,
+  `NAK-380-rot-M-87.txt`, `NAK-380-rot-M-95.txt` append-only um einen Block
+  „Nacharbeit 1“ (Befund, Fassung §50.2, Endstand-Einzellauf, Zusagesätze mit
+  Prüfzeile, Mutation, rot, Protokoll; `git diff --numstat` nur Zugänge); 13
+  neue Mutationsprotokolle `NAK-380-e5n1-mutation-<Kürzel>.txt` (Kürzel
+  `m75-bandsumme`, `m75-frueh`, `m75-vorbedingung`, `m95-nan-doppel`,
+  `m95-riegel`, `m95-sperre-allein`, `m87-seek`, `m87-c1-zuordnung`,
+  `m87-c2-ring-doppel`, `m87-rate-allein`, `m87-leeren-allein`,
+  `m87-seek-lage`, `m87-vor-44k1`; `m95-riegel` lief zuerst als Probelauf
+  des Mutationsablaufs, die drei M-95-Protokolle tragen den Endstand des
+  Tests).
+- Bauartefakte (nicht im Index) unter `eq-copilot/build/`: `nak380-e5n1-*.log`,
+  Sicherungen unter `eq-copilot/build/nak380-sicherung/e5n1/`.
+
+### 51.4 Messzahlen
+
+D1, Kohärenzhälfte am Endstand (B19 05:48:48 bis 05:48:58 Uhr), je Rate und
+Block: geprüfte Snapshots 7 bis n (n aus dem Kadenzmodell, gleich dem Lauf),
+Bandbefunde mit Bins über diese Snapshots, Kohärenzminimum über alle diese
+Snapshots und das Referenzmittel q. In jedem Lauf: kein Band ohne Bit, keines
+unter 0,95, Freiheitsgrade und Basis an jedem Snapshot nach dem Modell.
+
+| fs (kHz) | Block | Snapshots | Bandbefunde | Kohärenzminimum (Band, Snapshot) | Mittel q |
+|---|---|---|---|---|---|
+| 44,1 | 64 | 27 (7 bis 33) | 5373 | 0,9961 (89, 23) | 1,0004 |
+| 44,1 | 512 | 25 (7 bis 31) | 4975 | 0,9964 (91, 10) | 0,9998 |
+| 44,1 | 16384 | 21 (7 bis 27) | 4179 | 0,9963 (91, 8) | 1,0005 |
+| 88,2 | 64 | 27 (7 bis 33) | 4482 | 0,9876 (118, 14) | 0,9946 |
+| 88,2 | 512 | 25 (7 bis 31) | 4150 | 0,9880 (74, 20) | 0,9951 |
+| 88,2 | 16384 | 21 (7 bis 27) | 3486 | 0,9894 (118, 11) | 0,9946 |
+| 96 | 64 | 27 (7 bis 33) | 4347 | 0,9848 (67, 23) | 0,9904 |
+| 96 | 512 | 26 (7 bis 32) | 4186 | 0,9862 (121, 13) | 0,9906 |
+| 96 | 16384 | 23 (7 bis 29) | 3703 | 0,9874 (121, 11) | 0,9901 |
+| 176,4 | 64 | 27 (7 bis 33) | 3564 | 0,9607 (141, 25) | 0,9923 |
+| 176,4 | 512 | 26 (7 bis 32) | 3432 | 0,9614 (137, 25) | 0,9929 |
+| 176,4 | 16384 | 21 (7 bis 27) | 2772 | 0,9640 (141, 20) | 0,9928 |
+| 192 | 64 | 27 (7 bis 33) | 3429 | 0,9574 (144, 23) | 0,9929 |
+| 192 | 512 | 26 (7 bis 32) | 3302 | 0,9544 (144, 23) | 0,9931 |
+| 192 | 16384 | 23 (7 bis 29) | 2921 | 0,9575 (144, 20) | 0,9930 |
+
+Kohärenzminimum über alle Snapshots je Rate: 44,1 kHz 0,9961; 88,2 kHz
+0,9876; 96 kHz 0,9848; 176,4 kHz 0,9607; 192 kHz 0,9544 (am letzten Snapshot
+lagen 176,4 und 192 kHz bei 0,9625 bis 0,9676, §46.4). Unter `m75-bandsumme`
+je Lauf verletzt an allen 21 bis 27 Snapshots, Minimum 0,327 bis 0,352; unter
+`m75-frueh` verletzt an 7 bis 10 Snapshots (7 bis 13 … 16), der letzte nie.
+
+M-87 seek: erster Snapshot nach der Grenze nach 13 824 Samples mit **5**
+Frames (Kadenzmodell und Lauf gleich), zweiter nach 27 648 mit 12; unter
+`m87-seek` 12 Frames und Kohärenz 1,0000 im ersten. M-87 (c): **221 Bänder je
+Stufe** geprüft (zuständig Bassstufe 65 Bänder, davon 28 mit Bins bei
+96 kHz; Hauptstufe 156, davon 133 mit Bins), vor dem Wechsel 221 von 221
+gleich der 44,1-kHz-Referenz, die Referenzen beider Raten verschieden in 221
+Bändern (`von` oder `bis`); unter c1 221 abweichend, unter c2 Ringframes 4488,
+erster Snapshot 19 statt 13, zweiter 33 statt 27, Ringbytes 236 224 statt
+113 344. M-95: Band 216 0,998163 vor und nach dem Frame (bitgleich);
+unter `m95-nan-doppel` **nicht endlich 1** (Band 216 NaN), unter `m95-riegel`
+nicht endlich 0 und Band 216 ohne Bit.
+
+### 51.5 Tabelle je berührter Matrixzeile
+
+Regel des Auftrags: je Satz und Hälfte eine Zeile Zusagesatz → Prüfzeile →
+Mutation → rot → Rohdatei. Zeilen am Stand der Nacharbeit 1 (Test B19
+`Sonde013StereoGoldenTest.cpp`, B18 `Sonde013DynamicsTest.cpp`). „rot JA“: das
+Protokoll nennt „Die Zusage faellt an der erwarteten Pruefung: JA“, die
+Pflicht-Grün-Muster hielten, die Rücknahme ist per SHA-256 gleich
+(`Stereo.h` `21B5107B…3860`, `FeatureEngine.h` `D5095860…CA5D`, `Zeit.h`
+`6CD5A9E2…1DADA`, Test B19 `AA77DE7D…C802`; B18-Mutationen auf dem
+Endstand des Tests), Neubau mit Binary jünger als die Quelle, Fall danach
+grün. Protokolle unter `docs/beweise/roh/`.
+
+**M-75 bis M-79** (`NAK-380-rot-M-75.txt` bis `NAK-380-rot-M-79.txt`, je
+Block 64, 512, 16 384; die Zeilen gelten für jede der fünf Raten)
+
+| Zusagesatz | Prüfzeile | Mutation | rot | Rohdatei |
+|---|---|---|---|---|
+| Kohärenzhälfte, Vorbedingung: Snapshots 7 bis n (n aus dem Kadenzmodell), Freiheitsgrade je Snapshot nach dem Kadenzmodell, Basis | B19 `:926` je Block | `Sonde013StereoGoldenTest.cpp:915` Schleife ab Snapshot 8 (m75-vorbedingung) | JA (15 von 15 Läufen) | `NAK-380-e5n1-mutation-m75-vorbedingung.txt` |
+| jedes Band mit Energie trägt an jedem Evidenzsnapshot ab dem siebten ein Kohärenzbit | B19 `:933` je Block | `Stereo.h:427` Bit erst ab 5 s verarbeiteter Samples (m75-frueh): verletzt an Snapshots vor dem letzten, der letzte nicht; M-74 grün | JA (15 von 15) | `NAK-380-e5n1-mutation-m75-frueh.txt` |
+| jedes Band mit Bit hat an jedem Evidenzsnapshot ab dem siebten Kohärenz ≥ 0,95 | B19 `:937` je Block | `Stereo.h:437`, `:451`, `:464` Kohärenz aus der über Bins summierten Kreuzleistung (m75-bandsumme): verletzt an jedem Snapshot 7 bis n | JA (15 von 15) | `NAK-380-e5n1-mutation-m75-bandsumme.txt` |
+| (Referenz ρ_w(d)² der Rate) Mittel von (1 − C)/(1 − ρ²) über alle Bandbefunde mit Bit der Snapshots 7 bis n in [0,8; 1,2] | B19 `:942` je Block | wie oben (m75-bandsumme) | JA (15 von 15) | `NAK-380-e5n1-mutation-m75-bandsumme.txt` |
+| Laufzeithälfte, letzter Snapshot nach R-380-13 (v): Gruppenlaufzeit innerhalb T_B | B19 `:963` (vorher `:861`) | Δf aus 48 000 statt fs (m80-df48k), bestehend §48.5 | JA (§48.5) | `NAK-380-e5n0-mutation-m80-df48k.txt` |
+| Laufzeithälfte: T_B aus den Vorbedingungen | `:707` (`nak380Toleranz`), `:963` | keine (Struktursatz, §48.5) | — | Nachbau-2, `NAK-380-e5n0-mutation-m80-tb-fest.txt` |
+| Laufzeithälfte: Bänder mit einem genutzten Bin ohne Laufzeitbit | B19 `:974` (vorher `:872`) | m80-einbin, bestehend §48.5 | JA (§48.5) | `NAK-380-e5n0-mutation-m80-einbin.txt` |
+| Laufzeithälfte: Vorbedingung K_eff (genutzte Bins = Gitterbins) | B19 `:959` (vorher `:857`) | e5n0-genutzt, bestehend §48.5 | JA (§48.5) | `NAK-380-e5n0-mutation-e5n0-genutzt.txt` |
+
+**M-87 (a) und (c)** (`NAK-380-rot-M-87.txt`)
+
+| Zusagesatz | Prüfzeile | Mutation | rot | Rohdatei |
+|---|---|---|---|---|
+| (a) Seek: höchstens die Frames seit der Grenze (höchstens 5 …) | B19 `:1550` (Ringframes 0) und `:1616` (5 Frames), Bein seek | `Zeit.h:389` Seek schiebt den Ring statt ihn zu leeren (Matrixmutation, neu gefahren) (m87-seek) | JA | `NAK-380-e5n1-mutation-m87-seek.txt` |
+| (a) Kohärenz `null` | B19 `:1631`, Bein seek | wie oben (m87-seek): Bit mit 1,0000 bei 12 Frames | JA | `NAK-380-e5n1-mutation-m87-seek.txt` |
+| (a) Vorbedingung: Seek unmittelbar nach einem Snapshot, erster Snapshot danach mit 1 bis 7 neuen Frames (Kadenzmodell) | B19 `:1604`, Bein seek | `Sonde013StereoGoldenTest.cpp:1481` Seek 512 Samples hinter dem Snapshot (m87-seek-lage) | JA | `NAK-380-e5n1-mutation-m87-seek-lage.txt` |
+| (c) Binzuordnung für 96 kHz neu (je Band beider Stufen erster und letzter Bin gegen `nak380Binfenster (b, 96000)`) | B19 `:1570`, Bein rate_change | `FeatureEngine.h:598-603` Neuberechnung der Zuordnung ausgelassen, wenn eine besteht (m87-c1-zuordnung) | JA (221 von 221 Bändern) | `NAK-380-e5n1-mutation-m87-c1-zuordnung.txt` |
+| (c) Vorbedingung: vor dem Wechsel Zuordnung = Referenz bei 44,1 kHz, Referenzen beider Raten verschieden | B19 `:1561`, Bein rate_change | `Sonde013StereoGoldenTest.cpp:1501` Vorbedingung gegen die 96-kHz-Referenz (m87-vor-44k1) | JA | `NAK-380-e5n1-mutation-m87-vor-44k1.txt` |
+| (c) kein Wert der alten Rate überlebt (zwei Riegel: Neuanlage `:646`, `stereoLeeren` über `:684`) | B19 `:1550` (Ringframes 0) und `:1616` (13 Frames), Bein rate_change | Doppelmutation `FeatureEngine.h:646` Ring nicht neu angelegt und `:596`, `:683-684` `stereoLeeren` ohne Wirkung auf den Ring beim Ratenwechsel (m87-c2-ring-doppel); Gegenproben je Einzelmutation (m87-rate-allein, m87-leeren-allein) | JA; Gegenproben bestätigt | `NAK-380-e5n1-mutation-m87-c2-ring-doppel.txt`, `NAK-380-e5n1-mutation-m87-rate-allein.txt`, `NAK-380-e5n1-mutation-m87-leeren-allein.txt` |
+| Bemessung (M-85, von (c) getrennt): Ringbytes = Soll der geltenden Rate | B19 `:1554` je Bein | `FeatureEngine.h:646` (m87-rate-allein) | JA | `NAK-380-e5n1-mutation-m87-rate-allein.txt` |
+
+(b) reset: Sätze und Rotbeweis `m87-reset` wie §46.5; seine Prüfzeilen
+stehen jetzt bei `:1550` (Ringframes), `:1554` (Ringbytes), `:1616`, `:1621`,
+`:1631`.
+
+**M-95** (`NAK-380-rot-M-95.txt`)
+
+| Zusagesatz | Prüfzeile | Mutation | rot | Rohdatei |
+|---|---|---|---|---|
+| der Frame zählt für dieses Band nicht (Riegel je Band) | B18 `:946` | `Stereo.h:202` Riegel weg (m95-riegel, neu gefahren) | JA | `NAK-380-e5n1-mutation-m95-riegel.txt` |
+| die übrigen Bänder zählen | B18 `:949` | m95-global, bestehend §46.5 | JA (§46.5) | `NAK-380-e5-mutation-m95-global.txt` |
+| (i) keine NaN in Kohärenz, Phase oder Laufzeit (zwei Riegel: `Stereo.h:199-202`, `:465`) | B18 `:974` | Doppelmutation `Stereo.h:202` Riegel weg und `:465` Endlichkeitssperre weg (m95-nan-doppel): nicht endlich 1; Gegenproben m95-riegel ((i) grün) und m95-sperre-allein (alles grün) | JA; Gegenproben bestätigt | `NAK-380-e5n1-mutation-m95-nan-doppel.txt`, `NAK-380-e5n1-mutation-m95-riegel.txt`, `NAK-380-e5n1-mutation-m95-sperre-allein.txt` |
+| (ii) Band 216 behält sein Kohärenzbit mit dem Wert aus den gültigen Frames | B18 `:979` | `Stereo.h:202` Riegel weg, Einzelmutation (m95-riegel): Band 216 ohne Bit | JA | `NAK-380-e5n1-mutation-m95-riegel.txt` |
+
+Mitgefallene Prüfungen je Protokoll mit Grund: `m75-bandsumme` die
+Laufzeitprüfung am letzten Snapshot in allen 15 Läufen (die Laufzeit
+entsteht nur über `kKohaerenzSchwellePhase`, die Bandsumme drückt breite
+Bänder darunter); `m87-seek` die zwei Prüfungen des §32.3-Falls (dieselbe
+Leerung an jeder Grenze); `m87-c1-zuordnung` die Ringbytes (der Ring wird
+aus der alten Zuordnung bemessen); `m87-c2-ring-doppel` die Ringbytes und der
+zweite Snapshot (33 statt 27); `m95-nan-doppel` (ii) und der Zählsatz. Die
+übrigen Mutationen ohne Mitgefallene.
+
+### 51.6 Einzeln gefahrene Beine am Endstand
+
+Endbau der sieben Ziele 26.09.2026 05:47:52 bis 05:48:47 Uhr, Exit 0
+(`eq-copilot/build/nak380-e5n1-bau-end2.log`); einzige Warnung die
+vorbestehende C4458 (`Stereo.h:188`). Jüngste Quelle unter `eq-copilot/plugin`:
+`Stereo.h` 05:47:37.425 Uhr (Rücknahme der letzten Mutation); jedes Binary ist
+jünger. Aufrufe wie `tools/beweise.ps1`; Rohausgaben
+`eq-copilot/build/nak380-e5n1-end-<Bein>.log` (Bauartefakt).
+
+| Bein | Aufruf | Lauf | Exit | Zähler | Binary |
+|---|---|---|---|---|---|
+| B19 | `EqCopSonde013StereoGoldenTest` | 05:48:48–05:48:58 | 0 | 845/0 (809 + 30 Kohärenzprüfungen M-75 bis M-79 + 6 in M-87) | 05:47:57.191 |
+| B18 | `EqCopSonde013DynamicsTest` | 05:48:58–05:49:09 | 0 | 127/0 (126 + 1, M-95 getrennt) | 05:47:44.008 |
+| B5 | `EqCopAnalysisGoldenTest` | 05:49:09–05:49:22 | 0 | 313/0 (M-97 16 248 B, Δ 40 B) | 05:48:11.000 |
+| A1 | `EqCopNullTest` | 05:49:22–05:49:23 | 0 | NULLTEST OK | 05:48:18.999 |
+| A16 | `EqCopProbeeqNullTest` | 05:49:23–05:49:23 | 0 | 145/0 | 05:48:27.582 |
+| B1 | `EqCopIdentityTest` | 05:49:23–05:49:24 | 0 | 120/0 | 05:48:37.455 |
+| B4 | `EqCopQueueStressTest` | 05:49:24–05:49:27 | 0 | 121/0 | 05:48:47.825 |
+| A26 | `py -3.13 tools/eq-copilot/pruefe_p4_korpus.py` | 05:49:27–05:49:28 | 0 | Exit-Gate P4: alle vier Klassen bestehen, keine falsche Behauptung. | — |
+
+Zusammensetzung B19: M-75 bis M-79 je Lauf vier Kohärenzprüfungen statt
+zwei (15 Läufe, +30); M-87 seek +2 (Ring getrennt, Seek-Vorbedingung), reset
++1, rate_change +3 (Ring getrennt, Zuordnung vorher und nachher):
+809 + 30 + 6 = 845. Ein erster Endlauf nach dem ersten Endbau (05:44:40 bis
+05:45:28 Uhr, gleiche Zähler) lag vor der Berichtigung in B18 (§51.8 Punkt 8);
+der zweite ist maßgeblich. Nicht gefahren (nicht beauftragt): A5,
+`gesundheit.py`, `tidy.py`.
+
+### 51.7 Logvergleich (Regressionswache)
+
+`eq-copilot/build/nak380-e5n0-end-<Bein>.log` (Endstand Nacharbeit 0) gegen
+`eq-copilot/build/nak380-e5n1-end-<Bein>.log` (`Compare-Object` je Zeile):
+
+- **B19:** 773 von 809 Prüfzeilen samt Messwerten zeichengleich; die 36
+  übrigen sind genau die neu gefassten (30 Kohärenzzeilen M-75 bis M-79,
+  vier Zeilen des Beins seek, die kombinierte Ringzeile der Beine reset und
+  rate_change); keine andere Zeile weicht ab. Die M-74-Zeilen, alle
+  Laufzeitzeilen, M-73 und der §32.3-Fall sind unverändert. Der erste Lauf
+  nach dem Umbau und der Endlauf sind zeilengleich.
+- **B18:** nur die kombinierte M-95-Zeile ersetzt durch (i) und (ii), dazu
+  die Summenzeile.
+- **B5, A1, A16, A26:** zeilengleich. **B1:** nur die zwei Zeitstempel von
+  `moduleinfo.json` (Bauzeit). **B4:** nur die zwei zeitabhängigen Zähler
+  des Lastfalls (Überlauf-Drops 3872 → 3874, Arbeitsschritte des zweiten
+  Fadens 718 → 466), nicht deterministisch, ohne Bezug zur Nacharbeit.
+
+### 51.8 Abweichungen vom Auftrag, begründet
+
+1. **Keine Auskunftsfunktion in `FeatureEngine.h`.** Der Auftrag erlaubte sie
+   unter dem Define; die vorhandene Freundschaft (`FeatureEngine.h:500`, der
+   Auftrag nannte `:482`) genügt für den lesenden Zugriff aus dem
+   B19-Testzugang, also bleibt der Produktkopf ohne Diff.
+2. **c1 als „Zuordnung der alten Rate übernommen“:** die Stufen werden für
+   96 kHz vorbereitet (N, Puffer, `fs`), die Neuberechnung der Zuordnung
+   entfällt, wenn schon eine besteht, und die alte Zuordnung wird
+   übernommen — so ist genau die Zuordnung veraltet, nicht zusätzlich die
+   Stufe (die Validierung schlug vor, auch die Stufenvorbereitung
+   auszulassen; beides formgültig).
+3. **c2, zweiter Teil als „`stereoLeeren` wirkt beim Ratenwechsel nicht auf
+   den Ring“:** der Ring wird für den Aufruf von `zuruecksetzen` in
+   `vorbereiten` beiseitegelegt und danach ungeleert zurückgesetzt, nur wenn
+   schon vorbereitet war (Ratenwechsel). Die von der Validierung genannte
+   Form `m87-reset` hätte auch das Rücksetzen ohne Ratenwechsel getroffen;
+   so bleibt das Bein reset unter c2 grün (Pflicht-Grün im Protokoll).
+4. **Zusätzliche Vorbedingungen mit Rotbeweis:** D1 `:926`
+   (m75-vorbedingung), D3 `:1561` (m87-vor-44k1), Z1 `:1604`
+   (m87-seek-lage); der Auftrag verlangte die Vorbedingungen verriegelt,
+   jede neue Prüfung ist einmal gebrochen.
+5. **Gegenproben zu beiden Doppelmutationen** (m95-sperre-allein,
+   m87-rate-allein, m87-leeren-allein, dazu m95-riegel): sie belegen, dass
+   jede Zusage zwei Riegel trägt und eine Einzelmutation sie nicht bricht.
+6. **(ii) von M-95 misst den Wert:** bitgleich zur Auswertung vor dem
+   NaN-Frame (eine zusätzliche `stereoAuswerten`-Auswertung über den
+   B18-Testzugang, ohne Wirkung auf Ring und Akkus), nicht nur „Bit und
+   endlich“.
+7. **Rotbeweis „nur frühe Snapshots“ im Produkt (`m75-frueh`)** statt am Test:
+   das Bit hängt an der verarbeiteten Samplezahl (≥ 5 s), trifft also genau
+   die Snapshots zwischen dem siebten und rund 5 s; der Auftrag nannte
+   Beispiele, keine feste Form.
+8. **Berichtigung nach der ersten Mutationsrunde:** in B18 hieß die
+   Auswertung vor dem Frame `e.stereoBand (216)` statt `b216`; berichtigt,
+   die drei M-95-Mutationen auf dem Endstand des Tests neu gefahren (die
+   Protokolle tragen diesen Stand), danach Endbau und alle Beine erneut
+   (§51.6). `m87-seek` wurde mit berichtigtem Grundtext der Mitgefallenen neu
+   gefahren (im ersten Lauf nannte er einen zweiten Snapshot, der nicht fiel).
+9. **Runnerzeile B19 unverändert** (§51.3).
+
+### 51.9 Selbstaudit und Prüfliste
+
+**Selbstaudit** (eigener Diff gegen `11ad06ba`, nicht gestagt): geändert sind
+genau die zwei Tests, sieben Rotdateien (nur Zugänge) und 13 neue
+Mutationsprotokolle, dazu dieses Manifest; `git diff` für `Stereo.h`,
+`FeatureEngine.h`, `Zeit.h` und `tools/beweise.ps1` leer. Keine Mutation im
+Baum (Suche nach `// Mutation`, `nak380Wechsel`, `nak380Xx`, `nak380AltBv`
+leer); jede mutierte Datei trägt nach der Rücknahme den SHA-256 vor der
+Mutation. Jede neue Prüfung einmal gebrochen (§51.5); kombinierte
+Assertionen getrennt (M-87 Ring, M-95); Doppelmutationen mit Gegenproben
+protokolliert; Seek-Lage und Frames aus dem Kadenzmodell, im Lauf gegen das
+Modell verriegelt; Binfenster je Band aus dem Gitter (`nak380Binfenster`,
+eigene Konstanten, nicht aus dem Produkt); `nak380ZuordnungPruefen` prüft
+jedes Band in beiden Stufen, keine Stichprobe. Zahlenränder: die Schleife
+über die Snapshots startet bei 7 und endet bei `schnapp.size()`, die
+Vorbedingung verlangt `geprueft + 6 == snapSoll.size()` (bei weniger als 7
+Snapshots fällt sie); `binfenster` gibt bei fehlender Zuordnung `{-1, -1}`
+statt eines Zugriffs außerhalb; `frames1` aus dem Modell, Vergleich mit
+`nachIst` über die Samplezahlen; (ii) vergleicht float bitgleich (derselbe
+Ring, dieselbe Summationsfolge). Zeilenenden (Bytezählung): beide Tests nur
+CRLF, Rotdateien, Protokolle und Manifest nur LF. `sizeof (FeatureEngine)`
+16 248 B.
+
+**Prüfliste** (`tools/dirigent/pruefliste.md`, abgehakt, Datei unverändert):
+
+| Abschnitt | Punkt | Nacharbeit 1 |
+|---|---|---|
+| A Rückstau | strukturell-0-Zähler als Wache | Verlustzähler der Rausch- und M-87-Läufe unverändert geprüft (Vorbedingungen grün, zeichengleich) |
+| B Lebenszyklus | starten↔stoppen | Ratenwechsel: Zuordnung neu je Band, Ring leer, Bemessung; Seek mit trennscharfer Kohärenzprüfung; Rücksetzen unverändert |
+| C Verträge | NaN/Inf an jeder Zahl | M-95 (i) mit Doppelmutation gebrochen; keine Vertragsänderung |
+| D Bau- und Prüfriegel | Frische | Endbau nach der letzten Rücknahme, jedes Binary jünger als die jüngste Quelle (§51.6) |
+| E Behauptung ≤ Messung | jede neue Prüfung einmal gebrochen | 13 Protokolle, jede neue Prüfzeile rot an ihrem Satz; Gegenproben benannt |
+| E Behauptung ≤ Messung | geänderte Zusage an drei Stellen | Zusagen unverändert (Matrixfassung §50.2 des Dirigenten); Testkommentare, Rotdateien, Manifestkopf nachgezogen; Runnerzeilen bleiben wahr |
+| F Änderungssatz | Beziehungen | Ratenwechsel ↔ Zuordnung ↔ Ring im selben Fall; keine Vertragsform |
+
+### 51.10 Offene Punkte (für den Dirigenten)
+
+1. **Wiederprüfung 1** steht aus (Prüfbereich `11ad06ba...HEAD` nach dem
+   Commit des Dirigenten). Einzeln gefahren und grün: B19, B18, B5, A1, A16,
+   B1, B4, A26.
+2. **Reserve der Kohärenz bei 192 kHz:** über alle Snapshots ab dem siebten
+   liegt das Minimum bei 0,9544 (Band 144, Block 512, Snapshot 23), 0,0044
+   über der Schranke 0,95 und 0,017 unter der Referenz 0,9715. Abschätzung
+   (nicht gemessen): für ein Einbinband mit rund 70 effektiven Frames streut
+   die MSC um etwa 0,005 (Varianz 2C(1 − C)²/n), die Schranke liegt rund
+   4,5σ unter der Referenz. Mit fester Saat ist der Lauf deterministisch;
+   eine andere Saat oder ein anderes Signal könnte die Schranke reißen. Keine
+   Regeländerung durch den Bauer.
+3. **Matrixtexte:** die Rotbeweisspalten von M-87 (c) und M-95 nennen noch
+   die Etappe-1-Mutationen; die Fassung §50.2 gilt, die Zeilen sind in §51.5
+   und den Rotdateien am HEAD-Stand nachgewiesen.
+
+## 52. Messung der Nacharbeit 1, Zwischenstand und Übergabe (Dirigent, 26.09.2026, 05:59 Uhr)
+
+**Messung (Dirigent, kein Selbstbericht).** Worker `083e9c3b`
+(`nakama-nak380-11ad06b-n1`, Opus 5.5 xhigh, `dontAsk`), 05:21:36 bis
+05:54 Uhr (Beobachter „beendet“, Log endet mit „FERTIG Nacharbeit 1, Beine
+alle grün, uncommittet“, done 5:54; `Get-Date` der Messung 05:54:54 Uhr).
+HEAD vor und nach dem Lauf `11ad06ba`, kein Commit des Workers. `git status
+--short` ohne die fremden Einträge: `Sonde013StereoGoldenTest.cpp`,
+`Sonde013DynamicsTest.cpp`, Manifest, die Rotbeweise M-75 bis M-79, M-87,
+M-95 (append-only), 13 Mutationsprotokolle `NAK-380-e5n1-mutation-*.txt`.
+`git diff --stat -- eq-copilot tools`: genau die zwei Tests, +281/−37;
+`FeatureEngine.h` unverändert (die vorhandene `friend`-Deklaration trägt den
+Testzugang `binfenster`, §51.3), `tools/beweise.ps1` unverändert, kein
+Produktpfad. Beine am Endstand (§51.6, am Manifest gelesen): B19 845/0
+(809 + 30 Kohärenzprüfungen M-75 bis M-79 + 6 in M-87), B18 127/0 (M-95 in
+(i) und (ii) getrennt), B5 313/0 (`sizeof (FeatureEngine)` 16 248 B), A1,
+A16 145/0, B1 120/0, B4 121/0, A26; Logvergleich (§51.7): 773 von 809
+B19-Prüfzeilen samt Messwerten zeichengleich zum Endstand der Nacharbeit 0,
+die 36 übrigen sind genau die neu gefassten. Tabelle §51.5: 18 Zeilen JA, 0
+NEIN. Messzahlen (§51.4): je Rate und Block 21 bis 27 Snapshots ab dem
+siebten geprüft (n aus dem Kadenzmodell, gleich dem Lauf), in jedem Lauf
+kein Band ohne Bit und keines unter 0,95; Kohärenzminimum über alle
+Snapshots 0,9961 bis 0,9964 (44,1 kHz), 0,9876 bis 0,9894 (88,2), 0,9848
+bis 0,9862 (96), 0,9607 bis 0,9640 (176,4), 0,9544 bis 0,9575 (192 kHz).
+Dokuriegel des Bauers 0 Befunde. Schließung je Defekt (§51.2, vom
+Dirigenten am Diff gelesen): D1 Kohärenzhälfte an jedem Snapshot ab dem
+siebten mit verriegelter Snapshotzahl, Rotbeweise Bandsumme und eine
+Mutation, die nur frühe Snapshots trifft; D2 zwei getrennte Prüfungen,
+Doppelmutation Riegel plus Sperre für (i), Einzelmutation für (ii), dazu
+Gegenproben (Sperre allein, Riegel allein); D3 Binzuordnung je Band beider
+Stufen gegen `nak380Binfenster (b, 96000)`, Ringframes und Ringbytes
+getrennt, Rotbeweise Zuordnung ausgelassen (c1) und Ring plus Leeren
+ausgelassen (c2) mit Gegenproben; Z1 Seek unmittelbar nach einem Snapshot,
+erster Snapshot danach mit fünf neuen Frames, `m87-seek` fällt an „Kohärenz
+`null`“.
+
+**Rundenbilanz** (nach dem Commit `786058ec` gemessen): Nacharbeit 1
+`11ad06ba..786058ec` Tests 2 Dateien +281/−37, Doku 21 +1 836/−1;
+Zwischencommit `8e81885e..11ad06ba` Produkt 1 +1/−1 (Broker-Pin), Doku 6
++13 471/−3 (Kanon-Rohausgabe, Urteil, Validierung; ohne Produktfortschritt);
+kumuliert `--runden c43c1646 80cd0274 8e81885e 11ad06ba 786058ec`: kein
+Konvergenzsignal (maximal eine Runde in Folge ohne Produktfortschritt; die
+Nacharbeit 1 trägt Testzeilen).
+
+### 52.1 Einordnung der offenen Punkte (§51.10) und Abweichungen (§51.8)
+
+| Punkt | Quelle (Bauerstand auf `11ad06ba`) | Einordnung | Regel |
+|---|---|---|---|
+| Reserve der Kohärenz bei 192 kHz: Minimum über alle Snapshots 0,9544 (Band 144, Block 512, Snapshot 23), 0,0044 über der Schranke 0,95 und 0,017 unter der Referenz 0,9715; deterministisch mit fester Saat (§51.10 Punkt 2) | §51.4; Referenz ρ_w(192)² = 0,9715 bei N = 4096 (§6.4) | **Beobachtung, keine Regeländerung** — die Zusage hält; die knappe Reserve ist eine Folge der festen FFT-Länge bei hohen Raten (τ = d/N = 192/4096), die Etappe 6 mit T-380-7 behebt (Referenz nach Etappe 6 0,9982); Etappe 6 misst die Reserve nach dem Längenwechsel nach (Auftragspunkt) | Etappe 6 |
+| Matrixtexte der Rotbeweisspalten M-87 (c) und M-95 nennen noch die Etappe-1-Mutationen (§51.10 Punkt 3) | §6.4 append-only | **kein Handlungsbedarf** — die Fassung §50.2 gilt, §51.5 und die Rotdateien weisen die Zeilen am HEAD nach | — |
+| Abweichungen §51.8 (kein Testzugang in `FeatureEngine.h` nötig, c2-Mutation nur beim Ratenwechsel wirksam, drei Vorbedingungen, drei Gegenproben und ein Wertvergleich in M-95 (ii) hinzugekommen, Endbau nach einer Testkorrektur wiederholt) | §51.8 | **angenommen** (Technik innerhalb von Auftrag und Regel, begründet; Gegenproben belegen, dass die Zusagen doppelt getragen sind) | — |
+
+### 52.2 Zwischenstand, Hygiene und Übergabe
+
+Zwischenstand der Nacharbeit 1 mit Pathspec committet (`786058ec`: Tests,
+Manifest §51, Rotbeweise, Mutationsprotokolle) und mit diesem Abschnitt
+gepusht; Planstand danach gerechnet und mit Pathspec committet.
+
+**Hygiene im Abschlussfenster (gemessen 05:55 bis 06:00 Uhr):**
+`gesundheit.py` Exit 4 (Hinweis, nicht blockierend) mit unveränderten Maßen
+3/33/39, Kontextfläche OK (MEMORY.md 6 205, CLAUDE.md 20 463 nach der
+Kürzung in §47, Dirigenten-Skill 24 355 Bytes); `zielbild.py pruefen` Exit 0
+(Zielbild aktuell, Stand 25.09.2026 11:34); `dokuriegel.py` auf CLAUDE.md,
+Skill, Register und Manifest 0 Befunde; `tidy.py` Exit 0 (58 von höchstens
+58). Kein Riss der Kontextfläche.
+
+**Übergabe an die nächste Dirigentensitzung (Kontext dieser Sitzung 52 %
+um 05:55 Uhr; Skill §5: über 500k keine neue Prüfrunde).** Die
+**Wiederprüfung 1 der Etappe 5** beginnt in einer frischen Sitzung: Vorlage
+B, Prüfbereich `11ad06ba...HEAD` (Fixdiff der Nacharbeit 1: die zwei
+Tests), Befundliste D1 (Kohärenzhälfte), D2, D3, Z1 wörtlich aus
+`docs/beweise/roh/NAK-380-erstpruefung-5-urteil.md` und
+`NAK-380-erstpruefung-5-validierung.md` mit der Einordnung §50.1 und den
+Regeln §50.2, Gate wörtlich; Urteil nur „geschlossen, und nichts gebrochen“.
+Prüfer: Codex `gpt-6-astra` xhigh (Codex-Woche 90 % um 05:55 Uhr, Reset
+30.09.2026; ab 95 % oder bei 401 frischer lesender Opus-Thread xhigh, Skill
+§3.4). Danach bei PASS: Etappe 5 abgeschlossen (Kopf nachziehen, Verlauf
+ab §35 gegebenenfalls in die Verlaufsdatei auslagern: das Manifest hat rund
+6 500 Zeilen), dann **Etappe 6** (Fensterdauer statt Samplezahl, DSP-20;
+M-98 bis M-122; §8.6, R-380-5, R-380-9, T-380-7 bis T-380-9) nach dem Muster
+der Etappe-5-Aufträge (Zeigerauftrag, Lehren §36.1, §39.1, §42.1, §47.1,
+§50.1: Doppelmutation bei doppelt getragener Zusage, wiederverwendete
+Helfer tragen jede Ereignisspalte, Toleranzen mit Herleitung, Vorbedingung
+verriegelt); Kanon vorher der Etappe 6 geerbt vom Kanon nachher an
+`8e81885e`, solange `git diff --stat 8e81885e HEAD -- eq-copilot broker
+tools` nur den Broker-Pin und die zwei Tests der Nacharbeit 1 nennt; Etappe
+6 misst die Kohärenzreserve bei 176,4 und 192 kHz nach dem Längenwechsel
+nach (§52.1). Nach Etappe 6: Etappe 7 (Abschluss §8.7, T2-Abschlussprüfung,
+Laufzeit-Arm `tools/fl/laufzeit.ps1 -Ticket NAK-380 -Basis c58a2714
+-Beenden`). Nach NAK-380 folgt NAK-313 Etappe 8 (`docs/beweise/NAK-313.md`
+§37). Offen beim User: nichts (der Codex-Login erneuerte sich um 03:48 Uhr
+ohne Handgriff).
+
+## 53. Wiederprüfung 1 PASS, Abschluss der Etappe 5, Auslagerung §35 bis §49 und Übergabe an Etappe 6 (Dirigent, 26.09.2026, 06:18 Uhr)
+
+**Wiederprüfung 1 der Etappe 5 (Vorlage B, Codex).** Frischer lesender
+Codex-Thread `gpt-6-astra`, Effort xhigh (NAK-362), `read-only`, Thread
+`01a0dbe6-d13f-7551-9418-ed9f9d85f0fe`, 06:08:51 bis 06:13:56 Uhr über
+`tools/dirigent/codex-lauf.ps1` (Kennung `nak380-e5-w1`), HEAD vor und nach
+dem Lauf `76c9b665` (Commit des Prüfauftrags; Codex-Woche 90 % beim Start).
+Auftrag `docs/beweise/roh/NAK-380-wiederpruefung-e5-1-auftrag.txt`
+(Prüfbereich `11ad06ba...76c9b665` über `Sonde013StereoGoldenTest.cpp` und
+`Sonde013DynamicsTest.cpp`; Befunde D1, D2, D3, Z1 wörtlich mit Regel §50.2
+und Schließung §51.2), Urteil
+`docs/beweise/roh/NAK-380-wiederpruefung-e5-1-urteil.md`. **URTEIL: PASS —
+alle Befunde geschlossen, nichts gebrochen** (0 offene Befunde, 0 Brüche):
+D1 ja (B19 `:915-942` prüft alle Snapshots 7 bis n mit verriegelter Anzahl;
+`m75-frueh` trifft nur frühere Snapshots bei grünem M-74; Bandsumme und
+Vorbedingungsmutation fallen an ihren Zusageprüfungen); D2 ja (B18 `:974` und
+`:979` trennen Endlichkeit und Biterhalt, Doppelmutation „nicht endlich 1“,
+beide Gegenproben bestätigt); D3 ja (B19 `:1410-1424` vergleicht alle 221
+Bänder beider Stufen, `:1561` und `:1570` Zuordnung vorher und nachher,
+`:1550` und `:1554` Ringinhalt und Größe getrennt; Zuordnungs- und
+Ring-Doppelmutation fallen an der zugesagten Eigenschaft); Z1 ja (`:1604-1605`
+verriegelt Lage und 1 bis 7 neue Frames, `m87-seek` verletzt `:1631` mit
+gesetztem Kohärenzbit bei zwölf statt fünf Frames). Produktdiff leer,
+Logvergleich (773 unveränderte B19-Prüfzeilen, M-95-Aufteilung in B18)
+lesend bestätigt. Nicht geprüft: keine eigenen Läufe (auftragsgemäß). Keine
+Validierung nötig (kein Befund).
+
+**Rundenbilanz** (`py -3.13 tools/dirigent/rundenbilanz.py`):
+`786058ec..76c9b665` Doku 3 Dateien +130/−3 (Planstand, Prüfauftrag; ohne
+Produktfortschritt, Prüfrunde); kumuliert `--runden c43c1646 80cd0274
+8e81885e 11ad06ba 786058ec 76c9b665`: kein Konvergenzsignal. Etappe 5
+verbrauchte eine von drei Nacharbeitsrunden (Nacharbeit 0 nach Regel zählt
+nicht).
+
+**Abschluss der Etappe 5.** Etappe 5 von 7 ist abgeschlossen: Stereoring
+nach T-380-6 (M-73 bis M-97), Laufzeit als Phasensteigung nach R-380-13,
+Kohärenzhälfte an jedem Snapshot ab dem siebten nach R-380-13 (v); Kanon
+nachher GRUEN 70/70 an `8e81885e` (§50); seitdem änderten sich unter
+`eq-copilot`, `broker` und `tools` nur der Broker-Pin und die zwei Tests der
+Nacharbeit 1 (B19 845/0, B18 127/0 einzeln, §51.6). Kein Produktbefund in
+der Etappe; Härtungen NAK-406 und NAK-407 im Register. Die Beobachtung
+Kohärenzreserve bei 192 kHz (§52.1) geht als Auftragspunkt in Etappe 6.
+NAK-177 gilt mit Etappe 5 als erledigt (M-83 trägt); der Registernachtrag
+folgt im Ticketabschluss (§8.7).
+
+**Auslagerung.** Die Abschnitte §35 bis §49 (Etappe 4 vollständig, Etappe 5
+bis zur Messung der Nacharbeit 0) samt dem Kanon-Lauf der Etappe 4 an
+`1e4a7010` stehen unverändert als zweiter Block in
+`docs/beweise/NAK-380-verlauf.md` (Skill §3.5; Manifest 6 502 → 2 763
+Zeilen, Verlaufsdatei 2 713 → 6 457 Zeilen, §35 dort ab Zeile 2719); der
+Zeigerabschnitt „§10 bis §49“ nennt die weiter geltenden Regeln, Entscheide
+und Lehren; der jüngste Kanon-Lauf (`8e81885e`) bleibt vor §50, `planstand.py`
+liest ihn. Kopf nachgezogen (Etappe, Urteil).
+
+**Hygiene im Abschlussfenster (gemessen 06:15 bis 06:18 Uhr):**
+`gesundheit.py` Exit 4 (Hinweis, nicht blockierend) mit unveränderten Maßen
+3/33/39 (Quelldateien über 2000 Zeilen 3 von 0, Funktionen über 200 Zeilen
+33 von 28, Kommentar-Bezeichner ohne Code 39 von 30), Kontextfläche OK
+(MEMORY.md 6 205, CLAUDE.md 20 463, Dirigenten-Skill 24 355 Bytes);
+`zielbild.py pruefen` Exit 0 (Zielbild aktuell, Stand 25.09.2026 11:34);
+`dokuriegel.py` auf CLAUDE.md und Skill 0 Befunde; `tidy.py` Exit 0 (58 von
+höchstens 58); Dokuriegel auf Manifest, Verlaufsdatei und Urteil:
+0 Befunde (Verlaufsdatei 26 Verweise als Zielpfad benannt), nach dem Anlegen des Etappe-6-Auftrags (44 KB, `docs/beweise/roh/NAK-380-etappe-6-auftrag.txt`) 0 Befunde auf allen vier Dateien. Kein Riss der Kontextfläche.
+
+**Übergabe an Etappe 6 (in dieser Sitzung; Kontext 34 % um 06:18 Uhr).**
+Etappe 6 (Fensterdauer statt Samplezahl, DSP-20; M-98 bis M-122; §8.6,
+R-380-5, R-380-9, T-380-7 bis T-380-9): Auftrag
+`docs/beweise/roh/NAK-380-etappe-6-auftrag.txt` (Zeigerauftrag, Muster der
+Etappe 5 mit den Lehren §36.1, §39.1, §42.1, §47.1, §50.1 und §52.1), Bauer
+frischer Opus-5.5-Worker xhigh (NAK-404), Aufsicht ENG; M-122 zuerst im
+Broker (E-380-15); Kanon vorher geerbt vom Kanon nachher an `8e81885e`,
+solange `git diff --stat 8e81885e HEAD -- eq-copilot broker tools` nur den
+Broker-Pin und die zwei Tests der Nacharbeit 1 nennt (06:07 Uhr so gemessen:
+drei Pfade); Etappe 6 misst die Kohärenzreserve bei 176,4 und 192 kHz nach
+dem Längenwechsel nach (M-74 bis M-79 erneut). Danach Etappe 7 (Abschluss
+§8.7: Kanon, Laufzeit-Arm, `plugin-wissen.md`, T2-Abschlussprüfung über
+`c58a2714...HEAD`, Registernachträge). Nach NAK-380 folgt NAK-313 Etappe 8
+(`docs/beweise/NAK-313.md` §37). Offen beim User: nichts.
+
+## 54. Etappe 6 — Fensterdauer statt Samplezahl (Bauer Opus 5.5 xhigh, 26.09.2026)
+
+Gebaut nach dem Auftrag `docs/beweise/roh/NAK-380-etappe-6-auftrag.txt`
+(DSP-20; Matrixzeilen M-98 bis M-122; Bauplan §8.6, T-380-7 bis T-380-11).
+**Ergebnis:** Die FFT-Längen der FeatureEngine und der vier M1-Stufen folgen
+einer festen Fensterdauer (N(fs) = 2^round(log2(T·fs)), T = Dauer der
+48-kHz-Länge, gekappt auf [N(48 kHz), 65 536]); die Resonanzsuche beginnt an
+der Suchgrenze 17,30·fs/N_Bass und sagt das in Karte und Leertext;
+interpolierte LTAS-Bänder tragen eine Validity-Maske, die Schreiber setzen
+`null` bzw. NaN, der Prozess behält die Zahl; Fingerprints sind nur innerhalb
+derselben `metrics_version` vergleichbar; Fassung 20260929 an vier Stellen
+plus `kMetricsVersion` m4.3-2026-09-26; Erratum (s) im Entwurf. **25
+Matrixzeilen (M-98 bis M-122) belegt**, je Zusagesatz ein Rotbeweis an der
+Prüfzeile, die ihn trägt (M-117 als Textzeile über `git grep` und
+Dokuriegel): 42 Mutationsprotokolle `NAK-380-e6-mutation-*.txt`, darunter
+Mehrfachmutationen für mehrfach getragene Sätze (44,1-kHz-Längen: M-98 und
+M-102 doppelt, M-99 dreifach; „keine Karte unter der Suchgrenze“ in M-106
+und M-107; Stufenring in M-120) mit je einer Gegenprobe je Riegel;
+Rohdateien `NAK-380-rot-M-98.txt` bis `NAK-380-rot-M-122.txt`. Beine einzeln am Etappenstand grün bis auf **B18** (zwei Prüfungen `380/M-43` bei 96 kHz, §54.13 Punkt 1); A4 846/0.
+Nichts gestagt, nichts committet.
+
+### 54.1 Startmessung
+
+- `Get-Date` 26.09.2026 06:30:24 Uhr; `git rev-parse HEAD` =
+  `a4ccba93ab61fd21d52b8f539231a3c44a2beaff`; `git status --short` nur
+  `briefing-hub/` und `nimbalyst-local/` (fremd, nicht angefasst).
+- `git diff --stat 8e81885e HEAD -- eq-copilot broker tools` nennt genau die
+  drei Pfade aus dem Auftrag (`eq-copilot/install/nakama-installer-v1.json`
+  2 Zeilen, `Sonde013DynamicsTest.cpp` 33, `Sonde013StereoGoldenTest.cpp`
+  285; 282 Einfügungen, 38 Löschungen): **Kanon vorher geerbt** vom Kanon
+  nachher der Etappe 5 an `8e81885e` (GRUEN 70/70,
+  `docs/beweise/roh/NAK-380-8e81885-dirty.md`), Entscheid des Dirigenten.
+- Prozessprobe (cmake, MSBuild, cl, link, cargo, rustc, EqCop*,
+  eqcop-broker, FL64, vctip) um 06:30:24 Uhr leer. Kein FL Studio, keine
+  Installation, kein voller Kanon.
+
+### 54.2 M-122 zuerst (Broker)
+
+Test `nak380_m122_fingerprint_nur_gleiche_metrics_version` in
+`broker/src/telemetrie.rs` zuerst geschrieben; am Basisstand übersetzt er
+nicht (06:39:40 bis 06:39:47, EXIT 101: `fingerprint_vergleich`,
+`FingerprintVergleich`, `material_urteil`, `beurteile_versioniert`,
+`MessfassungVerschieden` fehlen) — „heute nicht messbar“ bestätigt. Danach
+der Riegel `fingerprint_vergleich` (gleiche Fassung: `Aehnlichkeit(c)` wie
+bisher; ungleiche: `NichtVergleichbar`, vor jeder der drei
+Cosinusrechnungen), die Klassifikation in `invalidierung::material_urteil`
+(`Materialurteil::NichtVergleichbar`, nie Materialwechsel) und in
+`vergleichbarkeit::beurteile_versioniert` (Klasse unvergleichbar, Grund
+`MessfassungVerschieden` = `messfassung_verschieden`, `material_cosine`
+NaN, nie `MaterialVerschieden`); `material_wechsel` und `beurteile` rufen
+den versionierten Weg mit `METRICS_VERSION` auf beiden Seiten. Drei
+Mutationen, alle JA (`m122-riegel`, `m122-klass-inv`, `m122-klass-verg`;
+`NAK-380-rot-M-122.txt`). A4 danach 846/0 (06:44:16 bis 07:04:17); nach dem
+Versionsschritt 20260929 erneut voll gefahren (§54.9).
+
+### 54.3 Pflichterfassungen vor dem ersten Produktedit
+
+| Erfassung | Zahl | Rohdatei |
+|---|---|---|
+| M-119 `sizeof` am unveränderten Code (B5, Binary 07:08:55) | FeatureEngine 16 248 B, AnalyseEngine 54 816 B | `NAK-380-etappe-6-m119-sizeof-start.txt` |
+| M-113 Sweep je Rate | Stempel 202 752 bei allen fünf Raten, t0 − Stempel 3 584 Samples | `NAK-380-etappe-6-m113-sweep-basis.txt` |
+| M-74 bis M-79 Kohärenzminimum je Rate (B19, 845/0) | 44,1 kHz 0,9961 bis 0,9964; 48 kHz 0,9950 (M-73), 0,9959 bis 0,9970 (M-74); 88,2 kHz 0,9876 bis 0,9894; 96 kHz 0,9848 bis 0,9874; 176,4 kHz 0,9607 bis 0,9640; 192 kHz 0,9544 bis 0,9575 | `NAK-380-etappe-6-kohaerenz-basis.txt` |
+| M-118 Klasse (ii): B30 gegen die alte Referenz nach dem Umbau | M-39 rot, erste Abweichung Byte 52 (35 550 gegen 34 729 Bytes); Felddiff null 66, Satz 2, Version 1, andere 0 | `NAK-380-etappe-6-m118-referenz-alt.txt` |
+
+Reihenfolge: M-122 (Broker) → neue C++- und A5-Fälle geschrieben → nur die
+betroffenen Ziele gebaut (07:04:46 bis 07:05:28) → Läufe am unveränderten
+Produktcode → Gegenprobe abgelegt (07:13:30) → erster Produktedit (danach).
+Der Leertext-Beobachter in `PluginEditor.cpp` stand zu diesem Zeitpunkt nur
+unter `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` (Testbau); der Leertext selbst war
+unverändert.
+
+### 54.4 Basisstand-Gegenprobe je Zeile
+
+| Zeile | Etikett | Ergebnis am Basisstand (HEAD `a4ccba93`, Produktcode unverändert) |
+|---|---|---|
+| M-98 | heute rot | 16 384/4 096 bei jeder Rate; 44,1/48 kHz grün |
+| M-99 | heute rot | Ordnungen 14/13/12/11 bei jeder Rate; 44,1/48 kHz grün |
+| M-100 | heute nicht messbar | mit dem Allokationszähler messbar: 1 804 016 + 452 336 B Nutzdaten bei jeder Rate; rot ab 88,2 kHz über die Längen; 384 kHz N 16 384 |
+| M-101 | heute nicht messbar | 737 312 B bei jeder Rate; rot ab 88,2 kHz |
+| M-102 | heute rot | 22/25/55/60/89/94 Bänder ohne Bin (44,1/48/88,2/96/176,4/192 kHz) |
+| M-103 bis M-105 | heute rot | keine Karte an 61 von 61 Snapshots (K1, K2, K3) |
+| M-106 | heute rot | kein Satz, Karten ohne Satz (0 von 61), Leertext ohne Grenze; K4 ohne Karte schon am Basisstand |
+| M-107 | heute rot (Abweichung) | K5 48 Hz: **keine** Karte an 61 von 61 Snapshots — die Zusage trug am Basisstand das Breitenkriterium; Gegenprobe 60 Hz genau eine Karte (59,1 Hz); der Satz fehlt |
+| M-108 | heute nicht messbar | Feld fehlt |
+| M-109 | heute rot | `komposit_db` 0 von 29, `referenz_8192_db` 0 von 37 Maskenbändern `null` |
+| M-110 | heute rot | 0 von 29 Maskenbändern NaN |
+| M-112 | Wache (Abweichung) | 48 kHz 30 Ticks je Zone; 96 kHz Zonen 0 und 1 ohne Belegung, 0 Ticks (rot) — Mittenlücke bei 4 096 Punkten |
+| M-113 | Wache / nicht messbar | Stempel 202 752, Abstand 3 584 bei allen Raten |
+| M-114 | heute rot | Bass 156, Haupt 65 von 221 Bändern gleich |
+| M-115 | heute nicht messbar | 96 kHz K 765, Hop 21,33 ms, 22 Ereignisse; 192 kHz K 383, 10,67 ms, 67 Ereignisse |
+| M-117 | heute rot | `git grep -n "Erratum (s)"` leer |
+| M-118 | heute rot | A5 15 von 15 Prüfungen rot (keine Fassung 20260929) |
+| M-119 | Wache | Startwerte 16 248 / 54 816 B |
+| M-120 | Längen heute rot, Leeren Wache | nach `vorbereiten (96000)` 16 384/4 096 und M1 16 384/8 192/4 096/2 048; Band 64 zählt 10 statt 4 Segmente; Leerhälfte grün |
+| M-122 | heute nicht messbar | Übersetzung scheitert (§54.2) |
+
+### 54.5 Änderungen je Datei (Zeilen HEAD → Etappenstand)
+
+- `eq-copilot/plugin/core/analysis/FeatureEngine.h` (1 752 → 1 813, CRLF):
+  `kFeatureMetricsVersion` 20260929; die Längenregel `fensterPunkte
+  (basisPunkte, fs)` (Zweierpotenz über den Schwellwert √2·n, damit
+  `round(log2(T·fs))` ohne Gleitkomma-log; fs ≤ 0, NaN oder unendlich →
+  Basislänge; Kappe `kFensterPunkteMax` = 65 536; Untergrenze
+  Basislänge) mit den Konstanten `kBassBasisPunkte` 16 384,
+  `kHauptBasisPunkte` 4 096, `kFensterBasisRateHz` 48 000;
+  `vorbereiten` legt beide Stufen mit `fensterPunkte (…, sr)` an;
+  Kommentare der Hopzeit nachgezogen. `sizeof (FeatureEngine)` bleibt
+  16 248 B (kein neues Mitglied; die Stufe kennt ihre Punktzahl).
+- `featureengine/Spektrum.h` (942 → 947): nur `detektorBinsBestimmen`
+  (Δf aus `haupt.punkte`, Obergrenze `haupt.punkte / 2`) und der Kommentar
+  der Vorframe-Verdeckung in Zeit (§8.6, Auftrag Punkt 4).
+- `eq-copilot/plugin/src/AnalyseEngine.h` (382 → 431): `kMetricsVersion`
+  „m4.3-2026-09-26“; die vier 48-kHz-Ordnungen `kM1Ordnung*` 14/13/12/11 und
+  `kResonanzSucheFaktor` 17,30 als benannte Konstanten (Codestelle des
+  Registers); `MessSnapshot::resonanzSucheAbHz` (NaN ohne Vorbereitung) und
+  zwei Masken `ltasKompositInterpoliert`, `ltasReferenzInterpoliert`
+  (`std::array<std::uint8_t, 28>`, LSB-first) mit Leser
+  `ltasBandInterpoliert`; `sizeof (AnalyseEngine)` 54 816 → 54 880 B (+64).
+- `eq-copilot/plugin/src/AnalyseEngine.cpp` (1 159 → 1 227): Ordnungen über
+  `fensterPunkte`; `scratchPsd` auf die größte Stufe reserviert (keine
+  Allokation außerhalb `vorbereiten`); Suchgrenze in `zuruecksetzen` und im
+  Snapshot; `finalisiereLtas` setzt die Masken (interpolierter Wert oder
+  Nahtanteil mit Gewicht > 0) und lässt jede Zahl stehen;
+  `findeResonanzen` nimmt keinen Kandidaten mit Bandmitte unter der Grenze.
+  Nähte, Zuständigkeiten, Zellen und Zonen-Ticks unverändert.
+- `Diagnose.h/.cpp` (83 → 91, 521 → 536): Satzfunktion `suchgrenzeSatz`
+  (Wortlaut §8.6, gerundete Grenze; leer ohne endliche Grenze);
+  `resonanzKarte` hängt den Satz an `gemessen` an.
+- `PluginEditor.cpp` (1 971 → 1 990): der Leertext fügt den Satz als zweiten
+  Satz an; der Beobachter `testzugang::leertextBeobachterFuerTest` nur unter
+  `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3` (Abweichung 1, §54.11).
+- `DiagnoseAntwort.cpp` (374 → 379): `komposit_db` und `referenz_8192_db`
+  `null` für Maskenbänder. `prozessor/Ipc.cpp` (1 681 → 1 683):
+  `messKompakt` NaN für Maskenbänder (PipeClient schreibt `null`).
+- Broker (§54.2): `telemetrie.rs` 1 195 → 1 348, `invalidierung.rs`
+  285 → 322 (LF), `vergleichbarkeit.rs` 403 → 436, `prepost.rs` 1 248
+  (nur `METRICS_VERSION` 20260929).
+- `eq-copilot/schemas/v3/metriken-v1.json` (780 → 1 014, CRLF, `-text`):
+  Fassung 20260929 (`seit` „NAK-380 Etappe 6“, Hinweis mit 26.09.2026), alle
+  Einträge der Fassung 20260928 unverändert übernommen, neu
+  `kFensterPunkteMax` 65 536, `kBassBasisPunkte` 16 384,
+  `kHauptBasisPunkte` 4 096 (FeatureEngine.h), `kM1Ordnung*` 14/13/12/11
+  und `kResonanzSucheFaktor` 17.30 (AnalyseEngine.h), je `zweck` mit
+  „`kName = Wert`“; `aktuell` 20260929; `quellen` + AnalyseEngine.h.
+- `eq-copilot/fixtures/diagnose/festhalten-referenz.json` (1 626 Zeilen, LF,
+  `-text`): nur über `EqCopBriefkastenTest --erzeuge` neu (§54.10).
+- `docs/FL-Nakama-Sonden-Design-Entwurf.md` (4 624 → 4 635, CRLF):
+  Verlaufseintrag (s) hinter (r), Kasten Erratum (s) hinter dem Absatz ab
+  `:2287` (dieser bleibt wörtlich), Zähler `:10` „(a) bis (s)“ und `:57`
+  „Alle 19 Errata (a) bis (s)“.
+- `tools/eq-copilot/pruefe_v3_vertrag.py` (3 038 → 3 140): Fall
+  `nak380_m118_fassung_etappe_6`; der Etappe-5-Fall prüft die Fassung
+  20260928 weiter, die Aktualitätsprüfung wandert in den neuen Fall (Muster
+  der Etappe 5); `pruefe_metrikregister` liest AnalyseEngine.h mit.
+- `tools/beweise.ps1` (1 592, CRLF mit BOM): nur die Behauptungszeilen A2,
+  A4, A5, B5, B15, B19, B30 (je ein Satz zu Etappe 6; B5 Schranke
+  N_H(fs) und t0 je Rate).
+- Tests: `AnalysisGoldenTestMain.cpp` (B5, 4 175 → 4 941),
+  `GoldenTestMain.cpp` (A2, 1 582 → 2 134), `BriefkastenTestMain.cpp`
+  (B30, 3 860 → 3 954), `ShotTestMain.cpp` (B15, 2 596 → 2 706),
+  `Nak380Pruefsignale.h` (732 → 998: `referenzPunkte`, M1-Masken,
+  K-Signale K1 bis K5 mit Kopffunktion `kSelbstpruefung`),
+  `Sonde013StereoGoldenTest.cpp` (B19, 3 066 → 3 085: N je Rate statt
+  fester 4 096/16 384).
+- Nicht angefasst: Bandgitter, `Stereo.h`, `Frame.h`, `Lautheit.h`,
+  `Zeit.h`, `Vertrag.h`, `Konfidenz.h`, `vertrag/**`, `dsp/**`, `sonde/**`,
+  `hostbridge/**`, `PluginProcessor.cpp` (nur im Rotbeweis M-121 mutiert und
+  hashgleich zurückgenommen), `identity/**`, `install/**`, alle übrigen
+  Fixtures, `broker/tests`, CMake. Die Längenkonstanten in `Zeit.h`
+  (`zuordnung`) lesen die Punktzahl der Stufe und brauchten keine Änderung.
+
+### 54.6 Messtabelle (Etappenstand, Endläufe §54.9)
+
+| Größe | Messung |
+|---|---|
+| FeatureEngine Bass/Haupt (M-98) | 44,1 kHz 16 384/4 096 (371,52/92,88 ms); 48 kHz 16 384/4 096 (341,33/85,33 ms); 88,2 und 96 kHz 32 768/8 192; 176,4 und 192 kHz 65 536/16 384; Dauern je Familie gleich; Hop N/2 |
+| M1 Bass/Referenz/Mitten/Höhen (M-99) | 16 384/8 192/4 096/2 048 (44,1/48 kHz), 32 768/16 384/8 192/4 096 (88,2/96), 65 536/32 768/16 384/8 192 (176,4/192); 48 kHz 341,33/170,67/85,33/42,67 ms, 44,1 kHz 371,52/185,76/92,88/46,44 ms |
+| Heap FeatureEngine (M-100) | Stufen 110 B je Punkt + 1 776 B je Stufe Nutzdaten + 19·39 B STL-Verwaltung: 2 257 834 B (44,1/48), 4 510 634 B (88,2/96), 9 016 234 B (176,4/192); mit Stereoring und Detektor 2 522 234 / 2 501 546 / 4 775 034 / 4 754 346 / 9 280 634 / 9 259 946 B (≤ 9 300 000); 384 kHz Bass N_max 65 536, 7 210 736 B Nutzdaten |
+| Heap M1 (M-101) | 737 312 / 1 474 592 / 2 949 152 B (Punktanteil 737 280 / 1 474 560 / 2 949 120 = Matrix), Histogramme 249 288 B; 384 kHz gekappt 65 536/65 536/32 768/16 384, 4 325 408 B |
+| Bänder ohne Bin (M-102) | 22 (44,1/88,2/176,4 kHz), 25 (48/96/192 kHz) |
+| Zuordnung 96 = 48 kHz (M-114) | Bass und Haupt je 221 von 221 gleich, Δf 2,9297 / 11,7188 Hz |
+| Suchgrenze (M-108) | 46,5656 Hz (44,1/88,2/176,4 kHz), 50,6836 Hz (48/96/192 kHz) |
+| Karten K1 bis K5 (M-103 bis M-107), je 61 Snapshots ab messbereit | K1 300 Hz/96 kHz: genau eine Karte an 61, Schwerpunkt 306,8 Hz, Breite 0,1250 Oktaven, dauerhaft 61; K2 500 Hz/192 kHz: 61, 501,3 Hz, 0,0833 Oktaven, dauerhaft 61; K3 60 Hz/192 kHz: 61, 59,1 Hz, 0,1667 Oktaven, dauerhaft 61; K4 45 Hz/48 kHz: keine Karte an 61 (kein Kandidat); K5 48 Hz/48 kHz: keine Karte an 61 (kein Kandidat); Gegenprobe 60 Hz/48 kHz: 61, 59,1 Hz, 0,1667 Oktaven |
+| Maskenbänder bei 48 kHz (M-109, M-110) | `komposit_db` 29, `referenz_8192_db` 37 `null`; Heartbeat 29 NaN; alle übrigen Bänder Zahl |
+| Zonen-Ticks (M-112) | 48 und 96 kHz je Zone 0 bis 3 genau 30 |
+| Sweep (M-113), t0 − Stempel | vorher 3 584 bei allen Raten; nachher 3 584 (44,1/48), 7 168 (88,2/96), 14 336 (192 kHz) bei t0 206 336 / 412 672 / 825 344; Stempel 202 752 / 405 504 / 811 008 |
+| W1 hohe Raten (M-115) | 96 kHz 1 Ereignis (21,504 s), 192 kHz 0; K 1530, Hop 42,667 ms |
+| `sizeof` (M-119) | FeatureEngine 16 248 → 16 248 B, AnalyseEngine 54 816 → 54 880 B |
+| Kohärenzminimum (M-74 bis M-79) | 44,1/48 kHz unverändert; 88,2 kHz 0,9876–0,9894 → 0,9964–0,9968; 96 kHz 0,9848–0,9874 → 0,9952–0,9957; 176,4 kHz 0,9607–0,9640 → 0,9954–0,9959; 192 kHz 0,9544–0,9575 → 0,9943–0,9951 (Referenz ρ_w(d)² 0,99848 bzw. 0,99819 in jeder Familie) |
+| Gruppenlaufzeit (B 512, Bänder mit mindestens zwei Bins) | 44,1/48 kHz unverändert (größtes Verhältnis Abweichung/T_B 0,445 bei 44,1 kHz); 88,2 kHz 97 → 134 Bänder, Verhältnis 0,592 → 0,723; 96 kHz 94 → 128, 0,458 → 0,567; 176,4 kHz 73 → 134, 0,434 → 0,497; 192 kHz 70 → 128, 0,499 → 0,482; außerhalb T_B jeweils 0 (die Bassbänder tragen bei den hohen Raten jetzt zwei und mehr Bins und damit eine Laufzeit) |
+| Ringbytes (M-85) | 44,1 kHz 236 224, 48 kHz 217 792 unverändert; 96 kHz 113 344 → 217 792 B, 192 kHz 61 248 → 217 792 B (Schranke 245 760) |
+| Referenz des Knopfwegs (M-118) | 35 550 → 34 729 Bytes; 29 `komposit_db`- und 37 `referenz_8192_db`-Bänder `null`, Satz in beiden Karten, `metrics_version` m4.2 → m4.3; sonst bytegleich |
+
+### 54.7 Tabelle je Matrixzeile
+
+Je Zusagesatz eine Zeile; die vollständige Kette (Wortlaut der Matrix,
+Basisstand, Endstand, Protokolle) steht in `NAK-380-rot-M-nnn.txt`.
+
+| Zeile | Etikett | Zusagesatz | Prüfzeile | Mutation | rot | Rohdatei |
+|---|---|---|---|---|---|---|
+| M-98 | heute rot | Bass/Haupt 16 384/4 096 bei 44,1 und 48 kHz, Hop N/2, Dauer 371,5/92,9 bzw. 341,3/85,3 ms | B5 380/M-98 laengentafel_featureengine (44.1 kHz und 48.0 kHz, Bass/Haupt) | Doppelmutation m98-doppel (floor statt round UND Untergrenze entfernt; 44,1 kHz fiele auf 8 192/2 048); Gegenproben m98-floor und m98-untergrenze lassen 44,1 kHz gruen; 48 kHz ist exakt die Basislaenge und unter allen Laengenmutationen Pflicht-Gruen | JA bei 44,1 kHz (m98-doppel); Gegenproben gruen | `NAK-380-rot-M-98.txt` |
+|  |  | 32 768/8 192 bei 88,2 und 96 kHz, 65 536/16 384 bei 176,4 und 192 kHz, Hop N/2, Dauer wie die Familie | B5 380/M-98 laengentafel_featureengine (88.2 bis 192.0 kHz, Bass/Haupt) | m98-regel: fensterPunkte -> Konstante in FeatureEngine::vorbereiten (Matrixmutation) | JA (8 Pruefzeilen) | `NAK-380-rot-M-98.txt` |
+| M-99 | heute rot | 16 384/8 192/4 096/2 048 bei 44,1 und 48 kHz, Dauern 341,3/170,7/85,3/42,7 ms bei 48 kHz | A2 380/M-99 laengentafel_m1 (44.1 und 48.0 kHz, vier Stufen) | Dreifachmutation m99-dreifach (floor statt round UND Untergrenze in fensterPunkte UND Ordnungslambda ab Ordnung 0); Gegenproben m98-floor, m98-untergrenze, m98-doppel und m99-start lassen 44,1 kHz gruen; 48 kHz unter m99-regel und m99-dreifach Pflicht-Gruen | JA bei 44,1 kHz (m99-dreifach); Gegenproben gruen | `NAK-380-rot-M-99.txt` |
+|  |  | das Doppelte bei 88,2/96 kHz, das Vierfache bei 176,4/192 kHz | A2 380/M-99 laengentafel_m1 (88.2 bis 192.0 kHz, vier Stufen) | m99-regel: Ordnungslambda ohne fensterPunkte (Matrixmutation Regel -> feste Ordnung) | JA (16 Pruefzeilen) | `NAK-380-rot-M-99.txt` |
+| M-100 | heute nicht messbar (Zugang entsteht erst; am Basisstand mit dem Allokationszaehler gemessen, rot ab 88,2 kHz) | Heap der zwei Stufen = 110 B je Punkt (dazu 1 776 B je Stufe und der gemessene STL-Verwaltungsanteil 19 * 39 B) | B5 380/M-100 speicher_featureengine (je Rate): Heap der zwei Stufen gemessen | m100-heap: Arbeitspuffer der Stufe 2*n statt n (118 B je Punkt) | JA (je Rate) | `NAK-380-rot-M-100.txt` |
+|  |  | N_max = 65 536; Budget der laengen- und binabhaengigen Traeger <= 9,3 MB | B5 380/M-100 speicher_featureengine (384,0 kHz, keine Zusagerate): die Obergrenze haelt | m100-kappe: Kappe in fensterPunkte entfernt, 384 kHz vorbereitet (Matrixmutation) | JA (Bass 131 072 Punkte, 14 419 696 B Nutzdaten) | `NAK-380-rot-M-100.txt` |
+| M-101 | heute nicht messbar (am Basisstand gemessen 737 312 B bei jeder Rate) | eigene Vektoren der vier Stufen 24 B je Punkt: 737 280 / 1 474 560 / 2 949 120 B, Histogramme 2 * 124 644 B | A2 380/M-101 speicher_m1 (44.1 bis 192.0 kHz) | m101-heap: Ring L der M1-Stufe 2*n statt n (28 B je Punkt) | JA (je Rate) | `NAK-380-rot-M-101.txt` |
+|  |  | Obergrenze (Mutation wie M-100): bei 384 kHz keine Stufe ueber 65 536 Punkte | A2 380/M-101 speicher_m1 (384 kHz): Obergrenze N_max = 65 536 haelt (in Etappe 6 ergaenzt, damit die Matrixmutation eine Pruefzeile trifft) | m100-kappe (dieselbe Mutation wie M-100) | JA (Stufen 131072/65536/32768/16384, 5 898 272 B) | `NAK-380-rot-M-101.txt` |
+| M-102 | heute rot | 22 Baender ohne Bin bei 44,1/88,2/176,4 kHz, 25 bei 48/96/192 kHz | B5 380/M-102 baender_ohne_bin_je_rate (je Rate) | m98-regel (Mutation wie M-98); fuer 44,1 kHz m98-doppel | JA bei 88,2/96/176,4/192 kHz (m98-regel: 55/60/89/94) und bei 44,1 kHz (m98-doppel); 48 kHz Pflicht-Gruen | `NAK-380-rot-M-102.txt` |
+| M-103 | heute rot | genau eine Resonanzkarte bei 300 Hz +-1/6 Oktave, dauerhaft (96 kHz, K1) | A2 380/M-103 resonanz_300hz_96k K1: genau eine Resonanzkarte / bei 300 Hz / dauerhaft | m103-mitten: Mittenstufe fest 4 096 (Matrixmutation) | JA (0 von 61 Snapshots mit Karte) | `NAK-380-rot-M-103.txt` |
+| M-104 | heute rot | genau eine Karte bei 500 Hz +-1/6 Oktave (192 kHz, K2) | A2 380/M-104 resonanz_500hz_192k K2: genau eine Resonanzkarte / bei 500 Hz / dauerhaft | m103-mitten (Mutation wie M-103) | JA (0 von 61) | `NAK-380-rot-M-104.txt` |
+| M-105 | heute rot | genau eine Karte bei 60 Hz +-1/6 Oktave (192 kHz, K3) | A2 380/M-105 resonanz_60hz_192k K3: genau eine Resonanzkarte / bei 60 Hz / dauerhaft | m105-bass: M1-Bassstufe fest 16 384 (Matrixmutation) | JA (0 von 61) | `NAK-380-rot-M-105.txt` |
+| M-106 | heute rot | keine Karte bei 45 Hz (K4) | A2 380/M-106 nicht_gesucht_satz K4 (45 Hz bei 48 kHz): keine Resonanzkarte | m106-k4: Unterdrueckung UND Breitenkriterium entfernt (dieselben zwei Riegel wie M-107, deren Gegenproben dort) | JA | `NAK-380-rot-M-106.txt` |
+|  |  | der Satz mit gerundeter Suchgrenze (51 Hz bei 48 kHz, 47 Hz bei 44,1 kHz) aus der Satzfunktion | A2 380/M-106 nicht_gesucht_satz (48.0 kHz) und (44.1 kHz), K4: der Satz nennt 51 Hz | m106-satz: suchgrenzeSatz liefert leer (Matrixmutation) | JA | `NAK-380-rot-M-106.txt` |
+|  |  | der Satz steht in gemessen jeder Resonanzkarte | A2 380/M-106 nicht_gesucht_satz: jede Resonanzkarte traegt den Satz am Ende von gemessen | m106-satz | JA (0 von 61 Karten) | `NAK-380-rot-M-106.txt` |
+|  |  | der Satz steht im Leertext der Befundliste (vom Editor nur angefuegt) | B15 380/M-106 leertext_nennt_suchgrenze (48,0 kHz) und (44,1 kHz): der Leertext nennt als zweiten Satz die Suchgrenze | m106-satz | JA (beide Raten) | `NAK-380-rot-M-106.txt` |
+| M-107 | heute rot (Abweichung: am Basisstand entstand bei 48 Hz KEINE Karte, das Breitenkriterium traegt; Gegenprobe-Dokument Basisstand) | keine Karte bei 48 Hz (48 Hz < 50,69 Hz), K5 | A2 380/M-107 kandidat_unter_suchgrenze K5 (48 Hz bei 48 kHz): keine Resonanzkarte an irgendeinem Snapshot | Doppelmutation m107-doppel (Unterdrueckung unter der Suchgrenze entfernt UND Breitenkriterium abgeschaltet); Gegenproben m107-suche (nur Unterdrueckung entfernt) und m107-breite (nur Breite abgeschaltet) bleiben gruen | JA (Doppelmutation: 0 von 61 ohne Karte); Gegenproben NEIN wie erwartet (Pflicht-Gruen JA) | `NAK-380-rot-M-107.txt` |
+|  |  | Satz wie M-106 (51 Hz) | A2 380/M-107 ... K5 (48 Hz bei 48 kHz): der Satz nennt 51 Hz | m107-satz: Satzfunktion liefert leer (wie M-106) | JA | `NAK-380-rot-M-107.txt` |
+|  |  | Trennschaerfe: Gegenprobe 60 Hz bei 48 kHz ergibt genau eine Karte | A2 380/M-107 ... Gegenprobe (60 Hz bei 48 kHz): genau eine Karte bei 60 Hz | keine (Vorbedingung der Trennschaerfe) | - | `NAK-380-rot-M-107.txt` |
+| M-108 | heute nicht messbar (Feld entsteht erst) | resonanzSucheAbHz 46,57 Hz (44,1/88,2/176,4 kHz), 50,69 Hz (48/96/192 kHz) +-0,01 Hz | A2 380/M-108 suchgrenze_je_rate (je Rate) | m108-faktor: kResonanzSucheFaktor 17,30 -> 8,65 (Matrixmutation) | JA (alle sechs Raten; 23,28 bzw. 25,34 Hz) | `NAK-380-rot-M-108.txt` |
+| M-109 | heute rot | komposit_db null genau fuer die Maskenbaender (29 bei 48 kHz), sonst Zahl | B30 380/M-109 interpolierte_baender_null: komposit_db | m109-maske: Maskenbedingung fuer komposit_db in snapshotObjekt entfernt (Matrixmutation) | JA (0 von 29 null) | `NAK-380-rot-M-109.txt` |
+|  |  | referenz_8192_db ebenso fuer die 8192er-Stufe (37 Maskenbaender) | B30 380/M-109 interpolierte_baender_null: referenz_8192_db | m109-maske: Maskenbedingung fuer referenz_8192_db entfernt | JA (0 von 37 null) | `NAK-380-rot-M-109.txt` |
+| M-110 | heute rot | ltasKompositDb traegt NaN (JSON null) genau fuer die Baender aus M-109 | B5 380/M-110 heartbeat_null_interpoliert: ltasKompositDb ist NaN genau fuer die Maskenbaender | m110-maske: Maskenbedingung in messKompakt entfernt (Mutation wie M-109) | JA (0 von 29 NaN) | `NAK-380-rot-M-110.txt` |
+| M-111 | Regressionswache | ltasKompositDb und ltasReferenzDb im MessSnapshot behalten die interpolierten Werte; die LTAS-Vergleiche von A2 bleiben gruen | A2 [pink-minus20] LTAS Komposit (Abdeckung, mittl. Abw., max. Abw.) | m111-nan: NaN statt interpolierter Werte in der Kompositkurve (Matrixmutation) | JA (LTAS Komposit: Band 0 NaN) | `NAK-380-rot-M-111.txt` |
+| M-112 | Regressionswache (Abweichung: bei 96 kHz am Basisstand rot, Zonen 0 und 1 ohne Belegung) | je belegter Zone genau 30 Ticks in 30 s bei 48 und 96 kHz, ratengleich | A2 380/M-112 zonenticks_30_bei_48_und_96k (48.0 und 96.0 kHz): Zone n genau 30 Ticks | m112-zelle: Zellenlaenge = Hop der Mittenstufe (Matrixmutation) | JA (70 Ticks je Zone) | `NAK-380-rot-M-112.txt` |
+| M-113 | Ratengleichheit Regressionswache; Schranke heute nicht messbar | je Rate ueber alle Blockgroessen identischer Stempel | B5 impulse_time_is_stable_over_block_sizes_and_sample_rates (a) | m113-zeit: Ereigniszeit aus dem Blockanfang (Mutation wie M-64) | JA (0 von 5 Raten) | `NAK-380-rot-M-113.txt` |
+|  |  | innerhalb [Impuls - N_H(fs), Impuls] mit N_H = 4 096/8 192/16 384 | B5 (b): und er liegt bei jeder Kombination innerhalb EINER Fensterlaenge vor t0 | m113-schranke: Schranke fest 4096 (Matrixmutation, im Test) | JA (10 von 25; Abstand 7 168 bei 88,2/96 kHz, 14 336 bei 192 kHz) | `NAK-380-rot-M-113.txt` |
+| M-114 | heute rot | bandVon/bandBis je Band und Stufe bei 96 kHz identisch zu 48 kHz (Df 2,9297 bzw. 11,7188 Hz) | B5 380/M-114 zuordnung_96k_gleich_48k (Bass) und (Haupt) | m98-regel (Mutation wie M-98) | JA (Bass 156, Haupt 65 von 221 gleich) | `NAK-380-rot-M-114.txt` |
+|  |  | Kappe 18 kHz in beiden | B5 380/M-114 zuordnung_96k_gleich_48k: Kappe 18 kHz bei beiden Raten | m114-kappe: kObergrenzeHz 18 000 -> 17 000 Hz | JA | `NAK-380-rot-M-114.txt` |
+| M-115 | heute nicht messbar (Golden entsteht in Etappe 6; am Basisstand gemessen 22 bzw. 67 Ereignisse bei K 765/383) | hoechstens 1 Ereignis in 30 s bei 96 und 192 kHz (Golden 1 bzw. 0) | B5 380/M-115 nullkorpus_W1_hohe_raten 96.0 kHz und 192.0 kHz: hoechstens 1 Ereignis, exakt der Golden | m115-schwelle: rho = 0 und T_min = 0 (Matrixmutation) | JA (40 bzw. 42 Ereignisse) | `NAK-380-rot-M-115.txt` |
+|  |  | Hop 42,67 ms, K = 1530 wie bei 48 kHz | B5 380/M-115 ...: Vorbedingung Detektor-Bins K = 1530 und Hop 42,667 ms | m115-laenge: Laengenregel -> Konstante (wie M-98); unter m115-schwelle Pflicht-Gruen | JA (beide Raten) | `NAK-380-rot-M-115.txt` |
+| M-116 | Regressionswache | alle bestehenden Lautheitsfaelle gruen (Zellen 100 ms, keine FFT-Laenge im Lautheitsweg) | B18 Lautheitsfaelle (M-01 Momentary/Short-term, 380/M-21 bis M-31 LRA, NAK-283 M-56 bis M-60) und B9 | m116-zelle: Zellenlaenge an die Bassstufe gekoppelt (Matrixmutation) | JA (26 Lautheitspruefungen in B18 rot, darunter Momentary und Short-term) | `NAK-380-rot-M-116.txt` |
+| M-117 | heute rot | Kasten Erratum (s) als eigener Absatz hinter dem Absatz, der mit :2287 beginnt; Verlaufseintrag (s) hinter (r); Zaehler (a) bis (s) und 'Alle 19 Errata'; :2287 bleibt woertlich | Dokuriegel auf docs/FL-Nakama-Sonden-Design-Entwurf.md und git grep -n "Erratum (s)" | keine (Textzeile); Nachweis am Basisstand git grep leer | JA am Basisstand (leer), am Etappenstand Treffer Zeile 2305 | `NAK-380-rot-M-117.txt` |
+| M-118 | heute rot, Golden-Klasse (ii) | A5 gruen: Fassung 20260929 an vier Stellen plus kMetricsVersion, jede gefuehrte Groesse mit Wert an ihrer Codestelle | A5 nak380_m118_fassung_etappe_6 (pruefe_v3_vertrag.py) | m118-register: kFensterPunkteMax 65536 -> 131072 ohne Register (Matrixmutation) | JA | `NAK-380-rot-M-118.txt` |
+|  |  | B30 M-39 festhalten_bytegleich gruen mit neuer Referenz (Klasse ii: vorher rot gegen die alte) | B30 M-39 festhalten_bytegleich | Klasse (ii): neuer Code gegen die alte Referenz | JA (erste Abweichung Byte 52; Felddiff null 66, Satz 2, Version 1, andere 0) | `NAK-380-rot-M-118.txt` |
+| M-119 | Regressionswache | sizeof (FeatureEngine) = Startwert 16 248 B | B5 380/M-119 objektgroessen_begrenzt: sizeof (FeatureEngine) | m119-ersatz: std::array<double, 16> als Mitglied (formgueltiger Ersatz) | JA (16 376 B) | `NAK-380-rot-M-119.txt` |
+|  |  | sizeof (AnalyseEngine) <= Startwert + 64 B | B5 380/M-119 objektgroessen_begrenzt: sizeof (AnalyseEngine) | m119-ersatz: std::array<double, 16> als Mitglied | JA (55 008 B, Delta 192 B) | `NAK-380-rot-M-119.txt` |
+|  |  | B5 laeuft ohne 0xC00000FD (Stapelwache) | B5 Lauf (Exitcode) | m119-matrix: festes Array von 65 536 double in FeatureEngine (Matrixmutation woertlich) | JA (B5 bricht mit -1073741571 = 0xC00000FD ab, 0 Ausgabezeilen, beide Aufrufe) | `NAK-380-rot-M-119.txt` |
+| M-120 | Laengenhaelfte heute rot; Leeren Regressionswache | neue Laengen 32 768/8 192 nach vorbereiten (96000) | B5 380/M-120 ratenwechsel_laengen: nach vorbereiten (96000) Bass/Haupt 32 768/8 192 | m98-regel (Mutation wie M-98) | JA | `NAK-380-rot-M-120.txt` |
+|  |  | M1 32 768/16 384/8 192/4 096 nach vorbereiten (96000) | B5 380/M-120 ...: M1 nach vorbereiten (96000) | m120-m1laengen: Ordnungslambda ohne fensterPunkte (wie M-99) | JA | `NAK-380-rot-M-120.txt` |
+|  |  | kein Akku, keine Historie, kein Samplezaehler der alten Rate ueberlebt | B5 380/M-120 ...: kein Akku, keine Historie, kein Samplezaehler | m120-akku: zuruecksetzen aus FeatureEngine::vorbereiten (Matrixmutation) | JA | `NAK-380-rot-M-120.txt` |
+|  |  | kein Stufenring der alten Rate ueberlebt (zwei Riegel) | B5 380/M-120 ...: kein Stufenring der alten Rate ueberlebt | Doppelmutation m120-doppel (Neuanlage behaelt Ringe und Fuellstand UND zuruecksetzen entfernt); Gegenproben m120-akku und m120-neuanlage lassen sie gruen | JA (gefuellt 14 592/2 304); Gegenproben gruen | `NAK-380-rot-M-120.txt` |
+|  |  | M1: keine Stufe, kein Akku, kein Histogramm der alten Rate; danach nur Segmente der neuen Laenge | B5 380/M-120 ...: M1 - keine Stufe, kein Akku, kein Histogramm; M1 traegt nach dem Wechsel nur Segmente der neuen Rate | m120-m1: zuruecksetzen aus AnalyseEngine::vorbereiten | JA (Segmente 249 553, Histogramme 186 248; Band 64 178 statt 4 Segmente) | `NAK-380-rot-M-120.txt` |
+|  |  | Allokation nur im Worker (B5-Grenzfall Sampleratewechsel erweitert): ein Block mit anderer Rate zieht nur die Grenze | B5 G7 Sampleratewechsel, Laengenhaelfte (zwei Pruefzeilen) | m120-g7: vorbereiten (block.sampleRate) im nimmBlock bei Sampleratewechsel | JA (38 Anforderungen, Laengen 32 768/8 192) | `NAK-380-rot-M-120.txt` |
+| M-121 | Regressionswache (wie M-20) | A1, A16 (bei allen vier Raten bitgleich, 0 Latenz) und B1 gruen; B4 zaehlt 0 Allokationen im Audiothread | B4 die Nullforderungen der Audiothread-Allokationen; A1, A16, B1 Exit | m121-audio: std::vector<float> im processBlock (wie M-20) | JA (4 000/2 000/2 000 Bloecke mit Allokationen, dazu der erste Block nach prepareToPlay) | `NAK-380-rot-M-121.txt` |
+| M-122 | heute nicht messbar | gleiche `metrics_version`: endliche numerische Ähnlichkeit in [0, 1] wie heute | A4 `nak380_m122_fingerprint_nur_gleiche_metrics_version`, Satz „gleiche Messfassung“ und die zwei Aufrufpfade „gleiche Fassung“ | keine eigene — Satz der Wache, unter allen drei Mutationen grün | – | `NAK-380-rot-M-122.txt` |
+|  |  | ungleiche `metrics_version`: Ergebniszustand „nicht vergleichbar“, kein Zahlenwert | A4 „ungleiche Messfassung (beide Richtungen)“, „Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert“ | `m122-riegel`: Versionsriegel in `fingerprint_vergleich` entfernt (Matrixmutation) | JA | `NAK-380-rot-M-122.txt` |
+|  |  | nie „anderes Material“ (Invalidierung) | A4 „Invalidierung, ungleiche Fassung“ | `m122-riegel` und `m122-klass-inv` (Klassifikation in `material_urteil`) | JA (beide) | `NAK-380-rot-M-122.txt` |
+|  |  | nie `MaterialVerschieden`, Grund `MessfassungVerschieden` (Vergleichbarkeit) | A4 „Vergleichbarkeit, ungleiche Fassung: unvergleichbar …“ | `m122-riegel` und `m122-klass-verg` (Klassifikation in `beurteile_versioniert`) | JA (beide) | `NAK-380-rot-M-122.txt` |
+
+### 54.8 Toleranzen (Stelle, Wert, Herleitung)
+
+| Stelle | Wert | Herleitung |
+|---|---|---|
+| M-98, M-99 Dauer | ≤ 0,05 ms gegen die Matrixdauer | die Matrix nennt die Dauern auf 0,1 ms gerundet; halbe letzte Stelle |
+| M-108 Suchgrenze | ± 0,01 Hz gegen 17,30·fs/N_Bass; Matrixzahl ± 0,01 Hz | Matrix (± 0,01 Hz); Matrixzahlen auf 0,01 Hz gerundet |
+| M-103 bis M-105, M-107 Gegenprobe | Schwerpunkt ± 1/6 Oktave um den Ton | Matrix; `kBreiteMaxOktaven` = 1/6 Oktave ist die größte Resonanzbreite |
+| M-115 Hop | 1e-9 ms gegen 1000·2048/48 000 | Rechenbudget einer double-Division |
+| M-100 Budget | ≤ 9 300 000 B | Matrix (9,3 MB) |
+| K-Selbstprüfung (K1 bis K5) | Frequenz ± 0,01 Hz, Tonpegel 15 dB ± 0,01 dB | Nulldurchgangsinterpolation irrt unter 1e-5 Hz über 30 s; Stichprobenleistung über ganze und halbe Perioden höchstens 0,003 dB (45 Hz, 30 s) — Kopf `kSelbstpruefung` in `Nak380Pruefsignale.h` |
+| M-36 (A2, nachgezogen) | wörtlich | keine Toleranz |
+
+Alle übrigen neuen Prüfungen vergleichen exakt (Längen, Bytes, Bänder,
+Ticks, Ereigniszahlen, Masken, `sizeof`). Keine bestehende Schranke wurde
+gelockert.
+
+### 54.9 Einzeln gefahrene Beine am Etappenstand
+
+| Bein | Ziel | Binary | Lauf | Exit | Zählstand |
+|---|---|---|---|---|---|
+| B5 | `EqCopAnalysisGoldenTest` | 08:11:11 | 08:12:47 bis 08:13:19 | 0 | 371 bestanden, 0 gescheitert |
+| A2 | `EqCopGoldenTest` | 08:10:54 | 08:13:19 bis 08:14:21 | 0 | 404 bestanden, 0 gescheitert |
+| B30 | `EqCopBriefkastenTest` | 08:11:23 | 08:14:21 bis 08:15:34 | 0 | 218 bestanden, 0 gescheitert |
+| B15 | `EqCopShot` | 08:11:33 | 08:15:34 bis 08:15:48 | 0 | 102 geprueft in 7 Teilsaetzen, 0 Fehler, dazu der Sichtsatz |
+| B19 | `EqCopSonde013StereoGoldenTest` | 08:11:37 | 08:15:48 bis 08:15:58 | 0 | 846 bestanden, 0 gescheitert |
+| A3 | `EqCopMarkierungTest` | 08:11:47 | 08:15:58 bis 08:16:06 | 0 | 157 ok-Zeilen, 0 rot |
+| B9 | `EqCopLoudnessGoldenTest` | 08:11:50 | 08:16:06 bis 08:16:11 | 0 | 117 bestanden, 0 gescheitert |
+| B18 | `EqCopSonde013DynamicsTest` | 08:11:55 | 08:16:11 bis 08:16:23 | 1 | 125 bestanden, 2 gescheitert |
+| B16 | `EqCopSonde013EventWireTest` | 08:12:05 | 08:16:23 bis 08:16:26 | 0 | 234 bestanden, 0 gescheitert |
+| B3c | `EqCopSchemaTest` | 08:12:08 | 08:16:26 bis 08:16:27 | 0 | 177 bestanden, 0 gescheitert |
+| A16 | `EqCopProbeeqNullTest` | 08:12:17 | 08:16:30 bis 08:16:31 | 0 | 145 bestanden, 0 gescheitert |
+| A1 | `EqCopNullTest` | 08:12:26 | 08:16:31 bis 08:16:31 | 0 | 10 ok-Zeilen, 0 rot |
+| B1 | `EqCopIdentityTest` | 08:12:36 | 08:16:31 bis 08:16:32 | 0 | 120 bestanden, 0 gescheitert |
+| B4 | `EqCopQueueStressTest` | 08:12:46 | 08:16:32 bis 08:16:35 | 0 | 121 bestanden, 0 gescheitert |
+| A5 | `pruefe_v3_vertrag.py --abdeckung` | – | 08:16:27 bis 08:16:30 | 0 | 939 bestanden, 0 gescheitert |
+| A26 | `pruefe_p4_korpus.py` | – | 08:16:35 bis 08:16:35 | 0 | 26 Faelle, 0 falsche starke Behauptungen |
+| A4 | `cargo test --manifest-path broker/Cargo.toml` | – | 07:45:20 bis 08:06:28 | 0 | 846 bestanden, 0 gescheitert, 23 ignoriert |
+
+Frische: der Bau vor dem Endlauf (08:10:55 bis 08:12:46, Exit 0) liegt nach der letzten Rücknahme (`m99-dreifach`, `FeatureEngine.h` 08:10:51); jedes Binary ist jünger als die jüngste Quelle unter `eq-copilot/plugin` (Übersicht `eq-copilot/build/nak380-e6/e6end-uebersicht.log`, Bauartefakt). A4 lief nach dem Versionsschritt 20260929 und nach jeder Broker-Änderung (07:45:20 bis 08:06:28); die C++-Mutationen berühren den Broker nicht. Einziges rotes Bein: **B18** mit genau den zwei Prüfungen `380/M-43 detektor_binbereich` bei 96 kHz (§54.13 Punkt 1); die übrigen 125 B18-Prüfungen grün.
+
+### 54.10 Bewegungen bestehender Goldens (nur die erlaubten und ihre Folgen)
+
+- **festhalten-referenz.json** (Klasse ii, M-118): erst rot gegen die alte
+  Referenz, dann `--erzeuge`; nur die drei erwarteten Klassen
+  (`NAK-380-etappe-6-m118-referenz-alt.txt`).
+- **B5 NAK-182-Sweep** (M-113): Schranke N_H(fs), t0 und Laufende je Rate
+  (§54.11 Abweichung 6); 44,1/48 kHz Zahlen unverändert.
+- **B19** (N je Rate, §52.1): 754 von 846 Prüfsätzen mit gleichem Detail, 73
+  bewegt, alle bei 88,2 bis 192 kHz (Kohärenz, Referenz, Gruppenlaufzeit,
+  Ringbytes) oder im Ratenwechsel M-87 (c); 44,1/48 kHz zeichengleich bis auf
+  die N-Angabe im Satz (`NAK-380-etappe-6-b19-vergleich.txt`). M-87 (c):
+  erster Snapshot nach dem Wechsel 13 → 6 Frames (Kohärenz jetzt `null` wie
+  in (a) und (b)), zweiter 27 → 13 mit Kohärenzbit — der Kohärenzsatz ist auf
+  den zweiten Snapshot gezogen, die Nullprüfung des ersten kam hinzu (845 →
+  846 Prüfungen). NAK-182-Sweep der Freiheitsgrade (48 kHz): unverändert.
+- **B5 M-115**: Goldens 96 kHz 1, 192 kHz 0 am Etappenstand gemessen und
+  gesetzt (der Fall entstand in Etappe 6).
+- **Folgebewegungen durch M-106 und M-109** (keine Lockerung): A2
+  `380/M-36` prüft den Charaktertext jetzt wörtlich zusammen mit dem
+  anschließenden Suchgrenzsatz (die Karte endet seit M-106 am Satz); B30
+  `313/M-142 (a)` und B15 `313/M-142 (b)` vergleichen die Datei mit dem
+  Snapshot bzw. der Vergleichslinie und verlangen für Maskenbänder `null`
+  (vorher las der Vergleich `null` als 0 und fiel).
+- **B18 `380/M-43` bei 96 kHz — nicht nachgezogen, rot** (§54.13 Punkt 1).
+
+### 54.11 Abweichungen vom Bauplan §8.6 und von der Matrix, begründet
+
+1. **Testhaken in `PluginEditor.cpp`:** der Leertext-Beobachter
+   (`testzugang::leertextBeobachterFuerTest`) steht nur unter
+   `NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3`; ohne ihn misst B15 den Leertext nicht
+   am echten Editor. Im Produktbau ist die Datei außer dem Leertext-Satz
+   unverändert.
+2. **Konstanten in `AnalyseEngine.h`:** `kM1Ordnung*` und
+   `kResonanzSucheFaktor` stehen dort als benannte Konstanten, weil das
+   Register je geführte Größe eine Codestelle mit `kName = Wert` verlangt;
+   `metriken-v1.json` nennt AnalyseEngine.h unter `quellen`, A5 liest sie mit.
+3. **A5-Fall der Etappe 5:** wie Etappe 5 mit dem Etappe-4-Fall — Fassung
+   20260928 bleibt inhaltlich geprüft, die Versionsprüfungen wandern in
+   `nak380_m118_fassung_etappe_6`.
+4. **Broker-Aufrufer:** `material_wechsel` und `beurteile` übergeben die
+   Fassung dieses Brokers auf beiden Seiten; der Fingerprint trägt keine
+   eigene Fassung (§54.13 Punkt 2).
+5. **M-120 (B5) auf eigenem Thread für die M1-Hälfte:** der Rahmen von `main`
+   belegt 1 002 752 von 1 048 576 B (NAK-175); die M1-Hälfte endete am
+   Basisstand mit 0xC00000FD. Ablauf unverändert, Engine im Heap.
+6. **M-113:** t0 = 100,75·Hop_H(fs) und Laufende t0 + 4·N_H(fs) statt fester
+   206 336; bei 192 kHz läge der Impuls sonst vor dem ersten Frame, der ein
+   Ereignis tragen darf (278 528). Vorbedingung E-0 verriegelt es je Rate.
+7. **M-100:** Nutzdaten und STL-Verwaltungsanteil getrennt (MSVC fordert je
+   Puffer ab 4 KiB 39 B mehr an, gemessen 19 Anforderungen); die Zusage
+   110 B je Punkt gilt für die Nutzdaten, das Budget für die Summe.
+8. **M-101:** Fall bei 384 kHz ergänzt (Obergrenze), damit die
+   Matrixmutation „Kappe aufgehoben, 384 kHz“ eine Prüfzeile trifft.
+9. **M-107:** am Basisstand entstand bei 48 Hz keine Karte (Breitenkriterium);
+   Rotbeweis als Doppelmutation mit zwei Gegenproben.
+10. **M-112:** bei 96 kHz am Basisstand rot (Mittenlücke), bei 48 kHz Wache.
+11. **M-119:** die Matrixmutation (+524 288 B) bricht B5 mit 0xC00000FD, bevor
+    die Größenprüfung schreibt; sie belegt die Stapelwache. Für die zwei
+    Größensätze ist `m119-ersatz` (+128 B je Typ) die formgültige Mutation.
+12. **M-120 Grenzfall G7:** Längenhälfte mit einem 96-kHz-Block (bei 44,1 kHz
+    sind die Längen gleich, nicht trennscharf) samt Allokationszähler.
+13. **M-120 Band 64:** Segmentzählung am Band 64 (ein Bin bei 16 384 und
+    32 768 Punkten, Vorbedingung verriegelt) statt Band 40 (am Basisstand
+    ohne Bin).
+14. **Messausgabe der Kartenbreite** (A2, nur `mess`-Zeile) für §54.6.
+15. **`Spektrum.h`:** nur die zwei Stellen und der Kommentar aus dem Auftrag.
+16. **Rotbeweise über die Matrixspalte hinaus:** wo die Rotbeweisspalte nur
+    eine Hälfte nennt, hat jeder weitere Zusagesatz eine eigene formgültige
+    Mutation mit derselben Aussage (Heap je Punkt `m100-heap`, `m101-heap`;
+    Kappe `m114-kappe`; Hop und K `m115-laenge`; M1-Längen nach dem
+    Ratenwechsel `m120-m1laengen`; Satz in M-107 `m107-satz`; K4
+    `m106-k4`). Die 44,1-kHz-Längen sind mehrfach getragen: Rundung und
+    Untergrenze in `fensterPunkte`, für M1 zusätzlich die Startordnung des
+    Ordnungslambdas — gemessen mit `m98-floor`, `m98-untergrenze`,
+    `m99-start` (je grün), `m98-doppel` (M-98 und M-102 rot, M-99 grün) und
+    `m99-dreifach` (M-99 rot).
+17. **Zwei Folgeanpassungen bestehender Fälle** durch M-106 und M-109 (A2
+    `380/M-36`, B30/B15 `313/M-142`), §54.10; keine Schranke gelockert.
+
+### 54.12 Selbstaudit und Prüfliste
+
+Eigener Diff (`git diff --stat` und `git diff` gegen HEAD, ohne zu stagen)
+adversarial gelesen; je Punkt des Auftrags die Stelle, an der er gemessen ist:
+
+- **Längenregel:** round (nicht floor oder ceil) mit beidseitiger Kappe —
+  `fensterPunkte` sucht die Zweierpotenz 2^e mit 2^e/√2 ≤ T·fs < 2^e·√2
+  (halbe Werte runden auf); Untergrenze N(48 kHz), Obergrenze 65 536;
+  ungültige Rate (≤ 0, NaN, unendlich) → Basislänge. Belegt durch M-98/M-99
+  bei allen sechs Raten, die 44,1-kHz-Hälfte als Doppel- bzw.
+  Dreifachmutation (Rundung, Untergrenze, Startordnung), die Obergrenze bei
+  384 kHz (M-100, M-101). Hop = N/2 in jeder Stufe (M-98, M-99, M-120, G7).
+- **Dauer bei 44,1 kHz** 371,52/92,88 ms (Untergrenze der Familie), 48 kHz
+  341,33/85,33 ms (M-98, M-99).
+- **Zellen 100 ms und Zonen-Ticks unverändert:** `kZelleSekunden` und
+  `zellenSamples` der M1 ohne Diff; 30 Ticks je Zone bei 48 und 96 kHz
+  (M-112); alle Lautheitsfälle in B9 und B18 grün (B18 fällt nur an M-43,
+  §54.13), die Mutation M-116 macht 26 davon rot.
+- **Nähte und Zuständigkeiten** (`idxNaht*`, `idxZust*`, `kTrennungHz`)
+  ohne Diff; **Zuordnung 96 = 48 kHz** (M-114, 221 von 221 je Stufe).
+- **Detektor-Δf aus der Punktzahl der Hauptstufe:** `detektorBinsBestimmen`
+  liest `haupt.punkte` (aufgerufen nach `haupt.vorbereiten`); K = 1530 bei
+  96 und 192 kHz (M-115, Mutation `m115-laenge` rot).
+- **Suchgrenze je Rate** 46,5656/50,6836 Hz (M-108); Kandidat darunter nie
+  gemeldet (M-107 Doppelmutation, K4 in M-106); `resonanzSucheAbHz` NaN
+  (ohne Vorbereitung) → kein Kandidat und kein Satz.
+- **Satz nur aus `Diagnose.cpp`**, Karte und Editor hängen an (Diff;
+  `m106-satz` macht Karte und Leertext zugleich rot). Die Befundliste rechnet
+  die Zeilenhöhe aus dem umbrochenen TextLayout; der Satz verlängert nur den
+  Umbruch (kein Bild erzeugt: Auftrag „nur Text“, Designteil geparkt).
+- **Masken** genau für interpolierte Werte und Nahtanteile mit Gewicht > 0;
+  gezählt im Test unabhängig aus Binzuordnung und Nähten
+  (`m1MaskenReferenz`): 29 bzw. 37 bei 48 kHz. Die Masken entstehen je
+  schwerer Auswertung in einem frischen `MessSnapshot` (keine Bits aus einer
+  früheren Auswertung); `auswertenLeicht` lässt LTAS und Masken stehen.
+- **Schreiber `null`, Prozess Zahl, Heartbeat NaN → `null`** (M-109, M-111,
+  M-110); der v2-Vertrag lässt `null` je Band zu, der Broker liest
+  `Option<f64>` (`protokoll.rs`).
+- **Fassung an vier Stellen plus `kMetricsVersion`**, Register mit jedem
+  `kName = Wert` (A5 939/0, Mutation `m118-register` rot).
+- **A2-Fixture-Riegel grün** (404/0); `golden-referenz.json` und alle
+  `.wav` ohne Diff (`git status` nennt unter `fixtures` nur
+  `festhalten-referenz.json`).
+- **B19-Referenz mit N je Rate** (`nak380NHaupt (fs)`), Schranken
+  unverändert, 44,1/48 kHz zeichengleich.
+- **Speicher im Budget:** höchstens 9 280 634 B (176,4 kHz) ≤ 9 300 000 B;
+  `sizeof` 16 248 / 54 880 B.
+- **Kein Audio-Pfad:** `PluginProcessor.cpp` ohne Diff; A1, A16, B1, B4
+  grün; ein Block mit anderer Rate allokiert nicht (G7, 0 Anforderungen).
+- **Zahlenränder:** fs unbekannt (Basislänge, keine Suchgrenze), 384 kHz
+  (Kappe), Einbinbänder (B19: keine Laufzeit; M-120 Band 64 mit einem Bin),
+  Bänder ohne Bin (M-102), Ratenwechsel mitten im Lauf (M-120 nach 30 s,
+  G7 im Block), Block 16 384 bei 192 kHz (M-113-Sweep).
+
+Prüfliste (`tools/dirigent/pruefliste.md`, nicht geändert): **C** NaN an
+jeder Drahtzahl — Maskenbänder reisen als NaN/`null`, nicht als Zahl
+(M-109, M-110); **D** Frische — jedes Binary des Endlaufs jünger als seine
+Quellen (§54.9); **E** Behauptung ≤ Messung — sieben Behauptungszeilen je
+ein Satz mit gemessenen Zahlen, jede neue Prüfung einmal gebrochen
+(Rotbeweise), Regressionswachen als solche benannt; **F** Änderungssatz —
+Schreiber (`DiagnoseAntwort.cpp`, `Ipc.cpp`), Leser (Broker
+`Option<f64>`, Schema `["number", "null"]`), Register und A5 im selben
+Stand; A und B nicht berührt.
+
+### 54.13 Offene Punkte (für den Dirigenten)
+
+1. **B18 rot an zwei Prüfungen: `380/M-43 detektor_binbereich` bei 96 kHz**
+   (Etappe 4). Der Fall erwartet bei 96 kHz K = 765, k = 2 bis 766 und einen
+   Ring von 118 Plätzen (w_max = 58); die Matrix M-43 führt diese Zahlen
+   ausdrücklich als Zustand „vor Etappe 6“. Seit Etappe 6 hat die
+   Hauptstufe bei 96 kHz 8 192 Punkte, gemessen K = 1530, k = 3 bis 1532,
+   w_max 115, 232 Plätze — genau die 48-kHz-Werte, wie M-114 und M-115
+   verlangen (M-115: „K = 1530 wie bei 48 kHz“, in B5 grün). Die
+   Speicherzusage von M-43 hält weiter (24 480 B ≤ 26 656 B). Der Test ist
+   **nicht** angepasst (Auftrag: B18 nur fahren, keine Golden-Bewegung
+   außerhalb der Liste; keine Schranke nachziehen). Zu entscheiden: ob die
+   96-kHz-Hälfte von M-43 auf den Etappe-6-Stand nachgezogen wird
+   (Nacharbeit) — die übrigen 125 B18-Prüfungen sind grün, die
+   Lautheitszusage M-116 ist davon unberührt.
+2. **M-122, Produktaufrufer:** `material_wechsel` und `beurteile` übergeben
+   die Fassung dieses Brokers auf beiden Seiten; `Fingerprintwerte` trägt
+   keine eigene Messfassung. Die Fassung eines Telemetriebatches liest
+   `telemetrie.rs` (Pflichtfeld `metrics_version` ≥ 1), sie reist aber nicht
+   mit dem Fingerprint in `Passagenbeleg` oder in die Invalidierung. Der
+   Zustand „nicht vergleichbar“ ist damit über den versionierten Weg
+   (`material_urteil`, `beurteile_versioniert`) gemessen, im heutigen
+   Produktfluss aber nicht erreichbar. Ob Fingerprints verschiedener
+   Fassungen im Produkt aufeinandertreffen können (etwa aus einer Ablage
+   nach einem Update), und wo die Fassung dann mitreist, ist ein eigener
+   Schritt.
+3. **Speicher über 192 kHz (Beobachtung):** die Zusage ≤ 9,3 MB gilt je Rate
+   bis 192 kHz. Bei 384 kHz tragen die Stufen 65 536/32 768 Punkte
+   (110·98 304 + 3 552 = 10 816 992 B Nutzdaten), bei 768 kHz (Grenze von
+   `vorbereiten`) 65 536/65 536 (14 421 472 B). Die Kappe begrenzt je Stufe,
+   nicht die Summe.
+4. **Beschreibungstext im v2-Schema (Beobachtung):**
+   `eq-snapshot.schema.json` beschreibt `komposit_db` mit „Bass 16384 /
+   Mitten 4096 / Höhen 2048“ — die 48-kHz-Längen. Kein Feld geändert
+   (Auftrag); der Text gilt bei 44,1/48 kHz weiter.
+5. Bauwarnungen: nur die vorbestehenden C4458 in `Stereo.h:188` (Datei nicht
+   berührt).
+6. Etappe 7 (Abschluss §8.7, T2-Abschlussprüfung, Laufzeit-Arm) und
+   `docs/plugin-wissen.md` stehen aus; Kanon nachher und Erstprüfung 6 stehen
+   aus.
+
+## 55. Messung der Etappe 6, Regel R-380-14, Einordnung, Register und Nacharbeitsauftrag 0 (Dirigent, 26.09.2026, 08:28 Uhr)
+
+**Messung (Dirigent, kein Selbstbericht).** Worker `5c129ef4`
+(`nakama-nak380-a4ccba9-e6`, Opus 5.5 xhigh, `dontAsk`), 06:30:24 bis
+08:21 Uhr (Beobachter „blockiert“ = fertig und idle; Schlussmeldung
+„FERTIG Etappe 6, 25 Zeilen belegt, Beine alle grün außer B18 (2 Prüfungen
+380/M-43 bei 96 kHz), uncommittet“; `Get-Date` der Messung 08:22:21 Uhr).
+HEAD vor und nach dem Lauf `a4ccba93`, kein Commit des Workers. `git
+status --short` ohne die fremden Einträge: 23 geänderte Dateien unter
+`eq-copilot`, `broker`, `tools` (einschließlich `Spektrum.h` :668/:673 und
+`festhalten-referenz.json` über den Erzeuger), der Entwurf (Erratum (s)
+:2305, Zähler :10 und :57), das Manifest (§54), 79 neue Rohdateien (42
+Mutationsprotokolle `NAK-380-e6-mutation-*`, 25 Rotbeweise
+`NAK-380-rot-M-98.txt` bis `NAK-380-rot-M-122.txt`, 6 Etappendateien
+`NAK-380-etappe-6-*`). `git diff --stat -- eq-copilot broker tools`: 23
+Dateien +2 807/−209 — exakt die Ticketpfade des Auftrags, kein fremder
+Pfad; `git diff --check` ohne Befund; Zeilenenden je Datei wie in der
+Arbeitskopie (`git ls-files --eol`: jede w/crlf-Datei weiter CRLF, jede
+LF-Datei LF, `metriken-v1.json` i/crlf). Kleine Produkthunks gelesen:
+`PluginEditor.cpp` (Leertext-Satz aus `suchgrenzeSatz`; der Testhaken
+`leertextBeobachterFuerTest` liegt vollständig unter `#if defined
+(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)` :87-110 und :472-475, im Produktbau
+nicht übersetzt), `Ipc.cpp` (NaN für Maskenbänder), `Spektrum.h` (Δf und
+Binkappe aus `haupt.punkte`, Kommentar in Zeit). Beine am Etappenstand
+(§54.9, am Manifest gelesen): B5 371/0, A2 404/0, B30 218/0, B15 102/0,
+B19 846/0, A3 157/0, B9 117/0, B16 234/0, B3c 177/0, A16 145/0, A1, B1
+120/0, B4 121/0, A5 939/0, A26, A4 846/0; **B18 125/2 rot** (beide Prüfungen
+`380/M-43 detektor_binbereich` bei 96 kHz, §54.13 Punkt 1). Tabelle §54.7:
+jeder Zusagesatz M-98 bis M-122 mit Rotbeweis JA (M-117 über `git grep` und
+Dokuriegel, M-122 Satz „gleiche Fassung“ als Wache). Messzahlen §54.6:
+Längen je Familie wie M-98/M-99, Heap höchstens 9 280 634 B ≤ 9 300 000 B,
+Bänder ohne Bin 22/25, Suchgrenze 46,5656/50,6836 Hz, K1 bis K3 genau eine
+Karte an 61 von 61 Snapshots, K4 und K5 keine, Masken 29/37, 30 Ticks je
+Zone bei 48 und 96 kHz, W1 96 kHz 1 und 192 kHz 0 Ereignisse, `sizeof`
+16 248 / 54 880 B (Δ 64), Kohärenzminimum 88,2 bis 192 kHz 0,9943 bis 0,9968
+(vorher 0,9544 bis 0,9894; die Beobachtung §52.1 ist damit erledigt),
+Ringbytes 96 und 192 kHz 217 792 B (Schranke 245 760). Dokuriegel auf
+Manifest und Entwurf 0 Befunde (vom Dirigenten wiederholt).
+Golden-Bewegungen §54.10 nur die erlaubten (festhalten-Referenz Klasse (ii),
+B5 M-113-Schranke, B19 N je Rate, M-115-Golden neu) und zwei
+Folgeanpassungen (A2 `380/M-36` Text, B30/B15 `313/M-142` `null`) ohne
+Lockerung.
+
+### 55.1 Einordnung der offenen Punkte (§54.13) und Abweichungen (§54.11)
+
+| Punkt | Quelle (Bauerstand auf `a4ccba93`) | Einordnung | Regel |
+|---|---|---|---|
+| 1. B18 `380/M-43 detektor_binbereich` bei 96 kHz rot (2 Prüfungen) | `Sonde013DynamicsTest.cpp:1052-1054` (Soll 96 kHz: k = 2 bis 766, K = 765), `:1071-1081` (Ring 2·w_max + 2 = 118, w_max 58); Matrix M-43 (§6.3) führt diese Zahlen ausdrücklich als „vor Etappe 6“; M-114 und M-115 verlangen Δf 11,72 Hz und K = 1530 bei 96 kHz; Speicherzusage 24 480 B ≤ 26 656 B hält | **LÜCKE im Auftrag** — die Matrix kannte den Wechsel, der Auftrag ließ B18 nur fahren und verbot jede Bewegung | **R-380-14 (i)** unten: 96-kHz-Hälfte von M-43 auf den Etappe-6-Stand, Rotbeweis `m43-untergrenze` an beiden Raten; Nacharbeit 0 |
+| 2. M-122 Produktaufrufer: gespeicherte Fingerprints tragen keine Messfassung; `material_wechsel` und `beurteile` übergeben `METRICS_VERSION` auf beiden Seiten; „nicht vergleichbar“ ist im Produktfluss nicht erreichbar | `experiment_verdrahtung.rs` `fingerprint_json` :660-667 (version, band_energie, chroma, onset), Belegschreiber :679-686, `fingerprint_aus_gespeichertem` :1604, Belege aus gespeichertem :1630-1641, `beurteile`-Aufruf :1233; `invalidierung.rs` `material_wechsel` (Fassung beidseitig `METRICS_VERSION`); `vergleichbarkeit.rs` `beurteile` → `beurteile_versioniert (a, METRICS_VERSION, b, METRICS_VERSION)`; `Passagenbeleg` :101-118 ohne Fassung | **LÜCKE** — M-122 bindet den Riegel und die zwei Aufrufpfade, sagt aber nicht, woher die Fassung eines gespeicherten Fingerprints kommt; R-380-9 (E-380-10) meint genau den Fall nach einem Versionsschritt (gespeicherte Fingerprints der Fassungen bis 20260928 treffen auf 20260929) | **R-380-14 (ii)** unten; Nacharbeit 0 |
+| 3. Speicher über 192 kHz: Kappe je Stufe, nicht Summe (384 kHz 10,8 MB, 768 kHz 14,4 MB Nutzdaten) | §54.13 Punkt 3; R-380-5 („Speicherbudget je Abtastrate (44,1 bis 192 kHz)“) | **HÄRTUNG** — keine Zusage über 192 kHz; die Kappe hält, kein Absturz (M-100/M-101 bei 384 kHz) | Register NAK-408 |
+| 4. Beschreibungstext des v2-Snapshotschemas nennt „Bass 16384 / Mitten 4096 / Höhen 2048“ | `eq-snapshot.schema.json:94`; Auftrag „kein Feld“ | **HÄRTUNG** (Vertragstext, gilt bei 44,1/48 kHz weiter; Muster NAK-400) | Register NAK-409, nächster Schema-Schritt |
+| 5. Bauwarnung C4458 `Stereo.h:188` | vorbestehend (§51.6) | kein Handlungsbedarf | — |
+| Abweichungen §54.11 Punkte 1 bis 17 (Testhaken unter dem Define, Konstanten in `AnalyseEngine.h` für das Register, A5-Fall der Etappe 5, Broker-Aufrufer mit `METRICS_VERSION` (siehe Punkt 2), M-120 auf eigenem Thread, M-113 t0 je Rate mit verriegelter Vorbedingung, M-100 Verwaltungsanteil getrennt, M-101 384-kHz-Fall, M-107 Doppelmutation, M-112 96 kHz am Basisstand rot, M-119 Ersatzmutation formgültig und Matrixmutation als Stapelwache, M-120 G7 mit 96-kHz-Block, Band 64, Messausgabe, `Spektrum.h` zwei Stellen, Mehrfachmutationen, Folgeanpassungen M-36/M-142) | §54.11 | **angenommen** (Technik innerhalb von Auftrag und Regeln; keine Schranke gelockert, kein Golden außerhalb der Liste bewegt) | — |
+
+### 55.2 Regel R-380-14 (Dirigent, 26.09.2026, Technik innerhalb von R-380-5, R-380-9 und M-122)
+
+**(i) M-43 nach Etappe 6.** Die 96-kHz-Hälfte von M-43 gilt mit der
+Hauptstufe der Fensterdauer (8 192 Punkte, T-380-7): Δf = 96 000/8 192 =
+11,71875 Hz, Detektor-Bins k = 3 bis 1532 (30,36 Hz ≤ k·Δf < min(17 959,39
+Hz, Kappe)), K = 1530 wie bei 48 kHz (M-114, M-115), Filterbreite w_max =
+⌈1532·(2^(125/1200) − 1)⌉ = 115 und Ring 2·w_max + 2 = 232 Plätze, Vorframe
+und Filterpuffer 2·K·8 B = 24 480 B ≤ 26 656 B (Speicherzusage unverändert).
+Die Sätze zu 44,1 und 48 kHz bleiben wörtlich. Rotbeweis wie in Etappe 4:
+`m43-untergrenze` (Untergrenze k = 0 → K = 1533 bei 48 kHz, 1533 bei 96 kHz)
+fällt an der K-Prüfung beider Raten; die Ringprüfung bei 96 kHz fällt unter
+`m43-ring2w` wie in Nacharbeit 0 der Etappe 4. Kein Produktcode.
+
+**(ii) Die Messfassung reist mit dem gespeicherten Fingerprint.** Die
+Projektion `experiments.state_jcs` trägt neben jedem gespeicherten
+Fingerprint (`passage.fingerprint`, `referenz.passage_fingerprint`,
+`referenz.upstream_fingerprint`) die Messfassung `metrics_version` des
+Brokers, der ihn gespeichert hat — als additives Feld im gespeicherten
+JSON (Schreiber `fingerprint_json` oder die Belegschreiber :679-686); kein
+Feld auf der v3-Leitung, kein Schema, keine Vertragsversion, keine
+Store-Migration (der Store hält JSON, unbekannte Felder bleiben erhalten).
+Der Leser (`fingerprint_aus_gespeichertem` und die Belegleser :1630-1641)
+liefert die Fassung als `Option<u32>`: fehlt das Feld (Altstand vor dieser
+Fassung), ist die Fassung unbekannt. Die Aufrufer übergeben je Seite die
+Fassung des Belegs: gespeichert → gespeicherte Fassung; frisch gerechnet
+oder aus dem laufenden Batch → `METRICS_VERSION` dieses Brokers. Unbekannte
+Fassung auf einer Seite ist fail-closed „nicht vergleichbar“ (kein
+Materialwechsel, nie `MaterialVerschieden`, Grund `MessfassungVerschieden`
+oder ein eigener benannter Grund „Messfassung unbekannt“ — Technikentscheid
+des Bauers, im Manifest begründet). Ein Fingerprint einer laufenden Sitzung
+ist an die Fassung dieses Brokers gebunden (Plugin und Broker werden als
+Bundle installiert; ein Mischstand ist Installer-Sache, kein Vertragsfall;
+der Bauer benennt ihn als Beobachtung, falls er ihn im Code bestätigt).
+Tests in A4 (Modultests im Experimentmodul, Namen
+`nak380_m122_gespeicherte_fassung_*`): (a) ein gespeicherter Beleg mit
+Fassung 20260928 gegen einen laufenden mit 20260929 → `beurteile` und
+Materialweg „nicht vergleichbar“, kein Materialwechsel; (b) ein Altstand
+ohne Feld → unbekannt → „nicht vergleichbar“; (c) gleiche Fassung → wie
+heute (Regressionswache); (d) Schreiben und Wiederlesen trägt die Fassung
+bytegleich. Rotbeweise: der Leser ersetzt eine fehlende Fassung durch
+`METRICS_VERSION` (Rückfall) → (b) rot; der Aufrufer übergibt
+`METRICS_VERSION` statt der gespeicherten Fassung → (a) rot; der Schreiber
+lässt das Feld weg → (d) rot; trägt eine Zusage zwei Riegel, Doppelmutation
+mit Gegenproben (Lehre §50.1). Die JCS-Projektion ist kein Vertrag:
+bestehende Tests, die `state_jcs` exakt vergleichen, ziehen das additive
+Feld nach (Bewegung mit Zahl im Manifest); die v3-Fixtures unter
+`eq-copilot/fixtures/v3/**` bleiben bytegleich (die Leitung ändert sich
+nicht).
+
+**Matrix in der Fassung §55.** M-43 (§6.3): Zustand „bei 44,1, 48 und
+96 kHz (vor Etappe 6)“ → „bei 44,1, 48 und 96 kHz; 96 kHz seit Etappe 6 mit
+8 192 Punkten“; Zusage 96 kHz „765 (96 kHz, Δf 23,44 Hz, k = 2 bis 766)“ →
+„1530 (96 kHz, Δf 11,72 Hz, k = 3 bis 1532, w_max 115, 232 Plätze)“; übrige
+Sätze unverändert. M-122 (§6.5): Zustand ergänzt „ein gespeicherter
+Fingerprint trägt die Messfassung seines Schreibers; fehlt sie, ist die
+Fassung unbekannt“; Zusage ergänzt „unbekannte Fassung → nicht
+vergleichbar“; Test ergänzt „A4 NEU `nak380_m122_gespeicherte_fassung_*`“;
+Rotbeweis ergänzt „Rückfall des Lesers, Aufrufer mit `METRICS_VERSION`,
+Schreiber ohne Feld“. Übrige Zeilen wie §6.5 und §54.7.
+
+### 55.3 Register, Zwischenstand und Nacharbeitsauftrag 0 (Runde 0, zählt nicht zum Rundenbudget)
+
+Register: NAK-408 (Speicherkappe je Stufe über 192 kHz) und NAK-409
+(Beschreibungstext des v2-Snapshotschemas) datiert angelegt. Zwischenstand
+der Etappe 6 (Bauerstand plus dieser Abschnitt) mit Pathspec committet und
+gepusht; Rundenbilanz nach dem Commit in §56. Nacharbeit 0 nach R-380-14
+durch einen frischen Opus-5.5-Worker (`--effort xhigh`, NAK-404), Aufsicht
+ENG, Auftrag `docs/beweise/roh/NAK-380-etappe-6-nacharbeit-0-auftrag.txt`
+(Zeigerauftrag als Positionsargument, Landmine §47). Ticketpfade der
+Nacharbeit 0: `eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp` (M-43
+96-kHz-Hälfte, Kommentare), `broker/src/coordinator/experiment_verdrahtung.rs`
+(Schreiber, Leser, die zwei Aufrufer), `broker/src/coordinator/invalidierung.rs`
+und `broker/src/coordinator/vergleichbarkeit.rs` nur für einen benannten
+Grund oder eine Signatur, `broker/src/telemetrie.rs` nur Kommentar,
+Rotbeweise `NAK-380-rot-M-43.txt` und `NAK-380-rot-M-122.txt` (append-only,
+Abschnitt e6n0), Mutationsprotokolle `NAK-380-e6n0-mutation-*.txt`,
+`tools/beweise.ps1` nur die Behauptungszeilen B18 :766 und A4 :518 bei
+Bedarf, Manifest §56 (Kopf: „Nacharbeit 0 gebaut; Kanon und Erstprüfung 6
+stehen aus“). Beine: B18, A4 (voll), B5 (M-115 als Wache), A1, A16, B1, B4.
+Danach fährt der Dirigent den Kanon nachher (abgekoppelt) und startet die
+Erstprüfung 6 (Vorlage A, `a4ccba93...HEAD` über die Ticketpfade der Etappe
+6 samt Nacharbeit 0; Codex `gpt-6-astra` xhigh, ab 95 % Codex-Woche oder
+bei 401 ein frischer lesender Opus-Thread xhigh).
+
+## 56. Nacharbeit 0 der Etappe 6 nach R-380-14 (Bauer Opus 5.5 xhigh, 26.09.2026)
+
+Gebaut nach dem Auftrag `docs/beweise/roh/NAK-380-etappe-6-nacharbeit-0-auftrag.txt`
+(Regel R-380-14 (i) und (ii), Matrixfassung §55.2; Runde 0). **Ergebnis:**
+(i) Die 96-kHz-Hälfte von M-43 steht auf dem Etappe-6-Stand (K = 1530, k = 3
+bis 1532, Ring 232 Plätze, w_max 115); B18 127/0, im Logvergleich gegen den
+Etappenendlauf ändern sich genau die zwei 96-kHz-Prüfungen und die
+Summenzeile. (ii) Ein gespeicherter Fingerprint trägt seine Messfassung
+(`metrics_version` im gespeicherten Fingerprintobjekt), der Leser liefert
+sie als `Option<u32>` ohne Rückfall, beide Aufrufer übergeben je Seite die
+Fassung des Belegs; unbekannte Fassung ist in beiden Pfaden „nicht
+vergleichbar“ (`MessfassungUnbekannt`), verschiedene Fassungen ebenso
+(`MessfassungVerschieden`), gleiche Fassung wie heute. Vier Modultests
+`nak380_m122_gespeicherte_fassung_*` (a) bis (d), 14 Mutationsprotokolle
+`NAK-380-e6n0-mutation-*.txt` (2 für M-43, 12 für M-122 einschließlich
+zweier Doppelmutationen), jede fällt an der erwarteten Prüfung: JA.
+Beine einzeln grün: B18 127/0, A4 850/0 (23 ignoriert), B5 371/0, A1, A16 145/0, B1
+120/0, B4 121/0. **Abweichung von der Ticketgrenze:** der Träger der Fassung im
+Speicher liegt in `broker/src/coordinator/experiment.rs` (drei Felder), die
+drei Integrationstests unter `broker/tests/` bekommen dafür je zwei
+Literalzeilen, und der Materialweg `invalidierung_verdrahtung.rs` bekommt die
+Fassung in der Signatur (§56.9, begründet). Nichts gestagt, nichts committet.
+
+### 56.1 Startmessung
+
+- `Get-Date` 26.09.2026 08:35:11 Uhr; `git rev-parse HEAD` =
+  `2fa1e35aee7fc976b987afcab6927f9ec62a5f1e` (Zwischenstand der Etappe 6);
+  `git status --short` nur `briefing-hub/` und `nimbalyst-local/` (fremd,
+  nicht angefasst).
+- Prozessprobe (cmake, MSBuild, cl, link, cargo, rustc, EqCop*,
+  eqcop-broker, FL64, vctip) um 08:35:11 Uhr leer. Kein FL Studio, keine
+  Installation, kein voller Kanon, kein zweiter Kanon (NAK-290).
+- Zeilenenden gemessen (`git ls-files --eol`): `Sonde013DynamicsTest.cpp`,
+  `experiment_verdrahtung.rs`, `vergleichbarkeit.rs`, `telemetrie.rs`,
+  `invalidierung_verdrahtung.rs`, `sonde013_verdrahtung.rs`,
+  `tools/beweise.ps1` (mit BOM) w/crlf; `invalidierung.rs`, `experiment.rs`,
+  `sonde013_experiment.rs`, `sonde013_taint.rs`, Manifest und Rohdateien
+  w/lf. Jede Datei hat nach der Arbeit ausschließlich ihre Zeilenenden
+  (Bytezählung CRLF/LF je Datei, keine gemischte Datei).
+- B18 vorher: Etappenendlauf `eq-copilot/build/nak380-e6/e6end-B18.log`
+  (Binary 08:11:55, jünger als `Sonde013DynamicsTest.cpp` 05:46:55),
+  125 bestanden, 2 gescheitert (die zwei 96-kHz-Prüfungen von M-43). A4
+  vorher: Etappenlauf 846 bestanden, 0 gescheitert, 23 ignoriert
+  (`eq-copilot/build/nak380-e6/e6-A4.log`, Bauartefakt, nicht ins Repo).
+
+### 56.2 Schließung (i): M-43 bei 96 kHz
+
+`eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp`, Fall `380/M-43` (ab
+:1047): Soll-Tafel :1058 `{ 96000.0, 3, 1530 }`, Kommentar :1052-1056 (Δf =
+96 000/8 192 = 11,71875 Hz, k = ceil(30,36/11,71875) = ceil(2,591) = 3 bis
+1532, 1532·11,71875 = 17 953,1 < 17 959,39, K = 1530 wie bei 48 kHz; 2·1530·8 =
+24 480 B ≤ 26 656 B); Ringtafel :1086-1087 `{ 96000.0, 1532, 115, 232u }`,
+Kommentar :1078-1084 (w_max = ceil(1532·(2^(125/1200) − 1)) = ceil(114,71) =
+115, 2·115 + 2 = 232; bei 96 kHz dieselben Bins und Breiten wie bei 48 kHz).
+Die Sätze zu 44,1 und 48 kHz stehen wörtlich (Tafelzeilen und Kommentarworte
+unverändert; im Ringkommentar ist nur der 96-kHz-Satz ersetzt und der Rest neu
+umbrochen). Die Speicherzusage trägt dieselbe Prüfung (`bytes == 2*K*8 &&
+bytes <= 26656u`, :1066-1067); eine eigene Prüfung war nicht nötig (Auftrag:
+„falls der Fall sie nicht schon trägt“). Kein Produktcode.
+
+Golden-Klasse (ii) (Sollwert aus der Formel nachgezogen): der Rotlauf gegen
+den alten Inhalt ist der Etappenendlauf (die alten Sollwerte 765/118 rot gegen
+den Etappe-6-Code, gemessen 1530/232). Nach dem Nachziehen B18 127/0
+(08:49:20 bis 08:49:32 Uhr, Binary 08:49:20.358 jünger als die Quelle
+08:48:47.687). Rotbeweise nach Etappe 4 (Sicherung
+`eq-copilot/build/nak380-sicherung/e6n0/`, Rücknahme bytegleich mit SHA-256,
+`LastWriteTime` neu, Neubau, Fall grün):
+
+- `m43-untergrenze` (`Spektrum.h:676`, `von = 0`): K 1669/1533/1533 bei
+  44,1/48/96 kHz — die K-Prüfungen aller drei Raten rot, Ring und
+  Allokationslauf grün; JA.
+- `m43-ring2w` (`FeatureEngine.h:737`, 2·w_max): 250/230/230 Plätze — die
+  drei Ringprüfungen rot; K, „der Ring reicht“ und Allokationslauf grün; JA.
+
+### 56.3 Schließung (ii): die Messfassung reist mit dem gespeicherten Fingerprint
+
+**Schreiber** (`experiment_verdrahtung.rs` `fingerprint_json` :699-710):
+`metrics_version` steht im gespeicherten Fingerprintobjekt neben `version`;
+`passage_json` :722 und `referenz_json` :728-729 geben je Fingerprint seine
+eigene Fassung mit (`passage.fingerprint`, `referenz.passage_fingerprint`,
+`referenz.upstream_fingerprint`; die Referenz steht in `baseline` und in jedem
+Kandidaten). Eine unbekannte Fassung schreibt das Feld nicht.
+
+**Leser** (`fingerprint_aus_gespeichertem` :1672-1679): liefert
+`(Fingerprintwerte, Option<u32>)`; die Fassung über `crate::vertrag::ganzzahl`
+in 1..=u32::MAX, sonst `None`; kein Rückfall auf `METRICS_VERSION`.
+`passage_aus_gespeichertem` (ab :1681) und `referenz_aus_gespeichertem`
+(ab :1710) tragen sie in die Domänenobjekte; der Restore
+(`stand_aus_store_wiederherstellen`, `transition_aus_gespeichertem`) läuft
+über genau diese Leser. Ein Altstand ohne Feld lädt weiter (Test (b)).
+
+**Leitung unverändert:** `passage_aus_wert` :1350-1354 und `referenz_aus_wert`
+:1363-1366 stempeln die Fassung dieses Brokers (`Some(METRICS_VERSION)`);
+`fingerprint_aus_wert` liest kein Fassungsfeld, das v3-Schema verbietet es in
+`$defs/fingerprint` (`additionalProperties: false`). `git diff --stat --
+eq-copilot/fixtures eq-copilot/schemas broker/src/store` ist leer.
+
+**Aufrufer Vergleichbarkeit** (`resultatmessung` :1276-1296):
+`beurteile_mit_messfassung (Beleg Baseline, e.baseline.passage_messfassung,
+Beleg Resultat, kandidat_referenz.passage_messfassung)`. **Aufrufer
+Invalidierung** (`materialwechsel_erkennen_locked` :384-396 liefert je Seite
+Fingerprint und Fassung, `materialwechsel_vorbereiten` :402-413 reicht sie an
+`invalidierung_wegen_material_vorbereiten` (`invalidierung_verdrahtung.rs`
+:689-701) und `invalidierung::material_wechsel_mit_messfassung`).
+
+**Riegel:** `vergleichbarkeit::beurteile_mit_messfassung` (ab :363, Riegel
+:374-382: `None` auf einer Seite → NaN, Grund `MessfassungUnbekannt`, Klasse
+unvergleichbar; zwei bekannte Fassungen → `telemetrie::fingerprint_vergleich`);
+`invalidierung::material_urteil_mit_messfassung` (ab :272, Riegel :279-281: `None` →
+`Materialurteil::NichtVergleichbar`, nie Materialwechsel). `beurteile`,
+`beurteile_versioniert`, `material_wechsel` und `material_urteil` delegieren
+unverändert im Verhalten (Etappe-6-Test in `telemetrie.rs` grün; `beurteile`
+bleibt für die 30 Aufrufe in `broker/tests/sonde013_passage.rs`).
+`METRICS_VERSION` bleibt 20260929.
+
+**Technikentscheide.** (1) *Ort und Name:* im Fingerprintobjekt, Name
+`metrics_version` — ein Schreiber und ein Leser für alle drei Felder, die
+Fassung kann sich nicht vom Fingerprint lösen; der Name ist im System die
+Messfassung (`Frame.metrics_version`, `Vergleichsurteil.metrics_version`) und
+von `version` (Formatfassung der 76 Bytes) getrennt. (2) *Grund:* eigener
+Grund `MessfassungUnbekannt` (`messfassung_unbekannt`) statt
+`MessfassungVerschieden` — „verschieden“ wäre eine Behauptung ohne Beleg; der
+Grund reist nur als Debug-Wort in `vergleichbarkeit_gruende` der Projektion,
+nicht auf der Leitung. (3) *Unlesbarer Wert* (0, negativ, Bruch, Text, über
+u32) gilt als unbekannt: fail-closed ist hier „nicht vergleichbar“, nicht das
+Verwerfen der Zeile (am Code über `crate::vertrag::ganzzahl` gelesen, nicht
+eigens getestet; der Schreiber erzeugt nur Werte aus `u32`). (4) *Schreiber bei unbekannter Fassung:* das Feld
+entfällt, statt die Fassung des schreibenden Brokers anzunehmen (§56.9 Punkt 4).
+
+### 56.4 Änderungen je Datei (Zeilen HEAD → Nacharbeitsstand)
+
+| Datei | Zeilen | Änderung |
+|---|---|---|
+| `eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp` (CRLF) | 2 493 → 2 499 | M-43: Soll- und Ringtafel 96 kHz, zwei Kommentare |
+| `broker/src/coordinator/experiment_verdrahtung.rs` (CRLF) | 1 898 → 2 463 | Typ `Fingerprintbeleg`; Schreiber, Leser, Leitungsleser; Aufrufer Vergleichbarkeit; `materialwechsel_erkennen_locked` mit Fassung, neu `materialwechsel_vorbereiten`; Modul `nak380_m122_tests` (4 Fälle, Zeilen 1978 bis 2463) |
+| `broker/src/coordinator/experiment.rs` (LF) | 1 776 → 1 788 | Felder `Passage::fingerprint_messfassung`, `Experimentreferenz::passage_messfassung`, `upstream_messfassung` (Abweichung §56.9 Punkt 1) |
+| `broker/src/coordinator/vergleichbarkeit.rs` (CRLF) | 436 → 466 | Grund `MessfassungUnbekannt`; `beurteile_mit_messfassung`; `beurteile_versioniert` delegiert |
+| `broker/src/coordinator/invalidierung.rs` (LF) | 322 → 362 | `material_wechsel_mit_messfassung`, `material_urteil_mit_messfassung`; die zwei alten Wege delegieren |
+| `broker/src/coordinator/invalidierung_verdrahtung.rs` (CRLF) | 781 → 784 | Signatur `invalidierung_wegen_material_vorbereiten` mit Fassung je Seite (Abweichung §56.9 Punkt 3) |
+| `broker/src/telemetrie.rs` (CRLF) | 1 348 → 1 354 | nur Kommentar zu `fingerprint_vergleich` (Herkunft der Fassung) |
+| `broker/tests/sonde013_experiment.rs`, `sonde013_taint.rs` (LF), `sonde013_verdrahtung.rs` (CRLF) | 1 074 → 1 078, 662 → 666, 7 005 → 7 009 | je Passage- und Referenzliteral die neuen Felder mit `Some(METRICS_VERSION)` (Abweichung §56.9 Punkt 2) |
+| `tools/beweise.ps1` (CRLF, BOM) | 1 592 → 1 592 | Behauptung B18 und A4 je ein Satz mit gemessenen Zahlen |
+| `docs/beweise/roh/NAK-380-rot-M-43.txt` (LF) | 95 → 124 | Abschnitt e6n0 angehängt |
+| `docs/beweise/roh/NAK-380-rot-M-122.txt` (LF) | 59 → 142 | Abschnitt e6n0 angehängt |
+| `docs/beweise/roh/NAK-380-e6n0-mutation-*.txt` (LF) | neu, 14 Dateien | Mutationsprotokolle |
+| `docs/beweise/NAK-380.md` (LF) | 3 453 → 3 787 | Kopf Zeile Etappe (letzter Fettsatz), dieser Abschnitt |
+
+### 56.5 Tabelle je Matrixzeile (Fassung §55.2)
+
+| Zeile | Zusagesatz | Prüfzeile | Mutation | rot | Rohdatei |
+|---|---|---|---|---|---|
+| M-43 | 96 kHz: k = 3 bis 1532, K = 1530 (Δf 11,72 Hz aus 8 192 Punkten); 2·K·8 = 24 480 B ≤ 26 656 B | B18 `380/M-43 detektor_binbereich: 96.0 kHz, k = 3 bis 1532, K = 1530, …` | `m43-untergrenze`: Untergrenze k = 0 (`Spektrum.h:676`) → K 1533 | JA | `NAK-380-rot-M-43.txt` |
+|  | 48 kHz: K = 1530 (Satz wörtlich; die Matrixmutation trifft beide Raten) | B18 `… 48.0 kHz, k = 3 bis 1532, K = 1530, …` | `m43-untergrenze` → K 1533 | JA | `NAK-380-rot-M-43.txt` |
+|  | 96 kHz: Ring 2·w_max + 2 = 232 Plätze, w_max 115 am Bin 1532 | B18 `… 96.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232 Plaetze …` | `m43-ring2w`: 2·w_max (`FeatureEngine.h:737`) → 230 | JA | `NAK-380-rot-M-43.txt` |
+|  | 96 kHz: der Ring reicht (Maximumfilter über einen streng fallenden Vorframe) | B18 `… 96.0 kHz, der Ring reicht …` | unter `m43-ring2w` Pflicht-Grün wie in Etappe 4 (0 von 1530 abweichend) | – | `NAK-380-e6n0-mutation-m43-ring2w.txt` |
+| M-122 | (a) gespeichert 20260928 gegen laufend 20260929, Vergleichbarkeit: unvergleichbar mit `MessfassungVerschieden`, nie `MaterialVerschieden` | A4 `nak380_m122_gespeicherte_fassung_a_…`: „(a) Vergleichbarkeit, gespeichert 20260928 gegen laufend 20260929“ | `m122-aufrufer-fassung`: Aufrufer übergibt auf der Baseline-Seite `METRICS_VERSION` (`experiment_verdrahtung.rs:1288`) | JA | `NAK-380-rot-M-122.txt` |
+|  | (a) dieselbe Zusage, Kandidatenseite des Aufrufers | A4 (c) „Baseline und Kandidat gespeichert mit derselben alten Fassung 20260928“ (nur mit gespeichertem Kandidaten trennscharf) | `m122-aufrufer-fassung-kandidat` (`:1295`) | JA | `NAK-380-rot-M-122.txt` |
+|  | (a) Invalidierung: kein Materialwechsel, der Beleg bleibt; der Aufrufer übergibt je Seite die Fassung | A4 „(a) Invalidierung: der Aufrufer übergibt …“, „(a) Invalidierung, gespeichert 20260928 …“ | `m122-aufrufer-fassung-inv`: `materialwechsel_erkennen_locked` übergibt `METRICS_VERSION` (`:392`) | JA | `NAK-380-rot-M-122.txt` |
+|  | (b) Altstand ohne Feld lädt weiter, Fassung unbekannt (Leser ohne Rückfall) | A4 „(b) Leser: ein Altstand ohne Feld lädt weiter …“ | `m122-leser-rueckfall`: Leser ersetzt die fehlende Fassung durch `METRICS_VERSION` (`:1677`) | JA | `NAK-380-rot-M-122.txt` |
+|  | (b) Vergleichbarkeit: unvergleichbar mit `MessfassungUnbekannt`, nie `MaterialVerschieden` | A4 „(b) Vergleichbarkeit, Altstand ohne Feld …“ | `m122-riegel-unbekannt-verg` (`vergleichbarkeit.rs:381`, `None` gilt als `METRICS_VERSION`); `m122-leser-rueckfall` | JA (beide) | `NAK-380-rot-M-122.txt` |
+|  | (b) Invalidierung: kein Materialwechsel | A4 „(b) Invalidierung, Altstand ohne Feld …“ | `m122-riegel-unbekannt-inv` (`invalidierung.rs:279-281`); `m122-leser-rueckfall`; `m122-aufrufer-fassung-inv` | JA (alle drei) | `NAK-380-rot-M-122.txt` |
+|  | (b) Leser und Aufrufer zugleich gefallen (Doppelmutation) | A4 (a) und (b) beider Pfade | `m122-leser-aufrufer-doppel` (Leser mit Rückfall, beide Aufrufer mit `METRICS_VERSION`); Gegenproben die drei Einzelmutationen, je für sich rot | JA | `NAK-380-rot-M-122.txt` |
+|  | (c) Regressionswache: gleiche Fassung 20260929, Vergleichbarkeit `MaterialVerschieden` (Klasse schwach) | A4 „(c) Vergleichbarkeit, gleiche Fassung 20260929“ | `m122-wache-gleich` (`vergleichbarkeit.rs:375`, jede bekannte Fassung gilt als verschieden) | JA | `NAK-380-rot-M-122.txt` |
+|  | (c) gleiche alte Fassung auf beiden Seiten bleibt vergleichbar (Fassung je Beleg, nicht „gespeichert heißt unvergleichbar“) | A4 „(c) Vergleichbarkeit, Baseline und Kandidat … 20260928“ | `m122-wache-gleich`; `m122-aufrufer-fassung`; `m122-aufrufer-fassung-kandidat` | JA | `NAK-380-rot-M-122.txt` |
+|  | (c) Regressionswache: gleiche Fassung, Invalidierung mit Ausschluss `material_wechsel` | A4 „(c) Invalidierung, gleiche Fassung 20260929“ | `m122-wache-gleich` (`invalidierung.rs:282`) | JA | `NAK-380-rot-M-122.txt` |
+|  | (d) Schreiber: jedes der fünf Fingerprintelemente trägt seine Fassung, bei unbekannt fehlt das Feld | A4 „(d) Schreiber: <Zeiger> …“ (fünf Zeiger) | `m122-schreiber-ohne-feld` (`:707`); je Element `m122-element-schreiber` (`:729`) | JA (beide) | `NAK-380-rot-M-122.txt` |
+|  | (d) Leser: jedes Element kommt mit seiner Fassung zurück | A4 „(d) Leser: jedes der fünf Elemente …“ | `m122-element-leser` (`:1719`); `m122-leser-rueckfall`; `m122-schreiber-ohne-feld` | JA (alle drei) | `NAK-380-rot-M-122.txt` |
+|  | (d) Schreiben, Wiederlesen, Wiederschreiben bytegleich | A4 „(d) Schreiben, Wiederlesen, Wiederschreiben: bytegleich“ (2 635 Bytes) | `m122-element-leser`; `m122-leser-rueckfall` | JA | `NAK-380-rot-M-122.txt` |
+|  | (d) Schreiber und Leser zugleich gefallen (Doppelmutation) | A4 „(d) Leser …“ und (b) | `m122-schreiber-leser-doppel`; Gegenproben `m122-schreiber-ohne-feld` und `m122-leser-rueckfall`, je für sich rot | JA | `NAK-380-rot-M-122.txt` |
+
+Die Riegel liegen in Reihe, nicht parallel: jede Einzelmutation macht ihre
+Zusage allein rot. Die Doppelmutationen belegen darüber hinaus, dass sich zwei
+gefallene Riegel nicht gegenseitig verdecken (Lehre §50.1). Vorbedingungen je
+Fall verriegelt: laufende Fassung 20260929 = `METRICS_VERSION`, Altstand
+20260928; die zwei Fingerprints numerisch unähnlich (Energie in disjunkten
+Hälften, jeder der drei Cosinus 0 < 0,95), damit „nicht vergleichbar“ am
+Ergebniszustand von „gleich“ zu trennen ist; die gespeicherten Belege baut der
+Test von Hand als JSON (mit und ohne Feld), nicht über den Schreiber — nur (d)
+schreibt über den Produktschreiber.
+
+### 56.6 Bewegungen bestehender Tests
+
+- **Integrationstests `broker/tests/`:** sechs Struktur-Literale (je eine
+  `Passage` und eine `Experimentreferenz` in `sonde013_experiment.rs`,
+  `sonde013_taint.rs`, `sonde013_verdrahtung.rs`) um die neuen Felder mit
+  `Some(METRICS_VERSION)` ergänzt (frisch gemeldet); keine Zusicherung
+  geändert, keine gelockert. Ohne die Ergänzung übersetzen die drei Ziele
+  nicht (§56.9 Punkt 2).
+- **Exakte JSON-Vergleiche der Projektion:** keiner bewegt. Die drei Tests,
+  die `experiments.state_jcs` lesen (`sonde013_verdrahtung.rs` :2067,
+  :2169, :2296), prüfen einzelne Zeiger (`…/version`, `/terminal/…`,
+  `/baseline/match_gain_db`); ein Byte- oder Ganzobjektvergleich existiert
+  nicht.
+- **Zählung A4:** vorher 846 bestanden, 0 gescheitert, 23 ignoriert; nachher
+  850 bestanden, 0 gescheitert, 23 ignoriert — genau die vier neuen Fälle mehr. Der Etappe-6-Test
+  `nak380_m122_fingerprint_nur_gleiche_metrics_version` unverändert grün.
+- **v3-Fixtures, Schemas, Store:** kein Diff.
+
+### 56.7 Einzeln gefahrene Beine am Nacharbeitsstand
+
+| Bein | Ziel | Binary | Lauf | Exit | Zählstand |
+|---|---|---|---|---|---|
+| B18 | `EqCopSonde013DynamicsTest` | 08:51:19.263 | 09:06:40 bis 09:06:53 | 0 | 127 bestanden, 0 gescheitert |
+| B5 | `EqCopAnalysisGoldenTest` | 09:06:02.529 | 09:06:53 bis 09:07:25 | 0 | 371 bestanden, 0 Fehler |
+| A1 | `EqCopNullTest` | 09:06:11.541 | 09:07:25 bis 09:07:25 | 0 | 10 ok-Zeilen, 0 rot, NULLTEST OK |
+| A16 | `EqCopProbeeqNullTest` | 09:06:21.650 | 09:07:25 bis 09:07:26 | 0 | 145 Prüfungen ok, 0 Fehler |
+| B1 | `EqCopIdentityTest` | 09:06:30.085 | 09:07:26 bis 09:07:26 | 0 | 120 Prüfungen ok, 0 Fehler |
+| B4 | `EqCopQueueStressTest` | 09:06:40.794 | 09:07:26 bis 09:07:30 | 0 | 121 Prüfungen, 0 Fehler |
+| A4 | `cargo test --manifest-path broker/Cargo.toml --color never` | – | 09:07:41 bis 09:28:18 | 0 | 850 bestanden, 0 gescheitert, 23 ignoriert |
+
+Frische: Bau der fünf C++-Ziele 09:05:47 bis 09:06:40 Uhr, Exit 0; jüngste
+Quelle unter `eq-copilot/plugin` ist `FeatureEngine.h` 08:51:12.383 (Rücknahme
+von `m43-ring2w`, bytegleich, `LastWriteTime` neu); jedes Binary ist jünger
+(B18 wurde nach dieser Rücknahme um 08:51:19 gebaut und war nicht erneut
+fällig). Die M-122-Mutationen berühren nur den Broker (Endhashes der drei
+mutierten Dateien gleich den Vorher-Hashes, `mut-m122-alle.log`); A4 lief
+danach über den ganzen Broker. Übersicht
+`eq-copilot/build/nak380-e6n0/beine-uebersicht.log` (Bauartefakt, nicht ins
+Repo).
+
+### 56.8 Logvergleich B18 vorher gegen nachher
+
+`eq-copilot/build/nak380-e6n0/b18vergleich.txt` (Bauartefakt, nicht ins Repo;
+`vorher-B18.log` = Etappenendlauf 08:16:11 Uhr, `n0end-B18.log` = Endlauf
+09:06:40 Uhr; je 201 Zeilen ohne die Uhrzeitzeile des Runners): genau drei
+Zeilen verschieden — Zeile 34 (`96.0 kHz, k = 2 bis 766, K = 765` rot → `k = 3
+bis 1532, K = 1530` grün), Zeile 39 (Ring `118 Plaetze (w_max = 58 am Bin 766)`
+rot → `232 Plaetze (w_max = 115 am Bin 1532)` grün) und die Summenzeile (125/2
+→ 127/0). Alle übrigen 198 Zeilen zeichengleich, auch die Messwerte in
+eckigen Klammern der zwei 96-kHz-Zeilen (`von 3, K 1530, 24480 B`; `k_max 1532,
+w_max 115, 232 Plaetze`).
+
+### 56.9 Abweichungen vom Auftrag, begründet
+
+1. **Träger der Fassung im Speicher (`experiment.rs`, außerhalb der
+   Ticketpfade).** Beide Aufrufer vergleichen Domänenobjekte im Speicher, nicht
+   gespeichertes JSON: `materialwechsel_erkennen_locked` liest die bekannte
+   `Passage` aus dem Experimentstore, `resultatmessung` die
+   `Experimentreferenz` aus Baseline und Kandidat; nach einem Neustart
+   stammen beide aus dem Restore. Die gelesene Fassung muss deshalb bis zum
+   Vergleich im Objekt überleben, und jede spätere Transition eines
+   wiederhergestellten Versuchs schreibt Passage und Referenzen erneut
+   (`experiment_json`) — ohne Fassung im Objekt stempelte sie der Schreiber
+   dabei auf die laufende, und nach dem nächsten Neustart wäre der Altstand
+   vergleichbar: genau der Fall aus R-380-9. Kein anderer Ort trägt das ohne
+   eine zweite Wahrheit (eine Nebentabelle im `Stand` oder im Experimentstore
+   müsste Anlage, Rücknahme, Verdrängung und Restore spiegeln); drei
+   `Option<u32>`-Felder an den Objekten reisen mit Klon, Log, Rücknahme und
+   Export von selbst mit, und jede Konstruktionsstelle muss die Fassung
+   ausdrücklich nennen (Übersetzer statt stiller Vorgabe).
+2. **`broker/tests/` (drei Dateien, je zwei Literale).** Folge von Punkt 1:
+   die drei Integrationstests bauen `Passage` und `Experimentreferenz` als
+   Struktur-Literal; ohne die neuen Felder übersetzen sie nicht. Ergänzt ist
+   nur die Feldzeile (frisch gemeldet → `Some(METRICS_VERSION)`); keine
+   Zusicherung bewegt.
+3. **`invalidierung_verdrahtung.rs`, Signatur des Materialwegs.** Der Weg zu
+   `material_wechsel` führt über `invalidierung_wegen_material_vorbereiten`
+   (der einzige Aufrufer ist `experiment_p0`); die Fassung je Seite muss dort
+   durch. Die Alternative — die Entscheidung vorab in
+   `experiment_verdrahtung.rs` treffen und `invalidierung_vorbereiten` direkt
+   rufen — hätte die Funktion toten Code gelassen. Der Linkweg
+   `invalidierung_wegen_material` (nur aus `broker/tests`) bleibt bei
+   `material_wechsel` mit `METRICS_VERSION` auf beiden Seiten.
+4. **Schreiber bei unbekannter Fassung.** Der Auftrag sagt „`metrics_version`
+   = `METRICS_VERSION` des schreibenden Brokers“. Für jedes frisch gemeldete
+   Objekt ist das genau so (der Leitungsleser stempelt `METRICS_VERSION`, der
+   Schreiber schreibt sie). Ein wiederhergestelltes Objekt behält dagegen
+   seine gelesene Fassung, und eine unbekannte bleibt unbekannt (Feld
+   entfällt) — sonst höbe Punkt 1 den Altstand beim Neuschreiben auf die
+   laufende Fassung. State bleibt verlustfrei.
+5. **Mutationen über die Liste hinaus:** Kandidatenseite des Aufrufers, die
+   zwei `None`-Riegel, die Wache (c) und je eine Elementmutation für
+   Schreiber und Leser (Zusage je Element, Lehre §50.1 D1); dazu im Fall (c)
+   die Trennschärfe „gleiche alte Fassung bleibt vergleichbar“, ohne die die
+   Kandidatenseite nicht messbar wäre.
+6. **M-43 Speicherzusage:** keine eigene Prüfung; die bestehende K-Prüfung
+   trägt `bytes == 2*K*8` und `bytes <= 26656u` (Auftrag: „falls der Fall sie
+   nicht schon trägt“).
+
+### 56.10 Selbstaudit und Prüfliste
+
+Eigener Diff (`git diff --stat`, `git diff` gegen HEAD, ohne zu stagen)
+adversarial gelesen:
+
+- **Pfade:** geändert sind die Ticketpfade und die drei begründeten
+  Abweichungen (§56.9); kein Diff unter `eq-copilot/fixtures`,
+  `eq-copilot/schemas`, `broker/src/store`, `.claude`, `design`,
+  `docs/plan`, `docs/PLAN-STAND.md`, `docs/offene-punkte.md`,
+  `docs/beweise/NAK-380-verlauf.md`; die fremden Einträge unberührt.
+- **Kein Leitungsfeld:** Leitungsleser unverändert bis auf den Stempel der
+  eigenen Fassung; v3-Schema verbietet `metrics_version` im Fingerprint;
+  kein Schema, keine Migration, kein Versionsschritt (`METRICS_VERSION`
+  20260929 unverändert).
+- **Kein Rückfall im Leser:** `fingerprint_aus_gespeichertem` gibt `None`,
+  Mutation `m122-leser-rueckfall` rot an (b) und (d).
+- **Beide Aufrufpfade, alle drei Fingerprintfelder:** (a) je Pfad, (d) je
+  Element mit verschiedenen Fassungen; je Element eine Mutation.
+- **Altstand lädt weiter** (Test (b), Zeile nicht verworfen) und ist nicht
+  vergleichbar; **gleiche Fassung unverändert** (Wache (c) beider Pfade, der
+  Etappe-6-Test in `telemetrie.rs` grün).
+- **Zahlenränder** (am Code gelesen, nicht eigens getestet): Fassung 0,
+  negativ, Bruch, über u32 → unbekannt über `crate::vertrag::ganzzahl`; zwei
+  unbekannte Seiten → unvergleichbar (nicht „gleich“, beide Riegel verlangen
+  `Some` auf beiden Seiten); fehlender Fingerprint bleibt der fehlende Beleg
+  aus M-54 (unverändert).
+- **Speichern ↔ Laden** im selben Satz (Schreiber und Leser, Test (d)
+  bytegleich).
+- **M-43:** Sätze zu 44,1 und 48 kHz wörtlich (Diff: nur 96-kHz-Tafelzeilen
+  und die zwei Kommentare); **Zeilenenden** je Datei unverändert;
+  `git diff --check` ohne Befund.
+
+Prüfliste (`tools/dirigent/pruefliste.md`, nicht geändert): **C** —
+`additionalProperties: false` im v3-Fingerprint schützt die Leitung, der
+Rust-Leser liest kein Fassungsfeld von der Leitung; **E** — jede neue
+Prüfung einmal gebrochen (14 Protokolle), Behauptungszeilen B18 und A4 je ein
+Satz mit gemessenen Zahlen, Wachen als solche benannt; **F** — Schreiber und
+Leser der Projektion im selben Änderungssatz; **D** — jedes C++-Binary jünger
+als die jüngste Quelle, A4 nach der letzten Rücknahme.
+
+### 56.11 Offene Punkte (für den Dirigenten)
+
+1. **Mischstand Plugin/Broker (Beobachtung, im Code bestätigt):**
+   `experiment_begin` trägt keine Messfassung; der Broker stempelt einen
+   frisch gemeldeten Fingerprint mit seiner eigenen (`passage_aus_wert`,
+   `referenz_aus_wert`). Ein Plugin anderer Fassung wäre an dieser Stelle nicht
+   erkennbar — nach R-380-14 Installer-Sache (Bundle), kein Vertragsfall.
+2. `beurteile` und `material_wechsel` (beide Seiten `METRICS_VERSION`) haben
+   im Produktfluss keinen Aufrufer mehr: `beurteile` rufen nur die
+   Integrationstests (`sonde013_passage.rs`), `material_wechsel` nur der
+   Linkweg `invalidierung_wegen_material_fuer_link`, den ebenfalls nur
+   `broker/tests` nutzen. Beide vergleichen innerhalb der laufenden Fassung.
+3. Kanon nachher und Erstprüfung 6 stehen aus; die Matrixfassung §55.2 ist
+   vom Dirigenten geschrieben, hier nicht nachgezogen.
+
+## 57. Messung der Nacharbeit 0, Einordnung, Register, Zwischenstand, Kanon nachher und Erstprüfung 6 gestartet (Dirigent, 26.09.2026, 09:38 Uhr)
+
+**Messung (Dirigent, kein Selbstbericht).** Worker `a85e170c`
+(`nakama-nak380-2fa1e35-e6n0`, Opus 5.5 xhigh, `dontAsk`), 08:35:11 bis
+09:30 Uhr (Beobachter „beendet“, done; Schlussmeldung „FERTIG Nacharbeit 0
+Etappe 6, Beine alle grün, uncommittet“; `Get-Date` der Messung 09:30:47
+Uhr). HEAD vor und nach dem Lauf `2fa1e35a`, kein Commit des Workers. `git
+status --short` ohne die fremden Einträge: 11 Dateien unter `eq-copilot`,
+`broker`, `tools` (`git diff --stat`: +731/−57), Manifest §56, die zwei
+Rotbeweise `NAK-380-rot-M-43.txt` und `NAK-380-rot-M-122.txt` (append-only,
+Abschnitt e6n0), 14 Mutationsprotokolle `NAK-380-e6n0-mutation-*.txt`. `git
+diff --check` ohne Befund; Zeilenenden je Datei wie in der Arbeitskopie
+(`experiment.rs`, `invalidierung.rs`, `sonde013_experiment.rs`,
+`sonde013_taint.rs` LF, die übrigen CRLF). Diff gelesen:
+`Sonde013DynamicsTest.cpp` ändert nur die zwei 96-kHz-Tafelzeilen (`{ 96000.0,
+3, 1530 }`, `{ 96000.0, 1532, 115, 232u }`) und ihre Kommentare, die Sätze zu
+44,1 und 48 kHz stehen wörtlich; `experiment.rs` trägt drei `Option<u32>`-
+Felder (`fingerprint_messfassung`, `passage_messfassung`,
+`upstream_messfassung`); `invalidierung_verdrahtung.rs` reicht die Fassung je
+Seite durch (`material_wechsel_mit_messfassung`); die drei Integrationstests
+unter `broker/tests/` bekommen je ein Struktur-Literal mit
+`Some(METRICS_VERSION)`, keine Zusicherung bewegt; `tools/beweise.ps1` nur
+die Behauptungszeilen B18 und A4. Beine (§56.7, am Manifest gelesen): B18
+127/0 (125 + 2), A4 850/0 (846 + 4 neue Fälle, 23 ignoriert), B5 371/0, A1,
+A16 145/0, B1 120/0, B4 121/0; Logvergleich B18 (§56.8): 198 von 201 Zeilen
+zeichengleich, die drei erwarteten Zeilen (zwei 96-kHz-Prüfungen, Summe)
+verschieden. Tabelle §56.5: M-43 und M-122 je Zusagesatz JA (14 Protokolle,
+darunter zwei Doppelmutationen mit Gegenproben je Riegel); `git diff --stat
+-- eq-copilot/fixtures eq-copilot/schemas broker/src/store` leer (kein
+Leitungsfeld, kein Schema, keine Migration).
+
+### 57.1 Einordnung (§56.9 und §56.11)
+
+| Punkt | Quelle (Nacharbeitsstand auf `2fa1e35a`) | Einordnung | Regel |
+|---|---|---|---|
+| Abweichungen §56.9 Punkte 1 bis 6 (Träger der Fassung in `experiment.rs`, Literale in `broker/tests/`, Signatur `invalidierung_verdrahtung.rs`, Schreiber lässt eine unbekannte Fassung weg, Zusatzmutationen, M-43-Speicherprüfung in der K-Prüfung) | §56.9; `experiment.rs` (drei Felder), `invalidierung_verdrahtung.rs` :689-701, `broker/tests/sonde013_{experiment,taint,verdrahtung}.rs` | **angenommen** — Technik innerhalb von R-380-14; die Begründung zu Punkt 1 (nach einem Restore schriebe jede Transition Passage und Referenzen erneut und stempelte den Altstand sonst auf die laufende Fassung) trägt R-380-9 gerade erst; die Ticketpfade der Etappe 6 sind für die Erstprüfung um `experiment.rs`, `invalidierung_verdrahtung.rs` und die drei Integrationstests erweitert | — |
+| Offen 1: Mischstand Plugin/Broker — `experiment_begin` trägt keine Messfassung, der Broker stempelt einen frisch gemeldeten Fingerprint mit seiner eigenen (`passage_aus_wert`, `referenz_aus_wert`) | §56.11 Punkt 1, im Code bestätigt | **Beobachtung** — kein Vertragsfall: Plugin und Broker werden als Bundle installiert (Manifest `eq-copilot/install/nakama-installer-v1.json`), ein Mischstand ist Installer-Sache | Register NAK-410 |
+| Offen 2: `beurteile` und `material_wechsel` (beide Seiten `METRICS_VERSION`) haben im Produktfluss keinen Aufrufer mehr, nur `broker/tests` | §56.11 Punkt 2 | **Pflege** — verhaltensneutral, kein Handlungsbedarf in NAK-380 | Register NAK-411 |
+| Offen 3: Matrixfassung §55.2 | vom Dirigenten geschrieben, append-only | gilt | — |
+
+### 57.2 Register, Zwischenstand, Kanon nachher und Erstprüfung 6
+
+Register: NAK-410 (Mischstand Plugin/Broker als Beobachtung) und NAK-411
+(`beurteile`/`material_wechsel` nur noch Testaufrufer) datiert angelegt.
+Zwischenstand der Nacharbeit 0 (Bauerstand plus dieser Abschnitt) mit
+Pathspec committet und gepusht; Rundenbilanz nach dem Commit in §58. Kanon
+nachher der Etappe 6 (Bau und Nacharbeit 0) abgekoppelt auf dem End-Stand
+(Skill §3.5; Log `nakama-nak380-e6-kanon.log` in `%TEMP%`, Rohdatei
+`docs/beweise/roh/NAK-380-<sha7>-dirty.md`, Kopfzeile ins Manifest in §58).
+Erstprüfung 6 (Vorlage A): frischer lesender Codex-Thread `gpt-6-astra`,
+Effort xhigh (NAK-362; Codex-Woche 92 % beim Start, ab 95 % oder bei 401 ein
+frischer lesender Opus-Thread xhigh), `read-only`, Kennung `nak380-e6-p1`
+über `tools/dirigent/codex-lauf.ps1` mit Monitor auf der `-start.log`;
+Prüfbereich `a4ccba93...HEAD` über die 30 Ticketpfade der Etappe 6 samt
+Nacharbeit 0; Auftrag `docs/beweise/roh/NAK-380-erstpruefung-6-auftrag.txt`;
+parallel zum Kanon (HEAD bleibt; Bauartefakte, Broker-Pin und Kanon-Anhang
+sind kein Prüfgegenstand, im Auftrag benannt). Urteil in §58.
+

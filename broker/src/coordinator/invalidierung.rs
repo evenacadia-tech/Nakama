@@ -204,14 +204,28 @@ pub const GATE_MATERIAL_GLEICH: f64 = 0.95;
 /// NAK-380 M-122: dieser Weg traegt keine Messfassung je Fingerprint; er
 /// vergleicht innerhalb der Fassung, die dieser Broker anwendet
 /// (`vergleichbarkeit::METRICS_VERSION`), ueber denselben versionsgebundenen
-/// Pfad wie `material_urteil`.
+/// Pfad wie `material_urteil`. Der Produktpfad des `experiment_begin` ruft
+/// seit R-380-14 (ii) `material_wechsel_mit_messfassung` mit der Fassung JE
+/// BELEG.
 pub fn material_wechsel(
     vorher: Option<&Fingerprintwerte>,
     jetzt: Option<&Fingerprintwerte>,
     umfang: Umfang,
 ) -> Option<Invalidierung> {
-    let fassung = super::vergleichbarkeit::METRICS_VERSION;
-    match material_urteil(vorher.map(|f| (f, fassung)), jetzt.map(|f| (f, fassung)), umfang) {
+    let fassung = Some(super::vergleichbarkeit::METRICS_VERSION);
+    material_wechsel_mit_messfassung(vorher.map(|f| (f, fassung)), jetzt.map(|f| (f, fassung)), umfang)
+}
+
+/// Der Materialwechsel mit der Messfassung JE SEITE, wie sie neben dem
+/// Fingerprint des Belegs steht (NAK-380 R-380-14 (ii), M-122; `None` =
+/// unbekannt). Nur `Wechsel` invalidiert; „nicht vergleichbar“ ist nie ein
+/// Materialwechsel.
+pub fn material_wechsel_mit_messfassung(
+    vorher: Option<(&Fingerprintwerte, Option<u32>)>,
+    jetzt: Option<(&Fingerprintwerte, Option<u32>)>,
+    umfang: Umfang,
+) -> Option<Invalidierung> {
+    match material_urteil_mit_messfassung(vorher, jetzt, umfang) {
         Materialurteil::Wechsel(inv) => Some(inv),
         Materialurteil::Gleich | Materialurteil::NichtVergleichbar => None,
     }
@@ -239,11 +253,37 @@ pub fn material_urteil(
     jetzt: Option<(&Fingerprintwerte, u32)>,
     umfang: Umfang,
 ) -> Materialurteil {
+    material_urteil_mit_messfassung(
+        vorher.map(|(f, fassung)| (f, Some(fassung))),
+        jetzt.map(|(f, fassung)| (f, Some(fassung))),
+        umfang,
+    )
+}
+
+/// Materialpruefung mit der Messfassung JE SEITE, wie sie neben dem
+/// Fingerprint des Belegs steht (NAK-380 R-380-14 (ii), M-122).
+///
+/// Zwei Riegel, in Reihe: eine UNBEKANNTE Fassung (`None`, gespeicherter
+/// Altstand ohne Feld) ist hier „nicht vergleichbar“ — sie wird ausdruecklich
+/// NICHT als die laufende Fassung gelesen —, und zwei bekannte, aber
+/// verschiedene Fassungen haelt `fingerprint_vergleich`. Beide Male kein
+/// Materialwechsel. Ein FEHLENDER Fingerprint bleibt der fehlende Beleg aus
+/// M-54 (fail-closed invalidieren).
+pub fn material_urteil_mit_messfassung(
+    vorher: Option<(&Fingerprintwerte, Option<u32>)>,
+    jetzt: Option<(&Fingerprintwerte, Option<u32>)>,
+    umfang: Umfang,
+) -> Materialurteil {
     let gleich = match (vorher, jetzt) {
-        (Some((a, fa)), Some((b, fb))) => match fingerprint_vergleich(a, fa, b, fb) {
-            FingerprintVergleich::Aehnlichkeit(c) => c >= GATE_MATERIAL_GLEICH,
-            FingerprintVergleich::NichtVergleichbar => return Materialurteil::NichtVergleichbar,
-        },
+        (Some((a, fa)), Some((b, fb))) => {
+            let (Some(fa), Some(fb)) = (fa, fb) else {
+                return Materialurteil::NichtVergleichbar;
+            };
+            match fingerprint_vergleich(a, fa, b, fb) {
+                FingerprintVergleich::Aehnlichkeit(c) => c >= GATE_MATERIAL_GLEICH,
+                FingerprintVergleich::NichtVergleichbar => return Materialurteil::NichtVergleichbar,
+            }
+        }
         _ => false,
     };
     if gleich {

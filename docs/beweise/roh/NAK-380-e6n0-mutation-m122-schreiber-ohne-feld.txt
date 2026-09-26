@@ -1,0 +1,50 @@
+NAK-380 Etappe 6, Nacharbeit 0 (26.09.2026) — Mutationsprotokoll m122-schreiber-ohne-feld
+Matrixzeile: M-122 (R-380-14 (ii)); Zusagesatz: (d) der Schreiber traegt neben jedem gespeicherten Fingerprint die Messfassung (Mutation: der Schreiber laesst das Feld weg)
+Datei: broker/src/coordinator/experiment_verdrahtung.rs
+Zeile (Nacharbeitsstand): 707
+SHA-256 vor der Mutation: 86A647F78CF7A7196B1AD936DD5BC1F062BE71FED3A0B0192328E5E2804423B5; Sicherung eq-copilot/build/nak380-sicherung/e6n0/m122-schreiber-ohne-feld/1-experiment_verdrahtung.rs
+Wortlaut vorher:
+                objekt["metrics_version"] = Value::from(fassung);
+Wortlaut nachher:
+                let _ = fassung;
+  Bau (cargo test --lib, im Lauf): Compiling eqcop-broker ja
+Lauf mit Mutation: cargo test --lib nak380_m122 09:04:03 bis 09:04:06, Exit 101, test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 310 filtered out; finished in 0.00s
+Gefallene Pruefungen:
+    [ROT] M-122 (d) Schreiber: /passage/fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll Some(20260929)]
+    [ROT] M-122 (d) Schreiber: /baseline/passage_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll Some(20260928)]
+    [ROT] M-122 (d) Schreiber: /kandidaten/0/referenz/upstream_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll Some(20260929)]
+    [ROT] M-122 (d) Leser: jedes der fuenf Elemente kommt mit seiner Fassung zurueck (laufend, Altstand, unbekannt)  [[None, None, None, None, None], Soll [Some(20260929), Some(20260928), None, None, Some(20260929)]]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: (d) Schreiber: /passage/fingerprint/metrics_version | (d) Schreiber: /baseline/passage_fingerprint/metrics_version | (d) Leser: jedes der fuenf Elemente)
+Unter derselben Mutation gruen gebliebene Pruefungen: 29
+    [ok]  M-122 Vorbedingung: laufende Fassung 20260929, Altstand 20260928  [20260929 / 20260928]
+    [ok]  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)  [0]
+    [ok]  M-122 (a) Vergleichbarkeit: je Seite die Fassung des Belegs (gespeichert 20260928, gemeldet 20260929)  [Some(20260928) / Some(20260929)]
+    [ok]  M-122 (a) Vergleichbarkeit, gespeichert 20260928 gegen laufend 20260929: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Some("unvergleichbar") ["MessfassungVerschieden"]]
+    [ok]  M-122 (a) Invalidierung: der Aufrufer uebergibt je Seite die Fassung des Belegs (gespeichert 20260928, gemeldet 20260929)  [Some((Some(20260928), Some(20260929)))]
+    [ok]  M-122 (a) Invalidierung, gespeichert 20260928 gegen laufend 20260929: kein Materialwechsel, der Beleg bleibt  [Wirkung false, Ausschluss None]
+    [ok]  M-122 Vorbedingung: laufende Fassung 20260929, Altstand 20260928  [20260929 / 20260928]
+    [ok]  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)  [0]
+    [ok]  M-122 (b) Leser: ein Altstand ohne Feld laedt weiter, seine Fassung ist unbekannt (None, kein Rueckfall auf METRICS_VERSION)  [Passage Some(None), Referenz Some((None, None))]
+    [ok]  M-122 (b) Vergleichbarkeit, Altstand ohne Feld gegen laufend 20260929: unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden  [None / Some(20260929): Some("unvergleichbar") ["MessfassungUnbekannt"]]
+    [ok]  M-122 (b) Invalidierung, Altstand ohne Feld gegen laufend 20260929: kein Materialwechsel, der Beleg bleibt  [Some((None, Some(20260929))): Wirkung false, Ausschluss None]
+    [ok]  M-122 Vorbedingung: laufende Fassung 20260929, Altstand 20260928  [20260929 / 20260928]
+    [ok]  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)  [0]
+    [ok]  M-122 (c) Vergleichbarkeit, gleiche Fassung 20260929: MaterialVerschieden wie heute (Klasse schwach, kein Messfassungsgrund)  [Some(20260929) / Some(20260929): Some("schwach") ["MaterialVerschieden"]]
+    [ok]  M-122 (c) Vergleichbarkeit, Baseline und Kandidat gespeichert mit derselben alten Fassung 20260928: vergleichbar, MaterialVerschieden  [Some(20260928) / Some(20260928): Some("schwach") ["MaterialVerschieden"]]
+    [ok]  M-122 (c) Invalidierung, gleiche Fassung 20260929: Materialwechsel wie heute, der Beleg traegt material_wechsel  [Some((Some(20260929), Some(20260929))): Wirkung true, Ausschluss Some("material_wechsel")]
+    [ok]  M-122 (d) Schreiber: /baseline/upstream_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll None]
+    [ok]  M-122 (d) Schreiber: /kandidaten/0/referenz/passage_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll None]
+    [ok]  M-122 (d) Schreiben, Wiederlesen, Wiederschreiben: bytegleich  [2554 / 2554 Bytes]
+    [ok]  M-122 Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten  [1 / 1]
+    [ok]  M-122 gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute  [Aehnlichkeit(0.0)]
+    [ok]  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)  [Aehnlichkeit(0.0)]
+    [ok]  M-122 die Messfassung entscheidet, nicht Fingerprintwerte.version  [Aehnlichkeit(0.0)]
+    [ok]  M-122 ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert  [NichtVergleichbar / NichtVergleichbar]
+    [ok]  M-122 Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+    [ok]  M-122 Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)  [NichtVergleichbar]
+    [ok]  M-122 Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute  [0 Schwach [MaterialVerschieden]]
+    [ok]  M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Unvergleichbar [MessfassungVerschieden]]
+    [ok]  M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)  [NaN]
+Ruecknahme aus der Sicherung (broker/src/coordinator/experiment_verdrahtung.rs), SHA-256 86A647F78CF7A7196B1AD936DD5BC1F062BE71FED3A0B0192328E5E2804423B5: gleich
+  Bau (cargo test --lib, im Lauf): Compiling eqcop-broker ja
+Lauf nach Ruecknahme: cargo test --lib nak380_m122 09:04:06 bis 09:04:09, Exit 0, test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 310 filtered out; finished in 0.00s

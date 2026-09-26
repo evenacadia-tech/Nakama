@@ -131,7 +131,13 @@ pub enum FingerprintVergleich {
 /// gerechnet hat, NICHT `Fingerprintwerte.version` (die Formatfassung der 76
 /// Bytes). Der Riegel steht VOR den drei Cosinusrechnungen; erst danach
 /// klassifizieren die Aufrufer (`invalidierung::material_urteil`,
-/// `vergleichbarkeit::beurteile_versioniert`).
+/// `vergleichbarkeit::beurteile_versioniert`). Seit R-380-14 (ii) reist die
+/// Fassung mit dem gespeicherten Fingerprint (`metrics_version` in der
+/// Projektion, `Passage::fingerprint_messfassung`); ein frisch gemeldeter
+/// traegt die Fassung dieses Brokers. Eine UNBEKANNTE Fassung erreicht diesen
+/// Riegel nie: die Aufrufer mit Fassung je Seite
+/// (`material_urteil_mit_messfassung`, `beurteile_mit_messfassung`) machen
+/// sie vorher zu „nicht vergleichbar“.
 pub fn fingerprint_vergleich(
     a: &Fingerprintwerte,
     fassung_a: u32,

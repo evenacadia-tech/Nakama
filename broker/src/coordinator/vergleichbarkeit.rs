@@ -81,6 +81,11 @@ pub enum Herabstufungsgrund {
     /// (`metrics_version`, NAK-380 R-380-9, M-122): kein Materialvergleich,
     /// und ausdruecklich NICHT `MaterialVerschieden`.
     MessfassungVerschieden,
+    /// Die Messfassung mindestens eines Fingerprints ist UNBEKANNT — ein
+    /// gespeicherter Altstand ohne `metrics_version` (NAK-380 R-380-14 (ii),
+    /// M-122). Fail-closed wie `MessfassungVerschieden`, aber eigens benannt:
+    /// „verschieden“ waere eine Behauptung, die niemand pruefen kann.
+    MessfassungUnbekannt,
 }
 
 impl Herabstufungsgrund {
@@ -92,6 +97,7 @@ impl Herabstufungsgrund {
             Herabstufungsgrund::MesspunktVerschieden => "messpunkt_verschieden",
             Herabstufungsgrund::AbdeckungZuGering => "abdeckung_zu_gering",
             Herabstufungsgrund::MessfassungVerschieden => "messfassung_verschieden",
+            Herabstufungsgrund::MessfassungUnbekannt => "messfassung_unbekannt",
         }
     }
 }
@@ -322,7 +328,8 @@ fn messpunkt_wechsel(a: &Passagenbeleg, b: &Passagenbeleg) -> Option<bool> {
 /// NAK-380 M-122: dieser Weg traegt keine Messfassung je Passage; er
 /// vergleicht innerhalb der Fassung, die dieser Broker anwendet
 /// (`METRICS_VERSION`), ueber denselben versionsgebundenen Pfad wie
-/// `beurteile_versioniert`.
+/// `beurteile_versioniert`. Der Produktpfad (`resultatmessung`) ruft seit
+/// R-380-14 (ii) `beurteile_mit_messfassung` mit der Fassung JE BELEG.
 pub fn beurteile(a: &Passagenbeleg, b: &Passagenbeleg) -> Vergleichsurteil {
     beurteile_versioniert(a, METRICS_VERSION, b, METRICS_VERSION)
 }
@@ -339,19 +346,42 @@ pub fn beurteile_versioniert(
     b: &Passagenbeleg,
     fassung_b: u32,
 ) -> Vergleichsurteil {
+    beurteile_mit_messfassung(a, Some(fassung_a), b, Some(fassung_b))
+}
+
+/// Das Urteil mit der Messfassung JE SEITE, wie sie neben dem Fingerprint
+/// des Belegs steht (NAK-380 R-380-14 (ii), M-122): ein gespeicherter Beleg
+/// traegt die gespeicherte Fassung, ein frisch gerechneter die dieses
+/// Brokers, und `None` heisst unbekannt (Altstand ohne Feld).
+///
+/// Zwei Riegel, in Reihe: eine UNBEKANNTE Fassung auf einer Seite ist hier
+/// „nicht vergleichbar“ mit dem Grund `MessfassungUnbekannt` — sie wird
+/// ausdruecklich NICHT als die laufende Fassung gelesen —, und zwei bekannte,
+/// aber verschiedene Fassungen haelt `telemetrie::fingerprint_vergleich`
+/// (`MessfassungVerschieden`). Beide Male kein Zahlenwert und nie
+/// `MaterialVerschieden`.
+pub fn beurteile_mit_messfassung(
+    a: &Passagenbeleg,
+    fassung_a: Option<u32>,
+    b: &Passagenbeleg,
+    fassung_b: Option<u32>,
+) -> Vergleichsurteil {
     let mut gruende = Vec::new();
 
     let zeit = ueberdeckung((a.projekt_start, a.projekt_ende), (b.projekt_start, b.projekt_ende));
     let quellen = jaccard(&a.aktive_quellen, &b.aktive_quellen);
-    let (material, fassung_verschieden) = match (&a.fingerprint, &b.fingerprint) {
-        (Some(x), Some(y)) => {
-            match crate::telemetrie::fingerprint_vergleich(x, fassung_a, y, fassung_b) {
-                crate::telemetrie::FingerprintVergleich::Aehnlichkeit(c) => (c, false),
-                crate::telemetrie::FingerprintVergleich::NichtVergleichbar => (f64::NAN, true),
-            }
-        }
+    let (material, fassungsgrund) = match (&a.fingerprint, &b.fingerprint) {
+        (Some(x), Some(y)) => match (fassung_a, fassung_b) {
+            (Some(fa), Some(fb)) => match crate::telemetrie::fingerprint_vergleich(x, fa, y, fb) {
+                crate::telemetrie::FingerprintVergleich::Aehnlichkeit(c) => (c, None),
+                crate::telemetrie::FingerprintVergleich::NichtVergleichbar => {
+                    (f64::NAN, Some(Herabstufungsgrund::MessfassungVerschieden))
+                }
+            },
+            _ => (f64::NAN, Some(Herabstufungsgrund::MessfassungUnbekannt)),
+        },
         // Ein fehlender Fingerprint ist kein aehnlicher Fingerprint.
-        _ => (0.0, false),
+        _ => (0.0, None),
     };
 
     // 1. Abdeckung — auf beiden Seiten, und FAIL-CLOSED.
@@ -373,12 +403,12 @@ pub fn beurteile_versioniert(
     if zeit <= 0.0 {
         gruende.push(Herabstufungsgrund::ProjektbereichVerschieden);
     }
-    // 3. Material. Verschiedene Messfassungen sind ein eigener, benannter
-    //    Grund und nie „anderes Material“ (M-122).
+    // 3. Material. Verschiedene oder unbekannte Messfassungen sind ein
+    //    eigener, benannter Grund und nie „anderes Material“ (M-122).
     if a.fingerprint.is_none() || b.fingerprint.is_none() {
         gruende.push(Herabstufungsgrund::MaterialVerschieden);
-    } else if fassung_verschieden {
-        gruende.push(Herabstufungsgrund::MessfassungVerschieden);
+    } else if let Some(grund) = fassungsgrund {
+        gruende.push(grund);
     }
     // 4. Quellen.
     if quellen <= 0.0 {

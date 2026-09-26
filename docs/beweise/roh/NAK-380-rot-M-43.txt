@@ -93,3 +93,32 @@ Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Pro
   - m43-rest (eq-copilot/plugin/tests/Sonde013DynamicsTest.cpp:963): der Allokationslauf speist alle 96 000 Samples (Restblock 256)
     Wortlaut: `while (gespeist < w1.size())` -> `while (gespeist + 512u <= w1.size())`
     Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e4-n1-mutation-m43-rest.txt
+
+Nacharbeit 0 der Etappe 6 (e6n0), 26.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-14 (i), Matrixfassung §55.2; Stand uncommittet auf 2fa1e35a)
+Zusage in der Fassung §55.2: K = 1666/1530/1530 bei 44,1/48/96 kHz (k = 3 bis 1668, 3 bis 1532, 3 bis 1532); 96 kHz seit Etappe 6 mit 8 192 Punkten (Delta f 11,71875 Hz, k = ceil(30,36/11,71875) = 3), w_max = ceil(1532*(2^(125/1200) - 1)) = 115, Ring 2*115 + 2 = 232 Plaetze; Vorframe und Filterpuffer 2*1530*8 = 24 480 B <= 26 656 B; die Saetze zu 44,1 und 48 kHz woertlich unveraendert
+Golden-Klasse (ii) (nachgezogener Sollwert aus Formel): Rotlauf gegen den alten Inhalt = Etappenendlauf B18 08:16:11 bis 08:16:23 (eq-copilot/build/nak380-e6/e6end-B18.log, Binary 08:11:55):
+    [ROT]  380/M-43 detektor_binbereich: 96.0 kHz, k = 2 bis 766, K = 765, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ROT]  380/M-43 detektor_binbereich: 96.0 kHz, Ring der Warteschlange 2*w_max + 2 = 118 Plaetze (w_max = 58 am Bin 766)  [k_max 1532, w_max 115, 232 Plaetze]
+    125 bestanden, 2 gescheitert
+Endstand nach dem Nachziehen (eq-copilot/build/nak380-e6n0/nach1-lauf.log, Bein B18 voll, Binary 08:49:20.358, Lauf 08:49:20 bis 08:49:32, Exit 0, 127 bestanden, 0 gescheitert):
+    == 380/M-43 detektor_binbereich ==
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1666, 26656 B]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, Ring der Warteschlange 2*w_max + 2 = 252 Plaetze (w_max = 125 am Bin 1668)  [k_max 1668, w_max 125, 252 Plaetze]
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1666 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232 Plaetze (w_max = 115 am Bin 1532)  [k_max 1532, w_max 115, 232 Plaetze]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1530 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232 Plaetze (w_max = 115 am Bin 1532)  [k_max 1532, w_max 115, 232 Plaetze]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1530 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s, gespeist 96000 Samples]
+Mutationen nach §8.1 (Sicherung eq-copilot/build/nak380-sicherung/e6n0/<Kuerzel>/, Ruecknahme durch
+Zurueckkopieren mit gleichem SHA-256, LastWriteTime neu, Neubau, Fall gruen; Protokoll je Kuerzel):
+  - m43-untergrenze (eq-copilot/plugin/core/analysis/featureengine/Spektrum.h:676): Untergrenze 30,36 Hz: K = 1530 bei 48 und 96 kHz (Matrixmutation k = 0 -> K = 1533)
+    Wortlaut: `const int von = (int) std::ceil (Gitter::evidenzKante (0) / df);` -> `const int von = 0;`
+    rot: 44,1 kHz K 1669, 48 kHz K 1533, 96 kHz K 1533; die Ringpruefungen und der Allokationslauf gruen
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e6n0-mutation-m43-untergrenze.txt
+  - m43-ring2w (eq-copilot/plugin/core/analysis/FeatureEngine.h:737): Ring der Warteschlange 2*w_max + 2 = 232 Plaetze bei 96 kHz (Mutation: 2*w_max)
+    Wortlaut: `? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1) + 2)` -> `? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1))`
+    rot: 250/230/230 Plaetze bei 44,1/48/96 kHz; K-Pruefungen, "der Ring reicht" und der Allokationslauf gruen
+    Die Zusage faellt an der erwarteten Pruefung: JA; Ruecknahme SHA-256 gleich; Protokoll docs/beweise/roh/NAK-380-e6n0-mutation-m43-ring2w.txt

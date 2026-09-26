@@ -839,10 +839,14 @@ fn ergebnis_ohne_resultatmessung_wird_abgelehnt() {
         abdeckung: 0.9,
         label: None,
         fingerprint: Fingerprintwerte::default(),
+        // NAK-380 R-380-14 (ii): frisch gemeldet, also die Fassung dieses Brokers.
+        fingerprint_messfassung: Some(eqcop_broker::coordinator::vergleichbarkeit::METRICS_VERSION),
     };
     let referenz = Experimentreferenz {
         passage_fingerprint: Fingerprintwerte::default(),
         upstream_fingerprint: Fingerprintwerte::default(),
+        passage_messfassung: Some(eqcop_broker::coordinator::vergleichbarkeit::METRICS_VERSION),
+        upstream_messfassung: Some(eqcop_broker::coordinator::vergleichbarkeit::METRICS_VERSION),
         aktive_quellen: vec![hex(10)],
         messpunktklassen: vec!["insert".into()],
         match_gain_db: -1.5,

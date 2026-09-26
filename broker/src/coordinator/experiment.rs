@@ -142,6 +142,13 @@ pub struct Passage {
     /// Das User-Wort, nie interpretiert. `None` = die Passage hat keines.
     pub label: Option<String>,
     pub fingerprint: Fingerprintwerte,
+    /// NAK-380 R-380-14 (ii), M-122: die Messfassung (`metrics_version`) des
+    /// Messwerks, das `fingerprint` gerechnet hat. Sie reist mit dem
+    /// Fingerprint, weil ein Vergleich nur innerhalb derselben Fassung gilt:
+    /// frisch von der Leitung traegt er die Fassung dieses Brokers, aus dem
+    /// Store die dort gespeicherte, und `None` heisst unbekannt (Altstand ohne
+    /// Feld) — nie vergleichbar. Kein Feld auf der Leitung.
+    pub fingerprint_messfassung: Option<u32>,
 }
 
 /// Der Zielbereich, den ein VORSCHLAG benannt hat (SONDE-014 E-05, M-48).
@@ -195,6 +202,11 @@ impl Experimentziel {
 pub struct Experimentreferenz {
     pub passage_fingerprint: Fingerprintwerte,
     pub upstream_fingerprint: Fingerprintwerte,
+    /// NAK-380 R-380-14 (ii), M-122: die Messfassungen der zwei Fingerprints,
+    /// je Fingerprint eine (wie `Passage::fingerprint_messfassung`; `None` =
+    /// unbekannt, nie vergleichbar).
+    pub passage_messfassung: Option<u32>,
+    pub upstream_messfassung: Option<u32>,
     pub aktive_quellen: Vec<String>,
     pub messpunktklassen: Vec<String>,
     /// Der VORAB gemessene und eingefrorene Match-Gain (M-43). Er ist Teil

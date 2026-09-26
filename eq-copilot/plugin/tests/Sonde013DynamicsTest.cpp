@@ -1049,9 +1049,13 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
         abschnitt ("380/M-43 detektor_binbereich");
         // 44,1 kHz: Delta f = 10,7666 Hz, k = ceil(2,820) = 3 bis 1668 (1668*10,7666
         // = 17 958,7 < 17 959,39), K = 1666; 48 kHz: 3 bis 1532, K = 1530;
-        // 96 kHz: Delta f = 23,4375 Hz, k = ceil(1,295) = 2 bis 766, K = 765.
+        // 96 kHz seit Etappe 6 (T-380-7, R-380-14 (i)): Hauptstufe 8 192 Punkte,
+        // Delta f = 96 000/8 192 = 11,71875 Hz, k = ceil(30,36/11,71875) =
+        // ceil(2,591) = 3 bis 1532 (1532*11,71875 = 17 953,1 < 17 959,39), K = 1530
+        // wie bei 48 kHz (M-114, M-115); Vorframe und Filterpuffer 2*1530*8 =
+        // 24 480 B <= 26 656 B (dieselbe Pruefung traegt die Speicherzusage).
         struct Soll { double fs; int von; int anzahl; };
-        const Soll soll[] = { { 44100.0, 3, 1666 }, { 48000.0, 3, 1530 }, { 96000.0, 2, 765 } };
+        const Soll soll[] = { { 44100.0, 3, 1666 }, { 48000.0, 3, 1530 }, { 96000.0, 3, 1530 } };
         for (const auto& s : soll)
         {
             auto e = std::make_unique<FeatureEngine>();
@@ -1071,14 +1075,16 @@ __declspec(noinline) void nak380Detektoreinheit (const char* nur)
         // Filterbreite. 2*w_max + 2 Plaetze mit w_max = ceil(k_max*(2^(125/1200)
         // - 1)) am obersten Detektor-Bin k_max = von + K - 1: 44,1 kHz k_max 1668,
         // ceil(124,89) = 125, 252 Plaetze; 48 kHz 1532, ceil(114,71) = 115, 232;
-        // 96 kHz 766, ceil(57,35) = 58, 118. Dazu reicht er: ueber einen streng
+        // 96 kHz seit Etappe 6 (R-380-14 (i)) dieselben Bins wie 48 kHz: k_max
+        // 1532, w_max = ceil(1532*(2^(125/1200) - 1)) = ceil(114,71) = 115,
+        // 2*115 + 2 = 232. Dazu reicht er: ueber einen streng
         // fallenden Vorframe haelt die Schlange jedes Fenster voll, hoechstens
         // w_i + w_(i-1) + 2 Indizes (nachgerechnet 236 bei 44,1 kHz, 216 bei
-        // 48 kHz, 110 bei 96 kHz), und das Filter muss in JEDEM Detektor-Bin
-        // das direkt gerechnete Maximum treffen.
+        // 48 kHz; bei 96 kHz dieselben Bins und Breiten wie bei 48 kHz), und das
+        // Filter muss in JEDEM Detektor-Bin das direkt gerechnete Maximum treffen.
         struct SollRing { double fs; int kMax; int wMax; std::size_t plaetze; };
         const SollRing ringSoll[] = { { 44100.0, 1668, 125, 252u }, { 48000.0, 1532, 115, 232u },
-                                      { 96000.0, 766, 58, 118u } };
+                                      { 96000.0, 1532, 115, 232u } };
         for (const auto& r : ringSoll)
         {
             auto e = std::make_unique<FeatureEngine>();

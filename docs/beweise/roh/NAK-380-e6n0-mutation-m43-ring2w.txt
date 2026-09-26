@@ -1,0 +1,29 @@
+NAK-380 Etappe 6, Nacharbeit 0 (26.09.2026) — Mutationsprotokoll m43-ring2w
+Matrixzeile: M-43; Zusagesatz: Ring der Warteschlange 2*w_max + 2 = 232 Plaetze bei 96 kHz (w_max 115 am Bin 1532, R-380-14 (i); Mutation: 2*w_max, ein Platz je Seite zu wenig)
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Nacharbeitsstand): 737
+SHA-256 vor der Mutation: 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3; Sicherung eq-copilot/build/nak380-sicherung/e6n0/m43-ring2w/1-FeatureEngine.h
+Wortlaut vorher:
+                    ? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1) + 2)
+Wortlaut nachher:
+                    ? (std::size_t) (2 * flussFilterBreite (d.binVon + d.binAnzahl - 1))
+  Bau EqCopSonde013DynamicsTest: 08:51:05 bis 08:51:12, Exit 0
+  Binary 08:51:12.185 juenger als Quelle 08:51:05.285: ja
+Lauf mit Mutation: --nak380 M-43 08:51:12 bis 08:51:12, Exit 1, 7 bestanden, 3 gescheitert
+Gefallene Pruefungen:
+    [ROT]  380/M-43 detektor_binbereich: 44.1 kHz, Ring der Warteschlange 2*w_max + 2 = 252 Plaetze (w_max = 125 am Bin 1668)  [k_max 1668, w_max 125, 250 Plaetze]
+    [ROT]  380/M-43 detektor_binbereich: 48.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232 Plaetze (w_max = 115 am Bin 1532)  [k_max 1532, w_max 115, 230 Plaetze]
+    [ROT]  380/M-43 detektor_binbereich: 96.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232 Plaetze (w_max = 115 am Bin 1532)  [k_max 1532, w_max 115, 230 Plaetze]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-43 detektor_binbereich: 96.0 kHz, Ring der Warteschlange 2*w_max + 2 = 232)
+Unter derselben Mutation gruen gebliebene Pruefungen: 7
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, k = 3 bis 1668, K = 1666, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1666, 26656 B]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, k = 3 bis 1532, K = 1530, Vorframe und Filterpuffer 2*K*8 B <= 26 656 B  [von 3, K 1530, 24480 B]
+    [ok]   380/M-43 detektor_binbereich: 44.1 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1666 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: 48.0 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1530 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: 96.0 kHz, der Ring reicht - Maximumfilter ueber einen streng fallenden Vorframe gleich dem direkten Maximum in jedem Detektor-Bin  [0 von 1530 Bins abweichend]
+    [ok]   380/M-43 detektor_binbereich: nach vorbereiten() alloziert der Lauf nichts (Flussschritt eingeschlossen)  [0 Allokationen in 2 s, gespeist 96000 Samples]
+Ruecknahme aus der Sicherung (eq-copilot/plugin/core/analysis/FeatureEngine.h), SHA-256 95460C273D15AB20FB893C1A962B3D9C379BCD31076E4D9F72A4B4F24021E5F3: gleich
+  Bau EqCopSonde013DynamicsTest: 08:51:12 bis 08:51:19, Exit 0
+  Binary 08:51:19.263 juenger als Quelle 08:51:12.383: ja
+Lauf nach Ruecknahme: --nak380 M-43 08:51:19 bis 08:51:19, Exit 0, 10 bestanden, 0 gescheitert

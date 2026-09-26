@@ -57,3 +57,86 @@ Doppelt getragen (Praezisierung des Auftrags „M-122 (Riegel UND Klassifikation
   m122-riegel (broker/src/telemetrie.rs, fn fingerprint_vergleich): Exit mit Mutation 101, rot 4 Saetze; nach Ruecknahme Exit 0; SHA gleich; faellt an der erwarteten Pruefung: JA
   m122-klass-inv (broker/src/coordinator/invalidierung.rs, fn material_urteil): faellt an „Invalidierung, ungleiche Fassung“: JA; die uebrigen Saetze gruen
   m122-klass-verg (broker/src/coordinator/vergleichbarkeit.rs, fn beurteile_versioniert): faellt an „Vergleichbarkeit, ungleiche Fassung“ (zwei Saetze): JA; die uebrigen Saetze gruen
+
+== Nacharbeit 0 der Etappe 6 (e6n0), 26.09.2026 (Bauer Opus 5.5 xhigh, Regel R-380-14 (ii), Matrixfassung §55.2; Stand uncommittet auf 2fa1e35a)
+Zusage in der Fassung §55.2 (ii): ein gespeicherter Fingerprint traegt die Messfassung seines Schreibers (metrics_version, additiv im gespeicherten JSON, kein Feld auf der Leitung); fehlt sie, ist die Fassung unbekannt (None, kein Rueckfall auf METRICS_VERSION); die zwei Aufrufer (Vergleichbarkeit in resultatmessung, Invalidierung ueber materialwechsel_erkennen_locked) uebergeben je Seite die Fassung des Belegs (gespeichert -> gespeicherte, frisch gemeldet -> METRICS_VERSION); unbekannte Fassung -> nicht vergleichbar (fail-closed, kein Materialwechsel, nie MaterialVerschieden; Grund MessfassungUnbekannt); gleiche Fassung wie heute; Schreiben und Wiederlesen je Element bytegleich
+Test je Sprache: Rust broker/src/coordinator/experiment_verdrahtung.rs, Modul nak380_m122_tests, NEU nak380_m122_gespeicherte_fassung_a_andere_fassung_nicht_vergleichbar, _b_altstand_ohne_feld_unbekannt, _c_gleiche_fassung_wache, _d_schreiben_wiederlesen_bytegleich (A4)
+Etikett: heute nicht messbar (Passage und Experimentreferenz tragen am Zwischenstand kein Fassungsfeld; der Test uebersetzt dort nicht). Der Zwischenstand-Zustand selbst ist als Mutation nachgebaut: m122-leser-aufrufer-doppel (Leser ohne Fassung, beide Aufrufer mit METRICS_VERSION) macht (a) und (b) rot.
+Vorbedingungen je Fall verriegelt: laufende Fassung 20260929 = METRICS_VERSION, Altstand 20260928; die zwei Fingerprints numerisch unaehnlich (Energie in disjunkten Haelften, jeder Cosinus 0 < 0,95), damit „nicht vergleichbar“ am Ergebnis von „gleich“ zu unterscheiden ist; die gespeicherten Belege baut der Test von Hand (mit und ohne Feld), nicht ueber den Schreiber.
+Endstand (eq-copilot/build/nak380-e6n0/m122-zwei.log, cargo test --lib nak380_m122 -- --nocapture 09:01:48 bis 09:01:51, EXIT=0, 5 bestanden, 0 gescheitert):
+    OK  M-122 Vorbedingung: laufende Fassung 20260929, Altstand 20260928  [20260929 / 20260928]
+    OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)  [0]
+    OK  M-122 (a) Vergleichbarkeit: je Seite die Fassung des Belegs (gespeichert 20260928, gemeldet 20260929)  [Some(20260928) / Some(20260929)]
+    OK  M-122 (a) Vergleichbarkeit, gespeichert 20260928 gegen laufend 20260929: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Some("unvergleichbar") ["MessfassungVerschieden"]]
+    OK  M-122 (a) Invalidierung: der Aufrufer uebergibt je Seite die Fassung des Belegs (gespeichert 20260928, gemeldet 20260929)  [Some((Some(20260928), Some(20260929)))]
+    OK  M-122 (a) Invalidierung, gespeichert 20260928 gegen laufend 20260929: kein Materialwechsel, der Beleg bleibt  [Wirkung false, Ausschluss None]
+    OK  M-122 Vorbedingung: laufende Fassung 20260929, Altstand 20260928  [20260929 / 20260928]
+    OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)  [0]
+    OK  M-122 (b) Leser: ein Altstand ohne Feld laedt weiter, seine Fassung ist unbekannt (None, kein Rueckfall auf METRICS_VERSION)  [Passage Some(None), Referenz Some((None, None))]
+    OK  M-122 (b) Vergleichbarkeit, Altstand ohne Feld gegen laufend 20260929: unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden  [None / Some(20260929): Some("unvergleichbar") ["MessfassungUnbekannt"]]
+    OK  M-122 (b) Invalidierung, Altstand ohne Feld gegen laufend 20260929: kein Materialwechsel, der Beleg bleibt  [Some((None, Some(20260929))): Wirkung false, Ausschluss None]
+    OK  M-122 Vorbedingung: laufende Fassung 20260929, Altstand 20260928  [20260929 / 20260928]
+    OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)  [0]
+    OK  M-122 (c) Vergleichbarkeit, gleiche Fassung 20260929: MaterialVerschieden wie heute (Klasse schwach, kein Messfassungsgrund)  [Some(20260929) / Some(20260929): Some("schwach") ["MaterialVerschieden"]]
+    OK  M-122 (c) Vergleichbarkeit, Baseline und Kandidat gespeichert mit derselben alten Fassung 20260928: vergleichbar, MaterialVerschieden  [Some(20260928) / Some(20260928): Some("schwach") ["MaterialVerschieden"]]
+    OK  M-122 (c) Invalidierung, gleiche Fassung 20260929: Materialwechsel wie heute, der Beleg traegt material_wechsel  [Some((Some(20260929), Some(20260929))): Wirkung true, Ausschluss Some("material_wechsel")]
+    OK  M-122 (d) Schreiber: /passage/fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [Some(Number(20260929)), Soll Some(20260929)]
+    OK  M-122 (d) Schreiber: /baseline/passage_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [Some(Number(20260928)), Soll Some(20260928)]
+    OK  M-122 (d) Schreiber: /baseline/upstream_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll None]
+    OK  M-122 (d) Schreiber: /kandidaten/0/referenz/passage_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [None, Soll None]
+    OK  M-122 (d) Schreiber: /kandidaten/0/referenz/upstream_fingerprint/metrics_version traegt die Fassung des Elements (fehlt bei unbekannt)  [Some(Number(20260929)), Soll Some(20260929)]
+    OK  M-122 (d) Leser: jedes der fuenf Elemente kommt mit seiner Fassung zurueck (laufend, Altstand, unbekannt)  [[Some(20260929), Some(20260928), None, None, Some(20260929)], Soll [Some(20260929), Some(20260928), None, None, Some(20260929)]]
+    OK  M-122 (d) Schreiben, Wiederlesen, Wiederschreiben: bytegleich  [2635 / 2635 Bytes]
+    OK  M-122 Vorbedingung: gleiche Formatfassung (Fingerprintwerte.version) auf beiden Seiten  [1 / 1]
+    OK  M-122 gleiche Messfassung: endliche numerische Aehnlichkeit in [0, 1] wie heute  [Aehnlichkeit(0.0)]
+    OK  M-122 Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (unter 0,95)  [Aehnlichkeit(0.0)]
+    OK  M-122 die Messfassung entscheidet, nicht Fingerprintwerte.version  [Aehnlichkeit(0.0)]
+    OK  M-122 ungleiche Messfassung (beide Richtungen): Ergebniszustand nicht vergleichbar, kein Zahlenwert  [NichtVergleichbar / NichtVergleichbar]
+    OK  M-122 Invalidierung, gleiche Fassung und unaehnlich: Materialwechsel wie heute  [Wechsel(Invalidierung { grund: MaterialWechsel, umfang: GanzeSitzung })]
+    OK  M-122 Invalidierung, ungleiche Fassung: nicht vergleichbar, nie Materialwechsel (anderes Material)  [NichtVergleichbar]
+    OK  M-122 Vergleichbarkeit, gleiche Fassung und unaehnlich: Zahlenwert und MaterialVerschieden wie heute  [0 Schwach [MaterialVerschieden]]
+    OK  M-122 Vergleichbarkeit, ungleiche Fassung: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden  [Unvergleichbar [MessfassungVerschieden]]
+    OK  M-122 Vergleichbarkeit, ungleiche Fassung: kein Zahlenwert (material_cosine NaN)  [NaN]
+
+== Zusagesaetze -> Pruefzeile -> Mutation -> rot -> Protokoll (e6n0)
+- (a) gespeichert 20260928 gegen laufend 20260929, Vergleichbarkeit: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden
+  Pruefzeile: „(a) Vergleichbarkeit, gespeichert 20260928 gegen laufend 20260929“ (resultatmessung eines wiederhergestellten Versuchs)
+  Mutation: m122-aufrufer-fassung (Aufrufer uebergibt auf der Baseline-Seite METRICS_VERSION), experiment_verdrahtung.rs:1288
+  rot: JA
+- (a) Kandidatenseite desselben Aufrufers (je Seite die Fassung des Belegs)
+  Pruefzeile: „(c) Vergleichbarkeit, Baseline und Kandidat gespeichert mit derselben alten Fassung 20260928“ (nur mit gespeichertem Kandidaten trennscharf)
+  Mutation: m122-aufrufer-fassung-kandidat, experiment_verdrahtung.rs:1295
+  rot: JA
+- (a) gespeichert 20260928 gegen laufend 20260929, Invalidierung: kein Materialwechsel, der Beleg bleibt
+  Pruefzeilen: „(a) Invalidierung: der Aufrufer uebergibt je Seite …“ und „(a) Invalidierung, gespeichert 20260928 …“
+  Mutation: m122-aufrufer-fassung-inv (materialwechsel_erkennen_locked uebergibt METRICS_VERSION), experiment_verdrahtung.rs:392
+  rot: JA
+- (b) Altstand ohne Feld: laedt weiter, Fassung unbekannt (Leser, kein Rueckfall)
+  Pruefzeile: „(b) Leser: ein Altstand ohne Feld laedt weiter …“
+  Mutation: m122-leser-rueckfall (fingerprint_aus_gespeichertem ersetzt die fehlende Fassung durch METRICS_VERSION), experiment_verdrahtung.rs:1677
+  rot: JA (dazu (b) Vergleichbarkeit, (b) Invalidierung, (d) Leser und (d) bytegleich)
+- (b) Altstand ohne Feld, Vergleichbarkeit: unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden
+  Pruefzeile: „(b) Vergleichbarkeit, Altstand ohne Feld …“
+  Mutation: m122-riegel-unbekannt-verg (beurteile_mit_messfassung liest None als METRICS_VERSION), vergleichbarkeit.rs:381; m122-leser-rueckfall
+  rot: JA (beide)
+- (b) Altstand ohne Feld, Invalidierung: kein Materialwechsel
+  Pruefzeile: „(b) Invalidierung, Altstand ohne Feld …“
+  Mutation: m122-riegel-unbekannt-inv (material_urteil_mit_messfassung liest None als METRICS_VERSION), invalidierung.rs:279-281; m122-leser-rueckfall; m122-aufrufer-fassung-inv
+  rot: JA (alle drei)
+- (c) gleiche Fassung wie heute (Regressionswache): Vergleichbarkeit MaterialVerschieden, Invalidierung Materialwechsel mit Ausschluss material_wechsel; gleiche alte Fassung auf beiden Seiten vergleichbar
+  Pruefzeilen: „(c) Vergleichbarkeit, gleiche Fassung 20260929“, „(c) Vergleichbarkeit, … derselben alten Fassung 20260928“, „(c) Invalidierung, gleiche Fassung 20260929“
+  Mutation: m122-wache-gleich (in beiden Pfaden gilt jede bekannte Fassung als verschieden), vergleichbarkeit.rs:375 und invalidierung.rs:282
+  rot: JA (drei Saetze; mitgefallen die zwei Saetze „gleiche Fassung“ des Etappe-6-Tests in telemetrie.rs, derselbe Weg)
+- (d) Schreiber traegt die Fassung neben jedem gespeicherten Fingerprint (fehlt bei unbekannt)
+  Pruefzeilen: „(d) Schreiber: <Zeiger> traegt die Fassung des Elements“ (fuenf Zeiger)
+  Mutation: m122-schreiber-ohne-feld (fingerprint_json laesst das Feld weg), experiment_verdrahtung.rs:707; je Element m122-element-schreiber (upstream mit der Fassung von passage_fingerprint), experiment_verdrahtung.rs:729
+  rot: JA (beide)
+- (d) Leser liest jedes Element mit seiner Fassung; Wiederschreiben bytegleich
+  Pruefzeilen: „(d) Leser: jedes der fuenf Elemente …“, „(d) Schreiben, Wiederlesen, Wiederschreiben: bytegleich“
+  Mutation: m122-element-leser (referenz_aus_gespeichertem setzt upstream auf die Fassung von passage_fingerprint), m122-leser-rueckfall, m122-schreiber-ohne-feld
+  rot: JA (alle drei; bytegleich faellt unter m122-element-leser und m122-leser-rueckfall)
+
+Zwei Riegel je Zusage, in Reihe (Lehre §50.1): „die Fassung reist mit“ tragen Schreiber UND Leser, „unbekannt -> nicht vergleichbar“ tragen Leser, Aufrufer UND der None-Riegel des Pfads. Jede Einzelmutation ist fuer sich rot (Gegenproben: m122-schreiber-ohne-feld, m122-leser-rueckfall, m122-aufrufer-fassung, m122-aufrufer-fassung-inv, m122-riegel-unbekannt-verg, m122-riegel-unbekannt-inv); die Doppelmutationen zeigen, dass sich zwei gefallene Riegel nicht gegenseitig verdecken: m122-schreiber-leser-doppel (Schreiber ohne Feld UND Leser mit Rueckfall) rot an (d) Leser und (b); m122-leser-aufrufer-doppel (Leser mit Rueckfall UND beide Aufrufer mit METRICS_VERSION) rot an (a) und (b).
+
+== Mutationen e6n0 (Wortlaut in den Protokollen docs/beweise/roh/NAK-380-e6n0-mutation-<Kuerzel>.txt; SHA-256 vor der Mutation und nach der Ruecknahme gleich; Fall danach gruen, 5 bestanden)
+  m122-leser-rueckfall, m122-aufrufer-fassung, m122-aufrufer-fassung-kandidat, m122-aufrufer-fassung-inv, m122-schreiber-ohne-feld, m122-riegel-unbekannt-verg, m122-riegel-unbekannt-inv, m122-schreiber-leser-doppel, m122-leser-aufrufer-doppel, m122-wache-gleich, m122-element-schreiber, m122-element-leser: je Exit 101 mit Mutation, faellt an der erwarteten Pruefung: JA; nach Ruecknahme Exit 0 (09:03:35 bis 09:04:59, Lauf eq-copilot/build/nak380-e6n0/mut-m122-alle.log; Endhashes der drei Dateien gleich den Vorher-Hashes)

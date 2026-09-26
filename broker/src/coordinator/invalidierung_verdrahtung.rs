@@ -683,13 +683,16 @@ impl Coordinator {
     ///
     /// Der Materialwechsel nach `experiment_begin` ist Wirkung DIESES Befehls
     /// und geht in denselben Append; er darf deshalb keinen eigenen bekommen.
+    ///
+    /// NAK-380 R-380-14 (ii), M-122: je Seite mit der Messfassung, die neben
+    /// dem Fingerprint des Belegs steht (`None` = unbekannt).
     pub(super) fn invalidierung_wegen_material_vorbereiten(
         &self,
         session: &SessionKey,
-        vorher: Option<&crate::telemetrie::Fingerprintwerte>,
-        jetzt: Option<&crate::telemetrie::Fingerprintwerte>,
+        vorher: Option<(&crate::telemetrie::Fingerprintwerte, Option<u32>)>,
+        jetzt: Option<(&crate::telemetrie::Fingerprintwerte, Option<u32>)>,
     ) -> Option<Invalidierungswirkung> {
-        let inv = crate::coordinator::invalidierung::material_wechsel(
+        let inv = crate::coordinator::invalidierung::material_wechsel_mit_messfassung(
             vorher,
             jetzt,
             Umfang::GanzeSitzung,

@@ -93,6 +93,8 @@ fn passage(n: u32) -> Passage {
         abdeckung: 0.9,
         label: Some("Refrain".into()),
         fingerprint: fp(5),
+        // NAK-380 R-380-14 (ii): frisch gemeldet, also die Fassung dieses Brokers.
+        fingerprint_messfassung: Some(eqcop_broker::coordinator::vergleichbarkeit::METRICS_VERSION),
     }
 }
 
@@ -100,6 +102,8 @@ fn referenz(gain: f64) -> Experimentreferenz {
     Experimentreferenz {
         passage_fingerprint: fp(5),
         upstream_fingerprint: fp(9),
+        passage_messfassung: Some(eqcop_broker::coordinator::vergleichbarkeit::METRICS_VERSION),
+        upstream_messfassung: Some(eqcop_broker::coordinator::vergleichbarkeit::METRICS_VERSION),
         aktive_quellen: vec![hex32(11), hex32(12)],
         messpunktklassen: vec!["pre".into(), "post".into()],
         match_gain_db: gain,

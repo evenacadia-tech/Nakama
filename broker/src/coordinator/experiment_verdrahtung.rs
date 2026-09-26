@@ -29,6 +29,10 @@ use crate::coordinator::experiment::{
 use crate::coordinator::vergleichbarkeit::Passagenbeleg;
 use crate::telemetrie::Fingerprintwerte;
 
+/// Ein Fingerprint mit der Messfassung, die neben ihm steht (NAK-380
+/// R-380-14 (ii), M-122): `None` heisst unbekannt, nie „die laufende“.
+type Fingerprintbeleg = (Fingerprintwerte, Option<u32>);
+
 impl Coordinator {
     /// Der Einstieg fuer alle drei Experimentfamilien.
     ///
@@ -301,9 +305,7 @@ impl Coordinator {
         // Evidenz, die zu anderem Material gehoert, blieb dauerhaft gueltig.
         // Sie geht deshalb als Domaenenereignis in DENSELBEN Append.
         let mut ereignisse = ereignisse;
-        let invalidierung = materialwechsel.and_then(|(alt, neu)| {
-            self.invalidierung_wegen_material_vorbereiten(&session, Some(&alt), Some(&neu))
-        });
+        let invalidierung = self.materialwechsel_vorbereiten(&session, materialwechsel);
         if let Some(w) = &invalidierung {
             ereignisse.push(self.invalidierung_als_domaenenereignis(w));
         }
@@ -372,16 +374,42 @@ impl Coordinator {
     /// sagt ausdruecklich, dass der Materialwechsel aus dem
     /// Fingerprintvergleich kommt und nicht aus einer Zeitheuristik — und
     /// fail-closed heisst hier invalidieren.
+    ///
+    /// NAK-380 R-380-14 (ii), M-122: je Seite reist die Messfassung DES
+    /// BELEGS mit — die bekannte Passage traegt die Fassung, die neben ihrem
+    /// Fingerprint steht (aus dem Store die gespeicherte, `None` =
+    /// unbekannt), die gemeldete die Fassung dieses Brokers
+    /// (`passage_aus_wert`). Ueber sie entscheidet der Materialweg, ob
+    /// ueberhaupt verglichen werden darf.
     fn materialwechsel_erkennen_locked(
         stand: &Stand,
         wert: &Value,
-    ) -> Option<(Fingerprintwerte, Fingerprintwerte)> {
+    ) -> Option<(Fingerprintbeleg, Fingerprintbeleg)> {
         let neu = Self::passage_aus_wert(wert)?;
-        let alt = stand
-            .experimente
-            .passage(&neu.passage_id)
-            .map(|p| p.fingerprint.clone())?;
-        (alt != neu.fingerprint).then_some((alt, neu.fingerprint))
+        let alt = stand.experimente.passage(&neu.passage_id)?;
+        (alt.fingerprint != neu.fingerprint).then(|| {
+            (
+                (alt.fingerprint.clone(), alt.fingerprint_messfassung),
+                (neu.fingerprint, neu.fingerprint_messfassung),
+            )
+        })
+    }
+
+    /// Der Materialwechsel dieses `experiment_begin`, VORBEREITET (Befund
+    /// B14) — mit der Messfassung JE SEITE (NAK-380 R-380-14 (ii), M-122).
+    /// „Nicht vergleichbar“ (eine unbekannte oder andere Fassung) ist kein
+    /// Materialwechsel und invalidiert nichts.
+    fn materialwechsel_vorbereiten(
+        &self,
+        session: &SessionKey,
+        materialwechsel: Option<(Fingerprintbeleg, Fingerprintbeleg)>,
+    ) -> Option<super::invalidierung_verdrahtung::Invalidierungswirkung> {
+        let ((alt, fassung_alt), (neu, fassung_neu)) = materialwechsel?;
+        self.invalidierung_wegen_material_vorbereiten(
+            session,
+            Some((&alt, fassung_alt)),
+            Some((&neu, fassung_neu)),
+        )
     }
 
     /// Steht in diesem `command_ack` „angewandt"?
@@ -657,13 +685,28 @@ impl Coordinator {
     // einzelne. Ein Ueberschreiben des Begin-Zustands kann es damit nicht
     // geben: der neue Zustand ENTHAELT ihn.
 
-    pub(super) fn fingerprint_json(f: &Fingerprintwerte) -> Value {
-        serde_json::json!({
+    /// Ein Fingerprint in der Projektion — mit seiner Messfassung.
+    ///
+    /// NAK-380 R-380-14 (ii), M-122: `metrics_version` steht IM gespeicherten
+    /// Fingerprintobjekt, additiv neben `version` (der Formatfassung der 76
+    /// Bytes). Ein Schreiber fuer alle drei Fingerprintfelder, ein Leser
+    /// (`fingerprint_aus_gespeichertem`): die Fassung kann sich von ihrem
+    /// Fingerprint nicht loesen. Eine UNBEKANNTE Fassung (`None`, Altstand ohne
+    /// Feld) bleibt unbekannt — das Feld entfaellt, statt beim Neuschreiben
+    /// eines wiederhergestellten Versuchs die Fassung dieses Brokers
+    /// anzunehmen. Kein Feld auf der Leitung: das v3-Schema verbietet es im
+    /// `$defs/fingerprint`, und `fingerprint_aus_wert` liest es nicht.
+    pub(super) fn fingerprint_json(f: &Fingerprintwerte, messfassung: Option<u32>) -> Value {
+        let mut objekt = serde_json::json!({
             "version": f.version,
             "band_energie": f.band_energie.to_vec(),
             "chroma": f.chroma.to_vec(),
             "onset": f.onset.to_vec(),
-        })
+        });
+        if let Some(fassung) = messfassung {
+            objekt["metrics_version"] = Value::from(fassung);
+        }
+        objekt
     }
 
     pub(super) fn passage_json(p: &Passage) -> Value {
@@ -676,14 +719,14 @@ impl Coordinator {
             "messpunktklassen": p.messpunktklassen,
             "abdeckung": p.abdeckung,
             "label": p.label,
-            "fingerprint": Self::fingerprint_json(&p.fingerprint),
+            "fingerprint": Self::fingerprint_json(&p.fingerprint, p.fingerprint_messfassung),
         })
     }
 
     fn referenz_json(r: &Experimentreferenz) -> Value {
         serde_json::json!({
-            "passage_fingerprint": Self::fingerprint_json(&r.passage_fingerprint),
-            "upstream_fingerprint": Self::fingerprint_json(&r.upstream_fingerprint),
+            "passage_fingerprint": Self::fingerprint_json(&r.passage_fingerprint, r.passage_messfassung),
+            "upstream_fingerprint": Self::fingerprint_json(&r.upstream_fingerprint, r.upstream_messfassung),
             "aktive_quellen": r.aktive_quellen,
             "messpunktklassen": r.messpunktklassen,
             "match_gain_db": r.match_gain_db,
@@ -1230,19 +1273,26 @@ impl Coordinator {
             .last()
             .map(|k| &k.referenz)
             .unwrap_or(&e.baseline);
-        let urteil = crate::coordinator::vergleichbarkeit::beurteile(
+        // NAK-380 R-380-14 (ii), M-122: je Seite die Messfassung, die neben
+        // DIESEM Fingerprint steht — eine wiederhergestellte Referenz traegt
+        // die gespeicherte (`None` = unbekannt), eine frisch gemeldete die
+        // dieses Brokers. Eine unbekannte oder andere Fassung ist „nicht
+        // vergleichbar“, nie `MaterialVerschieden`.
+        let urteil = crate::coordinator::vergleichbarkeit::beurteile_mit_messfassung(
             &beleg(
                 &baseline,
                 messung.abdeckung_baseline,
                 &baseline_quellen,
                 &e.baseline.passage_fingerprint,
             ),
+            e.baseline.passage_messfassung,
             &beleg(
                 &resultat,
                 messung.abdeckung_resultat,
                 &resultat_quellen,
                 &kandidat_referenz.passage_fingerprint,
             ),
+            kandidat_referenz.passage_messfassung,
         );
         messung.vergleichbarkeit = Some(urteil.klasse.name().to_owned());
         messung.vergleichbarkeit_gruende = urteil
@@ -1297,6 +1347,11 @@ impl Coordinator {
             abdeckung: p.get("abdeckung")?.as_f64()? as f32,
             label: p.get("label").and_then(Value::as_str).map(str::to_owned),
             fingerprint: Self::fingerprint_aus_wert(p.get("fingerprint"))?,
+            // NAK-380 R-380-14 (ii): frisch von der Leitung ist der
+            // Fingerprint in der laufenden Sitzung gerechnet — Plugin und
+            // Broker kommen als Bundle — und traegt die Fassung dieses
+            // Brokers. Die Leitung selbst traegt keine Fassung.
+            fingerprint_messfassung: Some(super::vergleichbarkeit::METRICS_VERSION),
         })
     }
 
@@ -1305,6 +1360,10 @@ impl Coordinator {
         Some(Experimentreferenz {
             passage_fingerprint: Self::fingerprint_aus_wert(r.get("passage_fingerprint"))?,
             upstream_fingerprint: Self::fingerprint_aus_wert(r.get("upstream_fingerprint"))?,
+            // Wie `passage_aus_wert`: die Fassung dieses Brokers, je
+            // Fingerprint (NAK-380 R-380-14 (ii)).
+            passage_messfassung: Some(super::vergleichbarkeit::METRICS_VERSION),
+            upstream_messfassung: Some(super::vergleichbarkeit::METRICS_VERSION),
             aktive_quellen: r
                 .get("aktive_quellen")?
                 .as_array()?
@@ -1601,8 +1660,22 @@ impl Coordinator {
             .unwrap_or_default()
     }
 
-    fn fingerprint_aus_gespeichertem(wert: Option<&Value>) -> Option<Fingerprintwerte> {
-        Self::fingerprint_aus_wert(wert)
+    /// Ein GESPEICHERTER Fingerprint samt der Messfassung, die in ihm steht
+    /// (NAK-380 R-380-14 (ii), M-122; Schreiber `fingerprint_json`).
+    ///
+    /// Fehlt `metrics_version` — ein Altstand vor dieser Fassung — oder ist es
+    /// keine Ganzzahl in 1..=u32::MAX, ist die Fassung UNBEKANNT (`None`).
+    /// Ausdruecklich KEIN Rueckfall auf `METRICS_VERSION`: ein Altstand wuerde
+    /// sonst still zur laufenden Fassung und mit ihr vergleichbar. Die Zeile
+    /// selbst laedt weiter (State bleibt verlustfrei); nur vergleichbar ist
+    /// sie nicht mehr.
+    fn fingerprint_aus_gespeichertem(wert: Option<&Value>) -> Option<Fingerprintbeleg> {
+        let werte = Self::fingerprint_aus_wert(wert)?;
+        let fassung = wert?
+            .get("metrics_version")
+            .and_then(|v| crate::vertrag::ganzzahl(v, 1, i64::from(u32::MAX)))
+            .map(|v| v as u32);
+        Some((werte, fassung))
     }
 
     fn passage_aus_gespeichertem(w: &Value) -> Option<Passage> {
@@ -1618,6 +1691,8 @@ impl Coordinator {
             .iter()
             .filter_map(|v| v.as_str().map(str::to_owned))
             .collect();
+        let (fingerprint, fingerprint_messfassung) =
+            Self::fingerprint_aus_gespeichertem(w.get("fingerprint"))?;
         Some(Passage {
             passage_id: w.get("passage_id")?.as_str()?.to_owned(),
             projekt_von: w.get("projekt_von")?.as_i64()?,
@@ -1627,19 +1702,22 @@ impl Coordinator {
             messpunktklassen: klassen,
             abdeckung: w.get("abdeckung")?.as_f64()? as f32,
             label: w.get("label").and_then(Value::as_str).map(str::to_owned),
-            fingerprint: Self::fingerprint_aus_gespeichertem(w.get("fingerprint"))?,
+            fingerprint,
+            fingerprint_messfassung,
         })
     }
 
     fn referenz_aus_gespeichertem(w: Option<&Value>) -> Option<Experimentreferenz> {
         let r = w?;
+        let (passage_fingerprint, passage_messfassung) =
+            Self::fingerprint_aus_gespeichertem(r.get("passage_fingerprint"))?;
+        let (upstream_fingerprint, upstream_messfassung) =
+            Self::fingerprint_aus_gespeichertem(r.get("upstream_fingerprint"))?;
         Some(Experimentreferenz {
-            passage_fingerprint: Self::fingerprint_aus_gespeichertem(
-                r.get("passage_fingerprint"),
-            )?,
-            upstream_fingerprint: Self::fingerprint_aus_gespeichertem(
-                r.get("upstream_fingerprint"),
-            )?,
+            passage_fingerprint,
+            upstream_fingerprint,
+            passage_messfassung,
+            upstream_messfassung,
             aktive_quellen: r
                 .get("aktive_quellen")?
                 .as_array()?
@@ -1894,5 +1972,492 @@ impl Coordinator {
             .unwrap_or_else(|e| e.into_inner())
             .experimente
             .exportiere(experiment_id)
+    }
+}
+
+// ── NAK-380 R-380-14 (ii), M-122: die Messfassung reist mit dem gespeicherten
+//    Fingerprint ─────────────────────────────────────────────────────────────
+//
+// Vier Faelle nach §55.2 (a) bis (d). Die gespeicherten Belege baut der Test
+// SELBST als JSON (mit und ohne `metrics_version`), nicht ueber den Schreiber:
+// so misst (a) bis (c) den Leser und die zwei Aufrufer, (d) den Schreiber.
+// Gemessen wird am Ergebniszustand beider Aufrufpfade — Vergleichbarkeit
+// (`resultatmessung` → `beurteile_mit_messfassung`: Klasse und Gruende) und
+// Invalidierung (`materialwechsel_erkennen_locked` → `materialwechsel_vorbereiten`
+// → `material_urteil_mit_messfassung`: vorbereitete Wirkung und Ausschlussgrund
+// des Belegs der Sitzung).
+//
+// Riegel, in Reihe: der Leser liefert eine fehlende Fassung als `None` (kein
+// Rueckfall auf `METRICS_VERSION`), die Aufrufer uebergeben je Seite die
+// Fassung des Belegs, und `beurteile_mit_messfassung` bzw.
+// `material_urteil_mit_messfassung` machen `None` zu „nicht vergleichbar“;
+// zwei bekannte, verschiedene Fassungen haelt `fingerprint_vergleich`.
+#[cfg(test)]
+mod nak380_m122_tests {
+    use super::*;
+    use crate::coordinator::experiment::{Experiment, Experimentstore, Kandidat};
+    use crate::coordinator::invalidierung::GATE_MATERIAL_GLEICH;
+    use crate::coordinator::vergleichbarkeit::{GATE_MATERIAL_COSINE, METRICS_VERSION};
+    use serde_json::json;
+
+    /// Die Fassung der Etappe 5 (gespeicherter Altstand) und die laufende
+    /// Fassung der Etappe 6 (`vergleichbarkeit::METRICS_VERSION`).
+    const ALT: u32 = 20_260_928;
+    const NEU: u32 = 20_260_929;
+
+    /// Jede Pruefung meldet sich (OK/ROT), bevor der Fall faellt, damit ein
+    /// Rotbeweis zeigt, welcher Satz fiel (Muster wie in `telemetrie.rs`).
+    struct Pruefung {
+        rot: Vec<String>,
+    }
+
+    impl Pruefung {
+        fn neu() -> Self {
+            Self { rot: Vec::new() }
+        }
+
+        fn pruefe(&mut self, ok: bool, satz: &str, wert: String) {
+            println!("{} M-122 {satz}  [{wert}]", if ok { "  OK " } else { "  ROT" });
+            if !ok {
+                self.rot.push(satz.to_owned());
+            }
+        }
+
+        fn ende(self) {
+            assert!(self.rot.is_empty(), "M-122 rot: {:?}", self.rot);
+        }
+    }
+
+    fn hex(n: u32) -> String {
+        format!("{n:032x}")
+    }
+
+    fn instanz() -> String {
+        hex(0x31)
+    }
+
+    fn adresse() -> Adresse {
+        Adresse {
+            logon_sid: "S-1-5-21-1-2-3-1001".into(),
+            project_binding_id: hex(0x11),
+            session_epoch: hex(0x22),
+            instance_id: instanz(),
+            runtime_nonce: hex(0x40),
+        }
+    }
+
+    /// Zwei absichtlich numerisch unaehnliche Fingerprints: die Energie liegt
+    /// je Verlauf in disjunkten Haelften (Band 0..16 gegen 16..32 mit je 200,
+    /// Chroma 0..6 gegen 6..12 mit je 100, Onset 0..16 gegen 16..32 mit je
+    /// 150). Jedes Skalarprodukt ist 0, also jeder der drei Cosinus 0 und ihr
+    /// Minimum 0 < 0,95 — unter beiden Gates. Nur deshalb ist „nicht
+    /// vergleichbar“ am Ergebnis von „gleich“ zu unterscheiden: bei gleicher
+    /// Fassung wird daraus Materialwechsel bzw. `MaterialVerschieden`.
+    fn unaehnlich() -> (Fingerprintwerte, Fingerprintwerte) {
+        let mut a = Fingerprintwerte::default();
+        let mut b = Fingerprintwerte::default();
+        for i in 0..16 {
+            a.band_energie[i] = 200;
+            b.band_energie[16 + i] = 200;
+            a.onset[i] = 150;
+            b.onset[16 + i] = 150;
+        }
+        for i in 0..6 {
+            a.chroma[i] = 100;
+            b.chroma[6 + i] = 100;
+        }
+        (a, b)
+    }
+
+    /// Ein Fingerprintobjekt, VON HAND gebaut: `None` laesst `metrics_version`
+    /// weg (Altstand vor R-380-14 (ii)); auf der Leitung steht es nie.
+    fn fp_json(f: &Fingerprintwerte, fassung: Option<u32>) -> Value {
+        let mut objekt = json!({
+            "version": f.version,
+            "band_energie": f.band_energie.to_vec(),
+            "chroma": f.chroma.to_vec(),
+            "onset": f.onset.to_vec(),
+        });
+        if let Some(v) = fassung {
+            objekt["metrics_version"] = json!(v);
+        }
+        objekt
+    }
+
+    fn passage_felder(f: &Fingerprintwerte, fassung: Option<u32>) -> Value {
+        json!({
+            "passage_id": hex(0x1000),
+            "projekt_von": 0,
+            "projekt_bis": 480_000,
+            "transport_epoch": 7,
+            "aktive_quellen": [instanz()],
+            "messpunktklassen": ["insert"],
+            "abdeckung": 0.9,
+            "label": null,
+            "fingerprint": fp_json(f, fassung),
+        })
+    }
+
+    fn referenz_felder(f: &Fingerprintwerte, fassung: Option<u32>) -> Value {
+        json!({
+            "passage_fingerprint": fp_json(f, fassung),
+            "upstream_fingerprint": fp_json(f, fassung),
+            "aktive_quellen": [instanz()],
+            "messpunktklassen": ["insert"],
+            "match_gain_db": 0.0,
+            "nicht_endliche_samples": 0,
+            "alignment": "feature_aligned",
+        })
+    }
+
+    /// Ein Evidenzbeleg der Quelle im Fenster der Passage: Epoche 7,
+    /// Projektzeit 0 bis 48 000, vier Baender mit Bit, Abdeckung 0,9 — alle
+    /// uebrigen vier Belege der Vergleichbarkeit sind damit erfuellt
+    /// (Ueberdeckung 1, Jaccard 1, Rate 48 kHz, Klasse `insert`).
+    fn beleg(nummer: u32, empfangsfolge: u64) -> Evidenzstand {
+        Evidenzstand {
+            evidence_id: hex(0x5000 + nummer),
+            empfangsfolge,
+            abdeckung: 0.9,
+            klasse: "mittel".into(),
+            p50_db: vec![-20.0; 4],
+            p50_gueltig: vec![true; 4],
+            transport_epoch: 7,
+            project_sample_start: Some(0),
+            sample_count: 48_000,
+            sample_rate: 48_000.0,
+            ..Default::default()
+        }
+    }
+
+    fn quelle(a: &Adresse) -> ClientStand {
+        ClientStand {
+            adresse: a.clone(),
+            plugin_kind: "probe".into(),
+            host_pid: None,
+            abtastrate: 48_000.0,
+            session_ungebunden: false,
+            current_link: None,
+            current_nonce: a.runtime_nonce.clone(),
+            last_seen: Duration::ZERO,
+            stale: false,
+            stale_seit: None,
+            join_kandidat: false,
+            bestaetigt: true,
+            explizit_bestaetigt: true,
+            ausdruecklich_ungebunden: false,
+            descriptor: Some(json!({ "measurement_position": "insert" })),
+            state_revision: None,
+            state_hash: None,
+            dsp_jcs: None,
+            record_state_valid: true,
+            recording: false,
+        }
+    }
+
+    /// Vergleichbarkeitspfad: ein WIEDERHERGESTELLTER Versuch, dessen
+    /// Baseline aus dem gespeicherten Beleg `fassung` kommt (Fingerprint a),
+    /// mit einem Kandidaten (Fingerprint b) — frisch gemeldet (Leitung), wenn
+    /// `kandidat` `None` ist, sonst ebenfalls gespeichert mit der Fassung
+    /// darin — und Evidenz beider Haelften (Begin-Grenze 5, Kandidatengrenze
+    /// 10). Rueckgabe: die Fassungen, die die Leser der Baseline und dem
+    /// Kandidaten gaben, und die Resultatmessung.
+    fn vergleich(
+        fassung: Option<u32>,
+        kandidat: Option<Option<u32>>,
+    ) -> (Option<u32>, Option<u32>, Resultatmessung) {
+        let (a, b) = unaehnlich();
+        let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef));
+        let adr = adresse();
+        let key = ClientKey::aus_adresse(&adr);
+        let session = key.session();
+        let baseline = Coordinator::referenz_aus_gespeichertem(Some(&referenz_felder(&a, fassung)))
+            .expect("der gespeicherte Beleg laedt");
+        let kandidat = match kandidat {
+            None => Coordinator::referenz_aus_wert(Some(&referenz_felder(&b, None))),
+            Some(f) => Coordinator::referenz_aus_gespeichertem(Some(&referenz_felder(&b, f))),
+        }
+        .expect("der Kandidatenbeleg laedt");
+        let passage = Coordinator::passage_aus_gespeichertem(&passage_felder(&a, fassung))
+            .expect("die gespeicherte Passage laedt");
+        let (fassung_baseline, fassung_kandidat) =
+            (baseline.passage_messfassung, kandidat.passage_messfassung);
+        let id = hex(0xe1);
+        let versuch = Experiment::aus_store(
+            id.clone(),
+            session.project_binding_id.clone(),
+            passage.passage_id.clone(),
+            baseline,
+            vec![Kandidat { nummer: 1, referenz: kandidat, evidenzfolge: 10 }],
+            None,
+            0,
+            None,
+            5,
+            Vec::new(),
+            Vec::new(),
+            None,
+        );
+        {
+            let mut stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand.experimente = Experimentstore::wiederherstellen(vec![passage], vec![versuch]);
+            stand.clients.insert(key.clone(), quelle(&adr));
+            stand.evidenz.insert(key, [beleg(1, 1), beleg(2, 12)].into_iter().collect());
+        }
+        (fassung_baseline, fassung_kandidat, c.resultatmessung(&id, &session))
+    }
+
+    /// Invalidierungspfad des `experiment_begin`: eine WIEDERHERGESTELLTE
+    /// Passage (gespeicherter Beleg `fassung`, Fingerprint a) und dieselbe
+    /// Passage-ID frisch gemeldet mit Fingerprint b; ein Beleg der Sitzung.
+    /// Rueckgabe: die Fassungen, die der Aufrufer je Seite uebergibt, ob eine
+    /// Invalidierung vorbereitet wurde, und der Ausschlussgrund des Belegs.
+    fn material(fassung: Option<u32>) -> (Option<(Option<u32>, Option<u32>)>, bool, Option<String>) {
+        let (a, b) = unaehnlich();
+        let c = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbeef));
+        let key = ClientKey::aus_adresse(&adresse());
+        let session = key.session();
+        let passage = Coordinator::passage_aus_gespeichertem(&passage_felder(&a, fassung))
+            .expect("die gespeicherte Passage laedt");
+        let begin = json!({ "passage": passage_felder(&b, None) });
+        let materialwechsel = {
+            let mut stand = c.stand.lock().unwrap_or_else(|e| e.into_inner());
+            stand.experimente = Experimentstore::wiederherstellen(vec![passage], Vec::new());
+            stand.evidenz.insert(key.clone(), [beleg(1, 1)].into_iter().collect());
+            Coordinator::materialwechsel_erkennen_locked(&stand, &begin)
+        };
+        let fassungen = materialwechsel.as_ref().map(|((_, alt), (_, neu))| (*alt, *neu));
+        let wirkung = c.materialwechsel_vorbereiten(&session, materialwechsel);
+        let ausschluss = c
+            .stand
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .evidenz
+            .get(&key)
+            .and_then(|h| h.front())
+            .and_then(|e| e.ausschlussgrund.clone());
+        (fassungen, wirkung.is_some(), ausschluss)
+    }
+
+    fn hat(m: &Resultatmessung, grund: &str) -> bool {
+        m.vergleichbarkeit_gruende.iter().any(|g| g == grund)
+    }
+
+    fn urteil(m: &Resultatmessung) -> String {
+        format!("{:?} {:?}", m.vergleichbarkeit, m.vergleichbarkeit_gruende)
+    }
+
+    /// Die Vorbedingungen, verriegelt vor jeder Pruefung: die laufende Fassung
+    /// ist 20260929, der Altstand eine andere, und die zwei Fingerprints sind
+    /// numerisch unaehnlich (Minimum der Cosinus unter beiden Gates).
+    fn vorbedingungen(p: &mut Pruefung) {
+        p.pruefe(
+            METRICS_VERSION == NEU && ALT != NEU,
+            "Vorbedingung: laufende Fassung 20260929, Altstand 20260928",
+            format!("{METRICS_VERSION} / {ALT}"),
+        );
+        let (a, b) = unaehnlich();
+        let c = crate::telemetrie::fingerprint_aehnlichkeit(&a, &b);
+        p.pruefe(
+            c < GATE_MATERIAL_COSINE && c < GATE_MATERIAL_GLEICH,
+            "Vorbedingung: die zwei Fingerprints sind numerisch unaehnlich (Cosinus unter 0,95)",
+            format!("{c}"),
+        );
+    }
+
+    /// (a) Ein gespeicherter Beleg der Fassung 20260928 trifft auf einen
+    /// laufenden der Fassung 20260929: beide Aufrufpfade „nicht
+    /// vergleichbar“ — Vergleichbarkeit unvergleichbar mit
+    /// `MessfassungVerschieden` (nie `MaterialVerschieden`), Invalidierung
+    /// ohne Materialwechsel (der Beleg der Sitzung bleibt).
+    #[test]
+    fn nak380_m122_gespeicherte_fassung_a_andere_fassung_nicht_vergleichbar() {
+        let mut p = Pruefung::neu();
+        vorbedingungen(&mut p);
+        let (fb, fk, m) = vergleich(Some(ALT), None);
+        p.pruefe(
+            fb == Some(ALT) && fk == Some(NEU),
+            "(a) Vergleichbarkeit: je Seite die Fassung des Belegs (gespeichert 20260928, gemeldet 20260929)",
+            format!("{fb:?} / {fk:?}"),
+        );
+        p.pruefe(
+            m.vergleichbarkeit.as_deref() == Some("unvergleichbar")
+                && hat(&m, "MessfassungVerschieden")
+                && !hat(&m, "MaterialVerschieden"),
+            "(a) Vergleichbarkeit, gespeichert 20260928 gegen laufend 20260929: unvergleichbar mit MessfassungVerschieden, nie MaterialVerschieden",
+            urteil(&m),
+        );
+        let (fassungen, wirkung, ausschluss) = material(Some(ALT));
+        p.pruefe(
+            fassungen == Some((Some(ALT), Some(NEU))),
+            "(a) Invalidierung: der Aufrufer uebergibt je Seite die Fassung des Belegs (gespeichert 20260928, gemeldet 20260929)",
+            format!("{fassungen:?}"),
+        );
+        p.pruefe(
+            !wirkung && ausschluss.is_none(),
+            "(a) Invalidierung, gespeichert 20260928 gegen laufend 20260929: kein Materialwechsel, der Beleg bleibt",
+            format!("Wirkung {wirkung}, Ausschluss {ausschluss:?}"),
+        );
+        p.ende();
+    }
+
+    /// (b) Ein Altstand OHNE `metrics_version` laedt weiter (State bleibt
+    /// verlustfrei), seine Fassung ist unbekannt (`None`, kein Rueckfall), und
+    /// beide Aufrufpfade sagen „nicht vergleichbar“ — Vergleichbarkeit mit
+    /// `MessfassungUnbekannt`, Invalidierung ohne Materialwechsel.
+    #[test]
+    fn nak380_m122_gespeicherte_fassung_b_altstand_ohne_feld_unbekannt() {
+        let mut p = Pruefung::neu();
+        vorbedingungen(&mut p);
+        let (a, _) = unaehnlich();
+        let passage = Coordinator::passage_aus_gespeichertem(&passage_felder(&a, None));
+        let referenz = Coordinator::referenz_aus_gespeichertem(Some(&referenz_felder(&a, None)));
+        p.pruefe(
+            passage.as_ref().is_some_and(|x| x.fingerprint == a && x.fingerprint_messfassung.is_none())
+                && referenz.as_ref().is_some_and(|r| {
+                    r.passage_messfassung.is_none() && r.upstream_messfassung.is_none()
+                }),
+            "(b) Leser: ein Altstand ohne Feld laedt weiter, seine Fassung ist unbekannt (None, kein Rueckfall auf METRICS_VERSION)",
+            format!(
+                "Passage {:?}, Referenz {:?}",
+                passage.as_ref().map(|x| x.fingerprint_messfassung),
+                referenz.as_ref().map(|r| (r.passage_messfassung, r.upstream_messfassung))
+            ),
+        );
+        let (fb, fk, m) = vergleich(None, None);
+        p.pruefe(
+            m.vergleichbarkeit.as_deref() == Some("unvergleichbar")
+                && hat(&m, "MessfassungUnbekannt")
+                && !hat(&m, "MaterialVerschieden"),
+            "(b) Vergleichbarkeit, Altstand ohne Feld gegen laufend 20260929: unvergleichbar mit MessfassungUnbekannt, nie MaterialVerschieden",
+            format!("{fb:?} / {fk:?}: {}", urteil(&m)),
+        );
+        let (fassungen, wirkung, ausschluss) = material(None);
+        p.pruefe(
+            !wirkung && ausschluss.is_none(),
+            "(b) Invalidierung, Altstand ohne Feld gegen laufend 20260929: kein Materialwechsel, der Beleg bleibt",
+            format!("{fassungen:?}: Wirkung {wirkung}, Ausschluss {ausschluss:?}"),
+        );
+        p.ende();
+    }
+
+    /// (c) Regressionswache: dieselbe Fassung auf beiden Seiten (gespeichert
+    /// 20260929 gegen laufend 20260929) verhaelt sich wie vor R-380-14 — die
+    /// unaehnlichen Fingerprints ergeben `MaterialVerschieden` (Klasse
+    /// schwach, alle uebrigen Belege erfuellt) und einen Materialwechsel, der
+    /// den Beleg der Sitzung mit `material_wechsel` ausschliesst. Dazu die
+    /// Fassung JE BELEG: Baseline und Kandidat beide gespeichert mit der
+    /// ALTEN Fassung 20260928 stammen aus demselben Messwerk und bleiben
+    /// untereinander vergleichbar — „gespeichert“ allein heisst nicht
+    /// „unvergleichbar“.
+    #[test]
+    fn nak380_m122_gespeicherte_fassung_c_gleiche_fassung_wache() {
+        let mut p = Pruefung::neu();
+        vorbedingungen(&mut p);
+        let (fb, fk, m) = vergleich(Some(NEU), None);
+        p.pruefe(
+            m.vergleichbarkeit.as_deref() == Some("schwach")
+                && m.vergleichbarkeit_gruende == vec!["MaterialVerschieden".to_owned()],
+            "(c) Vergleichbarkeit, gleiche Fassung 20260929: MaterialVerschieden wie heute (Klasse schwach, kein Messfassungsgrund)",
+            format!("{fb:?} / {fk:?}: {}", urteil(&m)),
+        );
+        let (fb, fk, m) = vergleich(Some(ALT), Some(Some(ALT)));
+        p.pruefe(
+            fb == Some(ALT)
+                && fk == Some(ALT)
+                && m.vergleichbarkeit.as_deref() == Some("schwach")
+                && m.vergleichbarkeit_gruende == vec!["MaterialVerschieden".to_owned()],
+            "(c) Vergleichbarkeit, Baseline und Kandidat gespeichert mit derselben alten Fassung 20260928: vergleichbar, MaterialVerschieden",
+            format!("{fb:?} / {fk:?}: {}", urteil(&m)),
+        );
+        let (fassungen, wirkung, ausschluss) = material(Some(NEU));
+        p.pruefe(
+            wirkung && ausschluss.as_deref() == Some("material_wechsel"),
+            "(c) Invalidierung, gleiche Fassung 20260929: Materialwechsel wie heute, der Beleg traegt material_wechsel",
+            format!("{fassungen:?}: Wirkung {wirkung}, Ausschluss {ausschluss:?}"),
+        );
+        p.ende();
+    }
+
+    /// (d) Schreiben und Wiederlesen traegt die Fassung bytegleich, JE
+    /// ELEMENT: die fuenf Fingerprints (Passage, Baseline Passage/Upstream,
+    /// Kandidat Passage/Upstream) tragen verschiedene Fassungen — laufend,
+    /// Altstand, unbekannt —, damit ein weggelassenes, vertauschtes oder
+    /// ersetztes Element auffaellt. Geschrieben ueber den Produktschreiber
+    /// (`experiment_json`), gelesen ueber die Produktleser
+    /// (`experiment_aus_gespeichertem`, `passage_aus_gespeichertem`); das
+    /// Wiederschreiben des Gelesenen ist bytegleich zum ersten Schreiben.
+    #[test]
+    fn nak380_m122_gespeicherte_fassung_d_schreiben_wiederlesen_bytegleich() {
+        let mut p = Pruefung::neu();
+        let (a, b) = unaehnlich();
+        let passage = Coordinator::passage_aus_wert(&json!({ "passage": passage_felder(&a, None) }))
+            .map(|x| Passage { fingerprint_messfassung: Some(NEU), ..x })
+            .expect("Passage");
+        let mit = |r: Experimentreferenz, passage: Option<u32>, upstream: Option<u32>| Experimentreferenz {
+            upstream_fingerprint: b.clone(),
+            passage_messfassung: passage,
+            upstream_messfassung: upstream,
+            ..r
+        };
+        let referenz = Coordinator::referenz_aus_wert(Some(&referenz_felder(&a, None))).expect("Referenz");
+        let baseline = mit(referenz.clone(), Some(ALT), None);
+        let kandidat = mit(referenz, None, Some(NEU));
+        let versuch = Experiment::aus_store(
+            hex(0xe2),
+            hex(0x11),
+            passage.passage_id.clone(),
+            baseline,
+            vec![Kandidat { nummer: 1, referenz: kandidat, evidenzfolge: 3 }],
+            None,
+            0,
+            None,
+            1,
+            Vec::new(),
+            Vec::new(),
+            None,
+        );
+        let erst = Coordinator::experiment_json(&versuch, Some(&passage), "kandidat");
+        let steht = |zeiger: &str| erst.pointer(zeiger).cloned();
+        let soll: [(&str, Option<u32>); 5] = [
+            ("/passage/fingerprint/metrics_version", Some(NEU)),
+            ("/baseline/passage_fingerprint/metrics_version", Some(ALT)),
+            ("/baseline/upstream_fingerprint/metrics_version", None),
+            ("/kandidaten/0/referenz/passage_fingerprint/metrics_version", None),
+            ("/kandidaten/0/referenz/upstream_fingerprint/metrics_version", Some(NEU)),
+        ];
+        for (zeiger, wert) in soll {
+            p.pruefe(
+                steht(zeiger) == wert.map(|v| json!(v)),
+                &format!("(d) Schreiber: {zeiger} traegt die Fassung des Elements (fehlt bei unbekannt)"),
+                format!("{:?}, Soll {wert:?}", steht(zeiger)),
+            );
+        }
+        let wieder = Coordinator::experiment_aus_gespeichertem(&erst).expect("der geschriebene Versuch laedt");
+        let wieder_passage =
+            Coordinator::passage_aus_gespeichertem(&erst["passage"]).expect("die geschriebene Passage laedt");
+        let gelesen = [
+            wieder_passage.fingerprint_messfassung,
+            wieder.baseline.passage_messfassung,
+            wieder.baseline.upstream_messfassung,
+            wieder.kandidaten[0].referenz.passage_messfassung,
+            wieder.kandidaten[0].referenz.upstream_messfassung,
+        ];
+        let soll_gelesen = [Some(NEU), Some(ALT), None, None, Some(NEU)];
+        p.pruefe(
+            gelesen == soll_gelesen,
+            "(d) Leser: jedes der fuenf Elemente kommt mit seiner Fassung zurueck (laufend, Altstand, unbekannt)",
+            format!("{gelesen:?}, Soll {soll_gelesen:?}"),
+        );
+        let zweit = Coordinator::experiment_json(&wieder, Some(&wieder_passage), "kandidat");
+        let (bytes_erst, bytes_zweit) = (
+            serde_json::to_vec(&erst).unwrap_or_default(),
+            serde_json::to_vec(&zweit).unwrap_or_default(),
+        );
+        p.pruefe(
+            !bytes_erst.is_empty() && bytes_erst == bytes_zweit,
+            "(d) Schreiben, Wiederlesen, Wiederschreiben: bytegleich",
+            format!("{} / {} Bytes", bytes_erst.len(), bytes_zweit.len()),
+        );
+        p.ende();
     }
 }

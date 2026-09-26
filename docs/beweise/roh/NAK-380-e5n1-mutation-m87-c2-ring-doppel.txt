@@ -1,0 +1,76 @@
+NAK-380 Etappe 5 Nacharbeit 1 - Mutationsprotokoll m87-c2-ring-doppel
+Datei: eq-copilot/plugin/core/analysis/FeatureEngine.h
+Zeile (Stand Nacharbeit 1): 596, 646, 683-684
+SHA-256 vor der Mutation: D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D; Sicherung eq-copilot/build/nak380-sicherung/e5n1/m87-c2-ring-doppel/FeatureEngine.h
+Begruendung: D3 (c2), Rotbeweis von M-87 (c) "kein Wert der alten Rate ueberlebt": die Zusage tragen zwei Riegel - die Neuanlage des Rings (stereoRing.assign, :646) und stereoLeeren in zuruecksetzen (:684 ueber :698). Doppelmutation: (1) m87-rate, der Ratenwechsel legt den Ring nicht neu an; (2) stereoLeeren wirkt beim Ratenwechsel nicht auf den Ring (der Ring wird fuer den Aufruf von zuruecksetzen beiseitegelegt und danach ungeleert zurueckgesetzt; Ruecksetzen ohne Ratenwechsel bleibt unberuehrt). Die Zaehler der alten Rate liegen im Zaehlerkopf an denselben Stellen (trennIndex haengt nicht an der Rate), die Bins der neuen Zuordnung (3542 Elemente) im alten Vektor (7382). Formgueltig: kein Zugriff ausserhalb.
+Wortlaut vorher (1):
+        if (samplerate == sr && vorbereitet)
+            return;
+
+Wortlaut nachher (1):
+        if (samplerate == sr && vorbereitet)
+            return;
+        const bool nak380Wechsel = vorbereitet;   // Mutation: Ratenwechsel erkannt
+
+Wortlaut vorher (2):
+            stereoRing.assign (elemente, StereoBinAkku {});
+Wortlaut nachher (2):
+            if (stereoRing.empty()) stereoRing.assign (elemente, StereoBinAkku {});   // Mutation m87-rate: Ring beim Ratenwechsel nicht neu angelegt
+Wortlaut vorher (3):
+        vorbereitet = true;
+        zuruecksetzen();
+Wortlaut nachher (3):
+        vorbereitet = true;
+        std::vector<StereoBinAkku> nak380Ring;   // Mutation: stereoLeeren beim Ratenwechsel ohne Wirkung auf den Ring
+        if (nak380Wechsel) nak380Ring.swap (stereoRing);
+        zuruecksetzen();
+        if (nak380Wechsel) nak380Ring.swap (stereoRing);
+  Bau EqCopSonde013StereoGoldenTest (mutation): 05:41:29 bis 05:41:37, Exit 0
+  Binary 05:41:37.403 juenger als Quelle 05:41:29.365: ja
+
+== Matrixzeile M-87 (c) (Fassung §50.2): kein Wert der alten Rate ueberlebt - Ringframes = 0 direkt nach dem Ratenwechsel, der erste Snapshot traegt nur Frames der neuen Rate
+Lauf mit Mutation: B19 --nak380 M-87 05:41:37 bis 05:41:37, Exit 1, 25 bestanden, 4 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (2):
+    [ROT]  380/M-87 ring_leert rate_change: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert von davor ueberlebt  [Ringframes 4488]
+    [ROT]  380/M-87 ring_leert rate_change: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (13, Kadenzmodell)  [gemeldet 19 nach 29184 Samples]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: rate_change: direkt nach dem Ereignis \(und dem ersten Block\) traegt der Ring keinen Frame | rate_change: der erste Snapshot danach traegt nur die Frames seit dem Ereignis)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen (die Zuordnung wird neu berechnet; Ruecksetzen ohne Ratenwechsel und Seek leeren weiter):
+    Muster 'rate_change: Binzuordnung fuer 96 kHz neu': gruen 1, rot 0
+    Muster 'rate_change: Vorbedingung vor dem Ratenwechsel': gruen 1, rot 0
+    Muster 'ring_leert reset:': gruen 6, rot 0
+    Muster 'ring_leert seek:': gruen 8, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen (2); Grund: Ringbytes: der Ring bleibt in der Groesse der alten Rate (Teil m87-rate); der zweite Snapshot traegt noch den alten Slot
+    [ROT]  380/M-87 ring_leert rate_change: der Ring ist fuer die geltende Rate bemessen, Ringbytes = 113344 B (Gitter, M-85)  [Ringbytes 236224]
+    [ROT]  380/M-87 ring_leert rate_change: und der zweite die Frames beider Fenster seit dem Ereignis (27, Kadenzmodell)  [gemeldet 33 nach 58368 Samples]
+Unter derselben Mutation gruen gebliebene Pruefungen: 25
+    [ok]   vor der Grenze steht ein Evidenzfenster
+    [ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+    [ok]   nach der Grenze entsteht ein neues Evidenzfenster
+    [ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+    [ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+    [ok]   380/M-87 ring_leert (Â§32.3): der erste Snapshot nach der Grenze traegt nur die 24 Frames seit der Grenze  [24 Frames]
+    [ok]   380/M-87 ring_leert (Â§32.3): und seine Kohaerenz ist die des neuen, unkorrelierten Materials  [0.0413]
+    [ok]   380/M-87 ring_leert seek: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert von davor ueberlebt  [Ringframes 0]
+    [ok]   380/M-87 ring_leert seek: der Ring ist fuer die geltende Rate bemessen, Ringbytes = 236224 B (Gitter, M-85)  [Ringbytes 236224]
+    [ok]   380/M-87 ring_leert seek: Vorbedingung gespeiste Samplezahl 207360 + 44100 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [207360 + 44100, Engine 251460, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert seek: Vorbedingung genau eine Grenze mit Grund zeitSprung
+    [ok]   380/M-87 ring_leert seek: Vorbedingung Seek unmittelbar hinter dem Snapshot 15 (207360 Samples, Kadenzmodell); Snapshots vor und nach der Grenze an den Samplezahlen des Kadenzmodells; der erste danach traegt 1 bis 7 neue Frames  [letzter Snapshot vorher bei 207360, danach 3 Snapshots (Modell 3), erster nach 13824 Samples mit 5 Frames]
+    [ok]   380/M-87 ring_leert seek: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (5, Kadenzmodell)  [gemeldet 5 nach 13824 Samples]
+    [ok]   380/M-87 ring_leert seek: und der zweite die Frames beider Fenster seit dem Ereignis (12, Kadenzmodell)  [gemeldet 12 nach 27648 Samples]
+    [ok]   380/M-87 ring_leert seek: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [ohne Bit]
+    [ok]   380/M-87 ring_leert reset: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert von davor ueberlebt  [Ringframes 0]
+    [ok]   380/M-87 ring_leert reset: der Ring ist fuer die geltende Rate bemessen, Ringbytes = 236224 B (Gitter, M-85)  [Ringbytes 236224]
+    [ok]   380/M-87 ring_leert reset: Vorbedingung gespeiste Samplezahl 220500 + 44100 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 44100, Engine 44100, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert reset: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (5, Kadenzmodell)  [gemeldet 5 nach 13824 Samples]
+    [ok]   380/M-87 ring_leert reset: und der zweite die Frames beider Fenster seit dem Ereignis (12, Kadenzmodell)  [gemeldet 12 nach 27648 Samples]
+    [ok]   380/M-87 ring_leert reset: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [ohne Bit]
+    [ok]   380/M-87 ring_leert rate_change: Vorbedingung vor dem Ratenwechsel folgt die Binzuordnung je Band beider Stufen der Gitterreferenz bei 44,1 kHz, und die Referenzen bei 44,1 und 96 kHz unterscheiden sich (Trennschaerfe)  [65 Bass- und 156 Hauptbaender, abweichend 0 (erste: keine); Referenzen verschieden in 221 Baendern]
+    [ok]   380/M-87 ring_leert rate_change: Binzuordnung fuer 96 kHz neu - jedes Band beider Stufen traegt erster und letzter Bin der Gitterreferenz bei 96 kHz (zustaendige Stufe) bzw. keinen Bin (andere Stufe)  [65 Bassbaender (28 mit Bins), 156 Hauptbaender (133 mit Bins), abweichend 0 (erste: keine)]
+    [ok]   380/M-87 ring_leert rate_change: Vorbedingung gespeiste Samplezahl 220500 + 96000 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 96000, Engine 96000, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert rate_change: bei 96 kHz traegt das 1-kHz-Band aus 13 Frames der neuen Rate ein Kohaerenzbit (Mono)  [1.0000]
+
+Ruecknahme aus der Sicherung, SHA-256 D509586007534FF2D617E97F4B9703AD7C5D31CC61097C1E37BFE51A98DBCA5D: gleich
+  Bau EqCopSonde013StereoGoldenTest (ruecknahme): 05:41:37 bis 05:41:44, Exit 0
+  Binary 05:41:44.654 juenger als Quelle 05:41:37.787: ja
+  Lauf nach Ruecknahme: B19 --nak380 M-87 05:41:44 bis 05:41:45, Exit 0, 29 bestanden, 0 gescheitert

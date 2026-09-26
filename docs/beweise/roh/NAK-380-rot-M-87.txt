@@ -75,3 +75,70 @@ LAUF B19 --nak380 M-87 02:53:58 bis 02:53:59, EXIT=0, Binary 02:49:40.127
     Begruendung: Matrix M-87 (b): zuruecksetzen leert nur das Fenster, der Ring ueberlebt.
   m87-rate (eq-copilot/plugin/core/analysis/FeatureEngine.h:646): Exit mit Mutation 1, rote Pruefungen 1; nach Ruecknahme Exit 0, rot 0; SHA gleich True; faellt an der erwarteten Pruefung: JA
     Begruendung: Matrix M-87 (c): der Ratenwechsel legt den Ring nicht neu an - die Binzuordnung der alten Rate ueberlebt im Aufbau (Indizes der neuen Rate liegen im groesseren alten Vektor, kein Zugriff ausserhalb).
+
+== Nacharbeit 1 nach Erstpruefung 5 (D3 und Z1; Matrixfassung §50.2; Basis HEAD 11ad06ba7bfdc828024000de2b5a80d125a0daba; Bauer Opus 5.5 xhigh, 26.09.2026)
+Befund D3 (Erstpruefung 5, BESTAETIGT, DEFEKT): der Rotbeweis von (c) fiel an der Vektorgroesse (m87-rate), nicht an der Binzuordnung; "kein Wert der alten Rate ueberlebt" war nie gebrochen. Befund Z1 (Validierung, DEFEKT schwach): im Bein seek fiel der erste Snapshot 512 Samples nach der Grenze mit 0 Frames, "Kohaerenz null" war ohne Trennschaerfe (unter m87-seek gruen).
+Fassung §50.2: (a) Vorbedingung Seek unmittelbar nach einem Snapshot, erster Snapshot danach mit 1 bis 7 neuen Frames (Kadenzmodell), Rotbeweis m87-seek an "Kohaerenz null"; (c) Zusage gemessen an der Binzuordnung je Band beider Stufen gegen die Gitterreferenz, Ringframes = 0 und Ringbytes = Soll getrennt; Rotbeweise: Zuordnung beim Ratenwechsel ausgelassen; Ring nicht neu angelegt plus stereoLeeren ausgelassen.
+Test: Sonde013StereoGoldenTest.cpp nak380M87 (:1475); Seek-Lage vorherSeek (:1481) = letzter Snapshot bis 5 s aus dem Kadenzmodell (207 360 = 15 * 13 824 Samples); Testzugang binfenster (:241, lesend ueber die vorhandene Freundschaft, kein Produktcode); Referenz nak380ZuordnungPruefen (:1407) gegen nak380Binfenster (Gitter).
+Endstand Nacharbeit 1 (B19 --nak380 M-87 05:49:54 bis 05:49:55, Exit 0, 29 bestanden, 0 gescheitert; Binary 05:47:57.191)
+    [ok]   vor der Grenze steht ein Evidenzfenster
+    [ok]   mit hoher Korrelation und gemessenem Folddown  [Korr 1.0000, Folddown 0.000 dB]
+    [ok]   nach der Grenze entsteht ein neues Evidenzfenster
+    [ok]   und seine Korrelation ist die des NEUEN Materials - kein Kreuzspektrum hat die Grenze ueberbrueckt  [-0.1377]
+    [ok]   auch der Folddown ist neu gemessen und nicht fortgeschrieben  [vorher 0.000 dB, nachher -3.026 dB]
+    [ok]   380/M-87 ring_leert (Â§32.3): der erste Snapshot nach der Grenze traegt nur die 24 Frames seit der Grenze  [24 Frames]
+    [ok]   380/M-87 ring_leert (Â§32.3): und seine Kohaerenz ist die des neuen, unkorrelierten Materials  [0.0413]
+    [ok]   380/M-87 ring_leert seek: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert von davor ueberlebt  [Ringframes 0]
+    [ok]   380/M-87 ring_leert seek: der Ring ist fuer die geltende Rate bemessen, Ringbytes = 236224 B (Gitter, M-85)  [Ringbytes 236224]
+    [ok]   380/M-87 ring_leert seek: Vorbedingung gespeiste Samplezahl 207360 + 44100 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [207360 + 44100, Engine 251460, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert seek: Vorbedingung genau eine Grenze mit Grund zeitSprung
+    [ok]   380/M-87 ring_leert seek: Vorbedingung Seek unmittelbar hinter dem Snapshot 15 (207360 Samples, Kadenzmodell); Snapshots vor und nach der Grenze an den Samplezahlen des Kadenzmodells; der erste danach traegt 1 bis 7 neue Frames  [letzter Snapshot vorher bei 207360, danach 3 Snapshots (Modell 3), erster nach 13824 Samples mit 5 Frames]
+    [ok]   380/M-87 ring_leert seek: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (5, Kadenzmodell)  [gemeldet 5 nach 13824 Samples]
+    [ok]   380/M-87 ring_leert seek: und der zweite die Frames beider Fenster seit dem Ereignis (12, Kadenzmodell)  [gemeldet 12 nach 27648 Samples]
+    [ok]   380/M-87 ring_leert seek: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [ohne Bit]
+    [ok]   380/M-87 ring_leert reset: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert von davor ueberlebt  [Ringframes 0]
+    [ok]   380/M-87 ring_leert reset: der Ring ist fuer die geltende Rate bemessen, Ringbytes = 236224 B (Gitter, M-85)  [Ringbytes 236224]
+    [ok]   380/M-87 ring_leert reset: Vorbedingung gespeiste Samplezahl 220500 + 44100 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 44100, Engine 44100, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert reset: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (5, Kadenzmodell)  [gemeldet 5 nach 13824 Samples]
+    [ok]   380/M-87 ring_leert reset: und der zweite die Frames beider Fenster seit dem Ereignis (12, Kadenzmodell)  [gemeldet 12 nach 27648 Samples]
+    [ok]   380/M-87 ring_leert reset: und die Kohaerenz des ersten ist null (weniger als acht Frames)  [ohne Bit]
+    [ok]   380/M-87 ring_leert rate_change: direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert von davor ueberlebt  [Ringframes 0]
+    [ok]   380/M-87 ring_leert rate_change: der Ring ist fuer die geltende Rate bemessen, Ringbytes = 113344 B (Gitter, M-85)  [Ringbytes 113344]
+    [ok]   380/M-87 ring_leert rate_change: Vorbedingung vor dem Ratenwechsel folgt die Binzuordnung je Band beider Stufen der Gitterreferenz bei 44,1 kHz, und die Referenzen bei 44,1 und 96 kHz unterscheiden sich (Trennschaerfe)  [65 Bass- und 156 Hauptbaender, abweichend 0 (erste: keine); Referenzen verschieden in 221 Baendern]
+    [ok]   380/M-87 ring_leert rate_change: Binzuordnung fuer 96 kHz neu - jedes Band beider Stufen traegt erster und letzter Bin der Gitterreferenz bei 96 kHz (zustaendige Stufe) bzw. keinen Bin (andere Stufe)  [65 Bassbaender (28 mit Bins), 156 Hauptbaender (133 mit Bins), abweichend 0 (erste: keine)]
+    [ok]   380/M-87 ring_leert rate_change: Vorbedingung gespeiste Samplezahl 220500 + 96000 (Laeufer und Engine), kein Ringverlust, Ring vorher voll (mindestens 7 Snapshots)  [220500 + 96000, Engine 96000, Snapshots vorher 15]
+    [ok]   380/M-87 ring_leert rate_change: der erste Snapshot danach traegt nur die Frames seit dem Ereignis (13, Kadenzmodell)  [gemeldet 13 nach 29184 Samples]
+    [ok]   380/M-87 ring_leert rate_change: und der zweite die Frames beider Fenster seit dem Ereignis (27, Kadenzmodell)  [gemeldet 27 nach 58368 Samples]
+    [ok]   380/M-87 ring_leert rate_change: bei 96 kHz traegt das 1-kHz-Band aus 13 Frames der neuen Rate ein Kohaerenzbit (Mono)  [1.0000]
+Zusagesaetze (neu gefasst, Pruefzeilen Stand Nacharbeit 1, Sonde013StereoGoldenTest.cpp):
+- Zusagesatz: (a) Seek: hoechstens die Frames seit der Grenze (hoechstens 5 ...), Kohaerenz `null`
+  Pruefzeile: :1550 (Ringframes 0), :1616 (5 Frames), :1631 (Kohaerenz null, jetzt trennscharf) im Bein seek, B19
+  Mutation: eq-copilot/plugin/core/analysis/featureengine/Zeit.h:389 Seek schiebt den Ring statt ihn zu leeren (Matrixmutation, neu gefahren) (m87-seek)
+  rot: JA (alle drei; "Kohaerenz null" faellt mit [1.0000] bei 12 Frames)
+  Protokoll: NAK-380-e5n1-mutation-m87-seek.txt
+- Zusagesatz: (a) Vorbedingung Seek unmittelbar nach einem Snapshot, erster Snapshot danach mit 1 bis 7 neuen Frames (Kadenzmodell)
+  Pruefzeile: :1604 im Bein seek, B19
+  Mutation: Sonde013StereoGoldenTest.cpp:1481 Seek 512 Samples hinter dem Snapshot (Test-Mutation) (m87-seek-lage)
+  rot: JA
+  Protokoll: NAK-380-e5n1-mutation-m87-seek-lage.txt
+- Zusagesatz: (c) Binzuordnung fuer 96 kHz neu (je Band beider Stufen: erster und letzter Bin der Gitterreferenz in der zustaendigen Stufe, kein Bin in der anderen)
+  Pruefzeile: :1570 im Bein rate_change, B19
+  Mutation: eq-copilot/plugin/core/analysis/FeatureEngine.h:598-603 Neuberechnung der Zuordnung ausgelassen, wenn schon eine besteht (die 44,1-kHz-Zuordnung ueberlebt; Matrixmutation am HEAD) (m87-c1-zuordnung)
+  rot: JA (221 von 221 Baendern abweichend)
+  Protokoll: NAK-380-e5n1-mutation-m87-c1-zuordnung.txt
+- Zusagesatz: (c) Vorbedingung der Zuordnungspruefung: vor dem Wechsel folgt die Zuordnung der Gitterreferenz bei 44,1 kHz, die Referenzen beider Raten unterscheiden sich (Trennschaerfe)
+  Pruefzeile: :1561 im Bein rate_change, B19
+  Mutation: Sonde013StereoGoldenTest.cpp:1501 Vorbedingung gegen die Referenz bei 96 kHz (Test-Mutation) (m87-vor-44k1)
+  rot: JA
+  Protokoll: NAK-380-e5n1-mutation-m87-vor-44k1.txt
+- Zusagesatz: (c) kein Wert der alten Rate ueberlebt (zwei Riegel: Neuanlage des Rings FeatureEngine.h:646 und stereoLeeren ueber zuruecksetzen :684/:698)
+  Pruefzeile: :1550 (Ringframes 0 direkt nach dem Ereignis) und :1616 (erster Snapshot nur mit den 13 Frames der neuen Rate) im Bein rate_change, B19
+  Mutation: Doppelmutation FeatureEngine.h:646 Ring beim Ratenwechsel nicht neu angelegt (m87-rate) und :596, :683-684 stereoLeeren wirkt beim Ratenwechsel nicht auf den Ring (m87-c2-ring-doppel); Gegenproben je Einzelmutation: m87-rate allein bricht nur die Bemessung (:1554), das Leeren allein bricht nichts
+  rot: JA (Doppelmutation: Ringframes 4488, erster Snapshot 19 statt 13 Frames); Gegenproben bestaetigt
+  Protokoll: NAK-380-e5n1-mutation-m87-c2-ring-doppel.txt, NAK-380-e5n1-mutation-m87-rate-allein.txt, NAK-380-e5n1-mutation-m87-leeren-allein.txt
+- Satz der Bemessung (M-85, getrennt von (c)): Ringbytes = Soll der geltenden Rate aus dem Gitter
+  Pruefzeile: :1554 je Bein, B19
+  Mutation: FeatureEngine.h:646 (m87-rate allein)
+  rot: JA
+  Protokoll: NAK-380-e5n1-mutation-m87-rate-allein.txt
+(b) reset: Saetze und Rotbeweis m87-reset unveraendert (oben); die Pruefung "Ringframes 0" steht jetzt getrennt bei :1550, die Ringbytes bei :1554.

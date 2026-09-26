@@ -915,6 +915,13 @@ __declspec(noinline) void nak380StereoNanRiegel()
             "Bins " + juce::String (von) + " bis " + juce::String (bis - 1) + ", Frames "
                 + juce::String ((int) vorher[(std::size_t) b216]));
 
+    // Nacharbeit 1 (D2): die Auswertung VOR dem Frame haelt den Wert fest, den
+    // Band 216 aus seinen gueltigen Frames traegt - der Riegel laesst Ring und
+    // Akku des Bandes unberuehrt, die Auswertung danach muss ihn bitgleich
+    // wiederholen.
+    FeatureEngineTestzugang::stereoAuswerten (e);
+    const auto w216Vorher = e.stereoBand (b216);
+
     FeatureEngineTestzugang::stereoSchrittMitNan (e, kBin);
 
     int andereZaehlen = 0, andereFalsch = 0, bassFalsch = 0;
@@ -955,12 +962,26 @@ __declspec(noinline) void nak380StereoNanRiegel()
         if (w.laufzeitGesetzt && ! std::isfinite (w.laufzeitMs)) ++nichtEndlich;
     }
     const auto& w216 = e.stereoBand (b216);
-    pruefe (nichtEndlich == 0 && kohBits > 0 && w216.kohaerenzGesetzt && std::isfinite (w216.kohaerenz),
-            kopf + ": keine nicht endliche Kohaerenz, Phase oder Laufzeit; Band 216 behaelt seine Kohaerenz aus "
-                "den gueltigen Frames",
-            juce::String (kohBits) + " Baender mit Kohaerenz, nicht endlich " + juce::String (nichtEndlich)
-                + ", Band 216 " + (w216.kohaerenzGesetzt ? juce::String (w216.kohaerenz, 4)
-                                                         : juce::String ("ohne Bit")));
+    // Nacharbeit 1 (D2): zwei Zusagesaetze, zwei Pruefungen. (i) "keine NaN in
+    // Kohaerenz, Phase oder Laufzeit" tragen ZWEI Riegel: der NaN-Riegel je
+    // Band und Frame beim Erzeugen (`stereoSchritt`, `Stereo.h`
+    // "NaN-Riegel beim ERZEUGEN") und die Endlichkeitssperre der Auswertung
+    // (`stereoAuswerten`, `mitEnergie > 0 && std::isfinite (koh)`); ohne den
+    // ersten sperrt der zweite das Bit, ohne beide steht NaN in der Kohaerenz
+    // (std::clamp reicht NaN durch). Ihr Rotbeweis ist deshalb die
+    // Doppelmutation beider Riegel. (ii) "Band 216 behaelt sein Kohaerenzbit
+    // mit dem Wert aus den gueltigen Frames" traegt der erste Riegel allein.
+    pruefe (nichtEndlich == 0 && kohBits > 0,
+            kopf + ": (i) keine nicht endliche Kohaerenz, Phase oder Laufzeit in irgendeinem Band",
+            juce::String (kohBits) + " Baender mit Kohaerenz, nicht endlich " + juce::String (nichtEndlich));
+    const bool gleichWieVorher = w216.kohaerenzGesetzt && w216Vorher.kohaerenzGesetzt
+        && std::isfinite (w216.kohaerenz) && w216.kohaerenz == w216Vorher.kohaerenz;
+    pruefe (gleichWieVorher,
+            kopf + ": (ii) Band 216 behaelt sein Kohaerenzbit mit dem Wert aus den gueltigen Frames (bitgleich zur "
+                "Auswertung vor dem Frame)",
+            "Band 216 " + (w216.kohaerenzGesetzt ? juce::String (w216.kohaerenz, 6) : juce::String ("ohne Bit"))
+                + ", vor dem Frame " + (w216Vorher.kohaerenzGesetzt ? juce::String (w216Vorher.kohaerenz, 6)
+                                                                    : juce::String ("ohne Bit")));
 }
 } // namespace nak380e4
 

@@ -1,0 +1,55 @@
+NAK-380 Etappe 5 Nacharbeit 1 - Mutationsprotokoll m75-frueh
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Stand Nacharbeit 1): 427
+SHA-256 vor der Mutation: 21B5107B6CD44ACE6A1DBD16139451544546BF5BDAE3B2CA25BF6C84A8C93860; Sicherung eq-copilot/build/nak380-sicherung/e5n1/m75-frueh/Stereo.h
+Begruendung: D1, Rotbeweis an einem Snapshot vor dem letzten (Matrixfassung §50.2 "eine Mutation, die nur fruehe Snapshots trifft"): das Kohaerenzbit entsteht erst, wenn die Engine seit dem Ruecksetzen mindestens 5 s verarbeitet hat. Jeder Laufzeitlauf dauert 10 s, Snapshot 7 liegt bei 2,1 bis 2,6 s, der letzte bei rund 10 s: die Mutation trifft die Snapshots 7 bis etwa 5 s und laesst den letzten unberuehrt. Formgueltig: eine zusaetzliche Bedingung auf einem vorhandenen Zaehler, kein Zugriff ausserhalb.
+Wortlaut vorher (1):
+            if (ringFrames >= (std::uint32_t) kWelchMindestFrames && binsB > 0)
+Wortlaut nachher (1):
+            if (ringFrames >= (std::uint32_t) kWelchMindestFrames && binsB > 0
+                && verarbeiteteSamples >= (std::uint64_t) (5.0 * sr))   // Mutation: Kohaerenzbit erst ab 5 s
+  Bau EqCopSonde013StereoGoldenTest (mutation): 05:40:09 bis 05:40:16, Exit 0
+  Binary 05:40:16.031 juenger als Quelle 05:40:09.196: ja
+
+== Matrixzeilen M-75 bis M-79 (Fassung §50.2), Kohaerenzhaelfte: jedes Band mit Energie traegt an jedem Evidenzsnapshot ab dem siebten ein Kohaerenzbit (auch vor dem letzten)
+Lauf mit Mutation: B19 --nak380 M-74 05:40:16 bis 05:40:18, Exit 0, 162 bestanden, 0 gescheitert
+Lauf mit Mutation: B19 --nak380 M-75 05:40:18 bis 05:40:19, Exit 1, 30 bestanden, 3 gescheitert
+Lauf mit Mutation: B19 --nak380 M-76 05:40:19 bis 05:40:19, Exit 1, 30 bestanden, 3 gescheitert
+Lauf mit Mutation: B19 --nak380 M-77 05:40:19 bis 05:40:20, Exit 1, 30 bestanden, 3 gescheitert
+Lauf mit Mutation: B19 --nak380 M-78 05:40:20 bis 05:40:22, Exit 1, 30 bestanden, 3 gescheitert
+Lauf mit Mutation: B19 --nak380 M-79 05:40:22 bis 05:40:23, Exit 1, 30 bestanden, 3 gescheitert
+Gefallene Pruefungen, die die Zusage tragen (15):
+    [ROT]  380/M-75 laufzeit_1ms_44k1 (44.1 kHz, B 64): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [5373 Bandbefunde mit Bins, ohne Bit 1990, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 33 ist nicht verletzt)]
+    [ROT]  380/M-75 laufzeit_1ms_44k1 (44.1 kHz, B 512): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [4975 Bandbefunde mit Bins, ohne Bit 1791, Bit ohne Bins 0; verletzt an 9 Snapshots (erster 7, letzter 15; der letzte Snapshot 31 ist nicht verletzt)]
+    [ROT]  380/M-75 laufzeit_1ms_44k1 (44.1 kHz, B 16384): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [4179 Bandbefunde mit Bins, ohne Bit 1393, Bit ohne Bins 0; verletzt an 7 Snapshots (erster 7, letzter 13; der letzte Snapshot 27 ist nicht verletzt)]
+    [ROT]  380/M-76 laufzeit_1ms_88k2 (88.2 kHz, B 64): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [4482 Bandbefunde mit Bins, ohne Bit 1660, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 33 ist nicht verletzt)]
+    [ROT]  380/M-76 laufzeit_1ms_88k2 (88.2 kHz, B 512): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [4150 Bandbefunde mit Bins, ohne Bit 1494, Bit ohne Bins 0; verletzt an 9 Snapshots (erster 7, letzter 15; der letzte Snapshot 31 ist nicht verletzt)]
+    [ROT]  380/M-76 laufzeit_1ms_88k2 (88.2 kHz, B 16384): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [3486 Bandbefunde mit Bins, ohne Bit 1162, Bit ohne Bins 0; verletzt an 7 Snapshots (erster 7, letzter 13; der letzte Snapshot 27 ist nicht verletzt)]
+    [ROT]  380/M-77 laufzeit_1ms_96k (96.0 kHz, B 64): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [4347 Bandbefunde mit Bins, ohne Bit 1610, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 33 ist nicht verletzt)]
+    [ROT]  380/M-77 laufzeit_1ms_96k (96.0 kHz, B 512): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [4186 Bandbefunde mit Bins, ohne Bit 1610, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 32 ist nicht verletzt)]
+    [ROT]  380/M-77 laufzeit_1ms_96k (96.0 kHz, B 16384): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [3703 Bandbefunde mit Bins, ohne Bit 1288, Bit ohne Bins 0; verletzt an 8 Snapshots (erster 7, letzter 14; der letzte Snapshot 29 ist nicht verletzt)]
+    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 64): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [3564 Bandbefunde mit Bins, ohne Bit 1320, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 33 ist nicht verletzt)]
+    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 512): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [3432 Bandbefunde mit Bins, ohne Bit 1320, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 32 ist nicht verletzt)]
+    [ROT]  380/M-78 laufzeit_1ms_176k4 (176.4 kHz, B 16384): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [2772 Bandbefunde mit Bins, ohne Bit 924, Bit ohne Bins 0; verletzt an 7 Snapshots (erster 7, letzter 13; der letzte Snapshot 27 ist nicht verletzt)]
+    [ROT]  380/M-79 laufzeit_1ms_192k (192.0 kHz, B 64): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [3429 Bandbefunde mit Bins, ohne Bit 1270, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 33 ist nicht verletzt)]
+    [ROT]  380/M-79 laufzeit_1ms_192k (192.0 kHz, B 512): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [3302 Bandbefunde mit Bins, ohne Bit 1270, Bit ohne Bins 0; verletzt an 10 Snapshots (erster 7, letzter 16; der letzte Snapshot 32 ist nicht verletzt)]
+    [ROT]  380/M-79 laufzeit_1ms_192k (192.0 kHz, B 16384): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit  [2921 Bandbefunde mit Bins, ohne Bit 1016, Bit ohne Bins 0; verletzt an 8 Snapshots (erster 7, letzter 14; der letzte Snapshot 29 ist nicht verletzt)]
+Die Zusage faellt an der erwarteten Pruefung: JA (erwartet: 380/M-75 laufzeit_1ms_44k1 \(44\.1 kHz, B 64\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-75 laufzeit_1ms_44k1 \(44\.1 kHz, B 512\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-75 laufzeit_1ms_44k1 \(44\.1 kHz, B 16384\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-76 laufzeit_1ms_88k2 \(88\.2 kHz, B 64\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-76 laufzeit_1ms_88k2 \(88\.2 kHz, B 512\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-76 laufzeit_1ms_88k2 \(88\.2 kHz, B 16384\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-77 laufzeit_1ms_96k \(96\.0 kHz, B 64\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-77 laufzeit_1ms_96k \(96\.0 kHz, B 512\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-77 laufzeit_1ms_96k \(96\.0 kHz, B 16384\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-78 laufzeit_1ms_176k4 \(176\.4 kHz, B 64\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-78 laufzeit_1ms_176k4 \(176\.4 kHz, B 512\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-78 laufzeit_1ms_176k4 \(176\.4 kHz, B 16384\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-79 laufzeit_1ms_192k \(192\.0 kHz, B 64\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-79 laufzeit_1ms_192k \(192\.0 kHz, B 512\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit | 380/M-79 laufzeit_1ms_192k \(192\.0 kHz, B 16384\): jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit)
+Pruefungen, die unter dieser Mutation gruen bleiben muessen (M-74 prueft nur den letzten Snapshot (Ereignis "letzter Snapshot nach 10 s") und bleibt gruen - genau der Unterschied, den D1 schliesst; Wert- und Laufzeitsaetze haengen nicht an den fruehen Bits):
+    Muster '380/M-74 .*letzter Snapshot - jedes Band mit Energie traegt ein Bit': gruen 18, rot 0
+    Muster '380/M-7[5-9] .*jedes Band mit Kohaerenzbit traegt an jedem Snapshot': gruen 15, rot 0
+    Muster '380/M-7[4-9] .*traegt die Gruppenlaufzeit': gruen 33, rot 0
+    Muster 'Kohaerenzhaelfte, Vorbedingung': gruen 15, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen: keine
+Unter derselben Mutation gruen: 312 Pruefungen; davon ausdruecklich gezeigt (0):
+
+Ruecknahme aus der Sicherung, SHA-256 21B5107B6CD44ACE6A1DBD16139451544546BF5BDAE3B2CA25BF6C84A8C93860: gleich
+  Bau EqCopSonde013StereoGoldenTest (ruecknahme): 05:40:23 bis 05:40:30, Exit 0
+  Binary 05:40:30.523 juenger als Quelle 05:40:23.687: ja
+  Lauf nach Ruecknahme: B19 --nak380 M-74 05:40:30 bis 05:40:33, Exit 0, 162 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-75 05:40:33 bis 05:40:33, Exit 0, 33 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-76 05:40:33 bis 05:40:34, Exit 0, 33 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-77 05:40:34 bis 05:40:35, Exit 0, 33 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-78 05:40:35 bis 05:40:36, Exit 0, 33 bestanden, 0 gescheitert
+  Lauf nach Ruecknahme: B19 --nak380 M-79 05:40:36 bis 05:40:38, Exit 0, 33 bestanden, 0 gescheitert

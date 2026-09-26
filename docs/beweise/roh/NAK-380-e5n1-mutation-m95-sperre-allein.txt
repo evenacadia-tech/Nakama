@@ -1,0 +1,36 @@
+NAK-380 Etappe 5 Nacharbeit 1 - Mutationsprotokoll m95-sperre-allein
+Datei: eq-copilot/plugin/core/analysis/featureengine/Stereo.h
+Zeile (Stand Nacharbeit 1): 465
+SHA-256 vor der Mutation: 21B5107B6CD44ACE6A1DBD16139451544546BF5BDAE3B2CA25BF6C84A8C93860; Sicherung eq-copilot/build/nak380-sicherung/e5n1/m95-sperre-allein/Stereo.h
+Begruendung: D2, Gegenprobe zur Doppelmutation: nur die Endlichkeitssperre der Auswertung weg (Einzelmutation). Der NaN-Riegel beim Erzeugen haelt NaN aus Ring und Akku: alle Saetze von M-95 bleiben gruen - die Zusage (i) ist doppelt getragen.
+Wortlaut vorher (1):
+if (mitEnergie > 0 && std::isfinite (koh))
+Wortlaut nachher (1):
+if (mitEnergie > 0 && true)   // Mutation: Endlichkeitssperre der Auswertung weg
+  Bau EqCopSonde013DynamicsTest (mutation): 05:47:29 bis 05:47:37, Exit 0
+  Binary 05:47:37.255 juenger als Quelle 05:47:29.908: ja
+
+== Matrixzeile M-95 (Fassung §50.2), Satz (i), Gegenprobe
+Lauf mit Mutation: B18 --nak380 M-95 05:47:37 bis 05:47:37, Exit 0, 8 bestanden, 0 gescheitert
+Gegenprobe: die Einzelmutation der zweiten Sperre laesst (i), (ii) und den Zaehlsatz gruen - bestaetigt: JA
+Pruefungen, die unter dieser Mutation gruen bleiben muessen (der erste Riegel allein haelt jede nicht endliche Summe aus Ring und Akku):
+    Muster '\(i\) keine nicht endliche Kohaerenz': gruen 1, rot 0
+    Muster '\(ii\) Band 216 behaelt': gruen 1, rot 0
+    Muster 'zaehlt fuer Band 216 nicht': gruen 1, rot 0
+    Muster 'jedes andere Hauptstufenband': gruen 1, rot 0
+Erwartet gruen geblieben: JA
+Mitgefallene Pruefungen: keine
+Unter derselben Mutation gruen gebliebene Pruefungen: 8
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung rauschpaar_selbstpruefung (Saat, Amplitude 0,35, d = 48, Laenge)  [Kennwerte ja, Saat 58720271, d 48, 96000 Samples, Spitze 0.349998, RMS -0.0078 dB gegen 0,35/sqrt(3) (Toleranz 0.0631 dB), Verschiebungsfehler 0]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung gespeiste Samplezahl = 96 000 (2 s * 48 000), Laeufer und Engine  [96000 / 96000]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Zaehlregel 7.3 - kein Ringverlust, ereignisseVerworfen() = 0
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: Vorbedingung Bin 1346 liegt in Band 216 (Bins 1327 bis 1365), der Ring traegt dort mindestens acht Frames  [Bins 1327 bis 1365, Frames 16]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: der Frame mit nicht endlichem Kreuzspektrum zaehlt fuer Band 216 nicht (Riegel je Band)  [16 -> 16]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: jedes andere Hauptstufenband mit Bins zaehlt ihn (+1), Bassbaender und Baender ohne Bin bleiben  [148 Baender, abweichend 0, Bass/ohne Bin abweichend 0]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: (i) keine nicht endliche Kohaerenz, Phase oder Laufzeit in irgendeinem Band  [149 Baender mit Kohaerenz, nicht endlich 0]
+    [ok]   380/M-95 stereo_nan_riegel_je_bin: (ii) Band 216 behaelt sein Kohaerenzbit mit dem Wert aus den gueltigen Frames (bitgleich zur Auswertung vor dem Frame)  [Band 216 0.998163, vor dem Frame 0.998163]
+
+Ruecknahme aus der Sicherung, SHA-256 21B5107B6CD44ACE6A1DBD16139451544546BF5BDAE3B2CA25BF6C84A8C93860: gleich
+  Bau EqCopSonde013DynamicsTest (ruecknahme): 05:47:37 bis 05:47:44, Exit 0
+  Binary 05:47:44.008 juenger als Quelle 05:47:37.425: ja
+  Lauf nach Ruecknahme: B18 --nak380 M-95 05:47:44 bis 05:47:44, Exit 0, 8 bestanden, 0 gescheitert

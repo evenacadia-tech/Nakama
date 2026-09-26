@@ -231,6 +231,21 @@ struct FeatureEngineTestzugang
         }
         return genutzt;
     }
+
+    /** NAK-380 Nacharbeit 1 der Etappe 5 (D3, M-87 (c)): die Binzuordnung
+        des Bandes b in einer Stufe, wie `zuordnung` sie setzt - erster Bin
+        `von`, Ende `bis` (letzter Bin bis - 1; bis <= von heisst "nicht
+        zustaendig" oder "nicht messbar"). Nur lesend, ueber die vorhandene
+        Freundschaft; kein Mitglied, keine Produktfunktion. {-1, -1}, wenn
+        die Stufe noch keine Zuordnung traegt. */
+    static std::pair<int, int> binfenster (const FeatureEngine& e, int b, bool bassStufe) noexcept
+    {
+        const auto& st = bassStufe ? e.bass : e.haupt;
+        const auto i = (std::size_t) b;
+        if (b < 0 || i >= st.bandVon.size() || i >= st.bandBis.size())
+            return { -1, -1 };
+        return { st.bandVon[i], st.bandBis[i] };
+    }
 };
 } // namespace nakama::analyse
 #endif
@@ -819,9 +834,11 @@ const Nak380Rauschlauf& nak380Laufzeitlauf (double fs, int block)
                            sig::laufzeitSamples (fs), sig::kD1D6Saat);
 }
 
-/** Kohaerenzzusage eines Laufzeitlaufs am letzten Snapshot (M-74 bis M-79):
-    jedes Band mit Energie traegt ein Bit (sonst waere "jedes Band mit Bit"
-    leer erfuellbar), jedes Band mit Bit Kohaerenz >= 0,95, und jede gegen die
+/** Kohaerenzzusage eines Laufzeitlaufs am letzten Snapshot - nur M-74
+    (Ereignis "je Blockgroesse der letzte Snapshot nach 10 s"; M-75 bis M-79
+    tragen das Ereignis von M-73 und pruefen `nak380RateKohaerenz`): jedes
+    Band mit Energie traegt ein Bit (sonst waere "jedes Band mit Bit" leer
+    erfuellbar), jedes Band mit Bit Kohaerenz >= 0,95, und jede gegen die
     Referenz rho_w(d)^2 der zustaendigen Stufe innerhalb der hergeleiteten
     Toleranz. */
 void nak380LaufzeitKohaerenz (const char* id, const char* name, const Nak380Rauschlauf& L)
@@ -845,6 +862,91 @@ void nak380LaufzeitKohaerenz (const char* id, const char* name, const Nak380Raus
                 + " (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber die Baender mit Bit in [0,8; 1,2]",
             "Mittel " + juce::String (f.qMittel(), 4) + ", groesstes q " + juce::String (f.qMax, 3) + " ueber "
                 + juce::String (f.qAnzahl) + " Baender");
+}
+
+/** Die Snapshots, an denen ein Zusagesatz verletzt ist (1-basiert): Anzahl,
+    erster und letzter - damit ein Rotbeweis zeigt, WO die Pruefung faellt. */
+struct Nak380SnapVerletzt
+{
+    int anzahl { 0 }, erster { -1 }, letzter { -1 };
+    void zaehle (int i) noexcept
+    {
+        ++anzahl;
+        if (erster < 0) erster = i;
+        letzter = i;
+    }
+    juce::String text (int n) const
+    {
+        if (anzahl == 0)
+            return "an keinem Snapshot verletzt";
+        return "verletzt an " + juce::String (anzahl) + " Snapshots (erster " + juce::String (erster) + ", letzter "
+             + juce::String (letzter) + "; der letzte Snapshot " + juce::String (n)
+             + (letzter == n ? " ist verletzt)" : " ist nicht verletzt)");
+    }
+};
+
+/** NAK-380 Nacharbeit 1 der Etappe 5 (D1; R-380-13 (v), Matrixfassung §50.2):
+    die Kohaerenzhaelfte von M-75 bis M-79 traegt das Ereignis von M-73,
+    "jeder Evidenzsnapshot ab dem siebten (Ring beider Stufen voll)". Je Rate
+    und Block wird deshalb JEDER Snapshot 7 bis n gegen dieselben Saetze
+    geprueft wie in M-73, je Satz eine eigene Pruefung:
+
+    - Vorbedingung: Snapshots 7 bis n mit n aus dem Kadenzmodell
+      (`snapSoll`, verriegelt wie M-73), Freiheitsgrade je Snapshot und Stufe
+      = Frames der letzten W Fenster nach dem Kadenzmodell
+      (`nak380RingFrames`), jedes Band mit Bins traegt eine Basis;
+    - jedes Band mit Energie traegt an jedem dieser Snapshots ein Bit;
+    - jedes Band mit Bit traegt an jedem dieser Snapshots Kohaerenz >= 0,95;
+    - das Mittel von (1 - C)/(1 - rho_w(d)^2) ueber alle Bandbefunde mit Bit
+      liegt in [0,8; 1,2] (Herleitung bei `kNak380RefMittelUnten`).
+
+    Die Laufzeithaelfte bleibt nach R-380-13 (v) am letzten Snapshot
+    (`nak380LaufzeitWert`, wie M-74 und M-80): T_B ist mit 5 sigma fuer rund
+    4 200 Bandpruefungen je Etappe bemessen, eine Pruefung an jedem Snapshot
+    vervielfachte die (abhaengigen) Pruefungen ohne Produktwirkung. Jede
+    Pruefung meldet, an welchen Snapshots ihr Satz verletzt ist. */
+void nak380RateKohaerenz (const char* id, const char* name, const Nak380Rauschlauf& L)
+{
+    const auto kopf = nak380Kopf (id, name, L);
+    const int n = (int) L.schnapp.size();
+    Nak380KohBefund f;
+    Nak380SnapVerletzt vor, bit, unter;
+    int geprueft = 0, minSnapshot = -1;
+    for (int i = 7; i <= n; ++i)
+    {
+        const int vor0 = f.dofFalsch + f.ohneBasis, bit0 = f.ohneBit + f.bitOhneBins, unter0 = f.unter095;
+        const double min0 = f.minKoh;
+        nak380KohPruefen (L, i, f);
+        ++geprueft;
+        if (f.dofFalsch + f.ohneBasis > vor0) vor.zaehle (i);
+        if (f.ohneBit + f.bitOhneBins > bit0) bit.zaehle (i);
+        if (f.unter095 > unter0) unter.zaehle (i);
+        if (f.minKoh < min0) minSnapshot = i;
+    }
+    pruefe (geprueft > 0 && geprueft + 6 == (int) L.snapSoll.size() && f.dofFalsch == 0 && f.ohneBasis == 0,
+            kopf + ": Kohaerenzhaelfte, Vorbedingung Snapshots 7 bis n (n aus dem Kadenzmodell), Freiheitsgrade "
+                "je Snapshot = Frames der letzten W Fenster je Stufe (Kadenzmodell), jedes Band mit Bins traegt "
+                "eine Basis",
+            juce::String (geprueft) + " Snapshots (7 bis " + juce::String (n) + ", Modell "
+                + juce::String ((int) L.snapSoll.size()) + "), Freiheitsgrade falsch " + juce::String (f.dofFalsch)
+                + ", ohne Basis " + juce::String (f.ohneBasis) + "; " + vor.text (n));
+    pruefe (geprueft > 0 && f.ohneBit == 0 && f.bitOhneBins == 0,
+            kopf + ": jedes Band mit Energie traegt an jedem Snapshot ab dem siebten ein Kohaerenzbit",
+            juce::String (f.mitBins) + " Bandbefunde mit Bins, ohne Bit " + juce::String (f.ohneBit)
+                + ", Bit ohne Bins " + juce::String (f.bitOhneBins) + "; " + bit.text (n));
+    pruefe (geprueft > 0 && f.unter095 == 0 && f.minKoh <= 1.0,
+            kopf + ": jedes Band mit Kohaerenzbit traegt an jedem Snapshot ab dem siebten Kohaerenz >= 0,95",
+            "Minimum " + juce::String (f.minKoh, 4) + " (Band " + juce::String (f.minBand) + ", Snapshot "
+                + juce::String (minSnapshot) + "), unter 0,95 " + juce::String (f.unter095) + "; "
+                + unter.text (n));
+    pruefe (geprueft > 0 && f.referenzHaelt(),
+            kopf + ": Kohaerenz gegen die Referenz rho_w(" + juce::String (L.d) + ")^2 = "
+                + juce::String (nak380RhoQuadrat (L.d, kNak380NHaupt), 5) + " (N 4096) bzw. "
+                + juce::String (nak380RhoQuadrat (L.d, kNak380NBass), 5)
+                + " (N 16 384): Mittel von (1 - C)/(1 - rho^2) ueber alle Bandbefunde mit Bit der Snapshots 7 "
+                  "bis n in [0,8; 1,2]",
+            "Mittel " + juce::String (f.qMittel(), 4) + ", groesstes q " + juce::String (f.qMax, 3) + " ueber "
+                + juce::String (f.qAnzahl) + " Bandbefunde");
 }
 
 void nak380LaufzeitWert (const char* id, const char* name, const Nak380Rauschlauf& L)
@@ -937,8 +1039,8 @@ __declspec(noinline) void nak380Rate (const char* id, const char* name, double f
     {
         const auto& L = nak380Laufzeitlauf (fs, block);
         nak380Vorbedingungen (nak380Kopf (id, name, L), L);
-        nak380LaufzeitKohaerenz (id, name, L);
-        nak380LaufzeitWert (id, name, L);
+        nak380RateKohaerenz (id, name, L);      // jeder Snapshot ab dem siebten (wie M-73)
+        nak380LaufzeitWert (id, name, L);       // letzter Snapshot (R-380-13 (v))
     }
 }
 
@@ -1290,23 +1392,93 @@ __declspec(noinline) void nak380M86()
             juce::String ((int) je[0].dof) + " Frames, " + juce::String (je[0].dauerMs, 3) + " ms");
 }
 
+/** M-87 (c), D3 der Nacharbeit 1: die Binzuordnung der Engine je Band in
+    BEIDEN Stufen gegen die Gitterreferenz `nak380Binfenster (b, fs)` - in
+    der zustaendigen Stufe erster Bin `von` und Ende `bis` (letzter Bin
+    bis - 1) gleich, in der anderen Stufe kein Bin (von = bis = 0, "nicht
+    zustaendig", `zuordnung`). Jedes der 221 Baender in jeder Stufe, keine
+    Stichprobe. */
+struct Nak380ZuordnungBefund
+{
+    int bass { 0 }, haupt { 0 }, bassMitBins { 0 }, hauptMitBins { 0 }, abweichend { 0 };
+    juce::String erste { "keine" };
+};
+
+Nak380ZuordnungBefund nak380ZuordnungPruefen (const FeatureEngine& e, double fs)
+{
+    Nak380ZuordnungBefund z;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const auto ref = nak380Binfenster (b, fs);
+        std::pair<int, int> inBass { -1, -1 }, inHaupt { -1, -1 };
+#if defined (NAKAMA_FEATUREENGINE_TESTZUGANG)
+        inBass = FeatureEngineTestzugang::binfenster (e, b, true);
+        inHaupt = FeatureEngineTestzugang::binfenster (e, b, false);
+#endif
+        const auto& zustaendig = ref.bass ? inBass : inHaupt;
+        const auto& andere = ref.bass ? inHaupt : inBass;
+        ++(ref.bass ? z.bass : z.haupt);
+        if (ref.bins() > 0)
+            ++(ref.bass ? z.bassMitBins : z.hauptMitBins);
+        if (zustaendig.first == ref.von && zustaendig.second == ref.bis && andere.first == 0 && andere.second == 0)
+            continue;
+        if (z.abweichend++ == 0)
+            z.erste = "Band " + juce::String (b) + (ref.bass ? " (Bass)" : " (Haupt)") + ": Engine ["
+                    + juce::String (zustaendig.first) + ", " + juce::String (zustaendig.second) + "), Referenz ["
+                    + juce::String (ref.von) + ", " + juce::String (ref.bis) + "), andere Stufe ["
+                    + juce::String (andere.first) + ", " + juce::String (andere.second) + ")";
+    }
+    return z;
+}
+
+/** Zahl der Baender, deren Gitterreferenz sich zwischen zwei Raten in `von`
+    oder `bis` unterscheidet - die Trennschaerfe der Zuordnungspruefung. */
+int nak380ZuordnungUnterschiede (double fsA, double fsB)
+{
+    int n = 0;
+    for (int b = 0; b < Gitter::evidenzBaender; ++b)
+    {
+        const auto x = nak380Binfenster (b, fsA), y = nak380Binfenster (b, fsB);
+        if (x.von != y.von || x.bis != y.bis) ++n;
+    }
+    return n;
+}
+
 /** M-87: der Ring leert an Grenze, Ruecksetzen und Ratenwechsel
-    (starten <-> stoppen). 44,1 kHz, Block 512, 0,25 s, Sinus L = R. Vor dem
-    Ereignis 5 s (220 500 Samples, der letzte Block traegt 340); danach 1 s.
-    (a) Seek: die Projektzeit springt um 441 000 Samples (Grund zeitSprung);
-    die Kadenz laeuft weiter (§10.1), der erste Snapshot danach traegt nur die
-    Frames seit der Grenze (hoechstens 5, weil das erste Fenster nach
-    spaetestens 13 824 Samples endet; hier faellt er schon 684 Samples nach
-    der Grenze, mit 0 Frames), Kohaerenz `null`. (b) `zuruecksetzen()`:
-    Kadenz von vorn, 5 Frames, Kohaerenz `null`. (c) `vorbereiten (96000)`:
-    Binzuordnung fuer 96 kHz neu, der erste Snapshot traegt genau die Frames
-    der neuen Rate (13), kein Frame der alten ueberlebt. In allen drei Beinen
-    traegt auch der zweite Snapshot genau die Frames seit dem Ereignis (ein
-    ueberlebender Ring truege dort noch Fenster von davor). */
+    (starten <-> stoppen). 44,1 kHz, Block 512, 0,25 s, Sinus L = R; danach
+    1 s. Kadenz bei 44,1 kHz und Block 512 (Kadenzmodell): der Liveframe
+    faellt alle 9 Bloecke (4608 Samples >= 4410), der Evidenzsnapshot alle
+    drei Liveframes (13 824 Samples >= 11 025).
+    (a) Seek (Z1 der Nacharbeit 1): die Engine speist bis unmittelbar hinter
+    den letzten Snapshot vor 5 s - 15 * 13 824 = 207 360 Samples, aus dem
+    Kadenzmodell gerechnet, nicht aus dem Lauf -, dann springt die
+    Projektzeit um 441 000 Samples (Grund zeitSprung). Die Kadenz laeuft
+    weiter (§10.1); weil live und evid an der Grenze 0 sind, faellt der erste
+    Snapshot danach 13 824 Samples nach der Grenze und traegt
+    floor((13 824 - 4096)/2048) + 1 = 5 Frames, der zweite nach 27 648
+    Samples 12. Mit 1 bis 7 neuen Frames ist "Kohaerenz `null`" trennscharf:
+    ein ueberlebender Ring truege 5 plus die Frames der Fenster davor >= 8
+    und setzte das Bit (bis zur Nacharbeit 1 fiel der erste Snapshot 512
+    Samples nach der Grenze mit 0 Frames, und `frames == 0` sperrte das Bit
+    unabhaengig vom Ring). (b) `zuruecksetzen()` nach 220 500 Samples (der
+    letzte Block traegt 340): Kadenz von vorn, 5 Frames, Kohaerenz `null`.
+    (c) `vorbereiten (96000)` nach 220 500 Samples: Binzuordnung fuer 96 kHz
+    neu - je Band in beiden Stufen gegen die Gitterreferenz bei 96 kHz
+    (`nak380ZuordnungPruefen`, D3) -, der Ring ist fuer 96 kHz bemessen, und
+    kein Wert der alten Rate ueberlebt: der Ring traegt direkt danach keinen
+    Frame, der erste Snapshot genau die Frames der neuen Rate (13). Die
+    Zusage "kein Wert ueberlebt" tragen zwei Riegel: die Neuanlage des Rings
+    (`stereoRing.assign` in `vorbereiten`) und `stereoLeeren` in
+    `zuruecksetzen`; ihr Rotbeweis ist deshalb eine Doppelmutation. In allen
+    drei Beinen traegt auch der zweite Snapshot genau die Frames seit dem
+    Ereignis (ein ueberlebender Ring truege dort noch Fenster von davor). */
 __declspec(noinline) void nak380M87()
 {
     constexpr double fs = 44100.0;
     constexpr std::uint64_t vorher = 220500u, nachher = 44100u;
+    // Z1: die Seek-Lage aus dem Kadenzmodell - der letzte Snapshot bis 5 s.
+    const auto snapBis5s = nak380Snapshots (fs, 512, 0.25, vorher);
+    const std::uint64_t vorherSeek = snapBis5s.empty() ? vorher : snapBis5s.back();
     const int b1k = bandFuer (1000.0);
     for (const char* bein : { "seek", "reset", "rate_change" })
     {
@@ -1316,18 +1488,24 @@ __declspec(noinline) void nak380M87()
         e.vorbereiten (fs);
         e.evidenzIntervallSetzen (0.25);
         Nak380Pos pos;
-        const auto a = nak380Sinus (fs, 0, vorher);
-        const auto lauf1 = nak380Stereolauf (e, pos, fs, 512, a, a);
         const bool rate = std::strcmp (bein, "rate_change") == 0;
         const bool seek = std::strcmp (bein, "seek") == 0;
+        const std::uint64_t n1 = seek ? vorherSeek : vorher;
+        const auto a = nak380Sinus (fs, 0, n1);
+        const auto lauf1 = nak380Stereolauf (e, pos, fs, 512, a, a);
         const auto getrenntVorher = e.getrennteFenster();
         const auto spruengeVorher = e.grenzenMitGrund (nakama::analyse::Grenzgrund::zeitSprung);
+        // D3, Vorbedingung: vor dem Ratenwechsel folgt die Zuordnung der
+        // Referenz bei 44,1 kHz, und die Referenzen beider Raten
+        // unterscheiden sich (sonst waere die Pruefung danach nicht trennscharf).
+        const auto zuordnungVorher = rate ? nak380ZuordnungPruefen (e, fs) : Nak380ZuordnungBefund {};
         if (seek)
             pos.projekt += 441000;
         else if (rate)
             e.vorbereiten (96000.0);
         else
             e.zuruecksetzen();
+        const auto zuordnungNachher = rate ? nak380ZuordnungPruefen (e, 96000.0) : Nak380ZuordnungBefund {};
         const double fs2 = rate ? 96000.0 : fs;
         const std::uint64_t n2 = rate ? 96000u : nachher;
         const auto b2 = nak380Sinus (fs2, pos.strom, n2);
@@ -1355,40 +1533,85 @@ __declspec(noinline) void nak380M87()
 #endif
         // Samples seit dem Ereignis bis zum ersten und zweiten Snapshot danach,
         // aus dem Kadenzmodell: beim Seek laeuft die Kadenz ueber die Grenze
-        // weiter (Segmente 220 500 und 44 100, jedes mit eigenem Restblock),
+        // weiter (Segmente 207 360 und 44 100, jedes mit eigenem Restblock),
         // sonst beginnt sie von vorn.
         std::vector<std::uint64_t> seit;
         if (seek)
         {
-            for (const auto sn : nak380SnapshotsSegmente (fs, 512, 0.25, { vorher, nachher }))
-                if (sn > vorher) seit.push_back (sn - vorher);
+            for (const auto sn : nak380SnapshotsSegmente (fs, 512, 0.25, { n1, nachher }))
+                if (sn > n1) seit.push_back (sn - n1);
         }
         else
             seit = nak380Snapshots (fs2, 512, 0.25, n2);
-        // Ringbytes nach dem Ereignis aus dem Gitter der geltenden Rate (M-85).
+        // Ringframes und Ringbytes getrennt (D3): "kein Frame ueberlebt" ist
+        // die Zusage der Leerung, die Ringbytes aus dem Gitter der geltenden
+        // Rate sind die Bemessung (M-85).
         const std::size_t ringBytesSoll = nak380RingBytesSoll (fs2);
-        pruefe (ringNachEreignis == 0.0 && ringBytesNach == ringBytesSoll,
-                kopf + ": direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame, und sein "
-                    "Aufbau folgt der geltenden Binzuordnung (" + juce::String ((juce::int64) ringBytesSoll) + " B)",
-                "Ringframes " + juce::String (ringNachEreignis, 0) + ", Ringbytes "
-                    + juce::String ((juce::int64) ringBytesNach));
+        pruefe (ringNachEreignis == 0.0,
+                kopf + ": direkt nach dem Ereignis (und dem ersten Block) traegt der Ring keinen Frame - kein Wert "
+                    "von davor ueberlebt",
+                "Ringframes " + juce::String (ringNachEreignis, 0));
+        pruefe (ringBytesNach == ringBytesSoll,
+                kopf + ": der Ring ist fuer die geltende Rate bemessen, Ringbytes = "
+                    + juce::String ((juce::int64) ringBytesSoll) + " B (Gitter, M-85)",
+                "Ringbytes " + juce::String ((juce::int64) ringBytesNach));
+        if (rate)
+        {
+            const int unterschiede = nak380ZuordnungUnterschiede (fs, 96000.0);
+            pruefe (zuordnungVorher.abweichend == 0 && zuordnungVorher.bass + zuordnungVorher.haupt
+                        == Gitter::evidenzBaender && unterschiede > 0,
+                    kopf + ": Vorbedingung vor dem Ratenwechsel folgt die Binzuordnung je Band beider Stufen der "
+                        "Gitterreferenz bei 44,1 kHz, und die Referenzen bei 44,1 und 96 kHz unterscheiden sich "
+                        "(Trennschaerfe)",
+                    juce::String (zuordnungVorher.bass) + " Bass- und " + juce::String (zuordnungVorher.haupt)
+                        + " Hauptbaender, abweichend " + juce::String (zuordnungVorher.abweichend) + " (erste: "
+                        + zuordnungVorher.erste + "); Referenzen verschieden in " + juce::String (unterschiede)
+                        + " Baendern");
+            pruefe (zuordnungNachher.abweichend == 0
+                        && zuordnungNachher.bass + zuordnungNachher.haupt == Gitter::evidenzBaender,
+                    kopf + ": Binzuordnung fuer 96 kHz neu - jedes Band beider Stufen traegt erster und letzter "
+                        "Bin der Gitterreferenz bei 96 kHz (zustaendige Stufe) bzw. keinen Bin (andere Stufe)",
+                    juce::String (zuordnungNachher.bass) + " Bassbaender (" + juce::String (zuordnungNachher.bassMitBins)
+                        + " mit Bins), " + juce::String (zuordnungNachher.haupt) + " Hauptbaender ("
+                        + juce::String (zuordnungNachher.hauptMitBins) + " mit Bins), abweichend "
+                        + juce::String (zuordnungNachher.abweichend) + " (erste: " + zuordnungNachher.erste + ")");
+        }
         const auto gespeist2 = lauf2a.gespeist + lauf2.gespeist;
         const bool zwei = danach.size() >= 2u && seit.size() >= 2u;
         const auto soll1 = zwei ? nak380Frames (seit[0], kNak380NHaupt) : 0u;
         const auto soll2 = zwei ? nak380Frames (seit[1], kNak380NHaupt) : 0u;
-        pruefe (lauf1.gespeist == vorher && gespeist2 == n2
-                    && verarbeitet == (seek ? vorher + nachher : n2)
+        pruefe (lauf1.gespeist == n1 && gespeist2 == n2
+                    && verarbeitet == (seek ? n1 + nachher : n2)
                     && e.ereignisseVerworfen() == 0u && lauf1.snapshots.size() >= 7u,
-                kopf + ": Vorbedingung gespeiste Samplezahl " + juce::String ((juce::int64) vorher) + " + "
+                kopf + ": Vorbedingung gespeiste Samplezahl " + juce::String ((juce::int64) n1) + " + "
                     + juce::String ((juce::int64) n2) + " (Laeufer und Engine), kein Ringverlust, Ring vorher voll "
                     "(mindestens 7 Snapshots)",
                 juce::String ((juce::int64) lauf1.gespeist) + " + " + juce::String ((juce::int64) gespeist2)
                     + ", Engine " + juce::String ((juce::int64) verarbeitet) + ", Snapshots vorher "
                     + juce::String ((int) lauf1.snapshots.size()));
         if (seek)
+        {
             pruefe (e.getrennteFenster() == getrenntVorher + 1
                         && e.grenzenMitGrund (nakama::analyse::Grenzgrund::zeitSprung) == spruengeVorher + 1,
                     kopf + ": Vorbedingung genau eine Grenze mit Grund zeitSprung");
+            // Z1: der Seek liegt unmittelbar hinter einem Snapshot, und die
+            // Snapshots vor und nach der Grenze fallen an die Samplezahlen des
+            // Kadenzmodells; der erste danach traegt 1 bis 7 neue Frames.
+            std::vector<std::uint64_t> nachIst;
+            for (const auto sn : lauf2a.snapshots) nachIst.push_back (sn);
+            for (const auto sn : lauf2.snapshots) nachIst.push_back (lauf2a.gespeist + sn);
+            const auto frames1 = seit.empty() ? 0u : nak380Frames (seit[0], kNak380NHaupt);
+            pruefe (! lauf1.snapshots.empty() && lauf1.snapshots == nak380Snapshots (fs, 512, 0.25, n1)
+                        && lauf1.snapshots.back() == n1 && nachIst == seit && frames1 >= 1u && frames1 <= 7u,
+                    kopf + ": Vorbedingung Seek unmittelbar hinter dem Snapshot " + juce::String ((int) snapBis5s.size())
+                        + " (" + juce::String ((juce::int64) n1) + " Samples, Kadenzmodell); Snapshots vor und nach "
+                        "der Grenze an den Samplezahlen des Kadenzmodells; der erste danach traegt 1 bis 7 neue Frames",
+                    "letzter Snapshot vorher bei " + juce::String ((juce::int64) (lauf1.snapshots.empty() ? 0u
+                        : lauf1.snapshots.back())) + ", danach " + juce::String ((int) nachIst.size())
+                        + " Snapshots (Modell " + juce::String ((int) seit.size()) + "), erster nach "
+                        + juce::String ((juce::int64) (nachIst.empty() ? 0u : nachIst[0])) + " Samples mit "
+                        + juce::String ((int) frames1) + " Frames");
+        }
         // (a), (b): hoechstens 5 Frames; (c): genau die 13 der neuen Rate.
         pruefe (zwei && (rate ? soll1 == 13u : soll1 <= 5u) && danach[0].dof == (std::uint32_t) soll1,
                 kopf + ": der erste Snapshot danach traegt nur die Frames seit dem Ereignis ("

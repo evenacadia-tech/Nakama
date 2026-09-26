@@ -1,0 +1,81 @@
+Mutationsprotokoll NAK-380 Etappe 7 Werkzeug W-1, R-380-17 Fall (b) messfassung_fail_closed
+Datei: tools/fl/szenario.py, SHA-256 unmutiert 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A
+
+== Mutation b1: Rueckfall auf einen Standardwert in allen drei Fail-closed-Zweigen (kein UTF-8, Datei fehlt, Treffer != 1)
+Zeit: 2026-09-26 14:49:10
+Ersetzungen:
+  szenario.py:1173
+    alt:         return None, f"Messfassung nicht lesbar: {pfad} ist kein UTF-8
+    neu:         return "m4.3-2026-09-26", None  # MUTATION b1; f"Messfassung nicht lesbar: {pfad} ist kein UTF-8
+  szenario.py:1175
+    alt:         return None, f"Messfassung nicht lesbar: {pfad} fehlt
+    neu:         return "m4.3-2026-09-26", None  # MUTATION b1; f"Messfassung nicht lesbar: {pfad} fehlt
+  szenario.py:1178
+    alt:         return None, (f"Messfassung nicht eindeutig:
+    neu:         return "m4.3-2026-09-26", None; (f"Messfassung nicht eindeutig:
+
+Befehl: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_fail_closed
+Exit: 4
+Ausgabe:
+[ROT] R-380-17 messfassung_fail_closed: (b) Attrappe ohne UTF-8: Leser 'm4.3-2026-09-26', Text None | (b) Umlauf, Attrappe ohne UTF-8: Exit 0 statt 5, 35 Anfragen, Zeile 'rue, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gemessen: gen `00000000`, probeeq `00000000` | ok (Details unten) |' | (b) Attrappe ohne die Zeile: Leser 'm4.3-2026-09-26', Text None | (b) Umlauf, Attrappe ohne die Zeile: Exit 0 statt 5, 35 Anfragen, Zeile 'rue, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gemessen: gen `00000000`, probeeq `00000000` | ok (Details unten) |' | (b) Attrappe mit zwei Zeilen: Leser 'm4.3-2026-09-26', Text None | (b) Umlauf, Attrappe mit zwei Zeilen: Exit 0 statt 5, 35 Anfragen, Zeile 'rue, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gemessen: gen `00000000`, probeeq `00000000` | ok (Details unten) |' | (b) Attrappe ohne Datei: Leser 'm4.3-2026-09-26', Text None | (b) Umlauf, Attrappe ohne Datei: Exit 0 statt 5, 35 Anfragen, Zeile 'rue, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gemessen: gen `00000000`, probeeq `00000000` | ok (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+
+Voller Selbsttest unter der Mutation: py -3.13 tools/fl/szenario.py --selbsttest -> Exit 4, 1 Faelle rot:
+  [ROT] R-380-17 messfassung_fail_closed
+SELBSTTEST szenario.py: 41 ok, 1 rot
+
+Ruecknahme: Originalbytes zurueckgeschrieben (2026-09-26 14:49:25), SHA-256 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A, bytegleich mit unmutiert: ja
+Befehl erneut: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_fail_closed
+Exit: 0
+Ausgabe:
+[ok] R-380-17 messfassung_fail_closed
+SELBSTTEST szenario.py: 1 ok, 0 rot
+
+== Mutation b2: erster Treffer statt Fail-closed bei mehreren Treffern (len(treffer) != 1 -> < 1)
+Zeit: 2026-09-26 14:49:25
+Ersetzungen:
+  szenario.py:1177
+    alt:     if len(treffer) != 1:
+    neu:     if len(treffer) < 1:
+
+Befehl: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_fail_closed
+Exit: 4
+Ausgabe:
+[ROT] R-380-17 messfassung_fail_closed: (b) Attrappe mit zwei Zeilen: Leser 'm4.3-2026-09-26', Text None | (b) Umlauf, Attrappe mit zwei Zeilen: Exit 0 statt 5, 35 Anfragen, Zeile 'rue, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gemessen: gen `00000000`, probeeq `00000000` | ok (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+
+Voller Selbsttest unter der Mutation: py -3.13 tools/fl/szenario.py --selbsttest -> Exit 4, 1 Faelle rot:
+  [ROT] R-380-17 messfassung_fail_closed
+SELBSTTEST szenario.py: 41 ok, 1 rot
+
+Ruecknahme: Originalbytes zurueckgeschrieben (2026-09-26 14:49:39), SHA-256 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A, bytegleich mit unmutiert: ja
+Befehl erneut: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_fail_closed
+Exit: 0
+Ausgabe:
+[ok] R-380-17 messfassung_fail_closed
+SELBSTTEST szenario.py: 1 ok, 0 rot
+
+== Mutation b3: Ausstieg ohne Transportstopp (lauf.sende("transport.stop") im Fail-closed-Zweig entfernt)
+Zeit: 2026-09-26 14:49:39
+Ersetzungen:
+  szenario.py:1307
+    alt:         lauf.sende("transport.stop")  # wie am Ende der Folge
+    neu:         pass  # MUTATION b3; lauf.sende("transport.stop")  # wie am Ende der Folge
+
+Befehl: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_fail_closed
+Exit: 4
+Ausgabe:
+[ROT] R-380-17 messfassung_fail_closed: (b) Umlauf, Attrappe ohne UTF-8: Transport nach dem Ausstieg nicht gestoppt (0 Stopps, spielt True) | (b) Umlauf, Attrappe ohne die Zeile: Transport nach dem Ausstieg nicht gestoppt (0 Stopps, spielt True) | (b) Umlauf, Attrappe mit zwei Zeilen: Transport nach dem Ausstieg nicht gestoppt (0 Stopps, spielt True) | (b) Umlauf, Attrappe ohne Datei: Transport nach dem Ausstieg nicht gestoppt (0 Stopps, spielt True)
+SELBSTTEST szenario.py: 0 ok, 1 rot
+
+Voller Selbsttest unter der Mutation: py -3.13 tools/fl/szenario.py --selbsttest -> Exit 4, 1 Faelle rot:
+  [ROT] R-380-17 messfassung_fail_closed
+SELBSTTEST szenario.py: 41 ok, 1 rot
+
+Ruecknahme: Originalbytes zurueckgeschrieben (2026-09-26 14:49:51), SHA-256 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A, bytegleich mit unmutiert: ja
+Befehl erneut: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_fail_closed
+Exit: 0
+Ausgabe:
+[ok] R-380-17 messfassung_fail_closed
+SELBSTTEST szenario.py: 1 ok, 0 rot
+

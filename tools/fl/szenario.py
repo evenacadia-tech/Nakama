@@ -19,7 +19,8 @@ Ping ohne passende Anforderungskennung, Piano-Roll-Weg im Importgraphen) ·
 4 mindestens eine Erwartung verfehlt · 2 Szenariodatei unbrauchbar ·
 5 Voraussetzung dieses Szenarios fehlt (KETTE, Formatfehler, VERSATZ, fehlendes
 Nulltesturteil, fehlende Rechnung aus F-28, Umlauf ohne Wrap, fremde Quelle,
-UNGEMESSEN: eine MCP-Antwort ohne passende Anforderungskennung).
+Messfassung nicht genau einmal in AnalyseEngine.h lesbar, UNGEMESSEN: eine
+MCP-Antwort ohne passende Anforderungskennung).
 Innerhalb eines Szenarios gilt der Vorrang 3 vor 5 vor 4 (VORAUSSETZUNG vor
 VERFEHLT); der Runner fährt nach 5 weiter und bricht nur nach 3 ab.
 
@@ -61,6 +62,7 @@ geöffnet wird.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import math
@@ -113,9 +115,13 @@ FENSTER_SKRIPT = ("import json, sys; from pathlib import Path; sys.path.insert(0
 RATE = 44100
 ZELLE = 4410                          # 0,1 s bei 44 100 Hz (AnalyseEngine.cpp:270)
 QUELLE_FRAMES = 5_470_096             # Testtrack.wav (Manifest §0.4)
-METRICS_VERSION = "m4.1-2026-08-15"   # AnalyseEngine.h:60
 AKTIV_GATE_DB = -60.0                 # AnalyseEngine.cpp:13
 TAKT_S = 4 * 60 / 130                 # Testtrack mit 130 BPM (KALIBRIER-PROTOKOLL.md:66)
+# Messfassung (R-380-17): der Runner haelt keine Kopie von kMetricsVersion; lokal.umlauf liest den Sollwert je Schritt
+# aus genau einer Definitionszeile der Produktquelle. Das Muster reicht nie ueber ein Zeilenende.
+ANALYSE_ENGINE_H = REPO / "eq-copilot" / "plugin" / "src" / "AnalyseEngine.h"
+KMETRICS_MUSTER = re.compile(r'^[ \t]*inline[ \t]+constexpr[ \t]+const[ \t]+char[ \t]*\*[ \t]*kMetricsVersion[ \t]*=[ \t]*'
+                             r'"([^"\\\r\n]+)"[ \t]*;', re.MULTILINE)
 
 
 def schlechter(a: int, b: int) -> int:
@@ -1157,12 +1163,29 @@ def rechnungsauftrag(lauf: Lauf, kette: dict, n_loop: int, anker: dict[str, dict
     return auftrag
 
 
-def vorbedingung(antwort: Antwort, u_unten: dict | None, n_loop: int) -> tuple[list[str], list[str]]:
+def lies_metrics_version(umg: Umgebung, pfad: Path = ANALYSE_ENGINE_H) -> tuple[str | None, str | None]:
+    """Erwartete metrics_version aus der Produktquelle (R-380-17): der Wert der einen Definitionszeile von
+    kMetricsVersion. Fehlt die Datei, ist sie kein UTF-8 oder trifft das Muster nicht genau einmal, kommt
+    (None, Klartext mit Pfad und Muster) - nie ein Standardwert."""
+    try:
+        text = umg.lies_text(pfad)
+    except ValueError as e:  # UnicodeDecodeError
+        return None, f"Messfassung nicht lesbar: {pfad} ist kein UTF-8 ({e}); Muster `{KMETRICS_MUSTER.pattern}`"
+    if text is None:
+        return None, f"Messfassung nicht lesbar: {pfad} fehlt oder ist nicht lesbar; Muster `{KMETRICS_MUSTER.pattern}`"
+    treffer = KMETRICS_MUSTER.findall(text)
+    if len(treffer) != 1:
+        return None, (f"Messfassung nicht eindeutig: {len(treffer)} Treffer statt genau einem in {pfad}; "
+                      f"Muster `{KMETRICS_MUSTER.pattern}`")
+    return treffer[0], None
+
+
+def vorbedingung(antwort: Antwort, u_unten: dict | None, n_loop: int, soll: str) -> tuple[list[str], list[str]]:
     s = antwort.snapshot
     roh: list[str] = []
     version = s.get("metrics_version")
-    if version != METRICS_VERSION:
-        return [f"Vergleichsbasis verschieden: metrics_version {version!r} statt {METRICS_VERSION}"], roh
+    if version != soll:
+        return [f"Vergleichsbasis verschieden: metrics_version {version!r} statt {soll}"], roh
     maengel = []
     if s.get("zustand") != "messbereit":
         maengel.append(f"Vorbedingung: zustand {s.get('zustand')!r} statt messbereit")
@@ -1279,8 +1302,13 @@ def lokal_umlauf(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
     p = schritt.get("params") or {}
     rollen = [r for r in (p.get("rollen") or ["gen", "probeeq"]) if r in ("gen", "probeeq")]
     vergleich = p.get("vergleich") or {}
+    soll, fehler = lies_metrics_version(lauf.umg)
+    if soll is None:
+        lauf.sende("transport.stop")  # wie am Ende der Folge: der Schritt laesst den gestarteten Transport nicht laufen
+        return EXIT_SZENARIO, f"VORAUSSETZUNG: {fehler}", [f"- {fehler}"]
     kette = kettenverschiebung(lies_nulltest(lauf))
-    zeilen = [f"- Nulltesturteil und Kettenverschiebung: {_json(kette)}"]
+    zeilen = [f"- Messfassung aus {ANALYSE_ENGINE_H}: {soll}",
+              f"- Nulltesturteil und Kettenverschiebung: {_json(kette)}"]
     if "fehlt" in kette:
         return EXIT_SZENARIO, f"VORAUSSETZUNG: {kette['fehlt']}", zeilen
     loop_ms = lauf.loop_ms()
@@ -1335,7 +1363,7 @@ def lokal_umlauf(lauf: Lauf, schritt: dict) -> tuple[int, str, list[str]]:
     je_u_unten = {x["rolle"]: x for x in rechnung.get("u_unten", [])}
     ergebnisse = []
     for rolle, antwort in gewertet.items():
-        m, roh = vorbedingung(antwort, je_u_unten.get(rolle), n_loop)
+        m, roh = vorbedingung(antwort, je_u_unten.get(rolle), n_loop, soll)
         zeilen += [f"- {rolle}: {x}" for x in roh]
         for feld in vergleich.get("roh") or []:
             zeilen.append(f"- {rolle} roh `{feld}` = {_json([w for _, w in werte_an_pfad(antwort.umschlag, feld) if w is not _FEHLT])}")
@@ -2248,6 +2276,8 @@ class TestUmgebung(Umgebung):
         self.nulltest_aufrufe: list[list[str]] = []
         self.nulltest_antwort = (EXIT_OK, "NULLTEST Attrappe")
         self.fenster_ergebnis = None
+        fassung = gelesene_fassung()
+        self.lege(ANALYSE_ENGINE_H, attrappe_quelle(*([fassung] if fassung is not None else [])))
 
     def jetzt(self) -> float:
         return self.t
@@ -2439,9 +2469,28 @@ def attrappe_umschlag(kennung: str, rolle: str, pid: int, instanz: str, laufzeit
             "snapshot": snapshot, "frame": frame, "aggregat": None, "gruende": gruende}
 
 
+@functools.lru_cache(maxsize=None)
+def gelesene_fassung() -> str | None:
+    """Die Messfassung der echten Produktquelle fuer die Attrappen (R-380-17), einmal je Selbsttest gelesen. Ist sie
+    nicht lesbar, tragen Attrappenquelle und Snapshots keine Fassung, und die Umlauffaelle enden sichtbar mit 5."""
+    return lies_metrics_version(Umgebung())[0]
+
+
+def attrappe_quelle(*fassungen: str) -> bytes:
+    """AnalyseEngine.h als Attrappe (CRLF wie im Arbeitsbaum): je Fassung eine Definitionszeile von kMetricsVersion,
+    dazu eine Kommentarzeile mit dem Namen und eine Nachbarkonstante gleicher Form, die das Muster nicht treffen darf."""
+    zeilen = ["// Alle Schwellen sind versionierte Startwerte (kMetricsVersion) - Aenderung nur ueber neue Version.",
+              '// inline constexpr const char* kMetricsVersion = "m0.0-auskommentiert";',
+              'inline constexpr const char* kDiagnoseVersion = "d-attrappe";',
+              *(f'inline constexpr const char* kMetricsVersion = "{f}";' for f in fassungen),
+              "inline constexpr int kM1OrdnungBass     = 14;"]
+    return ("\r\n".join(zeilen) + "\r\n").encode("utf-8")
+
+
 def attrappe_snapshot(zustand="messbereit", aktiv=40.0, gesamt=42.0, lufs=-22.45, tp=-7.8, width=0.33, corr=0.5,
                       low_frac=0.78, centroid=876.0, resonanzen=(459.6, 688.7), rate=RATE,
-                      metrics=METRICS_VERSION) -> dict:
+                      metrics: str | None = None) -> dict:
+    metrics = gelesene_fassung() if metrics is None else metrics
     return {"snapshot_version": 3, "metrics_version": metrics, "created_utc": "2026-09-15T01:00:00Z",
             "sensor": {"sensor_id": "attrappe", "role": "sensor", "label": "", "pair_id": None,
                        "samplerate": rate, "channels": 2},
@@ -2996,8 +3045,14 @@ class Umlaufmodell:
 
 
 def umlauf_attrappe(modell: Umlaufmodell, urteil: str | None = "BITIDENTISCH", v: int = 0, g: float = 1.0,
-                    positionen=None, ergebnis: dict | None = None, vergleich: dict | None = None):
+                    positionen=None, ergebnis: dict | None = None, vergleich: dict | None = None,
+                    quelle: bytes | None = None, ohne_quelle: bool = False):
+    """quelle ersetzt die Attrappe von AnalyseEngine.h, ohne_quelle entfernt sie (R-380-17)."""
     umg = TestUmgebung()
+    if quelle is not None:
+        umg.lege(ANALYSE_ENGINE_H, quelle)
+    if ohne_quelle:
+        umg.dateien.pop(ANALYSE_ENGINE_H, None)
     umg.conn = TestVerbindung(umg, positionen=positionen)
     if urteil is not None or ergebnis is not None:
         inhalt = ergebnis or {"format": NULLTEST_FORMAT, "urteil": urteil, "v": v, "g": g}
@@ -3056,7 +3111,7 @@ def fall_snapshot_messpunkt_und_baender(p: Pruefer) -> None:
     k = _phasen_attrappe()
     ergebnis = u_unten(k, 2205, 399 * ZELLE, 0.0, "BITIDENTISCH")
     antwort = Antwort("x", "gen", 4242, 10, {"snapshot": attrappe_snapshot(aktiv=19.9), "frame": attrappe_frame()}, "0" * 32)
-    maengel, _roh = vorbedingung(antwort, {"rolle": "gen", **ergebnis}, 2_015_193)
+    maengel, _roh = vorbedingung(antwort, {"rolle": "gen", **ergebnis}, 2_015_193, gelesene_fassung())
     p(ergebnis["zellen_phi0"] == 199 and ergebnis["max_zellen"] == 398 and ergebnis["min_zellen"] <= 199 and not maengel,
       f"(5) phasenverschobene Attrappe: Z_0 {ergebnis['zellen_phi0']}, max {ergebnis['max_zellen']}, min {ergebnis['min_zellen']}, Vorbedingung {maengel}")
 
@@ -3171,6 +3226,88 @@ def fall_kettenverschiebung_aus_nulltest(p: Pruefer) -> None:
     p(code == EXIT_SZENARIO and "ohne Nulltesturteil" in roh, f"(2) Formatfehler: Exit {code} statt 5")
     code, roh, _ = umlauf_attrappe(Umlaufmodell(), urteil=None)
     p(code == EXIT_SZENARIO, f"(2) ohne ergebnis.json: Exit {code} statt 5")
+
+
+FASSUNG_ATTRAPPE = "m9.9-2099-01-01"
+
+
+def umlauf_zeile(roh: str) -> str:
+    """Tabellenzeile des Schritts lokal.umlauf (Schritt 3 der Umlaufattrappe)."""
+    return next((z for z in roh.splitlines() if z.startswith("| 3 | `lokal.umlauf` |")), "")
+
+
+@fall("R-380-17", "messfassung_lesen")
+def fall_messfassung_lesen(p: Pruefer) -> None:
+    """R-380-17 (a): der Leser liefert aus einer Attrappe von AnalyseEngine.h genau den Wert der Definitionszeile von
+    kMetricsVersion - nicht den der Kommentarzeilen, nicht den der Nachbarkonstante kDiagnoseVersion -, die echte
+    Quelle traegt genau eine solche Zeile, und lokal.umlauf vergleicht gegen den gelesenen Wert."""
+    umg = TestUmgebung()
+    umg.lege(ANALYSE_ENGINE_H, attrappe_quelle(FASSUNG_ATTRAPPE))
+    wert, fehler = lies_metrics_version(umg)
+    p(wert == FASSUNG_ATTRAPPE and fehler is None, f"(a) Leser: {wert!r} statt {FASSUNG_ATTRAPPE!r} ({fehler})")
+    echt, fehler_echt = lies_metrics_version(Umgebung())
+    p(echt is not None, f"(a) echte Quelle ohne lesbare Messfassung: {fehler_echt}")
+
+    def fassung(_rolle, _n, eintrag, _umg):
+        eintrag["snapshot"]["metrics_version"] = FASSUNG_ATTRAPPE
+
+    code, roh, _ = umlauf_attrappe(Umlaufmodell(aenderung=fassung), quelle=attrappe_quelle(FASSUNG_ATTRAPPE))
+    p(code == EXIT_OK and f"- Messfassung aus {ANALYSE_ENGINE_H}: {FASSUNG_ATTRAPPE}" in roh.splitlines(),
+      f"(a) Umlauf mit gelesener Fassung {FASSUNG_ATTRAPPE}: Exit {code}, Zeile '{umlauf_zeile(roh)[-300:]}'")
+
+
+@fall("R-380-17", "messfassung_fail_closed")
+def fall_messfassung_fail_closed(p: Pruefer) -> None:
+    """R-380-17 (b): Attrappe ohne die Definitionszeile, mit zwei Definitionszeilen, ohne Datei und ohne UTF-8 - der
+    Leser liefert keinen Wert, sondern Klartext mit Pfad und Muster, und lokal.umlauf endet mit VORAUSSETZUNG (5),
+    bevor eine Anfrage geschrieben wird, und stoppt den Transport; kein Standardwert, auch nicht die Fassung, die die
+    Snapshots tragen."""
+    muster = f"; Muster `{KMETRICS_MUSTER.pattern}`"
+    kein_utf8 = b"\xff" + attrappe_quelle(FASSUNG_ATTRAPPE)
+    try:
+        kein_utf8.decode("utf-8")
+        grund = "dekodierbar"
+    except UnicodeDecodeError as e:
+        grund = str(e)
+    for bezeichnung, quelle, erwartet in (
+            ("ohne UTF-8", kein_utf8, f"Messfassung nicht lesbar: {ANALYSE_ENGINE_H} ist kein UTF-8 ({grund}){muster}"),
+            ("ohne die Zeile", attrappe_quelle(),
+             f"Messfassung nicht eindeutig: 0 Treffer statt genau einem in {ANALYSE_ENGINE_H}{muster}"),
+            ("mit zwei Zeilen", attrappe_quelle(gelesene_fassung() or "m-unlesbar", FASSUNG_ATTRAPPE),
+             f"Messfassung nicht eindeutig: 2 Treffer statt genau einem in {ANALYSE_ENGINE_H}{muster}"),
+            ("ohne Datei", None, f"Messfassung nicht lesbar: {ANALYSE_ENGINE_H} fehlt oder ist nicht lesbar{muster}")):
+        umg = TestUmgebung()
+        if quelle is None:
+            umg.dateien.pop(ANALYSE_ENGINE_H, None)
+        else:
+            umg.lege(ANALYSE_ENGINE_H, quelle)
+        wert, fehler = lies_metrics_version(umg)
+        p(wert is None and fehler == erwartet, f"(b) Attrappe {bezeichnung}: Leser {wert!r}, Text {fehler!r}")
+        code, roh, umg = umlauf_attrappe(Umlaufmodell(), quelle=quelle, ohne_quelle=quelle is None)
+        zeile = umlauf_zeile(roh)
+        p(code == EXIT_SZENARIO and not umg.anfragen
+          and zeile.rstrip().endswith(f"| {_zelle('VORAUSSETZUNG: ' + erwartet)} | VORAUSSETZUNG (Details unten) |"),
+          f"(b) Umlauf, Attrappe {bezeichnung}: Exit {code} statt {EXIT_SZENARIO}, {len(umg.anfragen)} Anfragen, "
+          f"Zeile '{zeile[-300:]}'")
+        p(umg.conn.zaehle("transport.stop") == 1 and not umg.conn.spielt,
+          f"(b) Umlauf, Attrappe {bezeichnung}: Transport nach dem Ausstieg nicht gestoppt "
+          f"({umg.conn.zaehle('transport.stop')} Stopps, spielt {umg.conn.spielt})")
+
+
+@fall("R-380-17", "messfassung_vergleichsbasis")
+def fall_messfassung_vergleichsbasis(p: Pruefer) -> None:
+    """R-380-17 (c): tragen die Snapshots eine andere Fassung als die gelesene, ergibt lokal.umlauf je Rolle genau den
+    Mangeltext "Vergleichsbasis verschieden" (VERFEHLT, 4) und bewertet kein Band."""
+    def alte_fassung(_rolle, _n, eintrag, _umg):
+        eintrag["snapshot"]["metrics_version"] = "m4.1-2026-08-15"
+
+    code, roh, _ = umlauf_attrappe(Umlaufmodell(aenderung=alte_fassung), quelle=attrappe_quelle(FASSUNG_ATTRAPPE))
+    kurz = "; ".join(f"{rolle}: Vergleichsbasis verschieden: metrics_version 'm4.1-2026-08-15' statt {FASSUNG_ATTRAPPE}"
+                     for rolle in ("gen", "probeeq"))
+    zeile = umlauf_zeile(roh)
+    p(code == EXIT_VERFEHLT and zeile.rstrip().endswith(f"| {_zelle(kurz)} | VERFEHLT (Details unten) |")
+      and not re.search(r"^- Band ", roh, re.MULTILINE),
+      f"(c) andere Fassung im Snapshot: Exit {code} statt {EXIT_VERFEHLT}, Zeile '{zeile[-300:]}'")
 
 
 @fall("M-64", "referenzschritte_aus_renderstatus")

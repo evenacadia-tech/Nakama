@@ -1,0 +1,34 @@
+Mutationsprotokoll NAK-380 Etappe 7 Werkzeug W-1, R-380-17 Fall (a) messfassung_lesen
+Datei: tools/fl/szenario.py, SHA-256 unmutiert 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A
+
+== Mutation a1: Muster auf einen anderen Bezeichnernamen (kMetricsVersion -> kDiagnoseVersion)
+Zeit: 2026-09-26 14:48:56
+Ersetzungen:
+  szenario.py:123
+    alt: kMetricsVersion[ \t]*=[ \t]*'
+    neu: kDiagnoseVersion[ \t]*=[ \t]*'
+
+Befehl: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_lesen
+Exit: 4
+Ausgabe:
+[ROT] R-380-17 messfassung_lesen: (a) Leser: 'd-attrappe' statt 'm9.9-2099-01-01' (None) | (a) echte Quelle ohne lesbare Messfassung: Messfassung nicht eindeutig: 0 Treffer statt genau einem in C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\src\AnalyseEngine.h; Muster `^[ \t]*inline[ \t]+constexpr[ \t]+const[ \t]+char[ \t]*\*[ \t]*kDiagnoseVersion[ \t]*=[ \t]*"([^"\\\r\n]+)"[ \t]*;` | (a) Umlauf mit gelesener Fassung m9.9-2099-01-01: Exit 4, Zeile 'ue, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gen: Vergleichsbasis verschieden: metrics_version 'm9.9-2099-01-01' statt d-attrappe; probeeq: Vergleichsbasis verschieden: metrics_version 'm9.9-2099-01-01' statt d-attrappe | VERFEHLT (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+
+Voller Selbsttest unter der Mutation: py -3.13 tools/fl/szenario.py --selbsttest -> Exit 4, 7 Faelle rot:
+  [ROT] M-67 snapshot_messpunkt_und_baender
+  [ROT] M-67 referenzausschnitt_rohzeile
+  [ROT] M-67 umlauf_rohzeilen
+  [ROT] M-66 kettenverschiebung_aus_nulltest
+  [ROT] R-380-17 messfassung_lesen
+  [ROT] R-380-17 messfassung_fail_closed
+  [ROT] R-380-17 messfassung_vergleichsbasis
+SELBSTTEST szenario.py: 35 ok, 7 rot
+Anmerkung: Die Zusage von (a) faellt an ihrer ersten Pruefzeile ('(a) Leser: ... statt ...'). Die weiteren roten Faelle im vollen Lauf folgen daraus, dass die Attrappen die gelesene Fassung nutzen: gelesene_fassung() liest die echte Quelle mit dem mutierten Muster, findet keine Zeile, und die Umlauffaelle enden mit 5.
+
+Ruecknahme: Originalbytes zurueckgeschrieben (2026-09-26 14:49:10), SHA-256 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A, bytegleich mit unmutiert: ja
+Befehl erneut: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_lesen
+Exit: 0
+Ausgabe:
+[ok] R-380-17 messfassung_lesen
+SELBSTTEST szenario.py: 1 ok, 0 rot
+

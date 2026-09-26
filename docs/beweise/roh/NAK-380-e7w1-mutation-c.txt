@@ -1,0 +1,27 @@
+Mutationsprotokoll NAK-380 Etappe 7 Werkzeug W-1, R-380-17 Fall (c) messfassung_vergleichsbasis
+Datei: tools/fl/szenario.py, SHA-256 unmutiert 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A
+
+== Mutation c1: Vergleich der Fassung entfernt (if version != soll -> if False)
+Zeit: 2026-09-26 14:49:51
+Ersetzungen:
+  szenario.py:1187
+    alt:     if version != soll:
+    neu:     if False:  # MUTATION c1
+
+Befehl: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_vergleichsbasis
+Exit: 4
+Ausgabe:
+[ROT] R-380-17 messfassung_vergleichsbasis: (c) andere Fassung im Snapshot: Exit 0 statt 4, Zeile 'rue, "rechnung": "F-28 Attrappe", "referenz": "lufs", "rollen": ["gen", "probeeq"], "toleranz": 0.07}, {"anker": "leicht", "delta_k": true, "feld": "snapshot.loudness.true_peak_dbtp", "kurz": "TP", "rechnung": "F-28 Attrappe", "…` | gemessen: gen `00000000`, probeeq `00000000` | ok (Details unten) |'
+SELBSTTEST szenario.py: 0 ok, 1 rot
+
+Voller Selbsttest unter der Mutation: py -3.13 tools/fl/szenario.py --selbsttest -> Exit 4, 1 Faelle rot:
+  [ROT] R-380-17 messfassung_vergleichsbasis
+SELBSTTEST szenario.py: 41 ok, 1 rot
+
+Ruecknahme: Originalbytes zurueckgeschrieben (2026-09-26 14:50:05), SHA-256 769E412819B93F5622B0137B9275E0823824DA6827FAFAE32476A031341E730A, bytegleich mit unmutiert: ja
+Befehl erneut: py -3.13 tools/fl/szenario.py --selbsttest --nur messfassung_vergleichsbasis
+Exit: 0
+Ausgabe:
+[ok] R-380-17 messfassung_vergleichsbasis
+SELBSTTEST szenario.py: 1 ok, 0 rot
+
